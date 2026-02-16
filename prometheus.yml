@@ -1,0 +1,11 @@
+# Prometheus scrape config for Quant Betting Bot
+global:
+  scrape_interval: 30s
+  evaluation_interval: 30s
+
+scrape_configs:
+  - job_name: "bahis-bot"
+    static_configs:
+      - targets: ["bahis-bot:9090"]
+        labels:
+          app: "quant-betting-bot"

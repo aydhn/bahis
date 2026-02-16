@@ -1,0 +1,194 @@
+# ============================================================
+# Quant Betting Bot – Master Dependency List
+# Install: pip install -r requirements.txt
+# ============================================================
+
+# --- Matematik & Bilimsel Hesaplama ---
+numpy
+scipy
+sympy
+clifford
+geoopt
+
+# --- Veri İşleme & Depolama ---
+polars
+duckdb
+diskcache
+lancedb
+pyarrow
+networkx
+pydantic
+
+# --- ML / AI ---
+torch
+xgboost
+lightgbm
+scikit-learn
+mapie
+shap
+faiss-cpu
+stable-baselines3
+gymnasium
+
+# --- Finans & Risk ---
+arch
+vectorbt
+PyPortfolioOpt
+lifelines
+simple-pid
+filterpy
+
+# --- Bayesian & İstatistik ---
+pymc
+arviz
+numpyro
+statsmodels
+copulas
+dowhy
+
+# --- Oyun Teorisi & JIT ---
+nashpy
+numba
+
+# --- Microservices & Simulation ---
+grpcio
+grpcio-tools
+protobuf
+msgpack
+pyextremes
+mesa
+
+# --- Dağıtık Hesaplama & Fraktal ---
+ray[default]
+hurst
+causalimpact
+
+# --- Optimal Transport & Transfer Learning ---
+pot
+selenium-stealth
+
+# --- Sürü Zekası & Kuantum Optimizasyon ---
+flwr
+simanneal
+dhg
+
+# --- Otopoyetik & Diferansiyel Geometri ---
+GraphRicciCurvature
+ollama
+
+# --- Stokastik Analiz & Gizli Rejimler ---
+hmmlearn
+opentelemetry-api
+opentelemetry-sdk
+
+# --- Tekillik & Piyasa Mikroyapısı ---
+tenseal
+pennylane
+tick
+
+# --- Kaos Teorisi & Topoloji ---
+nolds
+ripser
+maturin
+
+# --- AutoML & Sentetik Veri ---
+tpot
+sdv
+scikit-fuzzy
+
+# --- Epistemik Belirsizlik & Topoloji ---
+kmapper
+
+# --- Active Inference & Multifractal ---
+pymdp
+MFDFA
+
+# --- Symbolic Discovery & Wavelet ---
+pysr
+PyWavelets
+graphviz
+
+# --- Volatility Clustering & Stream Processing ---
+bytewax
+
+# --- Causal Discovery & Particle Filter ---
+causal-learn
+
+# --- Zaman Serisi & Sinyal ---
+iisignature
+prophet
+giotto-tda
+
+# --- Graph Database ---
+neo4j
+
+# --- Ops / Orkestrasyon ---
+prefect
+apscheduler
+
+# --- Logging & CLI ---
+loguru
+rich
+textual
+typer
+click
+
+# --- Web Scraping & Async ---
+playwright
+playwright-stealth
+httpx
+aiohttp
+beautifulsoup4
+lxml
+fake-useragent
+undetected-chromedriver
+
+# --- NLP & Duygu Analizi ---
+transformers
+tokenizers
+sentencepiece
+vaderSentiment
+textblob
+
+# --- Ses ---
+edge-tts
+openai-whisper
+
+# --- Görüntü ---
+opencv-python-headless
+ultralytics
+
+# --- Telegram ---
+python-telegram-bot
+
+# --- Prometheus Metrikleri ---
+prometheus-client
+psutil
+
+# --- Dashboard (Web UI) ---
+streamlit
+plotly
+fastapi
+uvicorn
+
+# --- Raporlama & Görselleştirme ---
+fpdf2
+matplotlib
+seaborn
+imageio
+
+# --- LLM / RAG ---
+langchain
+google-generativeai
+
+# --- Veri Kaynakları (Ücretsiz) ---
+understat
+soccerdata
+
+# --- Environment ---
+python-dotenv
+
+# --- Geliştirme ---
+hypothesis
+pytest
+ruff

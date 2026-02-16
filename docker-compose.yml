@@ -1,0 +1,191 @@
+###############################################################
+#  Quant Betting Bot – Docker Compose Orchestration
+#  Tek komutla tüm sistem ayağa kalkar:
+#    docker-compose up -d
+#
+#  Servisler:
+#    1. bahis-bot     → Python ana bot + tüm modüller
+#    2. selenium-hub  → İzole tarayıcı (Chrome node)
+#    3. database      → DuckDB (volume mount) + PostgreSQL opsiyonu
+#    4. neo4j         → Graph Database (ilişki ağı)
+#    5. prometheus    → Metrik izleme (opsiyonel)
+###############################################################
+
+services:
+  # ═══════════════════════════════════════════
+  #  ANA BOT – bahis.py
+  # ═══════════════════════════════════════════
+  bahis-bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bahis-bot
+    restart: unless-stopped
+    environment:
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
+      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID:-}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - HF_TOKEN=${HF_TOKEN:-}
+      - SELENIUM_HUB_URL=http://selenium-hub:4444/wd/hub
+      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_USER=neo4j
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD:-bahis_graph_2026}
+      - DB_PATH=/app/data/quant_bot.duckdb
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - bot-data:/app/data
+      - bot-logs:/app/logs
+      - bot-models:/app/models
+      - bot-reports:/app/reports
+    ports:
+      - "9090:9090"     # Prometheus metrikleri
+      - "8501:8501"     # Streamlit dashboard (opsiyonel)
+      - "8080:8080"     # Telegram Web App (Mini App)
+    depends_on:
+      selenium-hub:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
+    networks:
+      - botnet
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+          cpus: "2.0"
+
+  # ═══════════════════════════════════════════
+  #  SELENIUM HUB – İzole tarayıcı ortamı
+  # ═══════════════════════════════════════════
+  selenium-hub:
+    image: selenium/standalone-chrome:latest
+    container_name: selenium-hub
+    restart: unless-stopped
+    environment:
+      - SE_NODE_MAX_SESSIONS=3
+      - SE_SESSION_REQUEST_TIMEOUT=300
+      - SE_NODE_SESSION_TIMEOUT=300
+      - START_XVFB=false
+    ports:
+      - "4444:4444"     # Selenium Grid
+      - "7900:7900"     # VNC izleme (noVNC)
+    volumes:
+      - /dev/shm:/dev/shm
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4444/wd/hub/status"]
+      interval: 15s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - botnet
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: "1.0"
+
+  # ═══════════════════════════════════════════
+  #  NEO4J – Graph Database (İlişki Ağı)
+  # ═══════════════════════════════════════════
+  neo4j:
+    image: neo4j:5-community
+    container_name: bahis-neo4j
+    restart: unless-stopped
+    environment:
+      - NEO4J_AUTH=neo4j/${NEO4J_PASSWORD:-bahis_graph_2026}
+      - NEO4J_PLUGINS=["apoc"]
+      - NEO4J_dbms_memory_heap_max__size=512M
+      - NEO4J_dbms_memory_pagecache_size=256M
+    volumes:
+      - neo4j-data:/data
+      - neo4j-logs:/logs
+    ports:
+      - "7474:7474"     # Neo4j Browser (Web UI)
+      - "7687:7687"     # Bolt protocol
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:7474 || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    networks:
+      - botnet
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: "1.0"
+
+  # ═══════════════════════════════════════════
+  #  DATABASE – PostgreSQL (opsiyonel, DuckDB varsayılan)
+  # ═══════════════════════════════════════════
+  database:
+    image: postgres:16-alpine
+    container_name: bahis-db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=bahis_bot
+      - POSTGRES_USER=quant
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-quant_secret_2026}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U quant -d bahis_bot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - botnet
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  # ═══════════════════════════════════════════
+  #  PROMETHEUS – Metrik izleme (opsiyonel)
+  # ═══════════════════════════════════════════
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: bahis-prometheus
+    restart: unless-stopped
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "9091:9090"
+    networks:
+      - botnet
+    profiles:
+      - monitoring
+
+# ═══════════════════════════════════════════
+#  VOLUMES
+# ═══════════════════════════════════════════
+volumes:
+  bot-data:
+    name: bahis-bot-data
+  bot-logs:
+    name: bahis-bot-logs
+  bot-models:
+    name: bahis-bot-models
+  bot-reports:
+    name: bahis-bot-reports
+  db-data:
+    name: bahis-db-data
+  neo4j-data:
+    name: bahis-neo4j-data
+  neo4j-logs:
+    name: bahis-neo4j-logs
+  prometheus-data:
+    name: bahis-prometheus-data
+
+# ═══════════════════════════════════════════
+#  NETWORK
+# ═══════════════════════════════════════════
+networks:
+  botnet:
+    name: bahis-network
+    driver: bridge

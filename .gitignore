@@ -1,0 +1,196 @@
+# ╔══════════════════════════════════════════════════════════════╗
+# ║  QUANT BETTING BOT – .gitignore                             ║
+# ║  Amaç: Context window'u minimize et, API kota tüketimini    ║
+# ║  düşür. Sadece KOD ve YAPILANDIRMA takip edilir.             ║
+# ╚══════════════════════════════════════════════════════════════╝
+
+
+# ═══════════════════════════════════════════════
+#  1) VERİ YIĞINLARI — Canlı bot sürekli üretiyor
+# ═══════════════════════════════════════════════
+data/
+datasets/
+*.csv
+*.tsv
+*.json
+!.env.example
+!docker-compose.yml
+!prometheus.yml
+!package.json
+*.jsonl
+*.parquet
+*.feather
+*.arrow
+*.xlsx
+*.xls
+*.sqlite
+*.sqlite3
+*.db
+*.duckdb
+*.lance
+
+
+# ═══════════════════════════════════════════════
+#  2) MODEL AĞIRLIKLARI — Binary, büyük, değişken
+# ═══════════════════════════════════════════════
+*.h5
+*.hdf5
+*.pt
+*.pth
+*.pkl
+*.pickle
+*.joblib
+*.onnx
+*.safetensors
+*.bin
+*.npy
+*.npz
+*.msgpack
+*.pb
+*.tflite
+*.ckpt
+*.ckpt.*
+saved_models/
+checkpoints/
+mlruns/
+
+
+# ═══════════════════════════════════════════════
+#  3) SİSTEM & ORTAM
+# ═══════════════════════════════════════════════
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+*.egg
+dist/
+build/
+*.whl
+.eggs/
+pip-log.txt
+pip-wheel-metadata/
+
+# Virtual Environments
+venv/
+.venv/
+env/
+.env/
+ENV/
+.conda/
+
+# IDE & Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.settings/
+.classpath
+*.code-workspace
+
+# Git internals (nested)
+.git/
+
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+*.lnk
+
+
+# ═══════════════════════════════════════════════
+#  4) LOGLAR — Güncel okunabilir, ARŞİV engelli
+# ═══════════════════════════════════════════════
+# Arşivlenmiş (eski) loglar — context'i şişirir
+logs/archive/
+*.log.gz
+*.log.bz2
+*.log.xz
+*.log.zip
+*.log.zst
+
+# AMA güncel loglar okunabilir kalacak:
+#   logs/bot_2026-02-16.log  → OKUNUR (güncel)
+#   logs/error.log           → OKUNUR (güncel)
+#   logs/archive/*           → ENGEL (eski)
+
+
+# ═══════════════════════════════════════════════
+#  5) MEDYA & GÖRSELLER
+# ═══════════════════════════════════════════════
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.bmp
+*.ico
+*.svg
+*.webp
+*.mp4
+*.mp3
+*.wav
+*.ogg
+*.avi
+*.mov
+*.tiff
+
+# Output klasörü (podcast ses dosyaları vb.)
+output/
+
+
+# ═══════════════════════════════════════════════
+#  6) RAPORLAR & GEÇİCİ DOSYALAR
+# ═══════════════════════════════════════════════
+reports/
+*.pdf
+*.html
+!docs/*.html
+
+# Traces & profiling
+*.trace
+*.prof
+*.lprof
+data/traces.jsonl
+
+# Temp
+*.tmp
+*.temp
+*.bak
+*.orig
+*.cache
+.cache/
+
+
+# ═══════════════════════════════════════════════
+#  7) GÜVENLİK — Asla commit'lenmemeli
+# ═══════════════════════════════════════════════
+.env
+*.pem
+*.key
+*.crt
+*.p12
+credentials.json
+token.json
+secrets/
+
+
+# ═══════════════════════════════════════════════
+#  8) DOCKER & DEVOPS (opsiyonel build artifact)
+# ═══════════════════════════════════════════════
+*.tar
+*.tar.gz
+
+
+# ═══════════════════════════════════════════════
+#  9) RUST ENGINE BUILD ARTIFACTS
+# ═══════════════════════════════════════════════
+rust_engine/target/
+*.so
+*.dylib
+*.dll
