@@ -16,6 +16,12 @@ from pathlib import Path
 import typer
 from loguru import logger
 from rich.console import Console
+import numpy as _np
+import polars as pl
+from src.quant.hypergraph_unit import TacticalUnit
+from src.quant.fluid_pitch import PlayerState
+from src.quant.particle_strength_tracker import MatchObservation
+from src.core.stream_processor import StreamEvent
 
 # ── proje kökünü PYTHONPATH'e ekle ──
 ROOT = Path(__file__).resolve().parent
@@ -766,7 +772,7 @@ async def _boot(mode: str, headless: bool, telegram: bool, dashboard: bool):
             automl=automl, synth_trainer=synth_trainer, fuzzy=fuzzy,
             uncertainty_sep=uncertainty_sep, topo_mapper=topo_mapper,
             graph_rag=graph_rag,
-            prob_engine=prob_engine, active_inf=active_inf,
+            active_inf=active_inf,
             mf_analyzer=mf_analyzer,
             symbolic=symbolic, wavelet=wavelet, flow_gen=flow_gen,
             vol_analyzer=vol_analyzer, stream_proc=stream_proc,
@@ -914,7 +920,6 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                 logger.warning("Tüm maç verisi doğrulamadan reddedildi.")
                 await asyncio.sleep(30)
                 continue
-            import polars as pl
             matches = pl.DataFrame(validated_rows)
             logger.debug(f"Doğrulama: {len(validated_rows)} maç geçerli.")
 
@@ -932,7 +937,6 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
             try:
                 feature_dicts = features.to_dicts()
                 feature_dicts = [npxg_filter.filter_features(f) for f in feature_dicts]
-                import polars as pl
                 features = pl.DataFrame(feature_dicts)
             except Exception as e:
                 logger.debug(f"[Guardian] npxg_filter: {type(e).__name__}: {e}")
@@ -1306,8 +1310,6 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
             # ── 5b-10) Hypergraph – taktiksel birim analizi ──
             for row in matches.iter_rows(named=True):
                 try:
-                    from src.quant.hypergraph_unit import TacticalUnit
-                    import numpy as _np
                     home = row.get("home_team", "")
                     if home and hasattr(db, "get_team_lineup"):
                         lineup = db.get_team_lineup(home)
@@ -1347,7 +1349,6 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
             for row in matches.iter_rows(named=True):
                 try:
                     if hasattr(db, "get_player_positions"):
-                        from src.quant.fluid_pitch import PlayerState
                         positions = db.get_player_positions(
                             row.get("match_id", ""),
                         )
@@ -1383,7 +1384,6 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                 try:
                     home = row.get("home_team", "")
                     if home and hasattr(db, "get_match_stats_timeline"):
-                        import numpy as _np
                         timeline = db.get_match_stats_timeline(
                             row.get("match_id", ""), team=home,
                         )
@@ -1444,7 +1444,6 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                     if hasattr(db, "get_match_features"):
                         feat = db.get_match_features(row.get("match_id", ""))
                         if feat and len(feat) >= 4:
-                            import numpy as _np
                             q_pred = quantum_brain.predict_match(
                                 _np.array(feat, dtype=_np.float64),
                                 match_id=row.get("match_id", ""),
@@ -1500,7 +1499,6 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                             home, last_n=50,
                         )
                         if durations and len(durations) >= 5:
-                            import numpy as _np
                             d_arr = _np.array(
                                 [x["duration"] for x in durations],
                                 dtype=_np.float64,
@@ -1606,7 +1604,6 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                 try:
                     home = row.get("home_team", "")
                     if hasattr(db, "get_player_positions"):
-                        import numpy as _np
                         positions = db.get_player_positions(
                             row.get("match_id", ""), team=home,
                         )
@@ -1667,7 +1664,6 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
             # ── 5b-21) AutoML – otonom model arama (periyodik) ──
             if cycle % 50 == 0 and hasattr(db, "get_training_data"):
                 try:
-                    import numpy as _np
                     train_data = db.get_training_data(limit=5000)
                     if train_data and len(train_data) > 100:
                         X_train = _np.array(
@@ -1704,7 +1700,6 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                     ]
                     features = [float(row.get(k, 0.0)) for k in feat_keys]
                     if any(f != 0 for f in features):
-                        import numpy as _np
                         unc_report = uncertainty_sep.analyze(
                             _np.array(features),
                             match_id=row.get("match_id", ""),
@@ -1737,7 +1732,6 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                     ]
                     features = [float(row.get(k, 0.0)) for k in feat_keys]
                     if any(f != 0 for f in features):
-                        import numpy as _np
                         topo_rep = topo_mapper.analyze_match(
                             _np.array(features),
                             match_id=row.get("match_id", ""),
@@ -1805,7 +1799,6 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                 try:
                     odds_hist = row.get("odds_history", [])
                     if isinstance(odds_hist, (list, tuple)) and len(odds_hist) >= 50:
-                        import numpy as _np
                         mf_report = mf_analyzer.analyze(
                             _np.array(odds_hist, dtype=_np.float64),
                             match_id=row.get("match_id", ""),
@@ -1862,7 +1855,6 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                 try:
                     odds_hist = row.get("odds_history", [])
                     if isinstance(odds_hist, (list, tuple)) and len(odds_hist) >= 20:
-                        import numpy as _np
                         wav_report = wavelet.analyze(
                             _np.array(odds_hist, dtype=_np.float64),
                             match_id=row.get("match_id", ""),
@@ -1883,7 +1875,6 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
             # ── 5b-30) Symbolic Discovery – periyodik formül keşfi ──
             if cycle % 100 == 0 and hasattr(db, "get_training_data"):
                 try:
-                    import numpy as _np
                     train_data = db.get_training_data(limit=3000)
                     if train_data and len(train_data) > 50:
                         X_sym = _np.array(
@@ -1914,7 +1905,6 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                 try:
                     odds_hist = row.get("odds_history", [])
                     if isinstance(odds_hist, (list, tuple)) and len(odds_hist) >= 20:
-                        import numpy as _np
                         odds_arr = _np.array(odds_hist, dtype=_np.float64)
                         # Log-return hesapla
                         if len(odds_arr) > 1:
@@ -1946,7 +1936,6 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
             # ── 5b-33) Stream Processing – canlı olay akışı güncelleme ──
             try:
                 for row in matches.iter_rows(named=True):
-                    from src.core.stream_processor import StreamEvent
                     odds_val = row.get("home_odds", 0)
                     if odds_val:
                         await stream_proc.emit(StreamEvent(
@@ -1977,7 +1966,6 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                 try:
                     live_data = row.get("live_stats", {})
                     if isinstance(live_data, dict) and live_data.get("minute", 0) > 0:
-                        from src.quant.particle_strength_tracker import MatchObservation
                         obs = MatchObservation(
                             minute=int(live_data.get("minute", 0)),
                             home_shots=int(live_data.get("home_shots", 0)),
@@ -1988,7 +1976,7 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                             away_dangerous_attacks=int(live_data.get("away_attacks", 0)),
                         )
                         # Prior'ları modellerden al
-                        home_prior = result.get("home_prob", 0.5) if isinstance(result, dict) else 0.5
+                        home_prior = row.get("prob_home", 0.5)
                         if not particle_tracker._initialized:
                             particle_tracker.initialize(
                                 home_prior=home_prior,
@@ -2012,7 +2000,6 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
             # ── 5b-35) Causal Discovery – nedensellik DAG güncelleme ──
             if cycle % 25 == 0 and hasattr(db, "get_training_data"):
                 try:
-                    import numpy as _np
                     train_data = db.get_training_data(limit=2000)
                     if train_data and len(train_data) > 50:
                         X_causal = _np.array(
@@ -2045,7 +2032,6 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                 if hasattr(db, "get_all_features"):
                     train_features = db.get_all_features(limit=5000)
                     if train_features and len(train_features) > 50:
-                        import numpy as _np
                         X_ref = _np.array(train_features, dtype=_np.float64)
                         if X_ref.ndim == 2 and X_ref.shape[1] >= 5:
                             transport_metric.set_reference(X_ref)
@@ -2061,7 +2047,6 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                 if hasattr(db, "get_live_features"):
                     live_features = db.get_live_features(limit=200)
                     if live_features and len(live_features) > 10:
-                        import numpy as _np
                         X_live = _np.array(live_features, dtype=_np.float64)
                         drift_report = transport_metric.check_drift(X_live, name="cycle_check")
                         if drift_report.kill_betting:
@@ -2206,7 +2191,6 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                                 hist = db.get_odds_history(mid, market="home")
                                 current = [bet.get("odds", 2.0)]
                                 if hist and len(hist) >= 10:
-                                    import numpy as _np
                                     fr_report = fisher_geo.compare_distributions(
                                         _np.array(hist), _np.array(current),
                                         match_id=mid,
