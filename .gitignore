@@ -194,3 +194,10 @@ rust_engine/target/
 *.so
 *.dylib
 *.dll
+
+# --- Codex sync guard ---
+reports/archive/
+logs/archive/
+*.log.gz
+*.log.zip
+
