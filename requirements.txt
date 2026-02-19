@@ -70,7 +70,8 @@ selenium-stealth
 # --- Sürü Zekası & Kuantum Optimizasyon ---
 flwr
 simanneal
-dhg
+# dhg: sklearn bağımlılığı deprecated – hypergraph_unit.py scipy fallback kullanıyor
+# Gerekirse: SKLEARN_ALLOW_DEPRECATED_SKLEARN_PACKAGE_INSTALL=True pip install dhg
 
 # --- Otopoyetik & Diferansiyel Geometri ---
 GraphRicciCurvature
@@ -179,7 +180,8 @@ imageio
 
 # --- LLM / RAG ---
 langchain
-google-generativeai
+langchain-community
+google-genai
 
 # --- Veri Kaynakları (Ücretsiz) ---
 understat

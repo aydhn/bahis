@@ -1,0 +1,1189 @@
+C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\src\memory\graph_rag.py:74: FutureWarning: 
+
+All support for the `google.generativeai` package has ended. It will no longer be receiving 
+updates or bug fixes. Please switch to the `google.genai` package as soon as possible.
+See README for more details:
+
+https://github.com/google-gemini/deprecated-generative-ai-python/blob/main/README.md
+
+  import google.generativeai as genai
+WARNING (pytensor.configdefaults): g++ not available, if using conda: `conda install gxx`
+WARNING (pytensor.configdefaults): g++ not detected!  PyTensor will be unable to compile C-implementations and will default to Python. Performance may be severely degraded. To remove this warning, set PyTensor flags cxx to an empty string.
+[32m22:10:43[0m | [33m[1mWARNING [0m | [36msrc.quant.conformal_quantile_bridge[0m – mapie yüklü değil – CQR basit modda çalışacak.
+[32m22:10:43[0m | [33m[1mWARNING [0m | [36msrc.quant.kan_interpreter[0m – pykan yüklü değil – KAN basit modda çalışacak.
+[32m22:10:43[0m | [33m[1mWARNING [0m | [36msrc.quant.gcn_pitch_graph[0m – torch_geometric yüklü değil – GCN basit modda.
+[32m22:10:46[0m | [1mINFO    [0m | [36msrc.quant.uncertainty_quantifier[0m – mapie yüklü değil – heuristic uncertainty aktif.
+[32m22:10:49[0m | [1mINFO    [0m | [36msrc.quant.digital_twin_sim[0m – mesa yüklü değil – pure Python simulation fallback.
+C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\nolds\datasets.py:9: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  import pkg_resources
+C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\pkg_resources\__init__.py:3148: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('google')`.
+Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+  declare_namespace(pkg)
+C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\rdt\transformers\utils.py:18: DeprecationWarning: module 'sre_parse' is deprecated
+  import sre_parse  # isort:skip
+[32m22:10:56[0m | [1mINFO    [0m | [36msrc.core.jax_accelerator[0m – JAX aktif – backend: cpu
+[32m22:10:58[0m | [1mINFO    [0m | [36m__main__[0m – Layer 0 – Infrastructure başlatılıyor…
+[32m22:10:58[0m | [1mINFO    [0m | [36msrc.utils.log_rotator[0m – [LogRotator] Rotasyon tamamlandı: 0 arşivlendi, 5 korundu
+[32m22:10:58[0m | [1mINFO    [0m | [36msrc.core.exception_guardian[0m – [Guardian] Başlatıldı: budget=50/h, circuit_thresh=15
+[32m22:10:58[0m | [1mINFO    [0m | [36msrc.core.exception_guardian[0m – [Guardian] Global exception hook kuruldu
+[32m22:10:58[0m | [1mINFO    [0m | [36msrc.core.regime_kelly[0m – [RegimeKelly] Başlatıldı: bankroll=10000, fraction=0.25, min_edge=3%
+[32m22:10:58[0m | [1mINFO    [0m | [36msrc.core.strategy_evolver[0m – [Evolver] Başlatıldı: pop=50, elitism=5, tournament=3
+[32m22:10:58[0m | [32m[1mSUCCESS [0m | [36m__main__[0m – Layer 0 hazır ✓
+[32m22:10:58[0m | [1mINFO    [0m | [36m__main__[0m – Layer 2 – Memory & Context başlatılıyor…
+C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\src\memory\lance_memory.py:30: DeprecationWarning: table_names() is deprecated, use list_tables() instead
+  if "embeddings" not in self._db.table_names():
+C:\Users\immor\AppData\Local\Programs\Python\Python311\Lib\asyncio\events.py:84: DeprecationWarning: table_names() is deprecated, use list_tables() instead
+  self._context.run(self._callback, *self._args)
+[32m22:11:04[0m | [32m[1mSUCCESS [0m | [36m__main__[0m – Layer 2 hazır ✓
+[32m22:11:04[0m | [1mINFO    [0m | [36m__main__[0m – Layer 1 – Sensors & Ingestion başlatılıyor…
+[32m22:11:04[0m | [32m[1mSUCCESS [0m | [36m__main__[0m – Layer 1 hazır ✓
+[32m22:11:04[0m | [1mINFO    [0m | [36m__main__[0m – Layer 3 – Quantitative Brain başlatılıyor…
+[32m22:11:04[0m | [33m[1mWARNING [0m | [36msrc.quant.lstm_trend[0m – [LSTM] Model yüklenemedi: [Errno 2] No such file or directory: 'models/lstm_trend.pt'
+[32m22:11:04[0m | [1mINFO    [0m | [36msrc.ingestion.vision_live[0m – [Vision] YOLOv8n yüklendi.
+[32m22:11:04[0m | [32m[1mSUCCESS [0m | [36m__main__[0m – Layer 3 hazır ✓
+[32m22:11:04[0m | [1mINFO    [0m | [36m__main__[0m – Layer 6 – Graph Intelligence başlatılıyor…
+[32m22:11:08[0m | [33m[1mWARNING [0m | [36msrc.memory.neo4j_graph[0m – [Neo4j] Bağlantı hatası: Couldn't connect to localhost:7687 (resolved to ('[::1]:7687', '127.0.0.1:7687')):
+Failed to establish connection to ResolvedIPv6Address(('::1', 7687, 0, 0)) (reason [WinError 10061] Hedef makine etkin olarak reddettiğinden bağlantı kurulamadı)
+Failed to establish connection to ResolvedIPv4Address(('127.0.0.1', 7687)) (reason [WinError 10061] Hedef makine etkin olarak reddettiğinden bağlantı kurulamadı) – in-memory mod.
+[32m22:11:08[0m | [1mINFO    [0m | [36msrc.memory.neo4j_graph[0m – [Neo4j] Fallback: networkx in-memory graph aktif.
+[32m22:11:12[0m | [32m[1mSUCCESS [0m | [36m__main__[0m – Layer 6 hazır ✓
+[32m22:11:12[0m | [1mINFO    [0m | [36m__main__[0m – Layer 4 – Risk & Execution başlatılıyor…
+[32m22:11:12[0m | [1mINFO    [0m | [36msrc.core.jit_accelerator[0m – [JIT] Warmup tamamlandı (140ms)
+2026-02-16 22:11:16,157	INFO worker.py:2007 -- Started a local Ray instance.
+C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\ray\_private\worker.py:2046: FutureWarning: Tip: In future versions of Ray, Ray will no longer override accelerator visible devices env var if num_gpus=0 or num_gpus=None (default). To enable this behavior and turn off this error message, set RAY_ACCEL_ENV_VAR_OVERRIDE_ON_ZERO=0
+  warnings.warn(
+[32m22:11:20[0m | [1mINFO    [0m | [36msrc.core.distributed_core[0m – [Dist] Ray başlatıldı: CPU=12.0, GPU=0, Memory=3.2GB
+[32m22:11:21[0m | [32m[1mSUCCESS [0m | [36m__main__[0m – Layer 4 hazır ✓
+[32m22:11:21[0m | [1mINFO    [0m | [36m__main__[0m – Layer 5 – Ops & Interface başlatılıyor…
+[32m22:11:21[0m | [1mINFO    [0m | [36msrc.core.workflow_orchestrator[0m – [Orchestrator] Başlatıldı: retries=3, backoff=2.0x, prefect=✓
+[32m22:11:21[0m | [1mINFO    [0m | [36m__main__[0m – [Orchestrator] 85 modül kaydedildi.
+[32m22:11:21[0m | [32m[1mSUCCESS [0m | [36m__main__[0m – Layer 5 hazır ✓
+[32m22:11:21[0m | [1mINFO    [0m | [36msrc.memory.dvc_manager[0m – Snapshot oluşturuldu: boot (16 dosya)
+[32m22:11:21[0m | [1mINFO    [0m | [36msrc.ui.telegram_mini_app[0m – TelegramNotifier hazır.
+[32m22:11:21[0m | [1mINFO    [0m | [36msrc.core.job_scheduler[0m – [Scheduler] Cron eklendi: fikstur_cek @ 11:0
+[32m22:11:21[0m | [1mINFO    [0m | [36msrc.core.job_scheduler[0m – [Scheduler] Interval eklendi: oran_kontrol her 600s
+[32m22:11:21[0m | [1mINFO    [0m | [36msrc.core.job_scheduler[0m – [Scheduler] Cron eklendi: gunluk_rapor @ 23:30
+[32m22:11:21[0m | [1mINFO    [0m | [36msrc.core.job_scheduler[0m – [Scheduler] Cron eklendi: lstm_train @ 3:0
+[32m22:11:21[0m | [1mINFO    [0m | [36msrc.core.job_scheduler[0m – [Scheduler] Cron eklendi: veri_topla @ 10:0
+[32m22:11:21[0m | [1mINFO    [0m | [36msrc.core.job_scheduler[0m – [Scheduler] Cron eklendi: prophet_cache_temizle @ 6:0
+[32m22:11:21[0m | [1mINFO    [0m | [36msrc.core.job_scheduler[0m – [Scheduler] Cron eklendi: rl_train @ 4:0
+[32m22:11:21[0m | [1mINFO    [0m | [36msrc.core.job_scheduler[0m – [Scheduler] Cron eklendi: gunluk_brifing @ 9:0
+[32m22:11:21[0m | [1mINFO    [0m | [36msrc.core.job_scheduler[0m – [Scheduler] Cron eklendi: log_rotate @ 2:0
+[32m22:11:21[0m | [1mINFO    [0m | [36msrc.ingestion.metric_exporter[0m – Prometheus metrikleri → http://localhost:9090/metrics
+[32m22:11:21[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – Canlı veri fabrikası başlatıldı.
+[32m22:11:22[0m | [1mINFO    [0m | [36msrc.ingestion.api_hijacker[0m – [Hijack] Ağ dinleyici başlatılıyor…
+[32m22:11:22[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – Pre-match veri fabrikası başlatıldı.
+[32m22:11:22[0m | [1mINFO    [0m | [36msrc.ingestion.scraper_agent[0m – ScraperAgent – tüm ajanlar başlatılıyor…
+[32m22:11:22[0m | [1mINFO    [0m | [36msrc.ingestion.lineup_monitor[0m – [Lineup] Kadro izleme başladı.
+[32m22:11:22[0m | [1mINFO    [0m | [36msrc.ui.webapp_server[0m – [WebApp] TWA sunucu başlatıldı → http://0.0.0.0:8080
+C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\websockets\legacy\__init__.py:6: DeprecationWarning: websockets.legacy is deprecated; see https://websockets.readthedocs.io/en/stable/howto/upgrade.html for upgrade instructions
+  warnings.warn(  # deprecated in 14.0 - 2024-11-09
+C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\uvicorn\protocols\websockets\websockets_impl.py:17: DeprecationWarning: websockets.server.WebSocketServerProtocol is deprecated
+  from websockets.server import WebSocketServerProtocol
+[32m22:11:22[0m | [32m[1mSUCCESS [0m | [36msrc.core.job_scheduler[0m – [Scheduler] Başlatıldı – 9 görev.
+[32m22:11:22[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #1 ═══
+[32m22:11:22[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:11:22[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:11:23[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – Playwright tarayıcısı başlatıldı.
+[32m22:11:23[0m | [33m[1mWARNING [0m | [36msrc.ingestion.async_data_factory[0m – Football-Data hatası: Client error '404 ' for url 'https://api.football-data.org/v4/competitions/TR1/matches?status=SCHEDULED'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+[32m22:11:25[0m | [1mINFO    [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] 0 maç çekildi.
+[32m22:11:25[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Sofascore] API yanıtı: 403
+[32m22:11:26[0m | [1mINFO    [0m | [36msrc.ingestion.api_hijacker[0m – [Hijack] 🆕 Endpoint keşfedildi: https://www.sofascore.com/api/v1/sport/football/categories/all [other] (sofascore)
+[32m22:11:26[0m | [1mINFO    [0m | [36msrc.ingestion.api_hijacker[0m – [Hijack] 🆕 Endpoint keşfedildi: https://www.sofascore.com/api/v1/sport/football/trending-top-players [other] (sofascore)
+[32m22:11:26[0m | [1mINFO    [0m | [36msrc.ingestion.api_hijacker[0m – [Hijack] 🆕 Endpoint keşfedildi: https://www.sofascore.com/api/v1/odds/providers/TR/web [other] (sofascore)
+[32m22:11:27[0m | [1mINFO    [0m | [36msrc.ingestion.api_hijacker[0m – [Hijack] 🆕 Endpoint keşfedildi: https://www.sofascore.com/api/v1/sport/football/scheduled-events/*-02-16 [match_list] (sofascore)
+[32m22:11:27[0m | [1mINFO    [0m | [36msrc.ingestion.api_hijacker[0m – [Hijack] 🆕 Endpoint keşfedildi: https://www.sofascore.com/api/v1/event/newly-added-events [match_list] (sofascore)
+[32m22:11:27[0m | [1mINFO    [0m | [36msrc.ingestion.api_hijacker[0m – [Hijack] 🆕 Endpoint keşfedildi: https://www.sofascore.com/api/v1/odds/providers/TR/web-odds [other] (sofascore)
+[32m22:11:27[0m | [1mINFO    [0m | [36msrc.ingestion.api_hijacker[0m – [Hijack] 🆕 Endpoint keşfedildi: https://www.sofascore.com/api/v1/sport/football/odds/*/*-02-16 [odds] (sofascore)
+[32m22:11:28[0m | [1mINFO    [0m | [36msrc.ingestion.api_hijacker[0m – [Hijack] 🆕 Endpoint keşfedildi: https://www.sofascore.com/api/v1/odds/*/featured-events-by-popularity/football [other] (sofascore)
+[32m22:11:28[0m | [1mINFO    [0m | [36msrc.ingestion.api_hijacker[0m – [Hijack] 🆕 Endpoint keşfedildi: https://www.sofascore.com/api/v1/odds/*/featured-events/football [other] (sofascore)
+[32m22:11:28[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] Fetch hatası (https://www.mackolik.com/iddaa/tum-maclar): Client error '404 Not Found' for url 'https://www.mackolik.com/iddaa/tum-maclar'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+[32m22:11:28[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m22:11:29[0m | [1mINFO    [0m | [36msrc.ingestion.api_hijacker[0m – [Hijack] 🆕 Endpoint keşfedildi: https://www.sofascore.com/api/v1/odds/providers/TR/web-featured [other] (sofascore)
+[32m22:11:29[0m | [1mINFO    [0m | [36msrc.ingestion.api_hijacker[0m – [Hijack] 🆕 Endpoint keşfedildi: https://www.sofascore.com/api/v1/event/*/votes [other] (sofascore)
+[32m22:11:29[0m | [1mINFO    [0m | [36msrc.ingestion.api_hijacker[0m – [Hijack] 🆕 Endpoint keşfedildi: https://www.sofascore.com/api/v1/event/*/odds/*/featured [other] (sofascore)
+[32m22:11:29[0m | [1mINFO    [0m | [36msrc.ingestion.api_hijacker[0m – [Hijack] 🆕 Endpoint keşfedildi: https://www.sofascore.com/api/v1/event/* [other] (sofascore)
+[32m22:11:29[0m | [1mINFO    [0m | [36msrc.ingestion.api_hijacker[0m – [Hijack] 🆕 Endpoint keşfedildi: https://www.sofascore.com/api/v1/event/*/odds/*/all [other] (sofascore)
+[2026-02-16 22:11:51,885 E 52408 52620] core_worker_process.cc:842: Failed to establish connection to the metrics exporter agent. Metrics will not be exported. Exporter agent status: RpcError: Running out of retries to initialize the metrics agent. rpc_code: 14
+[32m22:11:52[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #2 ═══
+[32m22:11:52[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:11:52[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:11:52[0m | [1mINFO    [0m | [36msrc.ingestion.api_hijacker[0m – [Hijack] ✓ Dinleniyor: sofascore (https://www.sofascore.com/football)
+[32m22:12:00[0m | [1mINFO    [0m | [36msrc.ingestion.api_hijacker[0m – [Hijack] ✓ Dinleniyor: flashscore (https://www.flashscore.com.tr/)
+[32m22:12:01[0m | [1mINFO    [0m | [36msrc.ingestion.api_hijacker[0m – [Hijack] 🆕 Endpoint keşfedildi: https://www.mackolik.com/perform/p0/ajax/components/competition/livescores/json [other] (mackolik)
+[32m22:12:22[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #3 ═══
+[32m22:12:22[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:12:22[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:12:30[0m | [33m[1mWARNING [0m | [36msrc.ingestion.api_hijacker[0m – [Hijack] ✗ mackolik bağlanamadı: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://www.mackolik.com/canli-sonuclar", waiting until "networkidle"
+
+[32m22:12:33[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m22:12:52[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #4 ═══
+[32m22:12:52[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:12:52[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:13:01[0m | [1mINFO    [0m | [36msrc.ingestion.api_hijacker[0m – [Hijack] 🆕 Endpoint keşfedildi: https://www.mackolik.com/perform/p0/ajax/components/competition/livescores/json-update [other] (mackolik)
+[32m22:13:22[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #5 ═══
+[32m22:13:22[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:13:22[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:13:37[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m22:13:52[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #6 ═══
+[32m22:13:52[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:13:52[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:14:22[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #7 ═══
+[32m22:14:22[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:14:22[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:14:30[0m | [1mINFO    [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] 0 maç çekildi.
+[32m22:14:33[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] Fetch hatası (https://www.mackolik.com/iddaa/tum-maclar): Server error '502 Bad Gateway' for url 'https://www.mackolik.com/iddaa/tum-maclar'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/502
+[32m22:14:34[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Sofascore] API yanıtı: 403
+[32m22:14:43[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m22:14:52[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #8 ═══
+[32m22:14:52[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:14:52[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:15:22[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #9 ═══
+[32m22:15:22[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:15:22[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:15:47[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m22:15:52[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #10 ═══
+[32m22:15:52[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:15:52[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:16:22[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #11 ═══
+[32m22:16:22[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:16:22[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:16:23[0m | [33m[1mWARNING [0m | [36msrc.ingestion.async_data_factory[0m – Football-Data hatası: Client error '404 ' for url 'https://api.football-data.org/v4/competitions/TR1/matches?status=SCHEDULED'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+[32m22:16:52[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #12 ═══
+[32m22:16:52[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:16:52[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:16:53[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m22:17:22[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #13 ═══
+[32m22:17:22[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:17:22[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:17:37[0m | [1mINFO    [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] 0 maç çekildi.
+[32m22:17:38[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Sofascore] API yanıtı: 403
+[32m22:17:41[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] Fetch hatası (https://www.mackolik.com/iddaa/tum-maclar): Server error '502 Bad Gateway' for url 'https://www.mackolik.com/iddaa/tum-maclar'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/502
+[32m22:17:52[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #14 ═══
+[32m22:17:52[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:17:52[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:17:58[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m22:18:22[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #15 ═══
+[32m22:18:22[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:18:22[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:18:52[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #16 ═══
+[32m22:18:52[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:18:52[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:19:03[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m22:19:22[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #17 ═══
+[32m22:19:22[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:19:22[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:19:52[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #18 ═══
+[32m22:19:52[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:19:52[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:20:09[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m22:20:22[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #19 ═══
+[32m22:20:22[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:20:22[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:20:44[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Sofascore] API yanıtı: 403
+[32m22:20:45[0m | [1mINFO    [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] 0 maç çekildi.
+[32m22:20:47[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] Fetch hatası (https://www.mackolik.com/iddaa/tum-maclar): Client error '404 Not Found' for url 'https://www.mackolik.com/iddaa/tum-maclar'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+[32m22:20:52[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #20 ═══
+[32m22:20:52[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:20:52[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:21:13[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 22 maç tarandı.
+[32m22:21:22[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #21 ═══
+[32m22:21:22[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:21:22[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:21:23[0m | [33m[1mWARNING [0m | [36msrc.ingestion.async_data_factory[0m – Football-Data hatası: Client error '404 ' for url 'https://api.football-data.org/v4/competitions/TR1/matches?status=SCHEDULED'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+[32m22:21:26[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Sofascore] API yanıtı: 403
+[32m22:21:52[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #22 ═══
+[32m22:21:52[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:21:52[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:22:18[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m22:22:22[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #23 ═══
+[32m22:22:22[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:22:22[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:22:52[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #24 ═══
+[32m22:22:52[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:22:52[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:23:22[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m22:23:22[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #25 ═══
+[32m22:23:22[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:23:22[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:23:49[0m | [1mINFO    [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] 0 maç çekildi.
+[32m22:23:50[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Sofascore] API yanıtı: 403
+[32m22:23:52[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #26 ═══
+[32m22:23:52[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:23:52[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:23:53[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] Fetch hatası (https://www.mackolik.com/iddaa/tum-maclar): Client error '404 Not Found' for url 'https://www.mackolik.com/iddaa/tum-maclar'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+[32m22:24:22[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #27 ═══
+[32m22:24:22[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:24:22[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:24:27[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m22:24:52[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #28 ═══
+[32m22:24:52[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:24:52[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:25:22[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #29 ═══
+[32m22:25:22[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:25:22[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:25:32[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m22:25:52[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #30 ═══
+[32m22:25:53[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:25:53[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:26:23[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #31 ═══
+[32m22:26:23[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:26:23[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:26:24[0m | [33m[1mWARNING [0m | [36msrc.ingestion.async_data_factory[0m – Football-Data hatası: Client error '404 ' for url 'https://api.football-data.org/v4/competitions/TR1/matches?status=SCHEDULED'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+[32m22:26:36[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 22 maç tarandı.
+[32m22:26:53[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #32 ═══
+[32m22:26:53[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:26:53[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:26:56[0m | [1mINFO    [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] 0 maç çekildi.
+[32m22:26:58[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Sofascore] API yanıtı: 403
+[32m22:27:00[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] Fetch hatası (https://www.mackolik.com/iddaa/tum-maclar): Client error '404 Not Found' for url 'https://www.mackolik.com/iddaa/tum-maclar'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+[32m22:27:23[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #33 ═══
+[32m22:27:23[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:27:23[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:27:44[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m22:27:53[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #34 ═══
+[32m22:27:53[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:27:53[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:28:23[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #35 ═══
+[32m22:28:23[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:28:23[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:28:48[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 22 maç tarandı.
+[32m22:28:53[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #36 ═══
+[32m22:28:53[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:28:53[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:29:23[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #37 ═══
+[32m22:29:23[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:29:23[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:29:52[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m22:29:53[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #38 ═══
+[32m22:29:53[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:29:53[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:30:02[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Sofascore] API yanıtı: 403
+[32m22:30:04[0m | [1mINFO    [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] 0 maç çekildi.
+[32m22:30:09[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] Fetch hatası (https://www.mackolik.com/iddaa/tum-maclar): Client error '404 Not Found' for url 'https://www.mackolik.com/iddaa/tum-maclar'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+[32m22:30:23[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #39 ═══
+[32m22:30:23[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:30:23[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:30:53[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #40 ═══
+[32m22:30:53[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:30:53[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:30:58[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m22:31:23[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #41 ═══
+[32m22:31:23[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:31:23[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:31:24[0m | [33m[1mWARNING [0m | [36msrc.ingestion.async_data_factory[0m – Football-Data hatası: Client error '404 ' for url 'https://api.football-data.org/v4/competitions/TR1/matches?status=SCHEDULED'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+[32m22:31:25[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Sofascore] API yanıtı: 403
+[32m22:31:53[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #42 ═══
+[32m22:31:53[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:31:53[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:32:05[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m22:32:23[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #43 ═══
+[32m22:32:23[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:32:23[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:32:53[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #44 ═══
+[32m22:32:53[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:32:53[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:33:12[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Sofascore] API yanıtı: 403
+[32m22:33:12[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m22:33:12[0m | [1mINFO    [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] 0 maç çekildi.
+[32m22:33:16[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] Fetch hatası (https://www.mackolik.com/iddaa/tum-maclar): Client error '404 Not Found' for url 'https://www.mackolik.com/iddaa/tum-maclar'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+[32m22:33:23[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #45 ═══
+[32m22:33:23[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:33:23[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:33:53[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #46 ═══
+[32m22:33:53[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:33:53[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:34:18[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m22:34:23[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #47 ═══
+[32m22:34:23[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:34:23[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:34:53[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #48 ═══
+[32m22:34:53[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:34:53[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:35:23[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m22:35:23[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #49 ═══
+[32m22:35:23[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:35:23[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:35:53[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #50 ═══
+[32m22:35:53[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:35:53[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:36:20[0m | [1mINFO    [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] 0 maç çekildi.
+[32m22:36:21[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Sofascore] API yanıtı: 403
+[32m22:36:23[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] Fetch hatası (https://www.mackolik.com/iddaa/tum-maclar): Client error '404 Not Found' for url 'https://www.mackolik.com/iddaa/tum-maclar'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+[32m22:36:23[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #51 ═══
+[32m22:36:23[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:36:23[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:36:24[0m | [33m[1mWARNING [0m | [36msrc.ingestion.async_data_factory[0m – Football-Data hatası: Client error '404 ' for url 'https://api.football-data.org/v4/competitions/TR1/matches?status=SCHEDULED'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+[32m22:36:28[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m22:36:53[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #52 ═══
+[32m22:36:53[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:36:53[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:37:23[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #53 ═══
+[32m22:37:23[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:37:23[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:37:34[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m22:37:53[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #54 ═══
+[32m22:37:53[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:37:53[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:38:23[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #55 ═══
+[32m22:38:23[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:38:23[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:38:39[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m22:38:53[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #56 ═══
+[32m22:38:54[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:38:54[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:39:24[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #57 ═══
+[32m22:39:24[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:39:24[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:39:26[0m | [1mINFO    [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] 0 maç çekildi.
+[32m22:39:28[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Sofascore] API yanıtı: 403
+[32m22:39:29[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] Fetch hatası (https://www.mackolik.com/iddaa/tum-maclar): Client error '404 Not Found' for url 'https://www.mackolik.com/iddaa/tum-maclar'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+[32m22:39:44[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m22:39:54[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #58 ═══
+[32m22:39:54[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:39:54[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:40:24[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #59 ═══
+[32m22:40:24[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:40:24[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:40:49[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m22:40:54[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #60 ═══
+[32m22:40:54[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:40:54[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:41:24[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #61 ═══
+[32m22:41:24[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:41:24[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:41:24[0m | [33m[1mWARNING [0m | [36msrc.ingestion.async_data_factory[0m – Football-Data hatası: Client error '404 ' for url 'https://api.football-data.org/v4/competitions/TR1/matches?status=SCHEDULED'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+[32m22:41:27[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Sofascore] API yanıtı: 403
+[32m22:41:54[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #62 ═══
+[32m22:41:54[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:41:54[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:41:56[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m22:42:24[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #63 ═══
+[32m22:42:24[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:42:24[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:42:31[0m | [1mINFO    [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] 0 maç çekildi.
+[32m22:42:32[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Sofascore] API yanıtı: 403
+[32m22:42:34[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] Fetch hatası (https://www.mackolik.com/iddaa/tum-maclar): Client error '404 Not Found' for url 'https://www.mackolik.com/iddaa/tum-maclar'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+[32m22:42:54[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #64 ═══
+[32m22:42:54[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:42:54[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:43:03[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m22:43:24[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #65 ═══
+[32m22:43:24[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:43:24[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:43:54[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #66 ═══
+[32m22:43:54[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:43:54[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:44:09[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m22:44:24[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #67 ═══
+[32m22:44:24[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:44:24[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:44:54[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #68 ═══
+[32m22:44:54[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:44:54[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:45:16[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m22:45:24[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #69 ═══
+[32m22:45:24[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:45:24[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:45:37[0m | [1mINFO    [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] 0 maç çekildi.
+[32m22:45:38[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Sofascore] API yanıtı: 403
+[32m22:45:40[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] Fetch hatası (https://www.mackolik.com/iddaa/tum-maclar): Client error '404 Not Found' for url 'https://www.mackolik.com/iddaa/tum-maclar'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+[32m22:45:54[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #70 ═══
+[32m22:45:54[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:45:54[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:46:23[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m22:46:24[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #71 ═══
+[32m22:46:24[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:46:24[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:46:25[0m | [33m[1mWARNING [0m | [36msrc.ingestion.async_data_factory[0m – Football-Data hatası: Client error '404 ' for url 'https://api.football-data.org/v4/competitions/TR1/matches?status=SCHEDULED'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+[32m22:46:54[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #72 ═══
+[32m22:46:54[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:46:54[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:47:24[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #73 ═══
+[32m22:47:24[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:47:24[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:47:30[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m22:47:54[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #74 ═══
+[32m22:47:54[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:47:54[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:48:24[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #75 ═══
+[32m22:48:24[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:48:24[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:48:36[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m22:48:43[0m | [1mINFO    [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] 0 maç çekildi.
+[32m22:48:43[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Sofascore] API yanıtı: 403
+[32m22:48:46[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] Fetch hatası (https://www.mackolik.com/iddaa/tum-maclar): Client error '404 Not Found' for url 'https://www.mackolik.com/iddaa/tum-maclar'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+[32m22:48:54[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #76 ═══
+[32m22:48:54[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:48:54[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:49:24[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #77 ═══
+[32m22:49:25[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:49:25[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:49:41[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 22 maç tarandı.
+[32m22:49:55[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #78 ═══
+[32m22:49:55[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:49:55[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:50:25[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #79 ═══
+[32m22:50:25[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:50:25[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:50:46[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m22:50:55[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #80 ═══
+[32m22:50:55[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:50:55[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:51:25[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #81 ═══
+[32m22:51:25[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:51:25[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:51:25[0m | [33m[1mWARNING [0m | [36msrc.ingestion.async_data_factory[0m – Football-Data hatası: Client error '404 ' for url 'https://api.football-data.org/v4/competitions/TR1/matches?status=SCHEDULED'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+[32m22:51:26[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Sofascore] API yanıtı: 403
+[32m22:51:50[0m | [1mINFO    [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] 0 maç çekildi.
+[32m22:51:51[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Sofascore] API yanıtı: 403
+[32m22:51:53[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m22:51:54[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] Fetch hatası (https://www.mackolik.com/iddaa/tum-maclar): Client error '404 Not Found' for url 'https://www.mackolik.com/iddaa/tum-maclar'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+[32m22:51:55[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #82 ═══
+[32m22:51:55[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:51:55[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:52:25[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #83 ═══
+[32m22:52:25[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:52:25[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:52:55[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #84 ═══
+[32m22:52:55[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:52:55[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:52:57[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m22:53:25[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #85 ═══
+[32m22:53:25[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:53:25[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:53:55[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #86 ═══
+[32m22:53:55[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:53:55[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:54:02[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m22:54:25[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #87 ═══
+[32m22:54:25[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:54:25[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:54:55[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #88 ═══
+[32m22:54:55[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:54:55[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:54:56[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Sofascore] API yanıtı: 403
+[32m22:54:57[0m | [1mINFO    [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] 0 maç çekildi.
+[32m22:55:01[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] Fetch hatası (https://www.mackolik.com/iddaa/tum-maclar): Client error '404 Not Found' for url 'https://www.mackolik.com/iddaa/tum-maclar'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+[32m22:55:08[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m22:55:25[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #89 ═══
+[32m22:55:25[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:55:25[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:55:55[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #90 ═══
+[32m22:55:55[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:55:55[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:56:13[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m22:56:25[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #91 ═══
+[32m22:56:25[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:56:25[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:56:25[0m | [33m[1mWARNING [0m | [36msrc.ingestion.async_data_factory[0m – Football-Data hatası: Client error '404 ' for url 'https://api.football-data.org/v4/competitions/TR1/matches?status=SCHEDULED'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+[32m22:56:55[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #92 ═══
+[32m22:56:55[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:56:55[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:57:21[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m22:57:25[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #93 ═══
+[32m22:57:25[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:57:25[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:57:55[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #94 ═══
+[32m22:57:55[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:57:55[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:58:03[0m | [1mINFO    [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] 0 maç çekildi.
+[32m22:58:06[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Sofascore] API yanıtı: 403
+[32m22:58:07[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] Fetch hatası (https://www.mackolik.com/iddaa/tum-maclar): Client error '404 Not Found' for url 'https://www.mackolik.com/iddaa/tum-maclar'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+[32m22:58:25[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #95 ═══
+[32m22:58:25[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:58:25[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:58:26[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m22:58:55[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #96 ═══
+[32m22:58:55[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:58:55[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:59:25[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #97 ═══
+[32m22:59:25[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:59:25[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m22:59:30[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 22 maç tarandı.
+[32m22:59:55[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #98 ═══
+[32m22:59:55[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m22:59:55[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:00:25[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #99 ═══
+[32m23:00:25[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:00:25[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:00:35[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m23:00:55[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #100 ═══
+[32m23:00:55[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:00:55[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:01:10[0m | [1mINFO    [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] 0 maç çekildi.
+[32m23:01:11[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Sofascore] API yanıtı: 403
+[32m23:01:12[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] Fetch hatası (https://www.mackolik.com/iddaa/tum-maclar): Client error '404 Not Found' for url 'https://www.mackolik.com/iddaa/tum-maclar'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+[32m23:01:25[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #101 ═══
+[32m23:01:25[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:01:25[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:01:25[0m | [33m[1mWARNING [0m | [36msrc.ingestion.async_data_factory[0m – Football-Data hatası: Client error '404 ' for url 'https://api.football-data.org/v4/competitions/TR1/matches?status=SCHEDULED'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+[32m23:01:26[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Sofascore] API yanıtı: 403
+[32m23:01:40[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m23:01:55[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #102 ═══
+[32m23:01:56[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:01:56[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:02:26[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #103 ═══
+[32m23:02:26[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:02:26[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:02:45[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m23:02:56[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #104 ═══
+[32m23:02:56[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:02:56[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:03:26[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #105 ═══
+[32m23:03:26[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:03:26[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:03:51[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m23:03:56[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #106 ═══
+[32m23:03:56[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:03:56[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:04:16[0m | [1mINFO    [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] 0 maç çekildi.
+[32m23:04:17[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Sofascore] API yanıtı: 403
+[32m23:04:18[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] Fetch hatası (https://www.mackolik.com/iddaa/tum-maclar): Client error '404 Not Found' for url 'https://www.mackolik.com/iddaa/tum-maclar'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+[32m23:04:26[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #107 ═══
+[32m23:04:26[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:04:26[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:04:56[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m23:04:56[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #108 ═══
+[32m23:04:56[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:04:56[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:05:26[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #109 ═══
+[32m23:05:26[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:05:26[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:05:56[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #110 ═══
+[32m23:05:56[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:05:56[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:06:01[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m23:06:26[0m | [33m[1mWARNING [0m | [36msrc.ingestion.async_data_factory[0m – Football-Data hatası: Client error '404 ' for url 'https://api.football-data.org/v4/competitions/TR1/matches?status=SCHEDULED'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+[32m23:06:26[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #111 ═══
+[32m23:06:26[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:06:26[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:06:56[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #112 ═══
+[32m23:06:56[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:06:56[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:07:08[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m23:07:22[0m | [1mINFO    [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] 0 maç çekildi.
+[32m23:07:22[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Sofascore] API yanıtı: 403
+[32m23:07:24[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] Fetch hatası (https://www.mackolik.com/iddaa/tum-maclar): Server error '502 Bad Gateway' for url 'https://www.mackolik.com/iddaa/tum-maclar'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/502
+[32m23:07:26[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #113 ═══
+[32m23:07:26[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:07:26[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:07:56[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #114 ═══
+[32m23:07:56[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:07:56[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:08:13[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m23:08:26[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #115 ═══
+[32m23:08:26[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:08:26[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:08:56[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #116 ═══
+[32m23:08:56[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:08:56[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:09:18[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m23:09:26[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #117 ═══
+[32m23:09:26[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:09:26[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:09:56[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #118 ═══
+[32m23:09:56[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:09:56[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:10:23[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m23:10:26[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #119 ═══
+[32m23:10:26[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:10:26[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:10:27[0m | [1mINFO    [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] 0 maç çekildi.
+[32m23:10:28[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Sofascore] API yanıtı: 403
+[32m23:10:30[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] Fetch hatası (https://www.mackolik.com/iddaa/tum-maclar): Server error '502 Bad Gateway' for url 'https://www.mackolik.com/iddaa/tum-maclar'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/502
+[32m23:10:56[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #120 ═══
+[32m23:10:56[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:10:56[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:11:26[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Sofascore] API yanıtı: 403
+[32m23:11:26[0m | [33m[1mWARNING [0m | [36msrc.ingestion.async_data_factory[0m – Football-Data hatası: Client error '404 ' for url 'https://api.football-data.org/v4/competitions/TR1/matches?status=SCHEDULED'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+[32m23:11:26[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #121 ═══
+[32m23:11:26[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:11:26[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:11:29[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m23:11:56[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #122 ═══
+[32m23:11:56[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:11:56[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:12:26[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #123 ═══
+[32m23:12:26[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:12:26[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:12:35[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m23:12:56[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #124 ═══
+[32m23:12:56[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:12:56[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:13:26[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #125 ═══
+[32m23:13:26[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:13:26[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:13:33[0m | [1mINFO    [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] 0 maç çekildi.
+[32m23:13:34[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Sofascore] API yanıtı: 403
+[32m23:13:37[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] Fetch hatası (https://www.mackolik.com/iddaa/tum-maclar): Client error '404 Not Found' for url 'https://www.mackolik.com/iddaa/tum-maclar'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+[32m23:13:40[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m23:13:56[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #126 ═══
+[32m23:13:56[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:13:56[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:14:26[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #127 ═══
+[32m23:14:27[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:14:27[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:14:46[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m23:14:57[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #128 ═══
+[32m23:14:57[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:14:57[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:15:27[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #129 ═══
+[32m23:15:27[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:15:27[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:15:53[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m23:15:57[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #130 ═══
+[32m23:15:57[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:15:57[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:16:26[0m | [33m[1mWARNING [0m | [36msrc.ingestion.async_data_factory[0m – Football-Data hatası: Client error '404 ' for url 'https://api.football-data.org/v4/competitions/TR1/matches?status=SCHEDULED'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+[32m23:16:27[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #131 ═══
+[32m23:16:27[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:16:27[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:16:39[0m | [1mINFO    [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] 0 maç çekildi.
+[32m23:16:41[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Sofascore] API yanıtı: 403
+[32m23:16:43[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] Fetch hatası (https://www.mackolik.com/iddaa/tum-maclar): Client error '404 Not Found' for url 'https://www.mackolik.com/iddaa/tum-maclar'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+[32m23:16:57[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #132 ═══
+[32m23:16:57[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:16:57[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:16:59[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m23:17:27[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #133 ═══
+[32m23:17:27[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:17:27[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:17:57[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #134 ═══
+[32m23:17:57[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:17:57[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:18:06[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m23:18:27[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #135 ═══
+[32m23:18:27[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:18:27[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:18:57[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #136 ═══
+[32m23:18:57[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:18:57[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:19:11[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m23:19:27[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #137 ═══
+[32m23:19:27[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:19:27[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:19:46[0m | [1mINFO    [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] 0 maç çekildi.
+[32m23:19:46[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Sofascore] API yanıtı: 403
+[32m23:19:49[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] Fetch hatası (https://www.mackolik.com/iddaa/tum-maclar): Client error '404 Not Found' for url 'https://www.mackolik.com/iddaa/tum-maclar'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+[32m23:19:57[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #138 ═══
+[32m23:19:57[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:19:57[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:20:16[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m23:20:27[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #139 ═══
+[32m23:20:27[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:20:27[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:20:57[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #140 ═══
+[32m23:20:57[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:20:57[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:21:21[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m23:21:25[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Sofascore] API yanıtı: 403
+[32m23:21:26[0m | [33m[1mWARNING [0m | [36msrc.ingestion.async_data_factory[0m – Football-Data hatası: Client error '404 ' for url 'https://api.football-data.org/v4/competitions/TR1/matches?status=SCHEDULED'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+[32m23:21:27[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #141 ═══
+[32m23:21:27[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:21:27[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:21:57[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #142 ═══
+[32m23:21:57[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:21:57[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:22:26[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m23:22:27[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #143 ═══
+[32m23:22:27[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:22:27[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:22:52[0m | [1mINFO    [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] 0 maç çekildi.
+[32m23:22:55[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Sofascore] API yanıtı: 403
+[32m23:22:56[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] Fetch hatası (https://www.mackolik.com/iddaa/tum-maclar): Client error '404 Not Found' for url 'https://www.mackolik.com/iddaa/tum-maclar'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+[32m23:22:57[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #144 ═══
+[32m23:22:57[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:22:57[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:23:27[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #145 ═══
+[32m23:23:27[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:23:27[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:23:33[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m23:23:57[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #146 ═══
+[32m23:23:57[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:23:57[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:24:27[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #147 ═══
+[32m23:24:27[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:24:27[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:24:39[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m23:24:57[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #148 ═══
+[32m23:24:57[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:24:57[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:25:28[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #149 ═══
+[32m23:25:28[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:25:28[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:25:46[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m23:25:58[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #150 ═══
+[32m23:25:58[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:25:58[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:25:59[0m | [1mINFO    [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] 0 maç çekildi.
+[32m23:26:02[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Sofascore] API yanıtı: 403
+[32m23:26:04[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] Fetch hatası (https://www.mackolik.com/iddaa/tum-maclar): Client error '404 Not Found' for url 'https://www.mackolik.com/iddaa/tum-maclar'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+[32m23:26:27[0m | [33m[1mWARNING [0m | [36msrc.ingestion.async_data_factory[0m – Football-Data hatası: Client error '404 ' for url 'https://api.football-data.org/v4/competitions/TR1/matches?status=SCHEDULED'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+[32m23:26:28[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #151 ═══
+[32m23:26:28[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:26:28[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:26:49[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m23:26:58[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #152 ═══
+[32m23:26:58[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:26:58[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:27:28[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #153 ═══
+[32m23:27:28[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:27:28[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:27:55[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m23:27:58[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #154 ═══
+[32m23:27:58[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:27:58[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:28:28[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #155 ═══
+[32m23:28:28[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:28:28[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:28:58[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #156 ═══
+[32m23:28:58[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:28:58[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:29:00[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m23:29:06[0m | [1mINFO    [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] 0 maç çekildi.
+[32m23:29:07[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Sofascore] API yanıtı: 403
+[32m23:29:08[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] Fetch hatası (https://www.mackolik.com/iddaa/tum-maclar): Client error '404 Not Found' for url 'https://www.mackolik.com/iddaa/tum-maclar'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+[32m23:29:28[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #157 ═══
+[32m23:29:28[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:29:28[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:29:58[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #158 ═══
+[32m23:29:58[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:29:58[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\src\utils\strategy_health_report.py:51: DeprecationWarning: The parameter "ln" is deprecated since v2.5.2. Instead of ln=True use new_x=XPos.LMARGIN, new_y=YPos.NEXT.
+  pdf.cell(0, 10, "Quant Betting Bot - Strateji Saglik Raporu", ln=True, align="C")
+[32m23:30:00[0m | [1mINFO    [0m | [36msrc.utils.strategy_health_report[0m – PDF rapor kaydedildi: C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\reports\report_20260216_233000.pdf
+[32m23:30:06[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m23:30:28[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #159 ═══
+[32m23:30:28[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:30:28[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:30:58[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #160 ═══
+[32m23:30:58[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:30:58[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:31:11[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m23:31:26[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Sofascore] API yanıtı: 403
+[32m23:31:27[0m | [33m[1mWARNING [0m | [36msrc.ingestion.async_data_factory[0m – Football-Data hatası: Client error '404 ' for url 'https://api.football-data.org/v4/competitions/TR1/matches?status=SCHEDULED'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+[32m23:31:28[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #161 ═══
+[32m23:31:28[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:31:28[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:31:58[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #162 ═══
+[32m23:31:58[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:31:58[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:32:11[0m | [1mINFO    [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] 0 maç çekildi.
+[32m23:32:12[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Sofascore] API yanıtı: 403
+[32m23:32:13[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] Fetch hatası (https://www.mackolik.com/iddaa/tum-maclar): Server error '502 Bad Gateway' for url 'https://www.mackolik.com/iddaa/tum-maclar'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/502
+[32m23:32:17[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m23:32:28[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #163 ═══
+[32m23:32:28[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:32:28[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:32:58[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #164 ═══
+[32m23:32:58[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:32:58[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:33:23[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m23:33:28[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #165 ═══
+[32m23:33:28[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:33:28[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:33:58[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #166 ═══
+[32m23:33:58[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:33:58[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:34:28[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m23:34:28[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #167 ═══
+[32m23:34:28[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:34:28[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:34:58[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #168 ═══
+[32m23:34:58[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:34:58[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:35:16[0m | [1mINFO    [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] 0 maç çekildi.
+[32m23:35:16[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Sofascore] API yanıtı: 403
+[32m23:35:20[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] Fetch hatası (https://www.mackolik.com/iddaa/tum-maclar): Client error '404 Not Found' for url 'https://www.mackolik.com/iddaa/tum-maclar'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+[32m23:35:28[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #169 ═══
+[32m23:35:28[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:35:28[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:35:34[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m23:35:58[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #170 ═══
+[32m23:35:58[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:35:58[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:36:27[0m | [33m[1mWARNING [0m | [36msrc.ingestion.async_data_factory[0m – Football-Data hatası: Client error '404 ' for url 'https://api.football-data.org/v4/competitions/TR1/matches?status=SCHEDULED'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+[32m23:36:28[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #171 ═══
+[32m23:36:28[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:36:28[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:36:39[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m23:36:58[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #172 ═══
+[32m23:36:58[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:36:58[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:37:28[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #173 ═══
+[32m23:37:29[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:37:29[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:37:46[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m23:37:59[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #174 ═══
+[32m23:37:59[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:37:59[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:38:24[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Sofascore] API yanıtı: 403
+[32m23:38:25[0m | [1mINFO    [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] 0 maç çekildi.
+[32m23:38:28[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] Fetch hatası (https://www.mackolik.com/iddaa/tum-maclar): Client error '404 Not Found' for url 'https://www.mackolik.com/iddaa/tum-maclar'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+[32m23:38:29[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #175 ═══
+[32m23:38:29[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:38:29[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:38:51[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m23:38:59[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #176 ═══
+[32m23:38:59[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:38:59[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:39:29[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #177 ═══
+[32m23:39:29[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:39:29[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:39:56[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m23:39:59[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #178 ═══
+[32m23:39:59[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:39:59[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:40:29[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #179 ═══
+[32m23:40:29[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:40:29[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:40:59[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #180 ═══
+[32m23:40:59[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:40:59[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:41:01[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m23:41:26[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Sofascore] API yanıtı: 403
+[32m23:41:27[0m | [33m[1mWARNING [0m | [36msrc.ingestion.async_data_factory[0m – Football-Data hatası: Client error '404 ' for url 'https://api.football-data.org/v4/competitions/TR1/matches?status=SCHEDULED'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+[32m23:41:29[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #181 ═══
+[32m23:41:29[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:41:29[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:41:31[0m | [1mINFO    [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] 0 maç çekildi.
+[32m23:41:33[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Sofascore] API yanıtı: 403
+[32m23:41:34[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] Fetch hatası (https://www.mackolik.com/iddaa/tum-maclar): Server error '502 Bad Gateway' for url 'https://www.mackolik.com/iddaa/tum-maclar'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/502
+[32m23:41:59[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #182 ═══
+[32m23:41:59[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:41:59[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:42:07[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m23:42:29[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #183 ═══
+[32m23:42:29[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:42:29[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:42:59[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #184 ═══
+[32m23:42:59[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:42:59[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:43:13[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 22 maç tarandı.
+[32m23:43:29[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #185 ═══
+[32m23:43:29[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:43:29[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:43:59[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #186 ═══
+[32m23:43:59[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:43:59[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:44:18[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m23:44:29[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #187 ═══
+[32m23:44:29[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:44:29[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:44:36[0m | [1mINFO    [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] 0 maç çekildi.
+[32m23:44:37[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Sofascore] API yanıtı: 403
+[32m23:44:39[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] Fetch hatası (https://www.mackolik.com/iddaa/tum-maclar): Client error '404 Not Found' for url 'https://www.mackolik.com/iddaa/tum-maclar'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+[32m23:44:59[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #188 ═══
+[32m23:44:59[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:44:59[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:45:24[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m23:45:29[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #189 ═══
+[32m23:45:29[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:45:29[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:45:59[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #190 ═══
+[32m23:45:59[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:45:59[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:46:28[0m | [33m[1mWARNING [0m | [36msrc.ingestion.async_data_factory[0m – Football-Data hatası: Client error '404 ' for url 'https://api.football-data.org/v4/competitions/TR1/matches?status=SCHEDULED'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+[32m23:46:29[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m23:46:29[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #191 ═══
+[32m23:46:29[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:46:29[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:46:59[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #192 ═══
+[32m23:47:00[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:47:00[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:47:30[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #193 ═══
+[32m23:47:30[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:47:30[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:47:35[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m23:47:42[0m | [1mINFO    [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] 0 maç çekildi.
+[32m23:47:43[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Sofascore] API yanıtı: 403
+[32m23:47:45[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] Fetch hatası (https://www.mackolik.com/iddaa/tum-maclar): Server error '502 Bad Gateway' for url 'https://www.mackolik.com/iddaa/tum-maclar'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/502
+[32m23:48:00[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #194 ═══
+[32m23:48:00[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:48:00[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:48:30[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #195 ═══
+[32m23:48:30[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:48:30[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:48:44[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m23:49:00[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #196 ═══
+[32m23:49:00[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:49:00[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:49:30[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #197 ═══
+[32m23:49:30[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:49:30[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:49:48[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m23:50:00[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #198 ═══
+[32m23:50:00[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:50:00[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:50:30[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #199 ═══
+[32m23:50:30[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:50:30[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:50:47[0m | [1mINFO    [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] 0 maç çekildi.
+[32m23:50:49[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Sofascore] API yanıtı: 403
+[32m23:50:49[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] Fetch hatası (https://www.mackolik.com/iddaa/tum-maclar): Client error '404 Not Found' for url 'https://www.mackolik.com/iddaa/tum-maclar'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+[32m23:50:52[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 22 maç tarandı.
+[32m23:51:00[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #200 ═══
+[32m23:51:00[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:51:00[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:51:25[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Sofascore] API yanıtı: 403
+[32m23:51:28[0m | [33m[1mWARNING [0m | [36msrc.ingestion.async_data_factory[0m – Football-Data hatası: Client error '404 ' for url 'https://api.football-data.org/v4/competitions/TR1/matches?status=SCHEDULED'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+[32m23:51:30[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #201 ═══
+[32m23:51:30[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:51:30[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:51:57[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m23:52:00[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #202 ═══
+[32m23:52:00[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:52:00[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:52:30[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #203 ═══
+[32m23:52:30[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:52:30[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:53:00[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #204 ═══
+[32m23:53:00[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:53:00[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:53:01[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m23:53:30[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #205 ═══
+[32m23:53:30[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:53:30[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:53:53[0m | [1mINFO    [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] 0 maç çekildi.
+[32m23:53:54[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Sofascore] API yanıtı: 403
+[32m23:53:57[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] Fetch hatası (https://www.mackolik.com/iddaa/tum-maclar): Client error '404 Not Found' for url 'https://www.mackolik.com/iddaa/tum-maclar'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+[32m23:54:00[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #206 ═══
+[32m23:54:00[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:54:00[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:54:05[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m23:54:30[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #207 ═══
+[32m23:54:30[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:54:30[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:55:00[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #208 ═══
+[32m23:55:00[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:55:00[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:55:08[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m23:55:30[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #209 ═══
+[32m23:55:30[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:55:30[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:56:00[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #210 ═══
+[32m23:56:00[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:56:00[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:56:12[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m23:56:28[0m | [33m[1mWARNING [0m | [36msrc.ingestion.async_data_factory[0m – Football-Data hatası: Client error '404 ' for url 'https://api.football-data.org/v4/competitions/TR1/matches?status=SCHEDULED'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+[32m23:56:30[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #211 ═══
+[32m23:56:30[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:56:30[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:56:59[0m | [1mINFO    [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] 0 maç çekildi.
+[32m23:57:00[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #212 ═══
+[32m23:57:00[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:57:00[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:57:01[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Sofascore] API yanıtı: 403
+[32m23:57:01[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] Fetch hatası (https://www.mackolik.com/iddaa/tum-maclar): Client error '404 Not Found' for url 'https://www.mackolik.com/iddaa/tum-maclar'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+[32m23:57:15[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m23:57:30[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #213 ═══
+[32m23:57:30[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:57:30[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:58:00[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #214 ═══
+[32m23:58:00[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:58:00[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:58:19[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m23:58:30[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #215 ═══
+[32m23:58:30[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:58:30[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:59:00[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #216 ═══
+[32m23:59:00[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:59:00[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m23:59:24[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m23:59:30[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #217 ═══
+[32m23:59:30[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m23:59:30[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m00:00:00[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #218 ═══
+[32m00:00:00[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m00:00:00[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m00:00:06[0m | [1mINFO    [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] 0 maç çekildi.
+[32m00:00:07[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Sofascore] API yanıtı: 403
+[32m00:00:09[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] Fetch hatası (https://www.mackolik.com/iddaa/tum-maclar): Client error '404 Not Found' for url 'https://www.mackolik.com/iddaa/tum-maclar'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+[32m00:00:27[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m00:00:30[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #219 ═══
+[32m00:00:30[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m00:00:30[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m00:01:00[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #220 ═══
+[32m00:01:00[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m00:01:00[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m00:01:25[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Sofascore] API yanıtı: 403
+[32m00:01:28[0m | [33m[1mWARNING [0m | [36msrc.ingestion.async_data_factory[0m – Football-Data hatası: Client error '404 ' for url 'https://api.football-data.org/v4/competitions/TR1/matches?status=SCHEDULED'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+[32m00:01:30[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 24 maç tarandı.
+[32m00:01:30[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #221 ═══
+[32m00:01:31[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m00:01:31[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m00:02:01[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #222 ═══
+[32m00:02:01[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m00:02:01[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m00:02:31[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #223 ═══
+[32m00:02:31[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m00:02:31[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m00:02:34[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 24 maç tarandı.
+[32m00:03:01[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #224 ═══
+[32m00:03:01[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m00:03:01[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m00:03:13[0m | [1mINFO    [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] 0 maç çekildi.
+[32m00:03:14[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Sofascore] API yanıtı: 403
+[32m00:03:17[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] Fetch hatası (https://www.mackolik.com/iddaa/tum-maclar): Client error '404 Not Found' for url 'https://www.mackolik.com/iddaa/tum-maclar'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+[32m00:03:31[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #225 ═══
+[32m00:03:31[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m00:03:31[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m00:03:38[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m00:04:01[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #226 ═══
+[32m00:04:01[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m00:04:01[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m00:04:24[0m | [1mINFO    [0m | [36msrc.ingestion.api_hijacker[0m – [Hijack] 🆕 Endpoint keşfedildi: https://www.sofascore.com/api/v1/sport/football/odds/*/*-02-17 [odds] (sofascore)
+[32m00:04:24[0m | [1mINFO    [0m | [36msrc.ingestion.api_hijacker[0m – [Hijack] 🆕 Endpoint keşfedildi: https://www.sofascore.com/api/v1/sport/football/scheduled-events/*-02-17 [match_list] (sofascore)
+[32m00:04:31[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #227 ═══
+[32m00:04:31[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m00:04:31[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m00:04:41[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m00:05:01[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #228 ═══
+[32m00:05:01[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m00:05:01[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m00:05:31[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #229 ═══
+[32m00:05:31[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m00:05:31[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m00:05:44[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m00:06:01[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #230 ═══
+[32m00:06:01[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m00:06:01[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m00:06:19[0m | [1mINFO    [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] 0 maç çekildi.
+[32m00:06:19[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Sofascore] API yanıtı: 403
+[32m00:06:23[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] Fetch hatası (https://www.mackolik.com/iddaa/tum-maclar): Client error '404 Not Found' for url 'https://www.mackolik.com/iddaa/tum-maclar'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+[32m00:06:29[0m | [33m[1mWARNING [0m | [36msrc.ingestion.async_data_factory[0m – Football-Data hatası: Client error '404 ' for url 'https://api.football-data.org/v4/competitions/TR1/matches?status=SCHEDULED'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+[32m00:06:31[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #231 ═══
+[32m00:06:31[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m00:06:31[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m00:06:50[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m00:07:01[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #232 ═══
+[32m00:07:01[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m00:07:01[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m00:07:31[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #233 ═══
+[32m00:07:31[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m00:07:31[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m00:07:54[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m00:08:01[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #234 ═══
+[32m00:08:01[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m00:08:01[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m00:08:31[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #235 ═══
+[32m00:08:31[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m00:08:31[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m00:08:58[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m00:09:01[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #236 ═══
+[32m00:09:01[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m00:09:01[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m00:09:25[0m | [1mINFO    [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] 0 maç çekildi.
+[32m00:09:27[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Sofascore] API yanıtı: 403
+[32m00:09:28[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] Fetch hatası (https://www.mackolik.com/iddaa/tum-maclar): Client error '404 Not Found' for url 'https://www.mackolik.com/iddaa/tum-maclar'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+[32m00:09:31[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #237 ═══
+[32m00:09:31[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m00:09:31[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m00:10:01[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #238 ═══
+[32m00:10:01[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m00:10:01[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m00:10:02[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m00:10:31[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #239 ═══
+[32m00:10:31[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m00:10:31[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m00:11:01[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #240 ═══
+[32m00:11:01[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m00:11:01[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m00:11:06[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m00:11:25[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Sofascore] API yanıtı: 403
+[32m00:11:29[0m | [33m[1mWARNING [0m | [36msrc.ingestion.async_data_factory[0m – Football-Data hatası: Client error '404 ' for url 'https://api.football-data.org/v4/competitions/TR1/matches?status=SCHEDULED'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+[32m00:11:31[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #241 ═══
+[32m00:11:31[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m00:11:31[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m00:12:01[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #242 ═══
+[32m00:12:01[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m00:12:01[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m00:12:10[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m00:12:30[0m | [1mINFO    [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] 0 maç çekildi.
+[32m00:12:31[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #243 ═══
+[32m00:12:31[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m00:12:31[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m00:12:32[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Sofascore] API yanıtı: 403
+[32m00:12:34[0m | [33m[1mWARNING [0m | [36msrc.ingestion.scraper_agent[0m – [Mackolik] Fetch hatası (https://www.mackolik.com/iddaa/tum-maclar): Client error '404 Not Found' for url 'https://www.mackolik.com/iddaa/tum-maclar'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+[32m00:13:01[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #244 ═══
+[32m00:13:01[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m00:13:01[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m00:13:15[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m00:13:31[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #245 ═══
+[32m00:13:31[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m00:13:31[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m00:14:01[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #246 ═══
+[32m00:14:01[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m00:14:01[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.
+[32m00:14:19[0m | [1mINFO    [0m | [36msrc.ingestion.async_data_factory[0m – FlashScore: 23 maç tarandı.
+[32m00:14:31[0m | [1mINFO    [0m | [36m__main__[0m – ═══ Analiz Döngüsü #247 ═══
+[32m00:14:31[0m | [33m[1mWARNING [0m | [36msrc.core.data_validator[0m – Yüksek veri red oranı: 100%
+[32m00:14:31[0m | [33m[1mWARNING [0m | [36m__main__[0m – Tüm maç verisi doğrulamadan reddedildi.

@@ -1,0 +1,201 @@
+09:37:15 | INFO     | __main__ â€“ [CLI] BaÅŸlatÄ±lÄ±yor: mode=full, headless=True, telegram=False, dashboard=False
+WARNING (pytensor.configdefaults): g++ not available, if using conda: `conda install gxx`
+WARNING (pytensor.configdefaults): g++ not detected!  PyTensor will be unable to compile C-implementations and will default to Python. Performance may be severely degraded. To remove this warning, set PyTensor flags cxx to an empty string.
+09:38:00 | INFO     | src.quant.uncertainty_quantifier â€“ mapie yüklü değil – heuristic uncertainty aktif.
+09:38:02 | INFO     | src.quant.digital_twin_sim â€“ mesa yüklü değil – pure Python simulation fallback.
+c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\nolds\datasets.py:9: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  import pkg_resources
+c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\rdt\transformers\utils.py:18: DeprecationWarning: module 'sre_parse' is deprecated
+  import sre_parse  # isort:skip
+09:38:11 | INFO     | src.core.jax_accelerator â€“ JAX aktif – backend: cpu
+09:38:14 | INFO     | __main__ â€“ [Boot] Mod=full, headless=True, telegram=False, dashboard=False
+09:38:14 | INFO     | __main__ â€“ Layer 0 â€“ Infrastructure baÅŸlatÄ±lÄ±yorâ€¦
+09:38:14 | INFO     | src.utils.log_rotator â€“ [LogRotator] Rotasyon tamamlandı: 0 arşivlendi, 9 korundu
+09:38:14 | INFO     | src.core.exception_guardian â€“ [Guardian] Başlatıldı: budget=50/h, circuit_thresh=15
+09:38:14 | INFO     | src.core.exception_guardian â€“ [Guardian] Global exception hook kuruldu
+09:38:14 | INFO     | src.core.regime_kelly â€“ [RegimeKelly] Başlatıldı: bankroll=10000, fraction=0.25, min_edge=4%
+09:38:14 | INFO     | src.core.strategy_evolver â€“ [Evolver] Başlatıldı: pop=50, elitism=5, tournament=3
+09:38:14 | SUCCESS  | __main__ â€“ Layer 0 hazÄ±r âœ“ (0.02s)
+09:38:14 | INFO     | __main__ â€“ Layer 2 â€“ Memory & Context baÅŸlatÄ±lÄ±yorâ€¦
+09:38:14 | WARNING  | src.memory.db_manager â€“ [DBManager] DuckDB dosyası kilitli – eski süreçler taranıyor…
+09:38:53 | WARNING  | src.memory.db_manager â€“ [DBManager] Eski süreç tespit edildi: PID=21624 (python.exe) – DuckDB dosyasını kilitliyor. Sonlandırılıyor…
+09:38:55 | INFO     | src.memory.db_manager â€“ [DBManager] DuckDB bağlantısı 2. denemede başarılı
+09:38:55 | INFO     | src.memory.db_manager â€“ [DBManager] Başlatıldı (sqlite) → C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\data\bahis.duckdb
+09:39:00 | SUCCESS  | __main__ â€“ Layer 2 hazÄ±r âœ“ (45.73s)
+09:39:00 | INFO     | __main__ â€“ Layer 1 â€“ Sensors & Ingestion baÅŸlatÄ±lÄ±yorâ€¦
+09:39:00 | SUCCESS  | __main__ â€“ Layer 1 hazÄ±r âœ“ (0.05s)
+09:39:00 | INFO     | __main__ â€“ Layer 3 â€“ Quantitative Brain baÅŸlatÄ±lÄ±yorâ€¦
+09:39:00 | INFO     | src.quant.kan_interpreter â€“ KAN modeli oluşturuldu.
+09:39:00 | WARNING  | src.quant.lstm_trend â€“ [LSTM] Model yüklenemedi: [Errno 2] No such file or directory: 'models/lstm_trend.pt'
+09:39:00 | INFO     | src.ingestion.vision_live â€“ [Vision] YOLOv8n yüklendi.
+09:39:01 | SUCCESS  | __main__ â€“ Layer 3 hazÄ±r âœ“ (0.68s)
+09:39:01 | INFO     | __main__ â€“ Layer 6 â€“ Graph Intelligence baÅŸlatÄ±lÄ±yorâ€¦
+09:39:05 | WARNING  | src.memory.neo4j_graph â€“ [Neo4j] Bağlantı hatası: Couldn't connect to localhost:7687 (resolved to ('[::1]:7687', '127.0.0.1:7687')):
+Failed to establish connection to ResolvedIPv6Address(('::1', 7687, 0, 0)) (reason [WinError 10061] Hedef makine etkin olarak reddettiğinden bağlantı kurulamadı)
+Failed to establish connection to ResolvedIPv4Address(('127.0.0.1', 7687)) (reason [WinError 10061] Hedef makine etkin olarak reddettiğinden bağlantı kurulamadı) – in-memory mod.
+09:39:05 | INFO     | src.memory.neo4j_graph â€“ [Neo4j] Fallback: networkx in-memory graph aktif.
+09:39:05 | SUCCESS  | __main__ â€“ Layer 6 hazÄ±r âœ“ (4.06s)
+09:39:05 | INFO     | __main__ â€“ Layer 4 â€“ Risk & Execution baÅŸlatÄ±lÄ±yorâ€¦
+09:39:05 | INFO     | src.core.jit_accelerator â€“ [JIT] Warmup tamamlandı (224ms)
+2026-02-19 09:39:08,622	INFO worker.py:2007 -- Started a local Ray instance.
+09:39:11 | WARNING  | src.utils.super_logger â€“ FutureWarning: Tip: In future versions of Ray, Ray will no longer override accelerator visible devices env var if num_gpus=0 or num_gpus=None (default). To enable this behavior and turn off this error message, set RAY_ACCEL_ENV_VAR_OVERRIDE_ON_ZERO=0 (c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\ray\_private\worker.py:2046)
+09:39:11 | INFO     | src.core.distributed_core â€“ [Dist] Ray başlatıldı: CPU=12.0, GPU=0, Memory=4.7GB
+09:39:11 | INFO     | src.core.shadow_manager â€“ [Shadow] Durum yüklendi: 0 strateji.
+09:39:11 | SUCCESS  | __main__ â€“ Layer 4 hazÄ±r âœ“ (6.41s)
+09:39:11 | INFO     | __main__ â€“ Layer 5 â€“ Ops & Interface baÅŸlatÄ±lÄ±yorâ€¦
+09:39:11 | INFO     | src.core.workflow_orchestrator â€“ [Orchestrator] Başlatıldı: retries=3, backoff=2.0x, prefect=✓
+09:39:11 | INFO     | __main__ â€“ [Orchestrator] 85 modÃ¼l kaydedildi.
+09:39:11 | SUCCESS  | __main__ â€“ Layer 5 hazÄ±r âœ“ (0.01s)
+09:39:14 | INFO     | src.memory.dvc_manager â€“ Snapshot oluşturuldu: boot (33071 dosya)
+09:39:14 | INFO     | __main__ â€“ [Boot] TÃ¼m katmanlar 59.5 saniyede ayaÄŸa kalktÄ±
+09:39:14 | INFO     | src.ui.telegram_mini_app â€“ TelegramNotifier devre disi (enabled=False).
+09:39:14 | INFO     | __main__ â€“ [PreFetch] Boot sirasinda TUM SPORLAR verisi cekiliyor...
+09:39:14 | INFO     | src.ingestion.metric_exporter â€“ Prometheus metrikleri → http://localhost:9090/metrics
+09:39:14 | INFO     | src.ingestion.async_data_factory â€“ Canlı veri fabrikası başlatıldı.
+09:39:14 | INFO     | src.ingestion.api_hijacker â€“ [Hijack] Ağ dinleyici başlatılıyor…
+09:39:14 | INFO     | src.ingestion.async_data_factory â€“ Pre-match veri fabrikası başlatıldı.
+09:39:23 | INFO     | src.ingestion.async_data_factory â€“ Playwright tarayıcısı (yeniden) başlatıldı.
+09:39:27 | INFO     | src.ingestion.api_hijacker â€“ [Hijack] 🆕 Endpoint keşfedildi: https://www.sofascore.com/api/v1/sport/football/trending-top-players [other] (sofascore)
+09:39:27 | INFO     | src.ingestion.api_hijacker â€“ [Hijack] 🆕 Endpoint keşfedildi: https://www.sofascore.com/api/v1/sport/football/categories/all [other] (sofascore)
+09:39:27 | INFO     | src.ingestion.api_hijacker â€“ [Hijack] 🆕 Endpoint keşfedildi: https://www.sofascore.com/api/v1/event/newly-added-events [match_list] (sofascore)
+09:39:27 | INFO     | src.ingestion.api_hijacker â€“ [Hijack] 🆕 Endpoint keşfedildi: https://www.sofascore.com/api/v1/odds/providers/TR/web [other] (sofascore)
+09:39:27 | INFO     | src.ingestion.api_hijacker â€“ [Hijack] 🆕 Endpoint keşfedildi: https://www.sofascore.com/api/v1/sport/football/scheduled-events/*-02-19 [match_list] (sofascore)
+09:39:27 | INFO     | src.ingestion.api_hijacker â€“ [Hijack] 🆕 Endpoint keşfedildi: https://www.sofascore.com/api/v1/odds/providers/TR/web-odds [other] (sofascore)
+09:39:27 | INFO     | src.ingestion.api_hijacker â€“ [Hijack] 🆕 Endpoint keşfedildi: https://www.sofascore.com/api/v1/odds/*/featured-events/football [other] (sofascore)
+09:39:27 | INFO     | src.ingestion.api_hijacker â€“ [Hijack] 🆕 Endpoint keşfedildi: https://www.sofascore.com/api/v1/odds/*/featured-events-by-popularity/football [other] (sofascore)
+09:39:27 | INFO     | src.ingestion.data_sources â€“ [Sofascore] TÃ¼m sporlar: 0 etkinlik Ã§ekildi.
+09:39:27 | INFO     | src.ingestion.data_sources â€“ [Agg] BugÃ¼n tÃ¼m sporlar: 1 etkinlik (futbol + basketbol + diÄŸer) | providers={'APISportsProvider': 0, 'TheSportsDBProvider': 6, 'OpenLigaDBProvider': 0, 'OpenFootballProvider': 0, 'FootballDataOrgProvider': 0, 'SofascoreScheduled': 0, 'SofascoreLive': 0}
+09:39:27 | SUCCESS  | __main__ â€“ [PreFetch] 1 etkinlik DB'ye eklendi (football=1)
+09:39:27 | INFO     | apscheduler.schedulers.base â€“ Adding job tentatively -- it will be properly scheduled when the scheduler starts
+09:39:27 | INFO     | src.core.job_scheduler â€“ [Scheduler] Cron eklendi: fikstur_cek @ 11:0
+09:39:27 | INFO     | apscheduler.schedulers.base â€“ Adding job tentatively -- it will be properly scheduled when the scheduler starts
+09:39:27 | INFO     | src.core.job_scheduler â€“ [Scheduler] Interval eklendi: oran_kontrol her 600s
+09:39:27 | INFO     | apscheduler.schedulers.base â€“ Adding job tentatively -- it will be properly scheduled when the scheduler starts
+09:39:27 | INFO     | src.core.job_scheduler â€“ [Scheduler] Cron eklendi: gunluk_rapor @ 23:30
+09:39:27 | INFO     | apscheduler.schedulers.base â€“ Adding job tentatively -- it will be properly scheduled when the scheduler starts
+09:39:27 | INFO     | src.core.job_scheduler â€“ [Scheduler] Cron eklendi: lstm_train @ 3:0
+09:39:27 | INFO     | apscheduler.schedulers.base â€“ Adding job tentatively -- it will be properly scheduled when the scheduler starts
+09:39:27 | INFO     | src.core.job_scheduler â€“ [Scheduler] Cron eklendi: veri_topla @ 10:0
+09:39:27 | INFO     | apscheduler.schedulers.base â€“ Adding job tentatively -- it will be properly scheduled when the scheduler starts
+09:39:27 | INFO     | src.core.job_scheduler â€“ [Scheduler] Cron eklendi: prophet_cache_temizle @ 6:0
+09:39:27 | INFO     | apscheduler.schedulers.base â€“ Adding job tentatively -- it will be properly scheduled when the scheduler starts
+09:39:27 | INFO     | src.core.job_scheduler â€“ [Scheduler] Cron eklendi: rl_train @ 4:0
+09:39:27 | INFO     | apscheduler.schedulers.base â€“ Adding job tentatively -- it will be properly scheduled when the scheduler starts
+09:39:27 | INFO     | src.core.job_scheduler â€“ [Scheduler] Cron eklendi: gunluk_brifing @ 9:0
+09:39:27 | INFO     | apscheduler.schedulers.base â€“ Adding job tentatively -- it will be properly scheduled when the scheduler starts
+09:39:27 | INFO     | src.core.job_scheduler â€“ [Scheduler] Cron eklendi: log_rotate @ 2:0
+09:39:27 | INFO     | src.ingestion.scraper_agent â€“ ScraperAgent – tüm ajanlar başlatılıyor…
+09:39:27 | INFO     | src.ingestion.lineup_monitor â€“ [Lineup] Kadro izleme başladı.
+09:39:27 | INFO     | src.ui.webapp_server â€“ [WebApp] TWA sunucu başlatıldı → http://0.0.0.0:8080
+09:39:27 | INFO     | apscheduler.schedulers.base â€“ Added job "fikstur_cek" to job store "default"
+09:39:27 | INFO     | apscheduler.schedulers.base â€“ Added job "oran_kontrol" to job store "default"
+09:39:27 | INFO     | apscheduler.schedulers.base â€“ Added job "gunluk_rapor" to job store "default"
+09:39:27 | INFO     | apscheduler.schedulers.base â€“ Added job "lstm_train" to job store "default"
+09:39:27 | INFO     | apscheduler.schedulers.base â€“ Added job "veri_topla" to job store "default"
+09:39:27 | INFO     | apscheduler.schedulers.base â€“ Added job "prophet_cache_temizle" to job store "default"
+09:39:27 | INFO     | apscheduler.schedulers.base â€“ Added job "rl_train" to job store "default"
+09:39:27 | INFO     | apscheduler.schedulers.base â€“ Added job "gunluk_brifing" to job store "default"
+09:39:27 | INFO     | apscheduler.schedulers.base â€“ Added job "log_rotate" to job store "default"
+09:39:27 | INFO     | apscheduler.schedulers.base â€“ Scheduler started
+09:39:27 | SUCCESS  | src.core.job_scheduler â€“ [Scheduler] Başlatıldı – 9 görev.
+09:39:27 | INFO     | __main__ â€“ â•â•â• Analiz DÃ¶ngÃ¼sÃ¼ #1 â•â•â•
+09:39:28 | INFO     | __main__ â€“ [Perf] MaÃ§ seti 12 ile sÄ±nÄ±rlandÄ±rÄ±ldÄ±.
+09:39:28 | WARNING  | src.utils.super_logger â€“ UserWarning: std(): degrees of freedom is [= 0. Correction should be strictly less than the reduction factor (input numel divided by output numel). (Triggered internally at C:\actions-runner\_work\pytorch\pytorch\pytorch\aten\src\ATen\native\ReduceOps.cpp:1857.) (c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\kan\MultKAN.py:813)
+09:39:28 | WARNING  | src.utils.super_logger â€“ UserWarning: std(): degrees of freedom is [= 0. Correction should be strictly less than the reduction factor (input numel divided by output numel). (Triggered internally at C:\actions-runner\_work\pytorch\pytorch\pytorch\aten\src\ATen\native\ReduceOps.cpp:1857.) (c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\kan\MultKAN.py:823)
+09:39:28 | WARNING  | src.utils.super_logger â€“ UserWarning: std(): degrees of freedom is [= 0. Correction should be strictly less than the reduction factor (input numel divided by output numel). (Triggered internally at C:\actions-runner\_work\pytorch\pytorch\pytorch\aten\src\ATen\native\ReduceOps.cpp:1857.) (c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\kan\MultKAN.py:824)
+09:39:28 | WARNING  | src.utils.super_logger â€“ UserWarning: std(): degrees of freedom is [= 0. Correction should be strictly less than the reduction factor (input numel divided by output numel). (Triggered internally at C:\actions-runner\_work\pytorch\pytorch\pytorch\aten\src\ATen\native\ReduceOps.cpp:1857.) (c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\kan\MultKAN.py:825)
+09:39:30 | WARNING  | src.utils.super_logger â€“ DeprecationWarning: websockets.legacy is deprecated; see https://websockets.readthedocs.io/en/stable/howto/upgrade.html for upgrade instructions (c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\websockets\legacy\__init__.py:6)
+09:39:30 | WARNING  | src.utils.super_logger â€“ DeprecationWarning: websockets.server.WebSocketServerProtocol is deprecated (c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\uvicorn\protocols\websockets\websockets_impl.py:17)
+09:39:33 | INFO     | src.ingestion.scraper_agent â€“ [Mackolik] 0 maç çekildi.
+09:39:34 | INFO     | src.ingestion.api_hijacker â€“ [Hijack] 🆕 Endpoint keşfedildi: https://www.sofascore.com/api/v1/odds/providers/TR/web-featured [other] (sofascore)
+09:39:34 | INFO     | src.ingestion.api_hijacker â€“ [Hijack] 🆕 Endpoint keşfedildi: https://www.sofascore.com/api/v1/event/*/odds/*/featured [other] (sofascore)
+09:39:34 | INFO     | src.ingestion.api_hijacker â€“ [Hijack] 🆕 Endpoint keşfedildi: https://www.sofascore.com/api/v1/event/*/votes [other] (sofascore)
+09:39:34 | INFO     | src.ingestion.api_hijacker â€“ [Hijack] 🆕 Endpoint keşfedildi: https://www.sofascore.com/api/v1/event/* [other] (sofascore)
+09:39:34 | INFO     | src.ingestion.async_data_factory â€“ FlashScore: 23 maç tarandı.
+09:39:34 | INFO     | src.ingestion.async_data_factory â€“ FlashScore: 23 maç tarandı.
+09:39:40 | INFO     | src.ingestion.scraper_agent â€“ [Mackolik] 0 oran çekildi.
+[2026-02-19 09:39:42,591 E 44464 43800] core_worker_process.cc:842: Failed to establish connection to the metrics exporter agent. Metrics will not be exported. Exporter agent status: RpcError: Running out of retries to initialize the metrics agent. rpc_code: 14
+09:39:46 | INFO     | src.ingestion.data_sources â€“ [Sofascore] TÃ¼m sporlar: 0 etkinlik Ã§ekildi.
+09:39:46 | INFO     | src.ingestion.data_sources â€“ [Agg] BugÃ¼n tÃ¼m sporlar: 1 etkinlik (futbol + basketbol + diÄŸer) | providers={'APISportsProvider': 0, 'TheSportsDBProvider': 6, 'OpenLigaDBProvider': 0, 'OpenFootballProvider': 0, 'FootballDataOrgProvider': 0, 'SofascoreScheduled': 0, 'SofascoreLive': 0}
+09:39:46 | INFO     | __main__ â€“ [MultiSport] 1 etkinlik gÃ¼ncellendi.
+09:39:53 | WARNING  | src.ingestion.api_hijacker â€“ [Hijack] ✗ sofascore bağlanamadı: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://www.sofascore.com/football", waiting until "networkidle"
+
+09:39:58 | INFO     | src.ingestion.api_hijacker â€“ [Hijack] 🆕 Endpoint keşfedildi: https://www.sofascore.com/api/v1/odds/*/featured-events/basketball [other] (sofascore_basketball)
+09:39:58 | INFO     | src.ingestion.api_hijacker â€“ [Hijack] 🆕 Endpoint keşfedildi: https://www.sofascore.com/api/v1/odds/*/featured-events-by-popularity/basketball [other] (sofascore_basketball)
+09:39:58 | INFO     | src.ingestion.api_hijacker â€“ [Hijack] 🆕 Endpoint keşfedildi: https://www.sofascore.com/api/v1/event/*/odds/*/all [other] (sofascore_basketball)
+09:40:01 | INFO     | __main__ â€“ [Prophet] Rizespor vs Kocaelispor: Mevsimsel anomali yok.
+09:40:01 | INFO     | __main__ â€“ [Prophet] Eyüpspor vs Gençlerbirliği: Mevsimsel anomali yok.
+09:40:01 | INFO     | __main__ â€“ [Prophet] Alanyaspor vs Başakşehir: Mevsimsel anomali yok.
+09:40:01 | INFO     | __main__ â€“ [Prophet] Konyaspor vs Galatasaray: Mevsimsel anomali yok.
+09:40:01 | INFO     | __main__ â€“ [Prophet] Kayserispor vs Antalyaspor: Mevsimsel anomali yok.
+09:40:01 | INFO     | __main__ â€“ [Prophet] Gaziantep FK vs Trabzonspor: Mevsimsel anomali yok.
+09:40:01 | INFO     | __main__ â€“ [Prophet] Beşiktaş vs Göztepe: Mevsimsel anomali yok.
+09:40:01 | INFO     | __main__ â€“ [Prophet] Karagümrük vs Samsunspor: Mevsimsel anomali yok.
+09:40:01 | INFO     | __main__ â€“ [Prophet] Fenerbahçe vs Kasımpaşa: Mevsimsel anomali yok.
+09:40:01 | INFO     | __main__ â€“ [Prophet] Başakşehir vs Konyaspor: Mevsimsel anomali yok.
+09:40:01 | INFO     | __main__ â€“ [Prophet] Trabzonspor vs Karagümrük: Mevsimsel anomali yok.
+09:40:01 | INFO     | __main__ â€“ [Prophet] Kasımpaşa vs Karagümrük: Mevsimsel anomali yok.
+09:40:01 | INFO     | __main__ â€“ [Vector] Eyüpspor vs Gençlerbirliği: Tarihsel benzerlik â†’ D (100%), Ãœ2.5: 0%
+09:40:01 | INFO     | __main__ â€“ [Vector] Alanyaspor vs Başakşehir: Tarihsel benzerlik â†’ D (100%), Ãœ2.5: 0%
+09:40:01 | INFO     | __main__ â€“ [Vector] Konyaspor vs Galatasaray: Tarihsel benzerlik â†’ D (100%), Ãœ2.5: 0%
+09:40:01 | INFO     | __main__ â€“ [Vector] Kayserispor vs Antalyaspor: Tarihsel benzerlik â†’ D (100%), Ãœ2.5: 0%
+09:40:01 | INFO     | __main__ â€“ [Vector] Gaziantep FK vs Trabzonspor: Tarihsel benzerlik â†’ D (100%), Ãœ2.5: 0%
+09:40:01 | INFO     | __main__ â€“ [Vector] Beşiktaş vs Göztepe: Tarihsel benzerlik â†’ D (100%), Ãœ2.5: 0%
+09:40:01 | INFO     | __main__ â€“ [Vector] Karagümrük vs Samsunspor: Tarihsel benzerlik â†’ D (100%), Ãœ2.5: 0%
+09:40:01 | INFO     | __main__ â€“ [Vector] Fenerbahçe vs Kasımpaşa: Tarihsel benzerlik â†’ D (100%), Ãœ2.5: 0%
+09:40:01 | INFO     | __main__ â€“ [Vector] Başakşehir vs Konyaspor: Tarihsel benzerlik â†’ D (100%), Ãœ2.5: 0%
+09:40:01 | INFO     | __main__ â€“ [Vector] Trabzonspor vs Karagümrük: Tarihsel benzerlik â†’ D (100%), Ãœ2.5: 0%
+09:40:01 | INFO     | __main__ â€“ [Vector] Kasımpaşa vs Karagümrük: Tarihsel benzerlik â†’ D (100%), Ãœ2.5: 0%
+09:40:07 | INFO     | __main__ â€“ [Twin] Rizespor vs Kocaelispor: H=16% D=64% A=19% (skor=0-0, Ãœ2.5=3%)
+09:40:07 | INFO     | __main__ â€“ [Twin] Eyüpspor vs Gençlerbirliği: H=10% D=76% A=14% (skor=0-0, Ãœ2.5=1%)
+09:40:08 | INFO     | __main__ â€“ [Twin] Alanyaspor vs Başakşehir: H=18% D=72% A=10% (skor=0-0, Ãœ2.5=0%)
+09:40:08 | INFO     | __main__ â€“ [Twin] Konyaspor vs Galatasaray: H=14% D=71% A=16% (skor=0-0, Ãœ2.5=0%)
+09:40:09 | INFO     | __main__ â€“ [Twin] Kayserispor vs Antalyaspor: H=18% D=66% A=16% (skor=0-0, Ãœ2.5=0%)
+09:40:09 | INFO     | __main__ â€“ [Twin] Gaziantep FK vs Trabzonspor: H=14% D=74% A=12% (skor=0-0, Ãœ2.5=0%)
+09:40:10 | INFO     | __main__ â€“ [Twin] Beşiktaş vs Göztepe: H=14% D=78% A=8% (skor=0-0, Ãœ2.5=1%)
+09:40:10 | INFO     | __main__ â€“ [Twin] Karagümrük vs Samsunspor: H=8% D=72% A=20% (skor=0-0, Ãœ2.5=0%)
+09:40:10 | INFO     | __main__ â€“ [Twin] Fenerbahçe vs Kasımpaşa: H=16% D=76% A=8% (skor=0-0, Ãœ2.5=0%)
+09:40:11 | INFO     | __main__ â€“ [Twin] Başakşehir vs Konyaspor: H=14% D=68% A=18% (skor=0-0, Ãœ2.5=0%)
+09:40:11 | INFO     | __main__ â€“ [Twin] Trabzonspor vs Karagümrük: H=13% D=74% A=12% (skor=0-0, Ãœ2.5=0%)
+09:40:12 | INFO     | __main__ â€“ [Twin] Kasımpaşa vs Karagümrük: H=13% D=76% A=12% (skor=0-0, Ãœ2.5=1%)
+09:40:12 | INFO     | src.quant.sentiment_analyzer â€“ [Sentiment] Kocaelispor: 0.07 (20 haber)
+09:40:12 | INFO     | src.quant.sentiment_analyzer â€“ [Sentiment] Rizespor: 0.05 (20 haber)
+09:40:13 | INFO     | src.quant.sentiment_analyzer â€“ [Sentiment] Eyüpspor: 0.03 (20 haber)
+09:40:13 | INFO     | src.quant.sentiment_analyzer â€“ [Sentiment] Gençlerbirliği: 0.01 (20 haber)
+09:40:14 | INFO     | src.quant.sentiment_analyzer â€“ [Sentiment] Alanyaspor: 0.11 (20 haber)
+09:40:14 | INFO     | src.quant.sentiment_analyzer â€“ [Sentiment] Başakşehir: 0.03 (20 haber)
+09:40:14 | INFO     | src.quant.sentiment_analyzer â€“ [Sentiment] Galatasaray: 0.02 (20 haber)
+09:40:14 | INFO     | src.quant.sentiment_analyzer â€“ [Sentiment] Konyaspor: 0.02 (20 haber)
+09:40:15 | INFO     | src.quant.sentiment_analyzer â€“ [Sentiment] Kayserispor: 0.01 (20 haber)
+09:40:15 | INFO     | src.quant.sentiment_analyzer â€“ [Sentiment] Antalyaspor: 0.06 (20 haber)
+09:40:16 | INFO     | src.quant.sentiment_analyzer â€“ [Sentiment] Gaziantep FK: 0.02 (20 haber)
+09:40:16 | INFO     | src.quant.sentiment_analyzer â€“ [Sentiment] Trabzonspor: 0.04 (20 haber)
+09:41:39 | INFO     | src.ingestion.api_hijacker â€“ [Hijack] ✓ Dinleniyor: sofascore_basketball (https://www.sofascore.com/basketball)
+09:41:40 | INFO     | src.quant.sentiment_analyzer â€“ [Sentiment] Göztepe: 0.04 (20 haber)
+09:41:40 | INFO     | src.quant.sentiment_analyzer â€“ [Sentiment] Beşiktaş: 0.03 (20 haber)
+09:41:41 | INFO     | src.quant.sentiment_analyzer â€“ [Sentiment] Karagümrük: 0.12 (20 haber)
+09:41:41 | INFO     | src.quant.sentiment_analyzer â€“ [Sentiment] Samsunspor: 0.04 (20 haber)
+09:41:42 | INFO     | src.quant.sentiment_analyzer â€“ [Sentiment] Kasımpaşa: 0.06 (20 haber)
+09:41:42 | INFO     | src.quant.sentiment_analyzer â€“ [Sentiment] Fenerbahçe: 0.00 (20 haber)
+09:41:43 | INFO     | src.quant.sentiment_analyzer â€“ [Sentiment] Konyaspor: 0.02 (20 haber)
+09:41:43 | INFO     | src.quant.sentiment_analyzer â€“ [Sentiment] Başakşehir: 0.03 (20 haber)
+09:41:43 | INFO     | src.quant.sentiment_analyzer â€“ [Sentiment] Karagümrük: 0.12 (20 haber)
+09:41:43 | INFO     | src.quant.sentiment_analyzer â€“ [Sentiment] Trabzonspor: 0.04 (20 haber)
+09:41:43 | INFO     | src.quant.sentiment_analyzer â€“ [Sentiment] Karagümrük: 0.12 (20 haber)
+09:41:43 | INFO     | src.quant.sentiment_analyzer â€“ [Sentiment] Kasımpaşa: 0.06 (20 haber)
+09:41:48 | INFO     | src.core.black_litterman_optimizer â€“ BL optimizasyonu tamamlandı – toplam ağırlık: 0.2000
+09:41:48 | INFO     | src.core.constrained_risk_solver â€“ EV eşiğini geçen bahis yok – portföy boş.
+09:41:48 | WARNING  | __main__ â€“ [Sanity] GeÃ§ersiz olasÄ±lÄ±k/oran nedeniyle 24 sinyal elendi.
+09:41:48 | INFO     | src.memory.db_manager â€“ 1. döngü – sinyaller kaydedildi.
+09:41:48 | SUCCESS  | __main__ â€“ DÃ¶ngÃ¼ #1 tamamlandÄ± â€“ 0 sinyal Ã¼retildi.
+09:41:48 | INFO     | __main__ â€“ [Perf] DÃ¶ngÃ¼ #1: 140901ms (ort=140901ms, max=140901ms)
+09:41:48 | INFO     | src.ingestion.api_hijacker â€“ [Hijack] 🆕 Endpoint keşfedildi: https://www.sofascore.com/api/v1/odds/*/featured-events/tennis [other] (sofascore_tennis)
+09:41:48 | INFO     | src.ingestion.api_hijacker â€“ [Hijack] 🆕 Endpoint keşfedildi: https://www.sofascore.com/api/v1/odds/*/featured-events-by-popularity/tennis [other] (sofascore_tennis)
+09:41:49 | INFO     | src.ingestion.async_data_factory â€“ FlashScore: 23 maç tarandı.
+09:41:49 | INFO     | src.ingestion.async_data_factory â€“ FlashScore: 23 maç tarandı.
+09:41:54 | INFO     | src.ingestion.api_hijacker â€“ [Hijack] ✓ Dinleniyor: sofascore_tennis (https://www.sofascore.com/tennis)
+09:42:01 | INFO     | src.ingestion.api_hijacker â€“ [Hijack] ✓ Dinleniyor: flashscore (https://www.flashscore.com.tr/)
+09:42:02 | INFO     | src.ingestion.api_hijacker â€“ [Hijack] 🆕 Endpoint keşfedildi: https://www.mackolik.com/perform/p0/ajax/components/competition/livescores/json [other] (mackolik)
+09:42:15 | WARNING  | src.ingestion.api_hijacker â€“ [Hijack] ✗ mackolik bağlanamadı: Page.goto: Connection closed while reading from the driver

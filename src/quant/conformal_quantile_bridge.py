@@ -9,8 +9,11 @@ import polars as pl
 from loguru import logger
 
 try:
-    from mapie.regression import MapieQuantileRegressor
     from sklearn.ensemble import GradientBoostingRegressor
+    try:
+        from mapie.regression import ConformalizedQuantileRegressor as MapieQuantileRegressor
+    except ImportError:
+        from mapie.regression import MapieQuantileRegressor
     MAPIE_AVAILABLE = True
 except ImportError:
     MAPIE_AVAILABLE = False

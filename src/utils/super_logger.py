@@ -27,8 +27,10 @@ Teknoloji: loguru (Python'un en gelişmiş log kütüphanesi)
 from __future__ import annotations
 
 import json
+import logging
 import os
 import time
+import warnings
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -135,7 +137,9 @@ def _json_sink_format(record: dict) -> str:
     if remaining:
         entry["extra"] = remaining
 
-    return json.dumps(entry, ensure_ascii=False, default=str) + "\n"
+    json_str = json.dumps(entry, ensure_ascii=False, default=str)
+    # loguru format_map() çakışmasını önlemek için braces escape
+    return json_str.replace("{", "{{").replace("}", "}}") + "\n"
 
 
 # ═══════════════════════════════════════════════
@@ -221,6 +225,7 @@ class SuperLogger:
             compression=compression,
             serialize=False,
             enqueue=True,  # Thread-safe
+            colorize=False,
         )
 
         # Hata-özel sink
@@ -233,12 +238,94 @@ class SuperLogger:
             compression=compression,
             serialize=False,
             enqueue=True,
+            colorize=False,
+        )
+
+        # Kütüphane uyarılarını Loguru'ya yönlendir
+        self._intercept_stdlib_logging()
+        self._intercept_warnings()
+
+        # Kütüphane etkinlik logu (ayrı sink)
+        self._lib_sink_id = logger.add(
+            str(self._log_dir / "library_events.jsonl"),
+            format=_json_sink_format,
+            level="DEBUG",
+            rotation=rotation,
+            retention=retention,
+            compression=compression,
+            serialize=False,
+            enqueue=True,
+            colorize=False,
+            filter=lambda record: record["extra"].get("module", "").startswith("lib."),
         )
 
         logger.debug(
             f"[SuperLogger] Başlatıldı: dir={log_dir}, "
-            f"rotation={rotation}, retention={retention}"
+            f"rotation={rotation}, retention={retention}, "
+            f"stdlib_bridge=aktif, warnings_capture=aktif"
         )
+
+    # ─────────────────────────────────────────────
+    #  STDLIB / KÜTÜPHANE LOGGING KÖPRÜSÜ
+    # ─────────────────────────────────────────────
+    def _intercept_stdlib_logging(self):
+        """Python stdlib logging → Loguru köprüsü.
+
+        Tüm kütüphanelerin (PyTensor, arviz, torch, JAX vb.)
+        standart logging çıktılarını yakalar ve Loguru'ya yönlendirir.
+        """
+        class _InterceptHandler(logging.Handler):
+            def emit(self, record: logging.LogRecord):
+                try:
+                    level = logger.level(record.levelname).name
+                except ValueError:
+                    level = record.levelno
+                frame, depth = logging.currentframe(), 0
+                while frame and (depth == 0 or frame.f_code.co_filename == logging.__file__):
+                    frame = frame.f_back
+                    depth += 1
+                # Kütüphane mesajlarındaki <TAG> ifadelerini [] ile değiştir
+                # (Loguru colorizer bunları renk yönergesi olarak yorumlar ve çöker)
+                msg = record.getMessage().replace("<", "[").replace(">", "]")
+                logger.bind(module=f"lib.{record.name}").opt(
+                    depth=depth, exception=record.exc_info,
+                ).log(level, msg)
+
+        logging.basicConfig(handlers=[_InterceptHandler()], level=logging.DEBUG, force=True)
+
+        # Gürültülü kütüphaneleri WARNING seviyesine çek
+        for noisy in (
+            "urllib3", "httpx", "httpcore", "asyncio", "charset_normalizer",
+            "filelock", "PIL", "matplotlib.font_manager",
+            "prefect.flow_runs", "prefect.task_runs",
+            # JAX: compile cache, dispatch, XLA tracing mesajları çok gürültülü
+            "jax", "jax._src", "jax._src.dispatch", "jax._src.compiler",
+            "jax._src.interpreters", "jax._src.cache_key",
+            "jax._src.interpreters.pxla", "jax._src.compilation_cache",
+            # Neo4j driver debug mesajları
+            "neo4j",
+        ):
+            logging.getLogger(noisy).setLevel(logging.WARNING)
+
+    def _intercept_warnings(self):
+        """Python warnings modülünü yakalar.
+
+        FutureWarning, DeprecationWarning gibi uyarıları log'a yazar.
+        """
+        _original_showwarning = warnings.showwarning
+
+        def _loguru_showwarning(message, category, filename, lineno,
+                                file=None, line=None):
+            safe_msg = str(message).replace("<", "[").replace(">", "]")
+            logger.bind(module="lib.warnings").warning(
+                f"{category.__name__}: {safe_msg} "
+                f"({filename}:{lineno})"
+            )
+
+        warnings.showwarning = _loguru_showwarning
+        # DeprecationWarning'leri de göster (normalde gizlenir)
+        warnings.filterwarnings("always", category=DeprecationWarning)
+        warnings.filterwarnings("always", category=FutureWarning)
 
     def get_module_logger(self, module_name: str) -> logger.__class__:
         """Modül-özel logger döndürür.
@@ -258,6 +345,7 @@ class SuperLogger:
                 compression=self._compression,
                 serialize=False,
                 enqueue=True,
+                colorize=False,
                 filter=lambda record, mod=module_name: (
                     record["extra"].get("module", "") == mod
                 ),
@@ -432,3 +520,60 @@ class SuperLogger:
     def get_module_log_path(self, module: str) -> str:
         safe_name = module.replace(".", "_").replace("/", "_")
         return str(self._log_dir / f"{safe_name}.jsonl")
+
+    def check_disk_usage(self, max_log_size_mb: float = 500.0) -> dict:
+        """Log dizin boyutunu kontrol eder. Limit aşılırsa uyarı verir."""
+        total = sum(
+            f.stat().st_size for f in self._log_dir.rglob("*") if f.is_file()
+        )
+        total_mb = total / (1024 * 1024)
+        over_limit = total_mb > max_log_size_mb
+
+        if over_limit:
+            logger.warning(
+                f"[SuperLogger] Log dizini {total_mb:.0f}MB – "
+                f"limit {max_log_size_mb:.0f}MB aşıldı!"
+            )
+
+        return {
+            "total_size_mb": round(total_mb, 2),
+            "max_size_mb": max_log_size_mb,
+            "over_limit": over_limit,
+            "file_count": sum(1 for _ in self._log_dir.rglob("*") if _.is_file()),
+        }
+
+    def log_library_event(self, library: str, event: str,
+                          level: str = "DEBUG", **extra) -> None:
+        """Kütüphane olaylarını özel sink'e loglar.
+
+        PyTensor compile, JAX trace, Neo4j query gibi
+        kütüphane seviyesi olayları merkezi olarak kaydeder.
+        """
+        lg = logger.bind(module=f"lib.{library}", **extra)
+        safe_event = event.replace("<", "[").replace(">", "]")
+        getattr(lg, level.lower(), lg.debug)(safe_event)
+
+    def summarize_session(self) -> dict:
+        """Mevcut oturum özet istatistiklerini döndürür."""
+        stats = self.get_all_stats()
+        total_entries = sum(s.total_entries for s in stats.values())
+        total_errors = sum(s.errors for s in stats.values())
+        total_warnings = sum(s.warnings for s in stats.values())
+        slowest = sorted(stats.values(), key=lambda s: s.max_duration_ms, reverse=True)
+
+        return {
+            "total_modules": len(stats),
+            "total_entries": total_entries,
+            "total_errors": total_errors,
+            "total_warnings": total_warnings,
+            "error_rate": total_errors / max(total_entries, 1),
+            "top_3_slowest": [
+                {"module": s.module, "max_ms": s.max_duration_ms, "avg_ms": s.avg_duration_ms}
+                for s in slowest[:3]
+            ],
+            "top_3_error_prone": [
+                {"module": s.module, "errors": s.errors}
+                for s in sorted(stats.values(), key=lambda s: s.errors, reverse=True)[:3]
+                if s.errors > 0
+            ],
+        }

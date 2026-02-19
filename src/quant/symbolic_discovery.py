@@ -34,12 +34,9 @@ from typing import Any
 import numpy as np
 from loguru import logger
 
-try:
-    from pysr import PySRRegressor
-    PYSR_OK = True
-except ImportError:
-    PYSR_OK = False
-    logger.debug("pysr yüklü değil – genetik formül arama fallback.")
+PYSR_OK = False
+PySRRegressor = None
+logger.debug("pysr devre dışı – juliacall/Julia kurulum gecikmesi önlendi. Genetik formül arama fallback aktif.")
 
 try:
     from sklearn.metrics import mean_squared_error, r2_score
@@ -86,10 +83,19 @@ class SymbolicReport:
 # ═══════════════════════════════════════════════
 #  GENETIK FORMÜL ARAMA (Fallback)
 # ═══════════════════════════════════════════════
-class SimpleSymbolicSearch:
-    """Basit genetik formül arama (PySR yoksa).
+try:
+    from scipy.optimize import minimize as _scipy_minimize
+    SCIPY_OPT_OK = True
+except ImportError:
+    SCIPY_OPT_OK = False
 
-    Önceden tanımlı formül şablonlarını dener ve en iyisini seçer.
+
+class SimpleSymbolicSearch:
+    """Geliştirilmiş genetik formül arama (PySR yoksa).
+
+    Önceden tanımlı formül şablonlarını scipy.optimize ile
+    optimize eder ve en iyisini seçer. Random search + local
+    refinement hibrit stratejisi.
     """
 
     TEMPLATES = [
@@ -107,12 +113,44 @@ class SimpleSymbolicSearch:
          lambda X, p: p[0] * np.exp(-np.clip(p[1], -2, 2) * X[:, 0]) + p[2] * X[:, 1]),
         ("a*x0/(1 + b*abs(x1)) + c",
          lambda X, p: p[0] * X[:, 0] / (1 + np.abs(p[1]) * np.abs(X[:, 1]) + 1e-6) + p[2]),
+        ("a*sin(b*x0) + c*x1 + d",
+         lambda X, p: p[0] * np.sin(p[1] * X[:, 0]) + p[2] * X[:, 1] + (p[3] if len(p) > 3 else 0)),
+        ("a*x0^2 + b*x0 + c",
+         lambda X, p: p[0] * X[:, 0] ** 2 + p[1] * X[:, 0] + p[2]),
+        ("a*x0*x1/(b + abs(x0) + abs(x1)) + c",
+         lambda X, p: p[0] * X[:, 0] * X[:, min(1, X.shape[1] - 1)] / (np.abs(p[1]) + np.abs(X[:, 0]) + np.abs(X[:, min(1, X.shape[1] - 1)]) + 1e-6) + p[2]),
     ]
+
+    def _optimize_params(self, func, X: np.ndarray, y: np.ndarray,
+                         init_params: list[float]) -> tuple[list[float], float]:
+        """Scipy ile parametre optimizasyonu."""
+        if not SCIPY_OPT_OK:
+            return init_params, float("inf")
+
+        def objective(p):
+            try:
+                y_pred = func(X, p)
+                if not np.all(np.isfinite(y_pred)):
+                    return 1e12
+                return float(np.mean((y - y_pred) ** 2))
+            except Exception:
+                return 1e12
+
+        try:
+            result = _scipy_minimize(
+                objective, init_params, method="Nelder-Mead",
+                options={"maxiter": 500, "xatol": 1e-6, "fatol": 1e-8},
+            )
+            if result.success and np.isfinite(result.fun):
+                return result.x.tolist(), float(result.fun)
+        except Exception:
+            pass
+        return init_params, float("inf")
 
     def search(self, X: np.ndarray, y: np.ndarray,
                  feature_names: list[str] | None = None,
                  n_trials: int = 500) -> list[DiscoveredFormula]:
-        """Formül arama."""
+        """Hibrit formül arama (random search + local refinement)."""
         results = []
         n_features = X.shape[1]
         names = feature_names or [f"x{i}" for i in range(n_features)]
@@ -121,11 +159,13 @@ class SimpleSymbolicSearch:
             if n_features < 2 and "x1" in template_str:
                 continue
 
+            n_params = template_str.count("*") + 1
             best_loss = float("inf")
-            best_params = [1.0, 1.0, 0.0]
+            best_params = [1.0] * n_params
 
+            # Phase 1: Random search
             for _ in range(n_trials):
-                params = np.random.randn(3) * 2
+                params = np.random.randn(n_params) * 2
                 try:
                     y_pred = func(X, params)
                     if not np.all(np.isfinite(y_pred)):
@@ -137,11 +177,19 @@ class SimpleSymbolicSearch:
                 except Exception:
                     continue
 
+            # Phase 2: Local refinement (scipy)
             if best_loss < float("inf"):
-                # Formül string oluştur
+                opt_params, opt_loss = self._optimize_params(
+                    func, X, y, best_params,
+                )
+                if opt_loss < best_loss:
+                    best_loss = opt_loss
+                    best_params = opt_params
+
+            if best_loss < float("inf"):
                 eq = template_str
                 for i, p in enumerate(best_params):
-                    eq = eq.replace(chr(ord("a") + i), f"{p:.3f}", 1)
+                    eq = eq.replace(chr(ord("a") + i), f"{p:.4f}", 1)
                 for i, name in enumerate(names):
                     eq = eq.replace(f"x{i}", name)
 

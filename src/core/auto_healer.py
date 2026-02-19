@@ -77,8 +77,8 @@ except ImportError:
     HTTPX_OK = False
 
 try:
-    import google.generativeai as genai
-    GEMINI_OK = True
+    from src.utils.gemini_client import gemini_generate, GEMINI_OK as _GEMINI_OK
+    GEMINI_OK = _GEMINI_OK
 except ImportError:
     GEMINI_OK = False
 
@@ -229,6 +229,24 @@ HEURISTIC_FIXES: dict[str, list[tuple[str, str]]] = {
     "JSONDecodeError": [
         (r"\.json\(\)", ".text"),
     ],
+    "TypeError": [
+        # unsupported operand type(s) for /: 'int' and 'NoneType'
+        (r"(\w+)\s*/\s*(\w+)", "\\1 / (\\2 if \\2 else 1)"),
+        # float() argument must be a string or a number, not 'NoneType'
+        (r"float\((\w+)\)", "float(\\1 if \\1 is not None else 0)"),
+        # 'NoneType' object is not subscriptable
+        (r"(\w+)\[", "(\\1 or {})["),
+    ],
+    "ValueError": [
+        # could not convert string to float
+        (r"float\(([^)]+)\)", "float(\\1) if \\1 not in (None, '', 'None') else 0.0"),
+    ],
+    "ZeroDivisionError": [
+        (r"(\w+)\s*/\s*(\w+)", "\\1 / max(\\2, 1e-10)"),
+    ],
+    "ConnectionError": [
+        (r"(httpx\.get|requests\.get)\(", "\\1(timeout=30, "),
+    ],
 }
 
 
@@ -274,14 +292,13 @@ async def _ask_ollama(prompt: str, model: str = "deepseek-coder:6.7b"
 
 
 def _ask_gemini(prompt: str) -> str | None:
-    """Google Gemini API'ye sor."""
+    """Google Gemini API'ye sor (google-genai SDK)."""
     if not GEMINI_OK:
         return None
 
     try:
-        model = genai.GenerativeModel("gemini-1.5-flash")
-        response = model.generate_content(prompt)
-        return response.text if response else None
+        result = gemini_generate(prompt=prompt)
+        return result if result else None
     except Exception as e:
         logger.debug(f"[Healer] Gemini hatası: {e}")
     return None

@@ -24,31 +24,96 @@ class DataFactory:
         "flashscore_scrape": "https://www.flashscore.com.tr/",
     }
 
+    # Football-data.org ücretsiz ligler (TR1 YOK - ücretsiz tier kapsamında değil)
+    FOOTBALL_DATA_COMPETITIONS = {
+        "PL": "Premier League",
+        "BL1": "Bundesliga",
+        "SA": "Serie A",
+        "PD": "La Liga",
+        "FL1": "Ligue 1",
+        "CL": "Champions League",
+        # "EC" ve "WC" sezon dışında 404 döndürüyor - kaldırıldı
+    }
+
+    # Sofascore Türk ligleri için ID'ler
+    SOFASCORE_TOURNAMENT_IDS = {
+        "super_lig": 52,        # Süper Lig
+        "tff1": 98,             # TFF 1. Lig
+        "tff2": 3024,           # TFF 2. Lig
+        "turkish_cup": 231,     # Türkiye Kupası
+    }
+
     def __init__(self, db, cache, headless: bool = True):
         self._db = db
         self._cache = cache
         self._headless = headless
         self._client: httpx.AsyncClient | None = None
         self._browser = None
+        self._pw = None  # Playwright instance - tek tutulur
+        self._browser_lock = asyncio.Lock()
+        self._browser_fail_count = 0
+        self._browser_max_fails = 5
         logger.debug("DataFactory başlatıldı.")
 
     async def _ensure_client(self):
         if self._client is None or self._client.is_closed:
             self._client = httpx.AsyncClient(
                 timeout=30,
-                headers={"User-Agent": "QuantBot/1.0"},
+                headers={
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+                    "Accept-Language": "tr-TR,tr;q=0.9",
+                },
                 follow_redirects=True,
+                verify=False,  # SSL sertifika sorunlarını aşmak için
             )
 
     async def _ensure_browser(self):
-        if self._browser is None:
-            try:
-                from playwright.async_api import async_playwright
-                pw = await async_playwright().start()
-                self._browser = await pw.chromium.launch(headless=self._headless)
-                logger.info("Playwright tarayıcısı başlatıldı.")
-            except Exception as e:
-                logger.warning(f"Playwright başlatılamadı: {e}")
+        """Browser sağlıklı değilse yeniden başlat."""
+        async with self._browser_lock:
+            if self._browser_fail_count >= self._browser_max_fails:
+                logger.warning(f"[Browser] {self._browser_fail_count} başarısız denemeden sonra browser devre dışı.")
+                return
+
+            browser_healthy = False
+            if self._browser is not None:
+                try:
+                    # Browser hâlâ çalışıyor mu kontrol et
+                    _ = self._browser.contexts
+                    browser_healthy = True
+                except Exception:
+                    browser_healthy = False
+
+            if not browser_healthy:
+                # Eski kaynakları temizle
+                try:
+                    if self._browser:
+                        await self._browser.close()
+                except Exception:
+                    pass
+                try:
+                    if self._pw:
+                        await self._pw.stop()
+                except Exception:
+                    pass
+                self._browser = None
+                self._pw = None
+
+                try:
+                    from playwright.async_api import async_playwright
+                    self._pw = await async_playwright().start()
+                    self._browser = await self._pw.chromium.launch(
+                        headless=True,
+                        args=[
+                            "--no-sandbox",
+                            "--disable-setuid-sandbox",
+                            "--disable-dev-shm-usage",
+                            "--disable-gpu",
+                        ],
+                    )
+                    logger.info("Playwright tarayıcısı (yeniden) başlatıldı.")
+                except Exception as e:
+                    self._browser_fail_count += 1
+                    logger.warning(f"Playwright başlatılamadı ({self._browser_fail_count}/{self._browser_max_fails}): {e}")
 
     # ── API: The Odds API (ücretsiz tier) ──
     async def _fetch_odds_api(self, api_key: str = "") -> list[dict]:
@@ -71,35 +136,107 @@ class DataFactory:
             logger.warning(f"Odds API hatası: {e}")
             return []
 
-    # ── API: Football-Data.org ──
+    # ── API: Football-Data.org (ücretsiz tier – TR1 hariç) ──
     async def _fetch_football_data(self, api_key: str = "") -> list[dict]:
         await self._ensure_client()
-        headers = {}
-        if api_key:
-            headers["X-Auth-Token"] = api_key
-        try:
-            resp = await self._client.get(
-                f"{self.SOURCES['football_data']}/competitions/TR1/matches",
-                headers=headers,
-                params={"status": "SCHEDULED"},
-            )
-            resp.raise_for_status()
-            data = resp.json()
-            return data.get("matches", [])
-        except Exception as e:
-            logger.warning(f"Football-Data hatası: {e}")
-            return []
+        if not api_key:
+            logger.debug("[FD.org] API key yok – Sofascore fallback'e geçiliyor.")
+            return await self._fetch_sofascore_scheduled()
 
-    # ── Scraper: FlashScore ──
+        headers = {"X-Auth-Token": api_key}
+        all_matches = []
+        for comp_code in self.FOOTBALL_DATA_COMPETITIONS:
+            try:
+                resp = await self._client.get(
+                    f"{self.SOURCES['football_data']}/competitions/{comp_code}/matches",
+                    headers=headers,
+                    params={"status": "SCHEDULED"},
+                )
+                if resp.status_code == 200:
+                    data = resp.json()
+                    matches = data.get("matches", [])
+                    for m in matches:
+                        m["_competition_code"] = comp_code
+                        m["sport"] = "football"
+                    all_matches.extend(matches)
+                elif resp.status_code == 429:
+                    logger.debug("[FD.org] Rate limit – durduruluyor.")
+                    await asyncio.sleep(10)
+                    break
+                elif resp.status_code == 404:
+                    logger.debug(f"[FD.org] {comp_code} bulunamadı (404) – atlanıyor.")
+                else:
+                    logger.debug(f"[FD.org] {comp_code}: HTTP {resp.status_code}")
+            except Exception as e:
+                logger.debug(f"[FD.org] {comp_code} hatası: {e}")
+        if all_matches:
+            logger.info(f"[FD.org] {len(all_matches)} maç çekildi.")
+        return all_matches
+
+    # ── Sofascore API fallback (ücretsiz, no-auth) ──
+    async def _fetch_sofascore_scheduled(self) -> list[dict]:
+        """Sofascore'dan Türk ligi maçlarını çek."""
+        await self._ensure_client()
+        from datetime import datetime as _dt
+        today = _dt.now().strftime("%Y-%m-%d")
+        results = []
+        try:
+            headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+                "Accept": "application/json",
+                "Referer": "https://www.sofascore.com/",
+                "Origin": "https://www.sofascore.com",
+            }
+            resp = await self._client.get(
+                f"https://api.sofascore.com/api/v1/sport/football/scheduled-events/{today}",
+                headers=headers,
+                timeout=15,
+            )
+            if resp.status_code == 200:
+                events = resp.json().get("events", [])
+                for ev in events:
+                    home = ev.get("homeTeam", {}).get("name", "")
+                    away = ev.get("awayTeam", {}).get("name", "")
+                    if home and away:
+                        results.append({
+                            "match_id": f"ss_{ev.get('id', '')}",
+                            "home_team": home,
+                            "away_team": away,
+                            "league": ev.get("tournament", {}).get("name", ""),
+                            "status": "upcoming",
+                            "sport": "football",
+                        })
+                logger.info(f"[Sofascore-fallback] {len(results)} maç çekildi.")
+        except Exception as e:
+            logger.debug(f"[Sofascore-fallback] {e}")
+        return results
+
+    # ── Scraper: FlashScore (güvenli browser ile) ──
     async def _scrape_flashscore(self) -> list[dict]:
         await self._ensure_browser()
         if self._browser is None:
             return []
         matches = []
+        page = None
         try:
-            page = await self._browser.new_page()
-            await page.goto("https://www.flashscore.com.tr/futbol/turkiye/super-lig/", timeout=30000)
-            await page.wait_for_selector(".event__match", timeout=10000)
+            ctx = await self._browser.new_context(
+                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+                viewport={"width": 1280, "height": 720},
+            )
+            page = await ctx.new_page()
+            page.set_default_timeout(20000)
+
+            await page.goto(
+                "https://www.flashscore.com.tr/futbol/turkiye/super-lig/",
+                wait_until="domcontentloaded",
+                timeout=25000,
+            )
+            # Daha güvenilir selector bekle
+            try:
+                await page.wait_for_selector(".event__match, .sportName--soccer", timeout=8000)
+            except Exception:
+                pass  # Selector bulunamazsa yine de devam et
+
             elements = await page.query_selector_all(".event__match")
             for el in elements[:50]:
                 try:
@@ -115,12 +252,26 @@ class DataFactory:
                             "away_team": away_name,
                             "time": match_time,
                             "source": "flashscore",
+                            "status": "upcoming",
                         })
                 except Exception:
                     continue
-            await page.close()
+
+            logger.info(f"FlashScore: {len(matches)} maç tarandı.")
         except Exception as e:
             logger.warning(f"FlashScore scrape hatası: {e}")
+            # Browser sorunluysa sıfırla
+            self._browser = None
+        finally:
+            if page is not None:
+                try:
+                    await page.close()
+                except Exception:
+                    pass
+            try:
+                await ctx.close()  # type: ignore
+            except Exception:
+                pass
         return matches
 
     # ── Veriyi normalize et ve DB'ye kaydet ──

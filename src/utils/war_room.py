@@ -29,8 +29,8 @@ from typing import Any
 from loguru import logger
 
 try:
-    import google.generativeai as genai
-    GEMINI_OK = True
+    from src.utils.gemini_client import gemini_generate, GEMINI_OK as _GEMINI_OK
+    GEMINI_OK = _GEMINI_OK
 except ImportError:
     GEMINI_OK = False
 
@@ -143,10 +143,8 @@ def _ask_gemini_sync(prompt: str, system: str) -> str:
     if not GEMINI_OK:
         return ""
     try:
-        model = genai.GenerativeModel("gemini-1.5-flash")
-        full = f"{system}\n\n{prompt}"
-        response = model.generate_content(full)
-        return response.text if response else ""
+        result = gemini_generate(prompt=prompt, system=system)
+        return result
     except Exception:
         pass
     return ""
@@ -356,6 +354,7 @@ class WarRoom:
 
     def format_telegram(self, result: DebateResult) -> str:
         """Telegram formatında tartışma çıktısı."""
+        avg_conf = sum(op.confidence for op in result.opinions) / max(len(result.opinions), 1)
         lines = [
             result.dialogue,
             "─" * 30,
@@ -363,8 +362,34 @@ class WarRoom:
             f"  ✅ BET: {result.bet_count}",
             f"  ⏸️ HOLD: {result.hold_count}",
             f"  ❌ SKIP: {result.skip_count}",
+            f"  📊 Güven: {avg_conf:.0%}",
             "",
             f"📋 <b>Karar: {result.majority_verdict}</b>"
             + (" (OYBİRLİĞİ)" if result.consensus else ""),
         ]
         return "\n".join(lines)
+
+    def quick_verdict(self, match_info: dict) -> str:
+        """Hızlı oylama – tam tartışma yapmadan karar üretir."""
+        ev = match_info.get("ev", 0.0)
+        kelly = match_info.get("kelly", 0.0)
+        odds = match_info.get("odds", 2.0)
+        prob = match_info.get("prob", 0.5)
+
+        score = 0
+        if ev > 0.05:
+            score += 2
+        elif ev > 0.02:
+            score += 1
+        if kelly > 0.03:
+            score += 1
+        if prob > 0.55:
+            score += 1
+        if odds > 1.5 and odds < 5.0:
+            score += 1
+
+        if score >= 4:
+            return "BET"
+        elif score >= 2:
+            return "HOLD"
+        return "SKIP"

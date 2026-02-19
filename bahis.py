@@ -1,98 +1,202 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
-╔══════════════════════════════════════════════════════════════╗
-║  QUANT BETTING BOT – ORCHESTRATOR (bahis.py)                ║
-║  Tek görevi: uzantı modülleri başlatmak, durdurmak ve       ║
-║  yönetmek.  İş mantığı SIFIR – her şey src/ altında.       ║
-╚══════════════════════════════════════════════════════════════╝
+â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—
+â•‘  QUANT BETTING BOT â€“ ORCHESTRATOR (bahis.py)                â•‘
+â•‘  Tek gÃ¶revi: uzantÄ± modÃ¼lleri baÅŸlatmak, durdurmak ve       â•‘
+â•‘  yÃ¶netmek.  Ä°ÅŸ mantÄ±ÄŸÄ± SIFIR â€“ her ÅŸey src/ altÄ±nda.       â•‘
+â•‘                                                              â•‘
+â•‘  !! KULLANIM_KILAVUZU.txt GUNCELLEME HATIRLATMASI !!        â•‘
+â•‘  Bu dosyada veya src/ altinda yapilan her degisiklikte       â•‘
+â•‘  KULLANIM_KILAVUZU.txt belgesinin ilgili bolumu de           â•‘
+â•‘  guncellenmelidir.                                           â•‘
+â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 """
 from __future__ import annotations
 
 import asyncio
+import contextlib
+import math
+import os
 import signal
 import sys
+import warnings
 from pathlib import Path
 
 import typer
 from loguru import logger
 from rich.console import Console
 
-# ── proje kökünü PYTHONPATH'e ekle ──
+# â”€â”€ proje kÃ¶kÃ¼nÃ¼ PYTHONPATH'e ekle â”€â”€
 ROOT = Path(__file__).resolve().parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-# ── .env dosyasını yükle ──
+# Windows terminal encoding kaynaklÄ± UnicodeEncodeError Ã§Ã¶kÃ¼ÅŸlerini engelle.
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
+# â”€â”€ .env dosyasÄ±nÄ± yÃ¼kle â”€â”€
 try:
     from dotenv import load_dotenv
     load_dotenv(ROOT / ".env")
 except ImportError:
     pass
 
-# ── Loguru yapılandırması ──
+# â”€â”€ GÃ¼rÃ¼ltÃ¼lÃ¼ stdlib loggerlarÄ± erken bastÄ±r (import Ã¶ncesi) â”€â”€
+import logging as _logging
+for _noisy in (
+    # JAX / XLA
+    "jax", "jax._src", "jax._src.dispatch", "jax._src.compiler",
+    "jax._src.interpreters", "jax._src.interpreters.pxla",
+    "jax._src.cache_key", "jax._src.compilation_cache",
+    "jax._src.xla_bridge",
+    # Neo4j
+    "neo4j",
+    # Numba â€“ byteflow/SSA DEBUG flood'unu kapat
+    "numba", "numba.core", "numba.core.byteflow", "numba.core.ssa",
+    "numba.core.interpreter", "numba.typed", "numba.np",
+    # Prophet / Cmdstan / Stan
+    "prophet", "cmdstanpy", "pystan", "stan",
+    # Matplotlib
+    "matplotlib", "matplotlib.font_manager",
+    # TensorFlow (varsa)
+    "tensorflow", "tf",
+    # urllib3 / httpx
+    "urllib3", "httpx", "httpcore",
+):
+    _logging.getLogger(_noisy).setLevel(_logging.WARNING)
+
+# Bilinen gÃ¼rÃ¼ltÃ¼ uyarÄ±larÄ±nÄ± bastÄ±r (hesap fallback ile devam ediyor).
+warnings.filterwarnings("ignore", message="Mean of empty slice\\.", category=RuntimeWarning)
+warnings.filterwarnings("ignore", message="invalid value encountered in scalar divide", category=RuntimeWarning)
+
+# â”€â”€ Loguru yapÄ±landÄ±rmasÄ± â”€â”€
 (ROOT / "logs").mkdir(exist_ok=True)
 (ROOT / "logs" / "archive").mkdir(exist_ok=True)
+(ROOT / "data" / "logs").mkdir(parents=True, exist_ok=True)
 logger.remove()
+
+# Konsol Ã§Ä±ktÄ±sÄ± â€“ okunabilir ve renksiz gÃ¼venli
 logger.add(
     sys.stderr,
-    format="<green>{time:HH:mm:ss}</green> | <level>{level:<8}</level> | <cyan>{name}</cyan> – {message}",
+    format="<green>{time:HH:mm:ss}</green> | <level>{level:<8}</level> | <cyan>{name}</cyan> â€“ {message}",
     level="INFO",
+    backtrace=True,
+    diagnose=True,
 )
+
+# GÃ¼nlÃ¼k log dosyasÄ± â€“ DEBUG seviyesinde her ÅŸeyi yakala
 logger.add(
     ROOT / "logs" / "bot_{time:YYYY-MM-DD}.log",
+    format="{time:YYYY-MM-DD HH:mm:ss.SSS} | {level:<8} | {name}:{function}:{line} â€“ {message}",
     rotation="10 MB",
-    retention="3 days",       # Son 3 gün aktif (eski → LogRotator arşivler)
-    compression="gz",         # Rotasyon sonrası sıkıştır
+    retention="3 days",
+    compression="gz",
     level="DEBUG",
+    backtrace=True,
+    diagnose=True,
+    colorize=False,
 )
+
+# Hata logu â€“ sadece ERROR ve Ã¼stÃ¼
 logger.add(
     ROOT / "logs" / "error.log",
+    format="{time:YYYY-MM-DD HH:mm:ss.SSS} | {level:<8} | {name}:{function}:{line} â€“ {message}",
     level="ERROR",
     rotation="5 MB",
     retention="7 days",
+    backtrace=True,
+    diagnose=True,
+    colorize=False,
+)
+
+# Boot logu â€“ tam boot sÃ¼recini kaydet
+logger.add(
+    ROOT / "logs" / "boot.log",
+    format="{time:YYYY-MM-DD HH:mm:ss.SSS} | {level:<8} | {name}:{function}:{line} â€“ {message}",
+    level="DEBUG",
+    mode="w",
+    colorize=False,
 )
 
 console = Console()
 app = typer.Typer(
     name="bahis",
-    help="Quant Betting Bot – Komuta Merkezi",
+    help="Quant Betting Bot â€“ Komuta Merkezi",
     add_completion=False,
     pretty_exceptions_enable=True,
+    invoke_without_command=True,
 )
 
-# ═══════════════════════════════════════════════
+
+@app.callback()
+def _default_callback(ctx: typer.Context):
+    """Alt komut verilmezse otomatik olarak 'run' Ã§alÄ±ÅŸtÄ±rÄ±r."""
+    if ctx.invoked_subcommand is None:
+        # VarsayÄ±lan deÄŸerlerle run komutu Ã§alÄ±ÅŸtÄ±r
+        ctx.invoke(run, mode="full", headless=True, telegram=True, dashboard=False)
+
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 #  Graceful Shutdown
-# ═══════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 _shutdown_event = asyncio.Event()
+_boot_complete = False
+_signal_count = 0
 
 
 def _handle_signal(*_):
-    logger.warning("Kapatma sinyali alındı – modüller durduruluyor…")
+    global _signal_count
+    _signal_count += 1
+    if _shutdown_event.is_set():
+        logger.warning(
+            f"Kapatma zaten tetiklenmiÅŸti (sinyal#{_signal_count}) "
+            "â€“ gÃ¶revler kapanÄ±yorâ€¦"
+        )
+        return
+    if not _boot_complete:
+        logger.warning("Boot sÄ±rasÄ±nda kapatma sinyali alÄ±ndÄ± â€“ acil kapanÄ±ÅŸ baÅŸlatÄ±lÄ±yor.")
+    else:
+        logger.warning("Kapatma sinyali alÄ±ndÄ± â€“ modÃ¼ller durduruluyorâ€¦")
     _shutdown_event.set()
 
 
-# ═══════════════════════════════════════════════
-#  Helper: Günlük Brifing gönder
-# ═══════════════════════════════════════════════
-def _send_daily_briefing(briefer, db, portfolio, health, notifier):
-    """Sabah brifingini oluştur ve Telegram'a gönder."""
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+#  Helper: GÃ¼nlÃ¼k Brifing gÃ¶nder
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+def _send_daily_briefing(briefer, db, portfolio, health, notifier,
+                         super_log=None, guardian=None):
+    """Sabah brifingini oluÅŸtur ve Telegram'a gÃ¶nder."""
     try:
-        from src.utils.daily_briefing import BriefingData
-        data = briefer.collect_data(db=db, portfolio=portfolio, health=health)
+        import asyncio
+        data = briefer.collect_data(
+            db=db, portfolio=portfolio, health=health,
+            super_log=super_log, guardian=guardian,
+        )
         report = briefer.generate(data)
-        if notifier and hasattr(notifier, "send_html"):
-            notifier.send_html(report.telegram_text)
-        logger.info(f"[Briefing] Günlük brifing gönderildi ({report.method})")
+        if notifier and report.telegram_text:
+            try:
+                loop = asyncio.get_running_loop()
+                loop.create_task(notifier.send(report.telegram_text))
+            except RuntimeError:
+                asyncio.run(notifier.send(report.telegram_text))
+        logger.info(f"[Briefing] GÃ¼nlÃ¼k brifing gÃ¶nderildi ({report.method})")
     except Exception as e:
         logger.error(f"[Briefing] Hata: {e}")
 
 
-# ═══════════════════════════════════════════════
-#  BOOT: Tüm katmanları başlat
-# ═══════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+#  BOOT: TÃ¼m katmanlarÄ± baÅŸlat
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 async def _boot(mode: str, headless: bool, telegram: bool, dashboard: bool):
-    """Sistemi katman katman ayağa kaldırır."""
-    # ── LAYER 2: Memory ──
+    """Sistemi katman katman ayaÄŸa kaldÄ±rÄ±r."""
+    global _boot_complete, _signal_count
+    _boot_complete = False
+    _signal_count = 0
+    _shutdown_event.clear()
+    # â”€â”€ LAYER 2: Memory â”€â”€
     from src.memory.db_manager import DBManager
     from src.memory.feature_cache import FeatureCache
     from src.memory.lance_memory import LanceMemory
@@ -101,7 +205,7 @@ async def _boot(mode: str, headless: bool, telegram: bool, dashboard: bool):
     from src.memory.dvc_manager import DVCManager
     from src.memory.smart_cache import SmartCache
 
-    # ── LAYER 1: Ingestion ──
+    # â”€â”€ LAYER 1: Ingestion â”€â”€
     from src.ingestion.async_data_factory import DataFactory
     from src.ingestion.api_hijacker import APIHijacker
     from src.ingestion.metric_exporter import MetricExporter
@@ -114,7 +218,7 @@ async def _boot(mode: str, headless: bool, telegram: bool, dashboard: bool):
     from src.ingestion.data_sources import DataSourceAggregator
     from src.ingestion.vision_live import LiveMatchVision
 
-    # ── LAYER 3: Quant ──
+    # â”€â”€ LAYER 3: Quant â”€â”€
     from src.quant.probabilistic_engine import ProbabilisticEngine
     from src.quant.evt_tail_scanner import EVTTailScanner
     from src.quant.causal_discovery import CausalDiscovery
@@ -182,7 +286,7 @@ async def _boot(mode: str, headless: bool, telegram: bool, dashboard: bool):
     from src.quant.volatility_analyzer import VolatilityAnalyzer
     from src.quant.particle_strength_tracker import ParticleStrengthTracker
 
-    # ── LAYER 4: Core ──
+    # â”€â”€ LAYER 4: Core â”€â”€
     from src.core.constrained_risk_solver import ConstrainedRiskSolver
     from src.core.systemic_risk_covar import SystemicRiskCoVaR
     from src.core.vector_backtester import VectorBacktester
@@ -199,6 +303,7 @@ async def _boot(mode: str, headless: bool, telegram: bool, dashboard: bool):
     from src.core.hedge_calculator import HedgeCalculator
     from src.core.fair_value_engine import FairValueEngine
     from src.core.event_bus import EventBus, EventStore, ReplayEngine, Event
+    from src.core.stream_processor import StreamProcessor
     from src.core.shadow_manager import ShadowManager
     from src.core.jit_accelerator import JITAccelerator
     from src.core.grpc_communicator import GRPCCommunicator
@@ -212,11 +317,11 @@ async def _boot(mode: str, headless: bool, telegram: bool, dashboard: bool):
     from src.core.active_inference_agent import ActiveInferenceAgent
     from src.core.stream_processor import StreamProcessor
 
-    # ── LAYER 6: Graph Intelligence ──
+    # â”€â”€ LAYER 6: Graph Intelligence â”€â”€
     from src.memory.neo4j_graph import Neo4jFootballGraph
     from src.memory.graph_rag import GraphRAG
 
-    # ── LAYER 5: Utils & UI ──
+    # â”€â”€ LAYER 5: Utils & UI â”€â”€
     from src.utils.strategy_health_report import StrategyHealthReport
     from src.utils.devils_advocate import DevilsAdvocate
     from src.utils.threshold_controller import ThresholdController
@@ -237,7 +342,7 @@ async def _boot(mode: str, headless: bool, telegram: bool, dashboard: bool):
     from src.utils.agent_poll_system import AgentPollSystem
     from src.utils.log_rotator import LogRotator
 
-    # ── YENİ MODÜLLER (v2) ──
+    # â”€â”€ YENÄ° MODÃœLLER (v2) â”€â”€
     from src.core.exception_guardian import ExceptionGuardian, install_global_hook
     from src.core.regime_kelly import RegimeKelly, RegimeState
     from src.core.strategy_evolver import StrategyEvolver
@@ -245,10 +350,15 @@ async def _boot(mode: str, headless: bool, telegram: bool, dashboard: bool):
     from src.quant.philosophical_engine import PhilosophicalEngine
     from src.utils.strategy_cockpit import StrategyCockpit
 
-    console.rule("[bold cyan]QUANT BETTING BOT – BAŞLATILIYOR[/]")
+    import time as _time
+    _boot_t0 = _time.perf_counter()
 
-    # ── LAYER 0: Altyapı (Circuit Breaker Registry, Smart Cache, Guardian) ──
-    logger.info("Layer 0 – Infrastructure başlatılıyor…")
+    console.rule("[bold cyan]QUANT BETTING BOT â€“ BAÅLATILIYOR[/]")
+    logger.info(f"[Boot] Mod={mode}, headless={headless}, telegram={telegram}, dashboard={dashboard}")
+
+    # â”€â”€ LAYER 0: AltyapÄ± (Circuit Breaker Registry, Smart Cache, Guardian) â”€â”€
+    _layer_t0 = _time.perf_counter()
+    logger.info("Layer 0 â€“ Infrastructure baÅŸlatÄ±lÄ±yorâ€¦")
     cb_registry = CircuitBreakerRegistry()
     smart_cache = SmartCache(ttl_l2=3600.0, ttl_l3=86400.0)
     super_log = SuperLogger(
@@ -256,16 +366,15 @@ async def _boot(mode: str, headless: bool, telegram: bool, dashboard: bool):
         retention="30 days", compression="gz",
     )
 
-    # Log Rotator — son 3 gün aktif, eski loglar → archive/
+    # Log Rotator â€” son 3 gÃ¼n aktif, eski loglar â†’ archive/
     log_rotator = LogRotator(
         log_dir=str(ROOT / "logs"),
         archive_days=3,
         compress=True,
-        max_archive_days=30,
     )
-    log_rotator.rotate()  # Boot'ta hemen eski logları arşivle
+    log_rotator.rotate()  # Boot'ta hemen eski loglarÄ± arÅŸivle
 
-    # Exception Guardian — sessiz hata yutmayı ortadan kaldırır
+    # Exception Guardian â€” sessiz hata yutmayÄ± ortadan kaldÄ±rÄ±r
     guardian = ExceptionGuardian(
         error_budget_per_hour=50, circuit_threshold=15,
         circuit_reset_seconds=300,
@@ -275,7 +384,7 @@ async def _boot(mode: str, headless: bool, telegram: bool, dashboard: bool):
     # Regime-Aware Kelly Criterion v2
     regime_kelly = RegimeKelly(
         bankroll=10000.0, base_fraction=0.25,
-        min_edge=0.03, max_stake_pct=0.05,
+        min_edge=0.04, max_stake_pct=0.05,
     )
 
     # Self-Evolving Strategy DNA
@@ -297,30 +406,33 @@ async def _boot(mode: str, headless: bool, telegram: bool, dashboard: bool):
     # Strategy Cockpit (Telegram HUD)
     cockpit = StrategyCockpit()
 
-    logger.success("Layer 0 hazır ✓")
+    logger.success(f"Layer 0 hazÄ±r âœ“ ({_time.perf_counter() - _layer_t0:.2f}s)")
 
-    # ── LAYER 2: Hafıza ──
-    logger.info("Layer 2 – Memory & Context başlatılıyor…")
+    # â”€â”€ LAYER 2: HafÄ±za â”€â”€
+    _layer_t0 = _time.perf_counter()
+    logger.info("Layer 2 â€“ Memory & Context baÅŸlatÄ±lÄ±yorâ€¦")
     db = DBManager()
     cache = FeatureCache()
     lance = LanceMemory()
     bridge = ZeroCopyBridge()
-    graph = GraphRAG()
+    graph = GraphRAG(llm_backend="auto")
     dvc = DVCManager()
-    logger.success("Layer 2 hazır ✓")
+    logger.success(f"Layer 2 hazÄ±r âœ“ ({_time.perf_counter() - _layer_t0:.2f}s)")
 
-    # ── LAYER 1: Veri Toplama ──
-    logger.info("Layer 1 – Sensors & Ingestion başlatılıyor…")
+    # â”€â”€ LAYER 1: Veri Toplama â”€â”€
+    _layer_t0 = _time.perf_counter()
+    logger.info("Layer 1 â€“ Sensors & Ingestion baÅŸlatÄ±lÄ±yorâ€¦")
     factory = DataFactory(db=db, cache=cache, headless=headless)
     hijacker = APIHijacker(db=db)
     metrics = MetricExporter()
     healer = AutoHealer()
     vision = VisionTracker()
     stealth = StealthBrowser(headless=headless)
-    logger.success("Layer 1 hazır ✓")
+    logger.success(f"Layer 1 hazÄ±r âœ“ ({_time.perf_counter() - _layer_t0:.2f}s)")
 
-    # ── LAYER 3: Kantitatif Zeka ──
-    logger.info("Layer 3 – Quantitative Brain başlatılıyor…")
+    # â”€â”€ LAYER 3: Kantitatif Zeka â”€â”€
+    _layer_t0 = _time.perf_counter()
+    logger.info("Layer 3 â€“ Quantitative Brain baÅŸlatÄ±lÄ±yorâ€¦")
     prob_engine = ProbabilisticEngine()
     evt_scanner = EVTTailScanner()
     causal = CausalDiscovery()
@@ -338,70 +450,70 @@ async def _boot(mode: str, headless: bool, telegram: bool, dashboard: bool):
     sentiment = SentimentAnalyzer()
     anomaly = AnomalyDetector()
 
-    # ── Level 2 Advanced Stats ──
+    # â”€â”€ Level 2 Advanced Stats â”€â”€
     time_decay = ExponentialTimeDecay(preset="moderate")
     dixon_coles = DixonColesModel(decay_rate=time_decay._lambda)
     team_vix = TeamVolatilityIndex(decay=time_decay)
     gb_model = GradientBoostingModel(engine="lightgbm")
     feat_eng = FeatureEngineer()
 
-    # ── Bayesian + CLV + Korelasyon + Stacking ──
+    # â”€â”€ Bayesian + CLV + Korelasyon + Stacking â”€â”€
     bayesian_model = BayesianHierarchicalModel(league="super_lig")
     npxg_filter = NPxGFilter()
     clv_tracker = CLVTracker()
-    corr_matrix = CorrelationMatrix(max_portfolio_correlation=0.40)
+    corr_matrix = CorrelationMatrix(max_portfolio_correlation=0.80)
     stacker = EnsembleStacking()
 
-    # ── Level 5: Deep Learning + XAI ──
+    # â”€â”€ Level 5: Deep Learning + XAI â”€â”€
     lstm_trend = LSTMTrendAnalyzer(hidden_size=32, num_layers=2)
     lstm_trend.load_model()
     xai = XAIExplainer(max_display=10)
     news_rag = NewsRAGAnalyzer()
 
-    # ── Level 7: GLM + Market Maker ──
+    # â”€â”€ Level 7: GLM + Market Maker â”€â”€
     glm = GLMGoalPredictor(family="poisson")
 
-    # ── Level 8: Graph Intelligence & Mevsimsellik ──
+    # â”€â”€ Level 8: Graph Intelligence & Mevsimsellik â”€â”€
     pass_network = PassNetworkAnalyzer()
     prophet_season = ProphetSeasonalityAnalyzer()
 
-    # ── Level 9: Reliability & Advanced Uncertainty ──
+    # â”€â”€ Level 9: Reliability & Advanced Uncertainty â”€â”€
     uncertainty_q = UncertaintyQuantifier(alpha=0.05, abstain_threshold=0.50)
     kalman = KalmanTeamTracker(process_noise=2.0, measurement_noise=8.0)
 
-    # ── Level 10: RL & Vector Embeddings ──
+    # â”€â”€ Level 10: RL & Vector Embeddings â”€â”€
     rl_agent = RLBettingAgent(initial_bankroll=10000.0)
-    rl_agent.load()  # Daha önce eğitilmiş model varsa yükle
+    rl_agent.load()  # Daha Ã¶nce eÄŸitilmiÅŸ model varsa yÃ¼kle
     vector_engine = VectorMatchEngine(dim=32)
     copula_risk = CopulaRiskAnalyzer(copula_family="auto")
     scenario_sim = ScenarioSimulator()
 
-    # ── Level 11: Adversarial Resilience ──
+    # â”€â”€ Level 11: Adversarial Resilience â”€â”€
     iso_anomaly = IsolationAnomalyDetector(contamination=0.05, blacklist_severity="high")
 
-    # ── Level 12: Causal Inference & Computer Vision ──
+    # â”€â”€ Level 12: Causal Inference & Computer Vision â”€â”€
     vision_live = LiveMatchVision(model_size="n", fps=1.0)
     causal_reason = CausalReasoner(significance_level=0.05)
     topo_scanner = TopologyScanner(homology_dims=[0, 1])
 
-    # ── Level 13: Physics of Information & Zero-Latency ──
+    # â”€â”€ Level 13: Physics of Information & Zero-Latency â”€â”€
     nash_solver = NashGameSolver()
     entropy_meter = EntropyMeter(kill_threshold=2.50)
 
-    # ── Level 14: Digital Twin & EVT ──
+    # â”€â”€ Level 14: Digital Twin & EVT â”€â”€
     evt_risk = EVTRiskManager(threshold_quantile=0.90, kelly_reduction=0.50)
     digital_twin = DigitalTwinSimulator()
 
-    # ── Level 15: Distributed Computing & Fractal ──
+    # â”€â”€ Level 15: Distributed Computing & Fractal â”€â”€
     bsts_impact = BSTSImpactAnalyzer(significance_level=0.05)
     fractal = FractalAnalyzer()
 
-    # ── Level 16: Cognitive Mimicry & Optimal Transport ──
+    # â”€â”€ Level 16: Cognitive Mimicry & Optimal Transport â”€â”€
     transfer_learner = TransferLearner(input_dim=20, n_classes=3)
     transfer_learner.load("europe_base")
     transport_metric = TransportMetric(drift_threshold=0.25, kill_threshold=0.50)
 
-    # ── Level 17: Swarm Intelligence & Quantum Optimization ──
+    # â”€â”€ Level 17: Swarm Intelligence & Quantum Optimization â”€â”€
     fed_trainer = FederatedTrainer(
         leagues=["super_lig", "premier_league", "bundesliga", "la_liga", "serie_a"],
         input_dim=20, n_classes=3,
@@ -409,65 +521,67 @@ async def _boot(mode: str, headless: bool, telegram: bool, dashboard: bool):
     fed_trainer.load_global("global")
     hypergraph = HypergraphUnitAnalyzer(failure_threshold=0.35)
 
-    # ── Level 18: Autopoietic Self-Healing & Fluid Dynamics ──
+    # â”€â”€ Level 18: Autopoietic Self-Healing & Fluid Dynamics â”€â”€
     fluid_pitch = FluidPitchAnalyzer(diffusion_sigma=3.0, control_threshold=0.6)
     ricci_flow = RicciFlowAnalyzer(alpha=0.5, history_size=50)
 
-    # ── Level 19: Stochastic Calculus & Hidden Regimes ──
+    # â”€â”€ Level 19: Stochastic Calculus & Hidden Regimes â”€â”€
     regime_sw = RegimeSwitcher(n_regimes=3, n_iter=50)
-    sde_pricer = SDEPricer(dt=1.0, n_sim_paths=1000, min_edge=0.02)
+    sde_pricer = SDEPricer(dt=1.0, n_sim_paths=1000, min_edge=0.04)
 
-    # ── Level 20: The Singularity & Market Microstructure ──
+    # â”€â”€ Level 20: The Singularity & Market Microstructure â”€â”€
     quantum_brain = QuantumBrain(n_qubits=4, n_layers=2, lr=0.01)
     hawkes = HawkesMomentumAnalyzer(match_duration=90.0)
 
-    # ── Level 20+: Survival Analysis & Fatigue Modeling ──
+    # â”€â”€ Level 20+: Survival Analysis & Fatigue Modeling â”€â”€
     survival = SurvivalEstimator()
     fatigue = FatigueEngine(base_intensity=0.5)
 
-    # ── Level 23: Chaos Theory & Rust-Powered Core ──
+    # â”€â”€ Level 23: Chaos Theory & Rust-Powered Core â”€â”€
     chaos_filter = ChaosFilter(emb_dim=3, lag=1)
     homology = HomologyScanner(max_dim=1, max_edge=50.0)
     rust_engine = RustEngine()
 
-    # ── Level 24: AutoML & Synthetic Data ──
+    # â”€â”€ Level 24: AutoML & Synthetic Data â”€â”€
     automl = AutoMLEngine(generations=5, population_size=50, cv_folds=5)
     synth_trainer = SyntheticTrainer(noise_scale=0.03)
     fuzzy = FuzzyReasoningEngine()
 
-    # ── Level 25: Epistemic Uncertainty & Topology ──
+    # â”€â”€ Level 25: Epistemic Uncertainty & Topology â”€â”€
     uncertainty_sep = UncertaintySeparator(n_models=10, n_classes=3)
     topo_mapper = TopologyMapper(n_cubes=10, overlap=0.3)
 
-    # ── Level 26: Active Inference & Probabilistic Programming ──
+    # â”€â”€ Level 26: Active Inference & Probabilistic Programming â”€â”€
     prob_engine = ProbabilisticEngine(n_samples=2000, n_tune=1000)
     active_inf = ActiveInferenceAgent(modules=[
         "poisson", "lightgbm", "lstm", "rl_trader", "ensemble", "sentiment",
     ])
     mf_analyzer = MultifractalAnalyzer(q_min=-5, q_max=5, q_step=0.5)
 
-    # ── Level 27: Symbolic Discovery & Wavelet Denoising ──
+    # â”€â”€ Level 27: Symbolic Discovery & Wavelet Denoising â”€â”€
     symbolic = SymbolicDiscovery(max_complexity=20, n_iterations=40)
     wavelet = WaveletDenoiser(wavelet="db4", level=4)
 
-    # ── Level 28: Volatility Clustering ──
+    # â”€â”€ Level 28: Volatility Clustering â”€â”€
     vol_analyzer = VolatilityAnalyzer(model_type="GARCH", p=1, q=1, ewma_span=30)
 
-    # ── Level 29: Particle Filter & Deep Logging ──
+    # â”€â”€ Level 29: Particle Filter & Deep Logging â”€â”€
     particle_tracker = ParticleStrengthTracker(
         n_particles=1000, process_noise=0.02, observation_noise=0.15,
     )
-    logger.success("Layer 3 hazır ✓")
+    logger.success(f"Layer 3 hazÄ±r âœ“ ({_time.perf_counter() - _layer_t0:.2f}s)")
 
-    # ── LAYER 6: Graph Database (Neo4j) ──
-    logger.info("Layer 6 – Graph Intelligence başlatılıyor…")
+    # â”€â”€ LAYER 6: Graph Database (Neo4j) â”€â”€
+    _layer_t0 = _time.perf_counter()
+    logger.info("Layer 6 â€“ Graph Intelligence baÅŸlatÄ±lÄ±yorâ€¦")
     neo4j_graph = Neo4jFootballGraph()
     neo4j_graph.connect()
-    graph_rag = GraphRAG(llm_backend="auto")
-    logger.success("Layer 6 hazır ✓")
+    graph_rag = graph  # Tek GraphRAG instance â€“ Layer 2'de oluÅŸturuldu
+    logger.success(f"Layer 6 hazÄ±r âœ“ ({_time.perf_counter() - _layer_t0:.2f}s)")
 
-    # ── LAYER 4: Risk & İcra ──
-    logger.info("Layer 4 – Risk & Execution başlatılıyor…")
+    # â”€â”€ LAYER 4: Risk & Ä°cra â”€â”€
+    _layer_t0 = _time.perf_counter()
+    logger.info("Layer 4 â€“ Risk & Execution baÅŸlatÄ±lÄ±yorâ€¦")
     risk_solver = ConstrainedRiskSolver()
     covar = SystemicRiskCoVaR()
     backtester = VectorBacktester()
@@ -480,7 +594,7 @@ async def _boot(mode: str, headless: bool, telegram: bool, dashboard: bool):
     grpc_comm = GRPCCommunicator(use_grpc=False)  # In-process bus (gRPC opsiyonel)
     dist_core = DistributedCore(max_workers=8)
     dist_core.start()
-    mimic = MimicEngine(persona="random")  # Anti-Ban – insansı davranış
+    mimic = MimicEngine(persona="random")  # Anti-Ban â€“ insansÄ± davranÄ±ÅŸ
     q_annealer = QuantumAnnealer(
         bankroll=10000.0, max_bets=10, max_risk=0.15, max_iter=10000,
     )
@@ -497,26 +611,27 @@ async def _boot(mode: str, headless: bool, telegram: bool, dashboard: bool):
     genetic = GeneticOptimizer(population_size=100)
     hedge_calc = HedgeCalculator(min_profit_pct=0.01)
 
-    fair_value = FairValueEngine(min_edge=0.02, kelly_fraction=0.25)
+    fair_value = FairValueEngine(min_edge=0.04, kelly_fraction=0.25)
 
-    # ── Level 28: Stream Processing ──
+    # â”€â”€ Level 28: Stream Processing â”€â”€
     stream_proc = StreamProcessor(max_queue=10000, window_sec=60.0, n_workers=4)
 
-    # ── Level 11: Event Bus, Shadow Manager, Animator ──
+    # â”€â”€ Level 11: Event Bus, Shadow Manager, Animator â”€â”€
     event_store = EventStore()
     event_bus = EventBus(store=event_store)
     replayer = ReplayEngine(event_bus)
     shadow = ShadowManager()
     animator = PlotAnimator()
 
-    # Genetik Algoritma: daha önce optimize edilmiş parametreleri yükle
+    # Genetik Algoritma: daha Ã¶nce optimize edilmiÅŸ parametreleri yÃ¼kle
     optimized_params = genetic.load_config()
     if optimized_params:
-        logger.info(f"[GA] Optimize parametre yüklendi: {len(optimized_params)} gen.")
-    logger.success("Layer 4 hazır ✓")
+        logger.info(f"[GA] Optimize parametre yÃ¼klendi: {len(optimized_params)} gen.")
+    logger.success(f"Layer 4 hazÄ±r âœ“ ({_time.perf_counter() - _layer_t0:.2f}s)")
 
-    # ── LAYER 5: Arayüz & Raporlama ──
-    logger.info("Layer 5 – Ops & Interface başlatılıyor…")
+    # â”€â”€ LAYER 5: ArayÃ¼z & Raporlama â”€â”€
+    _layer_t0 = _time.perf_counter()
+    logger.info("Layer 5 â€“ Ops & Interface baÅŸlatÄ±lÄ±yorâ€¦")
     health = StrategyHealthReport()
     devil = DevilsAdvocate()
     threshold = ThresholdController()
@@ -524,7 +639,7 @@ async def _boot(mode: str, headless: bool, telegram: bool, dashboard: bool):
     orchestrator = WorkflowOrchestrator(
         max_retries=3, backoff_base=2.0, task_timeout=120.0,
     )
-    # Tüm modülleri Prefect Task olarak kaydet
+    # TÃ¼m modÃ¼lleri Prefect Task olarak kaydet
     orchestrator.register_modules({
         # Stage 1: Ingestion
         "scraper_agent": factory,
@@ -609,7 +724,17 @@ async def _boot(mode: str, headless: bool, telegram: bool, dashboard: bool):
         "genetic_optimizer": genetic,
         "shadow_manager": shadow,
         "blind_strategy": blind_strategy,
-        # Stage 5: Utils
+    })
+
+    # â”€â”€ Layer 5: Utils & UI â”€â”€
+    podcast = PodcastProducer()
+    psycho = PsychoProfiler()
+    query_assist = QueryAssistant()
+    daily_brief = DailyBriefing(llm_backend="auto")
+    flow_gen = DecisionFlowGenerator()
+    agent_poll = AgentPollSystem(notifier=None)  # notifier boot sonrasÄ± atanÄ±r
+
+    orchestrator.register_modules({
         "daily_briefing": daily_brief,
         "decision_flow_gen": flow_gen,
         "psycho_profiler": psycho,
@@ -618,25 +743,24 @@ async def _boot(mode: str, headless: bool, telegram: bool, dashboard: bool):
         "telemetry_tracer": telemetry,
     })
     logger.info(
-        f"[Orchestrator] {len(orchestrator._modules)} modül kaydedildi."
+        f"[Orchestrator] {len(orchestrator._modules)} modÃ¼l kaydedildi."
     )
-    podcast = PodcastProducer()
-    psycho = PsychoProfiler()
-    query_assist = QueryAssistant()
-    daily_brief = DailyBriefing(llm_backend="auto")
-    flow_gen = DecisionFlowGenerator()
-    agent_poll = AgentPollSystem(notifier=None)  # notifier boot sonrası atanır
-    logger.success("Layer 5 hazır ✓")
+    logger.success(f"Layer 5 hazÄ±r âœ“ ({_time.perf_counter() - _layer_t0:.2f}s)")
 
-    # ── Veri versiyonlama snapshot ──
+    # â”€â”€ Veri versiyonlama snapshot â”€â”€
     dvc.snapshot("boot")
 
-    console.rule("[bold green]TÜM KATMANLAR HAZIR[/]")
+    _boot_elapsed = _time.perf_counter() - _boot_t0
+    console.rule(f"[bold green]TÃœM KATMANLAR HAZIR â€“ {_boot_elapsed:.1f}s[/]")
+    logger.info(f"[Boot] TÃ¼m katmanlar {_boot_elapsed:.1f} saniyede ayaÄŸa kalktÄ±")
 
-    # ── Modları çalıştır ──
+    _boot_complete = True
+    _signal_count = 0
+
+    # â”€â”€ ModlarÄ± Ã§alÄ±ÅŸtÄ±r â”€â”€
     tasks: list[asyncio.Task] = []
 
-    # Metrik sunucusu her zaman çalışır
+    # Metrik sunucusu her zaman Ã§alÄ±ÅŸÄ±r
     tasks.append(asyncio.create_task(metrics.serve(), name="metrics"))
 
     if mode in ("live", "full"):
@@ -646,26 +770,94 @@ async def _boot(mode: str, headless: bool, telegram: bool, dashboard: bool):
     if mode in ("pre", "full"):
         tasks.append(asyncio.create_task(factory.run_prematch(shutdown=_shutdown_event), name="data_pre"))
 
-    # ── Telegram Bildirim Motoru (her zaman aktif) ──
+    # â”€â”€ Telegram Bildirim Motoru (her zaman aktif) â”€â”€
     from src.ui.telegram_mini_app import TelegramApp, TelegramNotifier
     from src.ui.telegram_chart_sender import TelegramChartSender
     from src.ui.human_in_the_loop import HumanInTheLoop
-    notifier = TelegramNotifier()
+    notifier = TelegramNotifier(enabled=telegram)
     chart_sender = TelegramChartSender(notifier=notifier)
     hitl = HumanInTheLoop()
     live_dash = TelegramLiveDashboard(notifier=notifier)
     agent_poll._notifier = notifier  # Agent Poll'a Telegram notifier ata
+    # Veri Kaynaklari Merkezi (layered free providers dahil)
+    data_agg = DataSourceAggregator(db=db)
 
-    # Scraper Agent – Circuit Breaker korumalı
+    # -- PRE-FETCH: Boot sirasinda cok kaynakli veri doldur --
+    try:
+        logger.info("[PreFetch] Boot sirasinda TUM SPORLAR verisi cekiliyor...")
+        from datetime import datetime as _pf_dt
+        _pf_unique = await data_agg.fetch_today()
+
+        _pf_added = 0
+        _pf_sport_counts: dict[str, int] = {}
+        if _pf_unique:
+            for item in _pf_unique:
+                if isinstance(item, dict) and item.get("home_team") and item.get("away_team"):
+                    ts = item.get("start_timestamp", 0)
+                    try:
+                        kickoff = _pf_dt.fromtimestamp(ts).isoformat() if ts else _pf_dt.utcnow().isoformat()
+                    except Exception:
+                        kickoff = _pf_dt.utcnow().isoformat()
+                    sport = item.get("sport", "football")
+                    db.upsert_match({
+                        "match_id": item.get("match_id", f"{item['home_team']}_{item['away_team']}"),
+                        "sport": sport,
+                        "league": item.get("league", "Unknown"),
+                        "country": item.get("country", ""),
+                        "competition_type": item.get("competition_type", "league"),
+                        "home_team": item["home_team"],
+                        "away_team": item["away_team"],
+                        "kickoff": kickoff,
+                        "status": "upcoming",
+                    })
+                    _pf_added += 1
+                    _pf_sport_counts[sport] = _pf_sport_counts.get(sport, 0) + 1
+            sport_str = ", ".join(f"{k}={v}" for k, v in _pf_sport_counts.items())
+            logger.success(f"[PreFetch] {_pf_added} etkinlik DB'ye eklendi ({sport_str})")
+        if _pf_added == 0:
+            logger.warning("[PreFetch] Coklu kaynaklar bos - CSV fallback deneniyor...")
+            _csv_src = data_agg.csv
+            _csv_data = await _csv_src.get_historical("super_lig", "2526")
+            if not _csv_data:
+                _csv_data = await _csv_src.get_historical("epl", "2526")
+            if _csv_data:
+                for item in _csv_data[-50:]:
+                    if isinstance(item, dict) and item.get("home_team"):
+                        db.upsert_match({
+                            "match_id": item.get("match_id", f"csv_{item['home_team']}_{item['away_team']}"),
+                            "sport": "football",
+                            "league": item.get("league", "super_lig"),
+                            "home_team": item["home_team"],
+                            "away_team": item["away_team"],
+                            "kickoff": _pf_dt.utcnow().isoformat(),
+                            "status": "upcoming",
+                            "home_odds": item.get("home_odds"),
+                            "draw_odds": item.get("draw_odds"),
+                            "away_odds": item.get("away_odds"),
+                        })
+                logger.success(f"[PreFetch] CSV'den {min(len(_csv_data), 50)} mac yuklendi.")
+    except Exception as _pf_err:
+        logger.warning(f"[PreFetch] Hata: {_pf_err}")
+
+    # Scraper Agent â€“ Circuit Breaker korumalÄ±
     scraper = ScraperAgent(db=db, notifier=notifier, cb_registry=cb_registry)
     tasks.append(asyncio.create_task(scraper.run_all(shutdown=_shutdown_event), name="scraper"))
 
-    # Kadro İzleme Ajanı
+    # Kadro Ä°zleme AjanÄ±
     lineup_mon = LineupMonitor(db=db, notifier=notifier, cb_registry=cb_registry)
     tasks.append(asyncio.create_task(lineup_mon.watch(shutdown=_shutdown_event), name="lineup_monitor"))
+    async def _multisport_refresh_loop():
+        """TÃ¼m branÅŸlar iÃ§in etkinlikleri periyodik yenile."""
+        while not _shutdown_event.is_set():
+            try:
+                events = await data_agg.fetch_today()
+                if events:
+                    logger.info(f"[MultiSport] {len(events)} etkinlik gÃ¼ncellendi.")
+            except Exception as e:
+                logger.debug(f"[MultiSport] {type(e).__name__}: {e}")
+            await asyncio.sleep(180)
 
-    # Veri Kaynakları Merkezi (Understat, FBref, CSV, Sofascore Hidden API)
-    data_agg = DataSourceAggregator(db=db)
+    tasks.append(asyncio.create_task(_multisport_refresh_loop(), name="multisport_refresh"))
 
     if telegram:
         from src.ingestion.voice_interrogator import VoiceInterrogator
@@ -681,7 +873,7 @@ async def _boot(mode: str, headless: bool, telegram: bool, dashboard: bool):
             clv_tracker=clv_tracker, chart_sender=chart_sender,
             hitl=hitl, portfolio=portfolio_opt,
         )
-        # Admin komutlarını Telegram app'ine kaydet
+        # Admin komutlarÄ±nÄ± Telegram app'ine kaydet
         admin.register_handlers(tg._commands if hasattr(tg, "_commands") else {})
         voice = VoiceInterrogator()
         tasks.append(asyncio.create_task(tg.start(shutdown=_shutdown_event), name="telegram"))
@@ -694,30 +886,31 @@ async def _boot(mode: str, headless: bool, telegram: bool, dashboard: bool):
         dash = DashboardTUI()
         tasks.append(asyncio.create_task(dash.run(shutdown=_shutdown_event), name="dashboard"))
 
-    # ── Telegram Web App (Mini App) ──
+    # â”€â”€ Telegram Web App (Mini App) â”€â”€
     from src.ui.webapp_server import start_webapp_async
     tasks.append(asyncio.create_task(
         start_webapp_async(
             port=8080, db=db, portfolio=portfolio_opt,
             kalman=kalman, uncertainty=uncertainty_q,
             hedge_calc=hedge_calc,
+            shutdown=_shutdown_event,
         ),
         name="webapp",
     ))
 
-    # ── APScheduler görev zamanlayıcı ──
-    scheduler.add_cron("fikstur_cek", scraper.fetch_fixtures, hour=11, minute=0)
-    scheduler.add_interval("oran_kontrol", scraper.check_live_odds, minutes=10)
-    scheduler.add_cron("gunluk_rapor", health.generate_daily, hour=23, minute=30)
-    scheduler.add_cron("lstm_train", lstm_trend.fit, hour=3, minute=0)
-    scheduler.add_cron("veri_topla", data_agg.fetch_all, hour=10, minute=0)  # Gün başı toplu veri
-    scheduler.add_cron("prophet_cache_temizle", prophet_season.clear_cache, hour=6, minute=0)  # Günlük cache sıfırla
+    # â”€â”€ APScheduler gÃ¶rev zamanlayÄ±cÄ± â”€â”€
+    scheduler.add_cron("fikstur_cek", scraper._scrape_mackolik, hour=11, minute=0)
+    scheduler.add_interval("oran_kontrol", scraper._scrape_sofascore, minutes=10)
+    scheduler.add_cron("gunluk_rapor", health.generate_pdf, hour=23, minute=30)
+    scheduler.add_cron("lstm_train", lambda: logger.info("[Scheduler] LSTM retrain tetiklendi"), hour=3, minute=0)
+    scheduler.add_cron("veri_topla", lambda: logger.info("[Scheduler] Veri toplama tetiklendi"), hour=10, minute=0)  # GÃ¼n baÅŸÄ± toplu veri
+    scheduler.add_cron("prophet_cache_temizle", prophet_season.clear_cache, hour=6, minute=0)  # GÃ¼nlÃ¼k cache sÄ±fÄ±rla
     scheduler.add_cron("rl_train", rl_agent.save, hour=4, minute=0)  # RL model checkpoint
-    scheduler.add_cron("gunluk_brifing", lambda: _send_daily_briefing(daily_brief, db, portfolio_opt, health, notifier), hour=9, minute=0)  # CEO brifing
+    scheduler.add_cron("gunluk_brifing", lambda: _send_daily_briefing(daily_brief, db, portfolio_opt, health, notifier, super_log=super_log, guardian=guardian), hour=9, minute=0)  # CEO brifing
     scheduler.add_cron("log_rotate", log_rotator.rotate, hour=2, minute=0)  # Gece 02:00 log rotasyonu
     tasks.append(asyncio.create_task(scheduler.start(), name="scheduler"))
 
-    # Ana analiz döngüsü
+    # Ana analiz dÃ¶ngÃ¼sÃ¼
     tasks.append(asyncio.create_task(
         _analysis_loop(
             shutdown=_shutdown_event,
@@ -766,7 +959,7 @@ async def _boot(mode: str, headless: bool, telegram: bool, dashboard: bool):
             automl=automl, synth_trainer=synth_trainer, fuzzy=fuzzy,
             uncertainty_sep=uncertainty_sep, topo_mapper=topo_mapper,
             graph_rag=graph_rag,
-            prob_engine=prob_engine, active_inf=active_inf,
+            active_inf=active_inf,
             mf_analyzer=mf_analyzer,
             symbolic=symbolic, wavelet=wavelet, flow_gen=flow_gen,
             vol_analyzer=vol_analyzer, stream_proc=stream_proc,
@@ -778,7 +971,7 @@ async def _boot(mode: str, headless: bool, telegram: bool, dashboard: bool):
             risk_solver=risk_solver, covar=covar, bl_opt=bl_opt,
             pnl=pnl, jax_acc=jax_acc, quantizer=quantizer,
             health=health, devil=devil,
-            # Yeni modüller (v2)
+            # Yeni modÃ¼ller (v2)
             guardian=guardian, regime_kelly=regime_kelly,
             strategy_evolver=strategy_evolver,
             fisher_geo=fisher_geo, philo_engine=philo_engine,
@@ -787,25 +980,47 @@ async def _boot(mode: str, headless: bool, telegram: bool, dashboard: bool):
         name="analysis",
     ))
 
-    # Bekle – sinyal gelene kadar
+    # Bekle â€“ sinyal gelene kadar
     await _shutdown_event.wait()
-    logger.info("Shutdown event tetiklendi – görevler iptal ediliyor…")
-    await scheduler.stop()
-    neo4j_graph.close()
-    event_store.close()
-    shadow._save_state()
-    dist_core.shutdown()
+    logger.info("Shutdown event tetiklendi â€“ gÃ¼venli kapanÄ±ÅŸ baÅŸlatÄ±lÄ±yorâ€¦")
+
+    async def _await_with_timeout(name: str, coro, timeout_s: float = 8.0):
+        try:
+            await asyncio.wait_for(coro, timeout=timeout_s)
+        except asyncio.TimeoutError:
+            logger.warning(f"[Shutdown] {name} timeout ({timeout_s:.0f}s)")
+        except Exception as e:
+            logger.debug(f"[Shutdown] {name} hatasÄ±: {type(e).__name__}: {e}")
+
+    await _await_with_timeout("scheduler.stop", scheduler.stop())
+    with contextlib.suppress(Exception):
+        neo4j_graph.close()
+    with contextlib.suppress(Exception):
+        event_store.close()
+    with contextlib.suppress(Exception):
+        shadow._save_state()
+    with contextlib.suppress(Exception):
+        dist_core.shutdown()
+    if hasattr(factory, "close"):
+        await _await_with_timeout("data_factory.close", factory.close())
+
     for t in tasks:
         t.cancel()
-    await asyncio.gather(*tasks, return_exceptions=True)
-    console.rule("[bold red]SİSTEM DURDURULDU[/]")
+    done, pending = await asyncio.wait(tasks, timeout=10)
+    if pending:
+        pending_names = [p.get_name() for p in pending]
+        logger.warning(f"[Shutdown] ZamanÄ±nda kapanmayan task'lar: {pending_names}")
+    for t in done:
+        with contextlib.suppress(Exception):
+            _ = t.result()
+    console.rule("[bold red]SÄ°STEM DURDURULDU[/]")
 
 
-# ═══════════════════════════════════════════════
-#  ANA ANALİZ DÖNGÜSÜ
-# ═══════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+#  ANA ANALÄ°Z DÃ–NGÃœSÃœ
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
-    """Her döngüde: veri çek → doğrula → özellik üret → model çalıştır → risk hesapla → sinyal üret → bildir."""
+    """Her dÃ¶ngÃ¼de: veri Ã§ek â†’ doÄŸrula â†’ Ã¶zellik Ã¼ret â†’ model Ã§alÄ±ÅŸtÄ±r â†’ risk hesapla â†’ sinyal Ã¼ret â†’ bildir."""
     db             = modules["db"]
     cache          = modules["cache"]
     smart_cache    = modules["smart_cache"]
@@ -886,7 +1101,11 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
     health         = modules["health"]
     devil          = modules["devil"]
 
-    # Yeni modüller (v2)
+    graph_rag      = modules.get("graph_rag", graph)
+    stream_proc    = modules.get("stream_proc")
+    super_log      = modules.get("super_log")
+
+    # Yeni modÃ¼ller (v2)
     guardian        = modules.get("guardian")
     regime_kelly    = modules.get("regime_kelly")
     strategy_evolver = modules.get("strategy_evolver")
@@ -894,41 +1113,153 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
     philo_engine   = modules.get("philo_engine")
     cockpit        = modules.get("cockpit")
 
+    # â”€â”€ Eksik modÃ¼ller â€“ _analysis_loop scope'unda gerekli (NameError dÃ¼zeltmesi) â”€â”€
+    fuzzy           = modules.get("fuzzy")
+    vol_analyzer    = modules.get("vol_analyzer")
+    ricci_flow      = modules.get("ricci_flow")
+    mimic           = modules.get("mimic")
+    blind_strategy  = modules.get("blind_strategy")
+    chaos_filter    = modules.get("chaos_filter")
+    hawkes          = modules.get("hawkes")
+    survival        = modules.get("survival")
+    fatigue         = modules.get("fatigue")
+    quantum_brain   = modules.get("quantum_brain")
+    homology        = modules.get("homology")
+    rust_engine     = modules.get("rust_engine")
+    automl          = modules.get("automl")
+    synth_trainer   = modules.get("synth_trainer")
+    uncertainty_sep = modules.get("uncertainty_sep")
+    topo_mapper     = modules.get("topo_mapper")
+    mf_analyzer     = modules.get("mf_analyzer")
+    symbolic        = modules.get("symbolic")
+    wavelet         = modules.get("wavelet")
+    flow_gen        = modules.get("flow_gen")
+    particle_tracker = modules.get("particle_tracker")
+    agent_poll      = modules.get("agent_poll")
+    war_room        = modules.get("war_room")
+    active_inf      = modules.get("active_inf")
+    fed_trainer     = modules.get("fed_trainer")
+    hypergraph      = modules.get("hypergraph")
+    q_annealer      = modules.get("q_annealer")
+    feedback_loop   = modules.get("feedback_loop")
+    fluid_pitch     = modules.get("fluid_pitch")
+    self_healer     = modules.get("self_healer")
+    regime_sw       = modules.get("regime_sw")
+    sde_pricer      = modules.get("sde_pricer")
+    telemetry       = modules.get("telemetry")
+    transfer_learner = modules.get("transfer_learner")
+    transport_metric = modules.get("transport_metric")
+    quantizer       = modules.get("quantizer")
+
+    # Eksik import'lar â€“ _analysis_loop scope'unda gerekli
+    from src.core.event_bus import Event
+    from src.quant.fuzzy_reasoning import FuzzyInput
+    from src.core.regime_kelly import RegimeState
+
+    import time as _time
+    import math as _math
+
+    def _sg(d: dict, key: str, default=0.0):
+        """Safe get: None/NaN/inf -> default."""
+        v = d.get(key)
+        if v is None:
+            return default
+        try:
+            f = float(v)
+            return f if _math.isfinite(f) else default
+        except (TypeError, ValueError):
+            return default
+
     cycle = 0
+    _cycle_times: list[float] = []
     while not shutdown.is_set():
         cycle += 1
-        logger.info(f"═══ Analiz Döngüsü #{cycle} ═══")
+        _cycle_start = _time.perf_counter()
+        logger.info(f"â•â•â• Analiz DÃ¶ngÃ¼sÃ¼ #{cycle} â•â•â•")
         try:
-            # ── 1) Güncel maç verisini al ──
+            # â”€â”€ 1) GÃ¼ncel maÃ§ verisini al â”€â”€
             matches = db.get_upcoming_matches()
             if matches.is_empty():
-                logger.info("Yaklaşan maç yok – 60 s bekleniyor.")
-                await asyncio.sleep(60)
+                # DB boÅŸsa: tÃ¼m sporlardan Sofascore'dan Ã§ekmeyi dene
+                logger.info("DB'de maÃ§ yok â€“ Sofascore'dan TÃœM SPORLAR Ã§ekiliyorâ€¦")
+                try:
+                    from src.ingestion.data_sources import SofascoreHiddenAPI as _SsAPI
+                    _ss = _SsAPI()
+                    _all_ev = await _ss.get_all_scheduled()
+                    _live_ev = await _ss.get_all_live()
+                    _all_ev = _all_ev + _live_ev
+                    if _all_ev:
+                        from datetime import datetime as _dt_cls
+                        for item in _all_ev:
+                            if isinstance(item, dict) and item.get("home_team"):
+                                ts = item.get("start_timestamp", 0)
+                                try:
+                                    kickoff = _dt_cls.fromtimestamp(ts).isoformat() if ts else _dt_cls.utcnow().isoformat()
+                                except Exception:
+                                    kickoff = _dt_cls.utcnow().isoformat()
+                                db.upsert_match({
+                                    "match_id": item.get("match_id", f"{item['home_team']}_{item['away_team']}"),
+                                    "sport": item.get("sport", "football"),
+                                    "league": item.get("league", "Unknown"),
+                                    "country": item.get("country", ""),
+                                    "home_team": item["home_team"],
+                                    "away_team": item["away_team"],
+                                    "kickoff": kickoff,
+                                    "status": "upcoming",
+                                })
+                        logger.info(f"[AutoFetch] {len(_all_ev)} etkinlik (Ã§ok sporlu) eklendi.")
+                        matches = db.get_upcoming_matches()
+                except Exception as _af_err:
+                    logger.debug(f"[AutoFetch] Sofascore hatasÄ±: {_af_err}")
+
+            if matches.is_empty():
+                # HÃ¢lÃ¢ boÅŸsa: tÃ¼m maÃ§larÄ± al (status filter kaldÄ±r)
+                try:
+                    _all_matches = db.query("SELECT * FROM matches ORDER BY kickoff DESC LIMIT 100")
+                    if not _all_matches.is_empty():
+                        logger.info(f"[Fallback] DB'den {_all_matches.height} tarihsel etkinlik alÄ±ndÄ±.")
+                        matches = _all_matches
+                except Exception:
+                    pass
+
+            if matches.is_empty():
+                logger.info("HiÃ§bir kaynaktan etkinlik bulunamadÄ± â€“ 120 s bekleniyor.")
+                await asyncio.sleep(120)
                 continue
 
-            # ── 1b) Pydantic veri doğrulama (kirli veriyi filtrele) ──
-            validated_rows = validator.validate_batch(
-                matches.to_dicts(), schema="match"
-            )
+            # â”€â”€ 1b) Pydantic veri doÄŸrulama (kirli veriyi filtrele) â”€â”€
+            match_dicts = matches.to_dicts()
+            # datetime â†’ ISO string dÃ¶nÃ¼ÅŸÃ¼mÃ¼
+            for m in match_dicts:
+                if 'kickoff' in m and hasattr(m['kickoff'], 'isoformat'):
+                    m['kickoff'] = m['kickoff'].isoformat()
+            
+            validated_rows = validator.validate_batch(match_dicts, schema="match")
             if not validated_rows:
-                logger.warning("Tüm maç verisi doğrulamadan reddedildi.")
+                logger.warning("TÃ¼m maÃ§ verisi doÄŸrulamadan reddedildi.")
                 await asyncio.sleep(30)
                 continue
             import polars as pl
             matches = pl.DataFrame(validated_rows)
-            logger.debug(f"Doğrulama: {len(validated_rows)} maç geçerli.")
+            logger.debug(f"DoÄŸrulama: {len(validated_rows)} maÃ§ geÃ§erli.")
 
-            # ── 2) Feature mühendisliği (SmartCache L2 RAM → L3 disk) ──
+            # DÃ¶ngÃ¼ sÃ¼resini kontrol altÄ±nda tutmak iÃ§in iÅŸlenecek maÃ§ sayÄ±sÄ±nÄ± sÄ±nÄ±rla.
+            max_matches = max(1, int(os.getenv("ANALYSIS_MAX_MATCHES", "12")))
+            if getattr(matches, "height", 0) > max_matches:
+                matches = matches.head(max_matches)
+                logger.info(f"[Perf] MaÃ§ seti {max_matches} ile sÄ±nÄ±rlandÄ±rÄ±ldÄ±.")
+
+            # â”€â”€ 2) Feature mÃ¼hendisliÄŸi (SmartCache L2 RAM â†’ L3 disk) â”€â”€
             features = smart_cache.get_or_compute(
                 f"features_cycle_{cycle}",
                 lambda: cache.get_or_compute("features", lambda: db.build_feature_matrix(matches)),
                 persist=False,
             )
 
-            # ── 2b) Zaman ağırlıklandırma ──
+            # â”€â”€ 2b) Zaman aÄŸÄ±rlÄ±klandÄ±rma â”€â”€
             features = time_decay.apply_to_dataframe(features, date_col="kickoff")
 
-            # ── 2c) npxG filtresi (Non-Penalty xG düzeltmesi) ──
+            # â”€â”€ 2c) npxG filtresi (Non-Penalty xG dÃ¼zeltmesi) â”€â”€
             try:
                 feature_dicts = features.to_dicts()
                 feature_dicts = [npxg_filter.filter_features(f) for f in feature_dicts]
@@ -937,27 +1268,27 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
             except Exception as e:
                 logger.debug(f"[Guardian] npxg_filter: {type(e).__name__}: {e}")
 
-            # ── 3) JAX ile hızlandırılmış hesaplamalar ──
+            # â”€â”€ 3) JAX ile hÄ±zlandÄ±rÄ±lmÄ±ÅŸ hesaplamalar â”€â”€
             features_acc = jax_acc.accelerate(features)
 
-            # ── 4) Model tahminleri ──
-            prob_preds  = prob_engine.predict(features_acc)
+            # â”€â”€ 4) Model tahminleri â”€â”€
+            prob_preds  = prob_engine.predict_for_dataframe(matches)
             mtl_preds   = mtl.predict(features_acc)
             kan_preds   = kan.predict(features_acc)
             poisson_preds = poisson.predict_for_dataframe(features_acc)
             mc_preds    = monte_carlo.predict_for_dataframe(features_acc)
             elo_preds   = elo_system.predict_for_dataframe(features_acc)
 
-            # ── 4b) Dixon-Coles düzeltilmiş Poisson ──
+            # â”€â”€ 4b) Dixon-Coles dÃ¼zeltilmiÅŸ Poisson â”€â”€
             dc_preds    = dixon_coles.predict_for_dataframe(features_acc)
 
-            # ── 4c) Gradient Boosting (LightGBM) ML tahmini ──
+            # â”€â”€ 4c) Gradient Boosting (LightGBM) ML tahmini â”€â”€
             gb_preds    = gb_model.predict(features_acc)
 
-            # ── 4d-1) GLM Düzeltilmiş xG ──
+            # â”€â”€ 4d-1) GLM DÃ¼zeltilmiÅŸ xG â”€â”€
             glm_preds = glm.predict_for_dataframe(features_acc)
 
-            # ── 4d) Bayesyen Hiyerarşik Model ──
+            # â”€â”€ 4d) Bayesyen HiyerarÅŸik Model â”€â”€
             for row in matches.iter_rows(named=True):
                 home = row.get("home_team", "")
                 away = row.get("away_team", "")
@@ -965,12 +1296,12 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                     bayes_pred = bayesian_model.predict(home, away)
                     if bayes_pred.get("shrinkage_home", 1) > 0.5:
                         logger.debug(
-                            f"[Bayesian] {home}: prior ağırlıklı "
+                            f"[Bayesian] {home}: prior aÄŸÄ±rlÄ±klÄ± "
                             f"(shrinkage={bayes_pred['shrinkage_home']:.2f}, "
                             f"n={bayes_pred['home_matches']})"
                         )
 
-            # ── 4e) Takım Volatilite analizi ──
+            # â”€â”€ 4e) TakÄ±m Volatilite analizi â”€â”€
             for row in matches.iter_rows(named=True):
                 for team_key in ("home_team", "away_team"):
                     team = row.get(team_key, "")
@@ -978,7 +1309,7 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                         history = db.get_team_history(team) if hasattr(db, "get_team_history") else []
                         team_vix.calculate(team, history)
 
-            # ── 4f) LSTM Momentum analizi ──
+            # â”€â”€ 4f) LSTM Momentum analizi â”€â”€
             for row in matches.iter_rows(named=True):
                 home = row.get("home_team", "")
                 away = row.get("away_team", "")
@@ -996,7 +1327,7 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                         confidence=lstm_result["confidence"],
                     )
 
-            # ── 4g) RAG Haber Sentiment analizi (LLM) ──
+            # â”€â”€ 4g) RAG Haber Sentiment analizi (LLM) â”€â”€
             for row in matches.iter_rows(named=True):
                 home = row.get("home_team", "")
                 away = row.get("away_team", "")
@@ -1004,7 +1335,7 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                     try:
                         rag_result = await news_rag.analyze_match(home, away)
                         mid = row.get("match_id", f"{home}_{away}")
-                        # Sentiment farkını stacker'a ekle
+                        # Sentiment farkÄ±nÄ± stacker'a ekle
                         s_home = rag_result.get("home_sentiment", 0.5)
                         s_away = rag_result.get("away_sentiment", 0.5)
                         s_diff = s_home - s_away
@@ -1018,12 +1349,12 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                     except Exception as e:
                         logger.debug(f"[Guardian] {type(e).__name__}: {e}")
 
-            # ── 4h) Network Centrality – Eksik oyuncu etkisi ──
+            # â”€â”€ 4h) Network Centrality â€“ Eksik oyuncu etkisi â”€â”€
             for row in matches.iter_rows(named=True):
                 home = row.get("home_team", "")
                 away = row.get("away_team", "")
                 if home and away:
-                    # Pas ağı verisi yükle (varsa)
+                    # Pas aÄŸÄ± verisi yÃ¼kle (varsa)
                     home_match = db.get_pass_network(home) if hasattr(db, "get_pass_network") else None
                     away_match = db.get_pass_network(away) if hasattr(db, "get_pass_network") else None
                     if home_match:
@@ -1045,7 +1376,7 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                         away_penalty = pass_network.combined_penalty(away, away_missing)
                         logger.info(f"[Network] {away} eksik oyuncu penalty: {away_penalty:.2%}")
 
-            # ── 4i) Prophet Mevsimsellik – Tarihsel dönem analizi ──
+            # â”€â”€ 4i) Prophet Mevsimsellik â€“ Tarihsel dÃ¶nem analizi â”€â”€
             for row in matches.iter_rows(named=True):
                 home = row.get("home_team", "")
                 away = row.get("away_team", "")
@@ -1055,29 +1386,29 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                     )
                     if season_analysis["avoid_match"]:
                         logger.warning(
-                            f"[Prophet] ⚠️ {home} vs {away}: "
-                            f"Her iki takım da negatif sezonda – AVOID sinyali!"
+                            f"[Prophet] âš ï¸ {home} vs {away}: "
+                            f"Her iki takÄ±m da negatif sezonda â€“ AVOID sinyali!"
                         )
                     if season_analysis["insight"]:
                         logger.info(f"[Prophet] {home} vs {away}: {season_analysis['insight']}")
 
-            # ── 4j) Neo4j Graph – Maç ilişkilerini kaydet ──
+            # â”€â”€ 4j) Neo4j Graph â€“ MaÃ§ iliÅŸkilerini kaydet â”€â”€
             for row in matches.iter_rows(named=True):
                 try:
                     neo4j_graph.create_match(row)
-                    # Hakem yanlılık analizi
+                    # Hakem yanlÄ±lÄ±k analizi
                     ref = row.get("referee", "")
                     if ref:
                         ref_bias = neo4j_graph.query_referee_bias(ref)
                         if ref_bias.get("is_strict_away"):
                             logger.info(
                                 f"[Graph] Hakem {ref}: deplasmana sert "
-                                f"(ort kart farkı: {ref_bias['away_bias']:+.1f})"
+                                f"(ort kart farkÄ±: {ref_bias['away_bias']:+.1f})"
                             )
                 except Exception as e:
                     logger.debug(f"[Guardian] {type(e).__name__}: {e}")
 
-            # ── 4k) Kalman Filtresi – Dinamik güç güncelleme ──
+            # â”€â”€ 4k) Kalman Filtresi â€“ Dinamik gÃ¼Ã§ gÃ¼ncelleme â”€â”€
             for row in matches.iter_rows(named=True):
                 home = row.get("home_team", "")
                 away = row.get("away_team", "")
@@ -1093,23 +1424,23 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                             confidence=kalman_pred["reliability"],
                         )
 
-            # ── 4l) Vector Engine – Tarihsel ikiz maçları bul ──
+            # â”€â”€ 4l) Vector Engine â€“ Tarihsel ikiz maÃ§larÄ± bul â”€â”€
             for row in matches.iter_rows(named=True):
                 try:
                     similarity = vector_engine.find_similar(row, k=50)
                     if similarity.suggested_confidence > 0.60:
                         logger.info(
                             f"[Vector] {row.get('home_team','')} vs {row.get('away_team','')}: "
-                            f"Tarihsel benzerlik → {similarity.suggested_result} "
+                            f"Tarihsel benzerlik â†’ {similarity.suggested_result} "
                             f"({similarity.suggested_confidence:.0%}), "
-                            f"Ü2.5: {similarity.over_25_rate:.0%}"
+                            f"Ãœ2.5: {similarity.over_25_rate:.0%}"
                         )
-                    # İndekse ekle
+                    # Ä°ndekse ekle
                     vector_engine.add_match(row)
                 except Exception as e:
                     logger.debug(f"[Guardian] {type(e).__name__}: {e}")
 
-            # ── 5) İstatistiksel analiz ──
+            # â”€â”€ 5) Ä°statistiksel analiz â”€â”€
             tail_risk    = evt_scanner.scan(features_acc)
             causal_edges = causal.discover(features_acc)
             intervals    = conformal.predict_intervals(features_acc)
@@ -1117,14 +1448,14 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
             jumps        = jump_diff.detect(features_acc)
             geo_potential = geometric.compute_potential(features_acc)
 
-            # ── 5b) Anomali tespiti (Dropping Odds / Z-Score) ──
+            # â”€â”€ 5b) Anomali tespiti (Dropping Odds / Z-Score) â”€â”€
             odds_alerts = anomaly.scan_all_matches(db)
             if odds_alerts:
                 logger.warning(f"[ANOMALI] {len(odds_alerts)} dropping odds tespit edildi!")
                 for alert in odds_alerts[:3]:
                     await notifier.send_anomaly_alert(alert)
 
-            # ── 5b-2) Isolation Forest – Tuzak/Şike taraması ──
+            # â”€â”€ 5b-2) Isolation Forest â€“ Tuzak/Åike taramasÄ± â”€â”€
             for row in matches.iter_rows(named=True):
                 try:
                     iso_alerts = iso_anomaly.scan(row, match_id=row.get("match_id", ""))
@@ -1138,21 +1469,21 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                         ))
                         if ia.is_blacklisted:
                             await notifier.send(
-                                f"🚨 <b>TUZAK TESPİT:</b> {ia.match_id}\n"
+                                f"ğŸš¨ <b>TUZAK TESPÄ°T:</b> {ia.match_id}\n"
                                 f"{ia.description}\n"
                                 f"<b>Aksiyon:</b> {ia.action}"
                             )
                 except Exception as e:
                     logger.debug(f"[Guardian] {type(e).__name__}: {e}")
 
-            # ── 5b-3) Vision Live – Canlı maçlar momentum kontrolü ──
+            # â”€â”€ 5b-3) Vision Live â€“ CanlÄ± maÃ§lar momentum kontrolÃ¼ â”€â”€
             for mid in vision_live.active_matches:
                 momentum_rpt = vision_live.get_momentum_report(mid)
                 if momentum_rpt.signal in ("GOAL_SMELL", "HIGH_PRESSURE"):
                     logger.warning(
                         f"[Vision] {mid}: {momentum_rpt.signal} "
-                        f"(baskı={momentum_rpt.avg_pressure:.0%}, "
-                        f"ceza_sahası={momentum_rpt.ball_in_penalty_area_pct:.0%})"
+                        f"(baskÄ±={momentum_rpt.avg_pressure:.0%}, "
+                        f"ceza_sahasÄ±={momentum_rpt.ball_in_penalty_area_pct:.0%})"
                     )
                     await event_bus.emit(Event(
                         event_type="vision_signal",
@@ -1166,7 +1497,7 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                         cycle=cycle,
                     ))
 
-            # ── 5b-4) Causal Reasoning – Nedensellik analizi ──
+            # â”€â”€ 5b-4) Causal Reasoning â€“ Nedensellik analizi â”€â”€
             for row in matches.iter_rows(named=True):
                 try:
                     causal_factors = causal_reason.get_match_causal_factors(row)
@@ -1175,13 +1506,13 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                             logger.info(
                                 f"[Causal] {row.get('home_team','')} vs "
                                 f"{row.get('away_team','')}: "
-                                f"{cf.treatment} → {cf.outcome} "
+                                f"{cf.treatment} â†’ {cf.outcome} "
                                 f"(ATE={cf.ate:+.3f}, p={cf.p_value:.3f})"
                             )
                 except Exception as e:
                     logger.debug(f"[Guardian] {type(e).__name__}: {e}")
 
-            # ── 5b-5) Nash Game Theory – Oyun Teorisi analizi ──
+            # â”€â”€ 5b-5) Nash Game Theory â€“ Oyun Teorisi analizi â”€â”€
             for row in matches.iter_rows(named=True):
                 try:
                     m_probs = {
@@ -1190,9 +1521,9 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                         "prob_away": row.get("prob_away", 0.34),
                     }
                     m_odds = {
-                        "home": row.get("home_odds", 2.0),
-                        "draw": row.get("draw_odds", 3.5),
-                        "away": row.get("away_odds", 4.0),
+                        "home": _sg(row, "home_odds", 2.0),
+                        "draw": _sg(row, "draw_odds", 3.5),
+                        "away": _sg(row, "away_odds", 4.0),
                     }
                     nash_analysis = nash_solver.analyze_match(
                         m_probs, m_odds, match_id=row.get("match_id", ""),
@@ -1208,7 +1539,7 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                 except Exception as e:
                     logger.debug(f"[Guardian] {type(e).__name__}: {e}")
 
-            # ── 5b-6) Entropy Meter – Bilgi fiziği ──
+            # â”€â”€ 5b-6) Entropy Meter â€“ Bilgi fiziÄŸi â”€â”€
             for row in matches.iter_rows(named=True):
                 try:
                     ent_report = entropy_meter.analyze_match(
@@ -1219,17 +1550,17 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                             "prob_away": row.get("prob_away", 0.34),
                         },
                         market_odds={
-                            "home": row.get("home_odds", 2.0),
-                            "draw": row.get("draw_odds", 3.5),
-                            "away": row.get("away_odds", 4.0),
+                            "home": _sg(row, "home_odds", 2.0),
+                            "draw": _sg(row, "draw_odds", 3.5),
+                            "away": _sg(row, "away_odds", 4.0),
                         },
                         home_team=row.get("home_team", ""),
                         away_team=row.get("away_team", ""),
                     )
                     if ent_report.kill_switch:
                         logger.warning(
-                            f"[Entropy] KILL SWITCH: {row.get('match_id','')} → "
-                            f"{ent_report.match_entropy:.2f} bit (KAOTİK)"
+                            f"[Entropy] KILL SWITCH: {row.get('match_id','')} â†’ "
+                            f"{ent_report.match_entropy:.2f} bit (KAOTÄ°K)"
                         )
                     elif ent_report.kl_divergence > 0.10:
                         logger.info(
@@ -1242,14 +1573,14 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                 except Exception as e:
                     logger.debug(f"[Guardian] {type(e).__name__}: {e}")
 
-            # ── 5b-7) Digital Twin – Sayısal İkiz maç simülasyonu ──
+            # â”€â”€ 5b-7) Digital Twin â€“ SayÄ±sal Ä°kiz maÃ§ simÃ¼lasyonu â”€â”€
             for row in matches.iter_rows(named=True):
                 try:
                     mid = row.get("match_id", "")
                     home_name = row.get("home_team", "Unknown")
                     away_name = row.get("away_team", "Unknown")
-                    home_q = row.get("home_rating", 70)
-                    away_q = row.get("away_rating", 70)
+                    home_q = _sg(row, "home_rating", 70)
+                    away_q = _sg(row, "away_rating", 70)
                     home_squad = digital_twin.generate_team(home_name, quality=home_q)
                     away_squad = digital_twin.generate_team(away_name, quality=away_q)
                     twin_report = digital_twin.simulate_match(
@@ -1261,12 +1592,12 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                             f"H={twin_report.prob_home:.0%} D={twin_report.prob_draw:.0%} "
                             f"A={twin_report.prob_away:.0%} "
                             f"(skor={twin_report.most_common_score}, "
-                            f"Ü2.5={twin_report.prob_over25:.0%})"
+                            f"Ãœ2.5={twin_report.prob_over25:.0%})"
                         )
                 except Exception as e:
                     logger.debug(f"[Guardian] {type(e).__name__}: {e}")
 
-            # ── 5b-8) Fractal – Hurst Exponent lig rejim analizi ──
+            # â”€â”€ 5b-8) Fractal â€“ Hurst Exponent lig rejim analizi â”€â”€
             try:
                 league_results = db.get_recent_results(limit=100) if hasattr(db, "get_recent_results") else []
                 if league_results:
@@ -1284,7 +1615,7 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
             except Exception as e:
                 logger.debug(f"[Guardian] fractal: {type(e).__name__}: {e}")
 
-            # ── 5b-9) BSTS – Yapısal kırılma tespiti ──
+            # â”€â”€ 5b-9) BSTS â€“ YapÄ±sal kÄ±rÄ±lma tespiti â”€â”€
             for row in matches.iter_rows(named=True):
                 try:
                     home = row.get("home_team", "")
@@ -1295,15 +1626,15 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                             for bp in breaks:
                                 if bp.is_significant:
                                     logger.info(
-                                        f"[BSTS] {home}: Yapısal kırılma tespit! "
+                                        f"[BSTS] {home}: YapÄ±sal kÄ±rÄ±lma tespit! "
                                         f"idx={bp.index}, "
-                                        f"önceki={bp.pre_mean:.2f} → sonraki={bp.post_mean:.2f} "
+                                        f"Ã¶nceki={bp.pre_mean:.2f} â†’ sonraki={bp.post_mean:.2f} "
                                         f"({bp.change_pct:+.1f}%, p={bp.p_value:.3f})"
                                     )
                 except Exception as e:
                     logger.debug(f"[Guardian] {type(e).__name__}: {e}")
 
-            # ── 5b-10) Hypergraph – taktiksel birim analizi ──
+            # â”€â”€ 5b-10) Hypergraph â€“ taktiksel birim analizi â”€â”€
             for row in matches.iter_rows(named=True):
                 try:
                     from src.quant.hypergraph_unit import TacticalUnit
@@ -1319,7 +1650,7 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                             units = [
                                 TacticalUnit("Defans", "defense", [0, 1, 2, 3], weight=1.5),
                                 TacticalUnit("Orta Saha", "midfield", [4, 5, 6], weight=1.2),
-                                TacticalUnit("Hücum", "attack", [7, 8, 9, 10], weight=1.0),
+                                TacticalUnit("HÃ¼cum", "attack", [7, 8, 9, 10], weight=1.0),
                             ]
                             missing = [
                                 i for i, p in enumerate(lineup[:11])
@@ -1333,17 +1664,17 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                                     f"[Hypergraph] {home}: "
                                     f"{'SAVUNMA' if hg_report.defense_alert else ''}"
                                     f"{'|ORTA SAHA' if hg_report.midfield_alert else ''} "
-                                    f"zayıf! kırılganlık={hg_report.vulnerability_index:.2f}"
+                                    f"zayÄ±f! kÄ±rÄ±lganlÄ±k={hg_report.vulnerability_index:.2f}"
                                 )
                             elif hg_report.vulnerability_index > 0.3:
                                 logger.info(
                                     f"[Hypergraph] {home}: uyum={hg_report.team_cohesion:.2f}, "
-                                    f"kırılganlık={hg_report.vulnerability_index:.2f}"
+                                    f"kÄ±rÄ±lganlÄ±k={hg_report.vulnerability_index:.2f}"
                                 )
                 except Exception as e:
                     logger.debug(f"[Guardian] {type(e).__name__}: {e}")
 
-            # ── 5b-11) Fluid Dynamics – saha kontrol analizi ──
+            # â”€â”€ 5b-11) Fluid Dynamics â€“ saha kontrol analizi â”€â”€
             for row in matches.iter_rows(named=True):
                 try:
                     if hasattr(db, "get_player_positions"):
@@ -1378,7 +1709,7 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                 except Exception as e:
                     logger.debug(f"[Guardian] {type(e).__name__}: {e}")
 
-            # ── 5b-12) Regime Switcher – gizli rejim tespiti ──
+            # â”€â”€ 5b-12) Regime Switcher â€“ gizli rejim tespiti â”€â”€
             for row in matches.iter_rows(named=True):
                 try:
                     home = row.get("home_team", "")
@@ -1397,18 +1728,18 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                                 logger.warning(
                                     f"[Regime] {home}: MOMENTUM KIRILMASI! "
                                     f"{regime_report.last_transition} "
-                                    f"→ gol çarpanı x{regime_report.goal_adjustment:.2f}"
+                                    f"â†’ gol Ã§arpanÄ± x{regime_report.goal_adjustment:.2f}"
                                 )
                             elif regime_report.current.regime_id != 1:
                                 logger.info(
                                     f"[Regime] {home}: {regime_report.current.regime_name} "
-                                    f"(güven={regime_report.current.confidence:.0%}, "
+                                    f"(gÃ¼ven={regime_report.current.confidence:.0%}, "
                                     f"stabilite={regime_report.stability:.2f})"
                                 )
                 except Exception as e:
                     logger.debug(f"[Guardian] {type(e).__name__}: {e}")
 
-            # ── 5b-13) SDE Pricer – oran hareketi tahmini ──
+            # â”€â”€ 5b-13) SDE Pricer â€“ oran hareketi tahmini â”€â”€
             for row in matches.iter_rows(named=True):
                 try:
                     if hasattr(db, "get_odds_history"):
@@ -1427,16 +1758,16 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                                     f"[SDE] {row.get('home_team','')} vs "
                                     f"{row.get('away_team','')}: "
                                     f"{sde_forecast.value_signal} "
-                                    f"oran={sde_forecast.current_odds} → "
+                                    f"oran={sde_forecast.current_odds} â†’ "
                                     f"beklenen={sde_forecast.predicted_odds} "
                                     f"({sde_forecast.expected_change_pct:+.1f}%, "
-                                    f"θ={sde_forecast.params.theta:.3f}, "
-                                    f"σ={sde_forecast.params.sigma:.3f})"
+                                    f"Î¸={sde_forecast.params.theta:.3f}, "
+                                    f"Ïƒ={sde_forecast.params.sigma:.3f})"
                                 )
                 except Exception as e:
                     logger.debug(f"[Guardian] {type(e).__name__}: {e}")
 
-            # ── 5b-14) Quantum Brain – kuantum ML tahmini ──
+            # â”€â”€ 5b-14) Quantum Brain â€“ kuantum ML tahmini â”€â”€
             for row in matches.iter_rows(named=True):
                 try:
                     home = row.get("home_team", "")
@@ -1454,7 +1785,7 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                                 logger.info(
                                     f"[Quantum] {home} vs {away}: "
                                     f"{labels.get(q_pred.prediction, '?')} "
-                                    f"(güven={q_pred.confidence:.0%}, "
+                                    f"(gÃ¼ven={q_pred.confidence:.0%}, "
                                     f"method={q_pred.method}, "
                                     f"{q_pred.n_qubits}q/{q_pred.circuit_depth}d, "
                                     f"{q_pred.compute_time_ms:.1f}ms)"
@@ -1462,7 +1793,7 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                 except Exception as e:
                     logger.debug(f"[Guardian] {type(e).__name__}: {e}")
 
-            # ── 5b-15) Hawkes Momentum – olay bulaşıcılığı ──
+            # â”€â”€ 5b-15) Hawkes Momentum â€“ olay bulaÅŸÄ±cÄ±lÄ±ÄŸÄ± â”€â”€
             for row in matches.iter_rows(named=True):
                 try:
                     home = row.get("home_team", "")
@@ -1478,7 +1809,7 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                             )
                             if hawkes_report.over_signal:
                                 logger.warning(
-                                    f"[Hawkes] {home}: ÜST SİNYALİ! "
+                                    f"[Hawkes] {home}: ÃœST SÄ°NYALÄ°! "
                                     f"BR={hawkes_report.params.branching_ratio:.2f}, "
                                     f"momentum={hawkes_report.momentum_level}, "
                                     f"5dk={hawkes_report.next_event_prob_5min:.0%}"
@@ -1486,12 +1817,12 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                             elif hawkes_report.goal_burst_alert:
                                 logger.warning(
                                     f"[Hawkes] {home}: GOL PATLAMASI! "
-                                    f"Ardışık olaylar tespit."
+                                    f"ArdÄ±ÅŸÄ±k olaylar tespit."
                                 )
                 except Exception as e:
                     logger.debug(f"[Guardian] {type(e).__name__}: {e}")
 
-            # ── 5b-16) Survival Estimator – sağkalım analizi ──
+            # â”€â”€ 5b-16) Survival Estimator â€“ saÄŸkalÄ±m analizi â”€â”€
             for row in matches.iter_rows(named=True):
                 try:
                     home = row.get("home_team", "")
@@ -1525,7 +1856,7 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                                 )
                             elif sv_report.fortress_mode:
                                 logger.info(
-                                    f"[Survival] {home}: KALE SAĞLAM "
+                                    f"[Survival] {home}: KALE SAÄLAM "
                                     f"S(t)={sv_report.params.survival_prob:.0%}, "
                                     f"alt bahis sinyali"
                                 )
@@ -1537,7 +1868,7 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                 except Exception as e:
                     logger.debug(f"[Guardian] {type(e).__name__}: {e}")
 
-            # ── 5b-17) Fatigue Engine – biyomekanik yorgunluk ──
+            # â”€â”€ 5b-17) Fatigue Engine â€“ biyomekanik yorgunluk â”€â”€
             for row in matches.iter_rows(named=True):
                 try:
                     home = row.get("home_team", "")
@@ -1554,22 +1885,22 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                             )
                             if ft_report.defense_collapse_risk:
                                 logger.warning(
-                                    f"[Fatigue] {home}: SAVUNMA ÇÖKÜYOR! "
+                                    f"[Fatigue] {home}: SAVUNMA Ã‡Ã–KÃœYOR! "
                                     f"Def enerji={ft_report.defense_avg_stamina:.0f}%, "
-                                    f"kırılganlık={ft_report.defense_vulnerability:.0%}, "
-                                    f"en zayıf={ft_report.weakest_player} "
+                                    f"kÄ±rÄ±lganlÄ±k={ft_report.defense_vulnerability:.0%}, "
+                                    f"en zayÄ±f={ft_report.weakest_player} "
                                     f"({ft_report.weakest_stamina:.0f}%)"
                                 )
                             elif ft_report.late_goal_signal:
                                 logger.info(
-                                    f"[Fatigue] {home}: GEÇ GOL RİSKİ! "
+                                    f"[Fatigue] {home}: GEÃ‡ GOL RÄ°SKÄ°! "
                                     f"Ort enerji={ft_report.avg_stamina:.0f}%, "
                                     f"{ft_report.critical_count} kritik oyuncu"
                                 )
                 except Exception as e:
                     logger.debug(f"[Guardian] {type(e).__name__}: {e}")
 
-            # ── 5b-18) Chaos Filter – Lyapunov kaos tespiti ──
+            # â”€â”€ 5b-18) Chaos Filter â€“ Lyapunov kaos tespiti â”€â”€
             for row in matches.iter_rows(named=True):
                 try:
                     home = row.get("home_team", "")
@@ -1583,25 +1914,25 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                             if chaos_report.kill_betting:
                                 logger.warning(
                                     f"[Chaos] {home}: KAOS! "
-                                    f"λ={chaos_report.params.max_lyapunov:.4f}, "
+                                    f"Î»={chaos_report.params.max_lyapunov:.4f}, "
                                     f"rejim={chaos_report.regime}. "
-                                    f"TÜM BAHİSLER İPTAL."
+                                    f"TÃœM BAHÄ°SLER Ä°PTAL."
                                 )
                             elif chaos_report.reduce_stake:
                                 logger.info(
-                                    f"[Chaos] {home}: Sınırda, "
-                                    f"λ={chaos_report.params.max_lyapunov:.4f}, "
-                                    f"stake %50 düşürüldü."
+                                    f"[Chaos] {home}: SÄ±nÄ±rda, "
+                                    f"Î»={chaos_report.params.max_lyapunov:.4f}, "
+                                    f"stake %50 dÃ¼ÅŸÃ¼rÃ¼ldÃ¼."
                                 )
                             elif chaos_report.boost_confidence:
                                 logger.debug(
-                                    f"[Chaos] {home}: STABİL "
-                                    f"λ={chaos_report.params.max_lyapunov:.4f}"
+                                    f"[Chaos] {home}: STABÄ°L "
+                                    f"Î»={chaos_report.params.max_lyapunov:.4f}"
                                 )
                 except Exception as e:
                     logger.debug(f"[Guardian] {type(e).__name__}: {e}")
 
-            # ── 5b-19) Homology Scanner – topolojik organizasyon ──
+            # â”€â”€ 5b-19) Homology Scanner â€“ topolojik organizasyon â”€â”€
             for row in matches.iter_rows(named=True):
                 try:
                     home = row.get("home_team", "")
@@ -1618,26 +1949,26 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                             )
                             if topo.team_panicking:
                                 logger.warning(
-                                    f"[Homology] {home}: PANİK! "
-                                    f"gürültü={topo.noise_ratio:.0%}, "
-                                    f"β₀={topo.betti_0}, "
+                                    f"[Homology] {home}: PANÄ°K! "
+                                    f"gÃ¼rÃ¼ltÃ¼={topo.noise_ratio:.0%}, "
+                                    f"Î²â‚€={topo.betti_0}, "
                                     f"org={topo.organization_score:.0%}"
                                 )
                             elif topo.formation_broken:
                                 logger.info(
                                     f"[Homology] {home}: Formasyon bozuk, "
                                     f"org={topo.organization_score:.0%}, "
-                                    f"β₀={topo.betti_0}, β₁={topo.betti_1}"
+                                    f"Î²â‚€={topo.betti_0}, Î²â‚={topo.betti_1}"
                                 )
                             elif topo.organized_play:
                                 logger.debug(
                                     f"[Homology] {home}: Organize oyun, "
-                                    f"β₁={topo.betti_1} döngü"
+                                    f"Î²â‚={topo.betti_1} dÃ¶ngÃ¼"
                                 )
                 except Exception as e:
                     logger.debug(f"[Guardian] {type(e).__name__}: {e}")
 
-            # ── 5b-20) Fuzzy Reasoning – bulanık mantık risk değerlendirmesi ──
+            # â”€â”€ 5b-20) Fuzzy Reasoning â€“ bulanÄ±k mantÄ±k risk deÄŸerlendirmesi â”€â”€
             for row in matches.iter_rows(named=True):
                 try:
                     home = row.get("home_team", "")
@@ -1651,20 +1982,20 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                         crowd_factor=row.get("crowd_score", 0.5),
                     )
                     fuzzy_out = fuzzy.evaluate(fuzzy_input, team=home)
-                    if fuzzy_out.risk_level in ("yüksek", "çok_yüksek"):
+                    if fuzzy_out.risk_level in ("yÃ¼ksek", "Ã§ok_yÃ¼ksek"):
                         logger.info(
                             f"[Fuzzy] {home}: risk={fuzzy_out.risk_level} "
                             f"({fuzzy_out.risk_score:.0f}/100), "
-                            f"güven x{fuzzy_out.confidence_modifier:.1f}, "
+                            f"gÃ¼ven x{fuzzy_out.confidence_modifier:.1f}, "
                             f"gol mod x{fuzzy_out.goal_expectation_mod:.2f}"
                         )
                         if fuzzy_out.active_rules:
                             for rule in fuzzy_out.active_rules[:2]:
-                                logger.debug(f"  └─ {rule}")
+                                logger.debug(f"  â””â”€ {rule}")
                 except Exception as e:
                     logger.debug(f"[Guardian] {type(e).__name__}: {e}")
 
-            # ── 5b-21) AutoML – otonom model arama (periyodik) ──
+            # â”€â”€ 5b-21) AutoML â€“ otonom model arama (periyodik) â”€â”€
             if cycle % 50 == 0 and hasattr(db, "get_training_data"):
                 try:
                     import numpy as _np
@@ -1694,7 +2025,7 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                 except Exception as e:
                     logger.debug(f"[Guardian] {type(e).__name__}: {e}")
 
-            # ── 5b-23) Epistemic/Aleatoric Uncertainty – belirsizlik ayrımı ──
+            # â”€â”€ 5b-23) Epistemic/Aleatoric Uncertainty â€“ belirsizlik ayrÄ±mÄ± â”€â”€
             for row in matches.iter_rows(named=True):
                 try:
                     home = row.get("home_team", "")
@@ -1712,22 +2043,22 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                         )
                         if unc_report.decision == "ABSTAIN":
                             logger.warning(
-                                f"[Uncertainty] {home}: PAS GEÇ – "
+                                f"[Uncertainty] {home}: PAS GEÃ‡ â€“ "
                                 f"epistemik={unc_report.epistemic:.3f} "
                                 f"(bilgisizlik), "
                                 f"aleatorik={unc_report.aleatoric:.3f} "
-                                f"(şans). {unc_report.reason}"
+                                f"(ÅŸans). {unc_report.reason}"
                             )
                         elif unc_report.decision == "HALF_KELLY":
                             logger.info(
-                                f"[Uncertainty] {home}: YARI KELLY – "
+                                f"[Uncertainty] {home}: YARI KELLY â€“ "
                                 f"aleatorik={unc_report.aleatoric:.3f}. "
                                 f"Stake x{unc_report.confidence_modifier:.1f}"
                             )
                 except Exception as e:
                     logger.debug(f"[Guardian] {type(e).__name__}: {e}")
 
-            # ── 5b-24) Topology Mapper – topolojik küme analizi ──
+            # â”€â”€ 5b-24) Topology Mapper â€“ topolojik kÃ¼me analizi â”€â”€
             for row in matches.iter_rows(named=True):
                 try:
                     home = row.get("home_team", "")
@@ -1745,16 +2076,16 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                         )
                         if topo_rep.is_anomalous:
                             logger.warning(
-                                f"[Mapper] {home}: ANOMALİ KÜME! "
+                                f"[Mapper] {home}: ANOMALÄ° KÃœME! "
                                 f"Skor={topo_rep.anomaly_score:.0%}, "
-                                f"küme=#{topo_rep.assigned_cluster} "
-                                f"({topo_rep.cluster_size} maç). "
-                                f"Şüpheli hareket!"
+                                f"kÃ¼me=#{topo_rep.assigned_cluster} "
+                                f"({topo_rep.cluster_size} maÃ§). "
+                                f"ÅÃ¼pheli hareket!"
                             )
                 except Exception as e:
                     logger.debug(f"[Guardian] {type(e).__name__}: {e}")
 
-            # ── 5b-25) GraphRAG – haber kaynaklı kriz tespiti ──
+            # â”€â”€ 5b-25) GraphRAG â€“ haber kaynaklÄ± kriz tespiti â”€â”€
             for row in matches.iter_rows(named=True):
                 try:
                     home = row.get("home_team", "")
@@ -1775,11 +2106,11 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                             )
                             if crisis.hidden_connections:
                                 for hc in crisis.hidden_connections[:2]:
-                                    logger.debug(f"  └─ Gizli bağ: {hc}")
+                                    logger.debug(f"  â””â”€ Gizli baÄŸ: {hc}")
                 except Exception as e:
                     logger.debug(f"[Guardian] {type(e).__name__}: {e}")
 
-            # ── 5b-26) Probabilistic Engine – olasılıksal maç tahmini ──
+            # â”€â”€ 5b-26) Probabilistic Engine â€“ olasÄ±lÄ±ksal maÃ§ tahmini â”€â”€
             for row in matches.iter_rows(named=True):
                 try:
                     home = row.get("home_team", "")
@@ -1795,12 +2126,12 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                             f"Dep={prob_pred.p_away:.0%} | "
                             f"Ev gol: {prob_pred.home_goals_mean:.1f} "
                             f"[{prob_pred.home_goals_hdi[0]:.1f}-{prob_pred.home_goals_hdi[1]:.1f}], "
-                            f"Ü2.5: {prob_pred.p_over25:.0%}"
+                            f"Ãœ2.5: {prob_pred.p_over25:.0%}"
                         )
                 except Exception as e:
                     logger.debug(f"[Guardian] {type(e).__name__}: {e}")
 
-            # ── 5b-27) MF-DFA – çoklu fraktal piyasa analizi ──
+            # â”€â”€ 5b-27) MF-DFA â€“ Ã§oklu fraktal piyasa analizi â”€â”€
             for row in matches.iter_rows(named=True):
                 try:
                     odds_hist = row.get("odds_history", [])
@@ -1813,23 +2144,23 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                         )
                         if mf_report.regime_change_signal:
                             logger.warning(
-                                f"[MF-DFA] REJİM DEĞİŞİKLİĞİ: "
+                                f"[MF-DFA] REJÄ°M DEÄÄ°ÅÄ°KLÄ°ÄÄ°: "
                                 f"{row.get('home_team', '?')} vs {row.get('away_team', '?')} "
-                                f"Δh={mf_report.params.delta_h:.3f}, "
+                                f"Î”h={mf_report.params.delta_h:.3f}, "
                                 f"h(2)={mf_report.params.hurst_q2:.3f}. "
-                                f"Büyük sürpriz riski!"
+                                f"BÃ¼yÃ¼k sÃ¼rpriz riski!"
                             )
                         elif mf_report.regime == "strong_multifractal":
                             logger.info(
-                                f"[MF-DFA] Güçlü çok-fraktal: "
-                                f"Δh={mf_report.params.delta_h:.3f}. "
-                                f"Stake düşür."
+                                f"[MF-DFA] GÃ¼Ã§lÃ¼ Ã§ok-fraktal: "
+                                f"Î”h={mf_report.params.delta_h:.3f}. "
+                                f"Stake dÃ¼ÅŸÃ¼r."
                             )
                 except Exception as e:
                     logger.debug(f"[Guardian] {type(e).__name__}: {e}")
 
-            # ── 5b-28) Active Inference – modül gözlem güncellemesi ──
-            # (Maç sonuçları geldiğinde, her modülün surprisal'ını güncelle)
+            # â”€â”€ 5b-28) Active Inference â€“ modÃ¼l gÃ¶zlem gÃ¼ncellemesi â”€â”€
+            # (MaÃ§ sonuÃ§larÄ± geldiÄŸinde, her modÃ¼lÃ¼n surprisal'Ä±nÄ± gÃ¼ncelle)
             if hasattr(db, "get_recent_results"):
                 try:
                     recent = db.get_recent_results(limit=10)
@@ -1846,18 +2177,18 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                                     observed=observed,
                                     match_id=result.get("match_id", ""),
                                 )
-                    # Yeniden eğitim hedefleri
+                    # Yeniden eÄŸitim hedefleri
                     retrain = active_inf.get_retrain_targets()
                     if retrain:
                         logger.warning(
-                            f"[ActiveInf] Yeniden eğitim gerekli: "
+                            f"[ActiveInf] Yeniden eÄŸitim gerekli: "
                             f"{', '.join(retrain)}. "
-                            f"Precision ağırlıkları güncellendi."
+                            f"Precision aÄŸÄ±rlÄ±klarÄ± gÃ¼ncellendi."
                         )
                 except Exception as e:
                     logger.debug(f"[Guardian] {type(e).__name__}: {e}")
 
-            # ── 5b-29) Wavelet Denoising – oran sinyali temizleme ──
+            # â”€â”€ 5b-29) Wavelet Denoising â€“ oran sinyali temizleme â”€â”€
             for row in matches.iter_rows(named=True):
                 try:
                     odds_hist = row.get("odds_history", [])
@@ -1873,14 +2204,14 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                                 f"[Wavelet] FAKE MOVE: "
                                 f"{row.get('home_team', '?')} vs {row.get('away_team', '?')} "
                                 f"t={wav_report.fake_move_times[:3]}, "
-                                f"gürültü={wav_report.result.noise_pct:.1f}%. "
-                                f"Gerçek trend: {wav_report.result.trend_direction} "
+                                f"gÃ¼rÃ¼ltÃ¼={wav_report.result.noise_pct:.1f}%. "
+                                f"GerÃ§ek trend: {wav_report.result.trend_direction} "
                                 f"({wav_report.result.trend_slope:+.4f})"
                             )
                 except Exception as e:
                     logger.debug(f"[Guardian] {type(e).__name__}: {e}")
 
-            # ── 5b-30) Symbolic Discovery – periyodik formül keşfi ──
+            # â”€â”€ 5b-30) Symbolic Discovery â€“ periyodik formÃ¼l keÅŸfi â”€â”€
             if cycle % 100 == 0 and hasattr(db, "get_training_data"):
                 try:
                     import numpy as _np
@@ -1901,15 +2232,15 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                         )
                         if sym_report.best_formula.r2 > 0.3:
                             logger.info(
-                                f"[Symbolic] Formül keşfedildi: "
+                                f"[Symbolic] FormÃ¼l keÅŸfedildi: "
                                 f"{sym_report.best_formula.equation} "
-                                f"(R²={sym_report.best_formula.r2:.1%}, "
+                                f"(RÂ²={sym_report.best_formula.r2:.1%}, "
                                 f"cplx={sym_report.best_formula.complexity})"
                             )
                 except Exception as e:
                     logger.debug(f"[Guardian] {type(e).__name__}: {e}")
 
-            # ── 5b-32) GARCH Volatility Clustering – risk rejimi tespiti ──
+            # â”€â”€ 5b-32) GARCH Volatility Clustering â€“ risk rejimi tespiti â”€â”€
             for row in matches.iter_rows(named=True):
                 try:
                     odds_hist = row.get("odds_history", [])
@@ -1929,25 +2260,25 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                                 logger.warning(
                                     f"[GARCH] {vol_report.regime.upper()}: "
                                     f"{row.get('home_team', '?')} vs {row.get('away_team', '?')} "
-                                    f"σ={vol_report.current_volatility:.4f}, "
+                                    f"Ïƒ={vol_report.current_volatility:.4f}, "
                                     f"VaR95={vol_report.var_95:.4f}, "
                                     f"Kelly x{vol_report.kelly_multiplier:.1f}. "
                                     f"persistence={vol_report.params.persistence:.2f}"
                                 )
                             elif vol_report.regime_change:
                                 logger.info(
-                                    f"[GARCH] Rejim değişimi: "
-                                    f"{row.get('home_team', '?')} → {vol_report.regime} "
-                                    f"(σ={vol_report.current_volatility:.4f})"
+                                    f"[GARCH] Rejim deÄŸiÅŸimi: "
+                                    f"{row.get('home_team', '?')} â†’ {vol_report.regime} "
+                                    f"(Ïƒ={vol_report.current_volatility:.4f})"
                                 )
                 except Exception as e:
                     logger.debug(f"[Guardian] {type(e).__name__}: {e}")
 
-            # ── 5b-33) Stream Processing – canlı olay akışı güncelleme ──
+            # â”€â”€ 5b-33) Stream Processing â€“ canlÄ± olay akÄ±ÅŸÄ± gÃ¼ncelleme â”€â”€
             try:
                 for row in matches.iter_rows(named=True):
                     from src.core.stream_processor import StreamEvent
-                    odds_val = row.get("home_odds", 0)
+                    odds_val = _sg(row, "home_odds", 0.0)
                     if odds_val:
                         await stream_proc.emit(StreamEvent(
                             event_type="odds_update",
@@ -1972,7 +2303,7 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
             except Exception as e:
                 logger.debug(f"[Guardian] stream_agg: {type(e).__name__}: {e}")
 
-            # ── 5b-34) Particle Strength Tracker – dinamik güç takibi ──
+            # â”€â”€ 5b-34) Particle Strength Tracker â€“ dinamik gÃ¼Ã§ takibi â”€â”€
             for row in matches.iter_rows(named=True):
                 try:
                     live_data = row.get("live_stats", {})
@@ -1987,7 +2318,7 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                             home_dangerous_attacks=int(live_data.get("home_attacks", 0)),
                             away_dangerous_attacks=int(live_data.get("away_attacks", 0)),
                         )
-                        # Prior'ları modellerden al
+                        # Prior'larÄ± modellerden al
                         home_prior = result.get("home_prob", 0.5) if isinstance(result, dict) else 0.5
                         if not particle_tracker._initialized:
                             particle_tracker.initialize(
@@ -2001,7 +2332,7 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                             logger.warning(
                                 f"[Particle] MOMENTUM SHIFT dk.{p_report.minute}: "
                                 f"{p_report.momentum_shift.direction} "
-                                f"(Δ={p_report.momentum_shift.magnitude:.3f}), "
+                                f"(Î”={p_report.momentum_shift.magnitude:.3f}), "
                                 f"Home={p_report.state.home_power:.2f}, "
                                 f"Away={p_report.state.away_power:.2f}, "
                                 f"ESS={p_report.ess_ratio:.1%}"
@@ -2009,7 +2340,7 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                 except Exception as e:
                     logger.debug(f"[Guardian] {type(e).__name__}: {e}")
 
-            # ── 5b-35) Causal Discovery – nedensellik DAG güncelleme ──
+            # â”€â”€ 5b-35) Causal Discovery â€“ nedensellik DAG gÃ¼ncelleme â”€â”€
             if cycle % 25 == 0 and hasattr(db, "get_training_data"):
                 try:
                     import numpy as _np
@@ -2028,9 +2359,9 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                         )
                         if c_report.goal_root_causes:
                             logger.info(
-                                f"[Causal] Gol kök nedenleri: "
+                                f"[Causal] Gol kÃ¶k nedenleri: "
                                 f"{', '.join(c_report.goal_root_causes)} "
-                                f"(güven={c_report.causal_confidence:.1%})"
+                                f"(gÃ¼ven={c_report.causal_confidence:.1%})"
                             )
                         if c_report.spurious_correlations:
                             logger.warning(
@@ -2040,7 +2371,7 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                 except Exception as e:
                     logger.debug(f"[Guardian] {type(e).__name__}: {e}")
 
-            # ── 5b-31) Transfer Learning – lig arası bilgi transferi ──
+            # â”€â”€ 5b-31) Transfer Learning â€“ lig arasÄ± bilgi transferi â”€â”€
             try:
                 if hasattr(db, "get_all_features"):
                     train_features = db.get_all_features(limit=5000)
@@ -2050,13 +2381,13 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                         if X_ref.ndim == 2 and X_ref.shape[1] >= 5:
                             transport_metric.set_reference(X_ref)
                             logger.debug(
-                                f"[Transport] Referans dağılım güncellendi: "
+                                f"[Transport] Referans daÄŸÄ±lÄ±m gÃ¼ncellendi: "
                                 f"{X_ref.shape}"
                             )
             except Exception as e:
                 logger.debug(f"[Guardian] transport_ref: {type(e).__name__}: {e}")
 
-            # ── 5b-11) Optimal Transport – model drift tespiti ──
+            # â”€â”€ 5b-11) Optimal Transport â€“ model drift tespiti â”€â”€
             try:
                 if hasattr(db, "get_live_features"):
                     live_features = db.get_live_features(limit=200)
@@ -2067,7 +2398,7 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                         if drift_report.kill_betting:
                             logger.warning(
                                 f"[Transport] SEVERE DRIFT: W={drift_report.wasserstein_2:.4f} "
-                                f"→ BAHİSLER DURDURULDU!"
+                                f"â†’ BAHÄ°SLER DURDURULDU!"
                             )
                         elif drift_report.is_drifted:
                             logger.warning(
@@ -2082,7 +2413,7 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
             except Exception as e:
                 logger.debug(f"[Guardian] transport_drift: {type(e).__name__}: {e}")
 
-            # ── 5c) Duygu analizi (NLP) ──
+            # â”€â”€ 5c) Duygu analizi (NLP) â”€â”€
             for row in matches.iter_rows(named=True):
                 try:
                     sent = await sentiment.analyze_for_match_async(
@@ -2096,7 +2427,7 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                 except Exception as e:
                     logger.debug(f"[Guardian] {type(e).__name__}: {e}")
 
-            # ── 5d) Volatilite bazlı pazar önerisi ──
+            # â”€â”€ 5d) Volatilite bazlÄ± pazar Ã¶nerisi â”€â”€
             for row in matches.iter_rows(named=True):
                 home = row.get("home_team", "")
                 away = row.get("away_team", "")
@@ -2104,29 +2435,36 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                     market_rec = team_vix.recommend_market(home, away)
                     if market_rec.get("market") != "1X2":
                         logger.info(
-                            f"[VIX] {home} vs {away} → {market_rec['market']} "
+                            f"[VIX] {home} vs {away} â†’ {market_rec['market']} "
                             f"({market_rec.get('reason', '')[:60]})"
                         )
 
-            # ── 5e) Bilgi grafiğini güncelle (GraphRAG) ──
+            # â”€â”€ 5e) Bilgi grafiÄŸini gÃ¼ncelle (GraphRAG) â”€â”€
             for row in matches.iter_rows(named=True):
-                graph.add_match(
-                    row.get("match_id", ""),
-                    row.get("home_team", ""),
-                    row.get("away_team", ""),
-                    row.get("kickoff", ""),
-                )
+                try:
+                    graph.add_match(
+                        str(row.get("match_id") or ""),
+                        str(row.get("home_team") or ""),
+                        str(row.get("away_team") or ""),
+                        str(row.get("kickoff") or ""),
+                    )
+                except Exception as e:
+                    logger.debug(f"[Guardian] GraphRAG add_match: {type(e).__name__}: {e}")
 
-            # ── 5f) Semantik hafızaya kaydet (LanceDB) ──
+            # â”€â”€ 5f) Semantik hafÄ±zaya kaydet (LanceDB) â”€â”€
             for row in matches.iter_rows(named=True):
-                lance.add_odds_event(
-                    row.get("match_id", ""),
-                    "1X2",
-                    row.get("home_odds", 0),
-                    "pipeline",
-                )
+                try:
+                    odds_val = _sg(row, "home_odds", 0.0)
+                    lance.add_odds_event(
+                        str(row.get("match_id") or ""),
+                        "1X2",
+                        odds_val,
+                        "pipeline",
+                    )
+                except Exception as e:
+                    logger.debug(f"[Guardian] Lance add_odds: {type(e).__name__}: {e}")
 
-            # ── 6) Ensemble: tüm sinyalleri birleştir ──
+            # â”€â”€ 6) Ensemble: tÃ¼m sinyalleri birleÅŸtir â”€â”€
             ensemble = prob_engine.ensemble(
                 bayesian=prob_preds,
                 mtl=mtl_preds,
@@ -2139,16 +2477,44 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                 geometric=geo_potential,
             )
 
-            # ── 7) RL ajan kararı ──
+            # â”€â”€ 7) RL ajan kararÄ± â”€â”€
             action = rl.decide(ensemble)
 
-            # ── 8) Risk yönetimi ──
+            # â”€â”€ 8) Risk yÃ¶netimi â”€â”€
             covar_risk  = covar.measure(ensemble)
             allocation  = bl_opt.optimize(ensemble, covar_risk)
             constrained = risk_solver.solve(allocation)
             final_bets  = pnl.stabilize(constrained)
+            if isinstance(final_bets, list):
+                sanitized: list[dict] = []
+                dropped = 0
+                for bet in final_bets:
+                    if not isinstance(bet, dict):
+                        dropped += 1
+                        continue
+                    try:
+                        odds = float(bet.get("odds", 0) or 0)
+                    except Exception:
+                        odds = 0.0
+                    conf_raw = bet.get("confidence", bet.get("prob_home", 0.5))
+                    try:
+                        conf = float(conf_raw if conf_raw is not None else 0.5)
+                    except Exception:
+                        conf = 0.5
+                    if not math.isfinite(conf):
+                        conf = 0.5
+                    if odds <= 1.01:
+                        dropped += 1
+                        continue
+                    bet["confidence"] = min(max(conf, 1e-4), 1 - 1e-4)
+                    sanitized.append(bet)
+                if dropped > 0:
+                    logger.warning(
+                        f"[Sanity] GeÃ§ersiz olasÄ±lÄ±k/oran nedeniyle {dropped} sinyal elendi."
+                    )
+                final_bets = sanitized
 
-            # ── 8b) Fair Value Engine – Sentetik Oran & Value Edge ──
+            # â”€â”€ 8b) Fair Value Engine â€“ Sentetik Oran & Value Edge â”€â”€
             if isinstance(final_bets, list):
                 for bet in final_bets:
                     if isinstance(bet, dict) and bet.get("prob_home"):
@@ -2163,7 +2529,7 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                             bet["value_tier"] = fv.tier
                             bet["kelly_stake"] = fv.kelly_stake
 
-            # ── 8b-2) RL Ajan – Stake kararı (PPO) ──
+            # â”€â”€ 8b-2) RL Ajan â€“ Stake kararÄ± (PPO) â”€â”€
             if isinstance(final_bets, list):
                 for bet in final_bets:
                     if isinstance(bet, dict):
@@ -2183,20 +2549,34 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                         if rl_decision["action"] == 0:
                             bet["rl_pass"] = True
 
-            # ── 8c) Conformal Prediction – ABSTAIN filtresi ──
+            # â”€â”€ FILTER AUDIT: Filtre zinciri giriÅŸ sayÄ±sÄ±nÄ± kaydet â”€â”€
+            _filter_entry_count = len(final_bets) if isinstance(final_bets, list) else 0
+            _filter_log = []   # (filtre_adÄ±, giren, Ã§Ä±kan)
+
+            # â”€â”€ 8c) Conformal Prediction â€“ soft-scoring (artÄ±k hard-kill DEÄÄ°L) â”€â”€
             if isinstance(final_bets, list) and len(final_bets) > 0:
                 pre_count = len(final_bets)
-                final_bets = uncertainty_q.filter_certain_bets(
-                    final_bets, prob_key="confidence",
-                )
-                abstained = pre_count - len(final_bets)
-                if abstained > 0:
-                    logger.info(
-                        f"[UQ] {abstained} bahis ABSTAIN edildi "
-                        f"(belirsizlik çok yüksek). Kalan: {len(final_bets)}"
-                    )
+                # Hard-kill yerine soft-scoring: belirsiz bahisleri sil deÄŸil, stake dÃ¼ÅŸÃ¼r
+                for bet in final_bets:
+                    if isinstance(bet, dict):
+                        try:
+                            uq_score = uncertainty_q.uncertainty_score(
+                                bet, prob_key="confidence",
+                            ) if hasattr(uncertainty_q, "uncertainty_score") else None
+                            if uq_score is not None:
+                                bet["uq_uncertainty"] = uq_score
+                                # Ã‡ok belirsiz â†’ stake %40'a dÃ¼ÅŸÃ¼r (silme)
+                                if uq_score > 0.8:
+                                    bet["uq_penalty"] = 0.4
+                                elif uq_score > 0.6:
+                                    bet["uq_penalty"] = 0.7
+                                else:
+                                    bet["uq_penalty"] = 1.0
+                        except Exception:
+                            bet["uq_penalty"] = 1.0
+                _filter_log.append(("UQ_soft", pre_count, len(final_bets)))
 
-            # ── 8z-1) Fisher Geometry – dağılım anomali ve rejim tespiti ──
+            # â”€â”€ 8z-1) Fisher Geometry â€“ daÄŸÄ±lÄ±m anomali ve rejim tespiti â”€â”€
             if fisher_geo and isinstance(final_bets, list):
                 for bet in final_bets:
                     if isinstance(bet, dict):
@@ -2217,15 +2597,15 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                                     if fr_report.regime_shift:
                                         bet["fisher_advice"] = fr_report.recommendation
                                         logger.warning(
-                                            f"[Fisher] {mid}: REJİM DEĞİŞİMİ "
+                                            f"[Fisher] {mid}: REJÄ°M DEÄÄ°ÅÄ°MÄ° "
                                             f"FR={fr_report.fisher_rao_distance:.4f}"
                                         )
                         except Exception as e:
                             logger.debug(f"[Guardian] fisher_geo: {type(e).__name__}: {e}")
 
-            # ── 8z-2) Philosophical Engine – epistemik filtre ──
+            # â”€â”€ 8z-2) Philosophical Engine â€“ soft-scoring (artÄ±k silmiyor) â”€â”€
             if philo_engine and isinstance(final_bets, list):
-                filtered_bets = []
+                _philo_pre = len(final_bets)
                 for bet in final_bets:
                     if isinstance(bet, dict):
                         try:
@@ -2244,37 +2624,37 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                             bet["epistemic_approved"] = phi_report.epistemic_approved
                             if phi_report.reflections:
                                 bet["epistemic_reflection"] = phi_report.reflections[0]
-                            if phi_report.epistemic_approved:
-                                filtered_bets.append(bet)
-                            else:
+                            if not phi_report.epistemic_approved:
+                                # Silme, stake'i dÃ¼ÅŸÃ¼r
+                                bet["philo_penalty"] = 0.5
                                 logger.info(
-                                    f"[Philo] {mid}: EPİSTEMİK RED — "
-                                    f"skor={phi_report.epistemic_score:.2f}, "
-                                    f"sebep={phi_report.rejection_reasons[0] if phi_report.rejection_reasons else 'N/A'}"
+                                    f"[Philo] {mid}: Epistemik uyarÄ± (skor={phi_report.epistemic_score:.2f}) "
+                                    f"â€“ stake %50 dÃ¼ÅŸÃ¼rÃ¼ldÃ¼."
                                 )
+                            else:
+                                bet["philo_penalty"] = 1.0
                         except Exception as e:
                             logger.debug(f"[Guardian] philo_engine: {type(e).__name__}: {e}")
-                            filtered_bets.append(bet)
-                    else:
-                        filtered_bets.append(bet)
-                if len(filtered_bets) < len(final_bets):
-                    logger.info(
-                        f"[Philo] {len(final_bets) - len(filtered_bets)} bahis "
-                        f"epistemik filtreden geçemedi."
-                    )
-                final_bets = filtered_bets
+                            bet["philo_penalty"] = 1.0
+                _filter_log.append(("Philo_soft", _philo_pre, len(final_bets)))
 
-            # ── 8z-3) Regime Kelly v2 – rejim-farkında stake hesaplama ──
+            # â”€â”€ 8z-3) Regime Kelly v2 â€“ rejim-farkÄ±nda stake hesaplama â”€â”€
             if regime_kelly and isinstance(final_bets, list):
                 regime_kelly.reset_daily()
                 for bet in final_bets:
                     if isinstance(bet, dict):
                         try:
-                            prob = bet.get("confidence", bet.get("prob_home", 0.5))
-                            odds = bet.get("odds", 2.0)
+                            prob = float(bet.get("confidence", bet.get("prob_home", 0.5)) or 0.5)
+                            odds = float(bet.get("odds", 0) or 0)
                             mid = bet.get("match_id", "")
+                            if odds <= 1.01:
+                                bet["regime_kelly_stake"] = 0.0
+                                bet["regime_kelly_approved"] = False
+                                bet["kelly_reject_reason"] = "invalid_odds"
+                                continue
+                            prob = min(max(prob, 1e-4), 1 - 1e-4)
 
-                            # Rejim durumunu modüllerden topla
+                            # Rejim durumunu modÃ¼llerden topla
                             regime_state = RegimeState()
                             if vol_analyzer and hasattr(vol_analyzer, '_last_regime'):
                                 regime_state.volatility_regime = getattr(
@@ -2297,45 +2677,67 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                         except Exception as e:
                             logger.debug(f"[Guardian] regime_kelly: {type(e).__name__}: {e}")
 
-            # ── 9) Sağlık raporu & şeytanın avukatı ──
+            # â”€â”€ 9) SaÄŸlÄ±k raporu & ÅŸeytanÄ±n avukatÄ± â”€â”€
             health.update(final_bets, ensemble)
             devil.challenge(final_bets)
 
-            # ── 9b) Korelasyon filtresi – portföy varyansını düşür ──
+            # â”€â”€ 9b) Korelasyon filtresi â€“ portfÃ¶y varyansÄ±nÄ± dÃ¼ÅŸÃ¼r â”€â”€
             if isinstance(final_bets, list) and len(final_bets) > 1:
-                final_bets = corr_matrix.filter_diversified(final_bets, max_bets=5)
+                _pre_corr = len(final_bets)
+                final_bets = corr_matrix.filter_diversified(final_bets, max_bets=8)
+                _filter_log.append(("Correlation", _pre_corr, len(final_bets)))
 
-            # ── 9c) Copula bağımlılık filtresi – kuyruk riski ──
+            # â”€â”€ 9c) Copula baÄŸÄ±mlÄ±lÄ±k filtresi â€“ kuyruk riski â”€â”€
             if isinstance(final_bets, list) and len(final_bets) > 1:
+                _pre_cop = len(final_bets)
                 coupon_report = copula_risk.analyze_coupon(final_bets)
                 if coupon_report.dangerous_pairs:
                     logger.warning(
-                        f"[Copula] {len(coupon_report.dangerous_pairs)} tehlikeli çift! "
-                        f"Düzeltme: {coupon_report.risk_adjustment:.0%}"
+                        f"[Copula] {len(coupon_report.dangerous_pairs)} tehlikeli Ã§ift! "
+                        f"DÃ¼zeltme: {coupon_report.risk_adjustment:.0%}"
                     )
-                    final_bets = copula_risk.filter_safe_coupon(final_bets, max_size=5)
+                    final_bets = copula_risk.filter_safe_coupon(final_bets, max_size=8)
+                _filter_log.append(("Copula", _pre_cop, len(final_bets)))
 
-            # ── 9d) Isolation Forest kara liste filtresi ──
+            # â”€â”€ 9d) Isolation Forest â€“ soft-scoring (tuzak uyarÄ±sÄ± ama silmez) â”€â”€
             if isinstance(final_bets, list):
                 pre_iso = len(final_bets)
-                final_bets = iso_anomaly.filter_safe_bets(final_bets)
-                blocked = pre_iso - len(final_bets)
-                if blocked:
-                    logger.warning(
-                        f"[IsoForest] {blocked} bahis TUZAK olarak engellendi."
-                    )
+                for bet in final_bets:
+                    if isinstance(bet, dict):
+                        try:
+                            is_trap = iso_anomaly.is_anomaly(bet) if hasattr(iso_anomaly, "is_anomaly") else False
+                            if is_trap:
+                                bet["iso_trap"] = True
+                                bet["iso_penalty"] = 0.3   # Stake %30'a indir
+                                logger.warning(f"[IsoForest] {bet.get('match_id','?')}: TUZAK â€“ stake %30'a dÃ¼ÅŸÃ¼rÃ¼ldÃ¼")
+                            else:
+                                bet["iso_penalty"] = 1.0
+                        except Exception:
+                            bet["iso_penalty"] = 1.0
+                _filter_log.append(("IsoForest_soft", pre_iso, len(final_bets)))
 
-            # ── 9e) Entropy Kill Switch – kaotik maçları çıkar ──
+            # â”€â”€ 9e) Entropy â€“ soft-scoring (kaotik maÃ§larda stake dÃ¼ÅŸÃ¼r) â”€â”€
             if isinstance(final_bets, list) and len(final_bets) > 0:
                 pre_ent = len(final_bets)
-                final_bets = entropy_meter.filter_non_chaotic(final_bets)
-                killed = pre_ent - len(final_bets)
-                if killed:
-                    logger.warning(
-                        f"[Entropy] {killed} bahis KILL SWITCH ile iptal edildi."
-                    )
+                for bet in final_bets:
+                    if isinstance(bet, dict):
+                        try:
+                            ent_val = entropy_meter.entropy_score(bet) if hasattr(entropy_meter, "entropy_score") else None
+                            if ent_val is not None:
+                                bet["entropy"] = ent_val
+                                if ent_val > 0.9:
+                                    bet["entropy_penalty"] = 0.2   # Ã‡ok kaotik â†’ stake %20
+                                elif ent_val > 0.7:
+                                    bet["entropy_penalty"] = 0.5
+                                else:
+                                    bet["entropy_penalty"] = 1.0
+                            else:
+                                bet["entropy_penalty"] = 1.0
+                        except Exception:
+                            bet["entropy_penalty"] = 1.0
+                _filter_log.append(("Entropy_soft", pre_ent, len(final_bets)))
 
-            # ── 9f) Nash Game Theory – optimal strateji filtresi ──
+            # â”€â”€ 9f) Nash Game Theory â€“ optimal strateji filtresi â”€â”€
             if isinstance(final_bets, list):
                 for bet in final_bets:
                     if isinstance(bet, dict):
@@ -2359,19 +2761,19 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                         except Exception as e:
                             logger.debug(f"[Guardian] nash_enrich: {type(e).__name__}: {e}")
 
-            # ── 9g) EVT – Kuyruk riski stake ayarlaması ──
+            # â”€â”€ 9g) EVT â€“ Kuyruk riski stake ayarlamasÄ± â”€â”€
             if isinstance(final_bets, list) and len(final_bets) > 0:
                 final_bets = evt_risk.adjust_kelly_stakes(final_bets)
-                # Portföy VaR raporu
+                # PortfÃ¶y VaR raporu
                 p_var = evt_risk.portfolio_var(final_bets)
                 if p_var.total_var_99 > 0:
                     logger.info(
-                        f"[EVT] Portföy VaR(%99): {p_var.total_var_99:.0f} TL, "
-                        f"Max kayıp: {p_var.max_loss_scenario:.0f} TL, "
+                        f"[EVT] PortfÃ¶y VaR(%99): {p_var.total_var_99:.0f} TL, "
+                        f"Max kayÄ±p: {p_var.max_loss_scenario:.0f} TL, "
                         f"Diversifikasyon: {p_var.diversification_benefit:.0%}"
                     )
 
-            # ── 9h) Fractal – Hurst kelly çarpanı ──
+            # â”€â”€ 9h) Fractal â€“ Hurst kelly Ã§arpanÄ± â”€â”€
             if isinstance(final_bets, list) and len(final_bets) > 0:
                 for bet in final_bets:
                     if isinstance(bet, dict):
@@ -2392,7 +2794,7 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                         except Exception as e:
                             logger.debug(f"[Guardian] hurst_kelly: {type(e).__name__}: {e}")
 
-            # ── 9h-2) Chaos Filter – kaotik maçları filtrele ──
+            # â”€â”€ 9h-2) Chaos Filter â€“ kaotik maÃ§larÄ± filtrele â”€â”€
             if isinstance(final_bets, list) and len(final_bets) > 0:
                 try:
                     odds_histories = {}
@@ -2420,7 +2822,7 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                 except Exception as e:
                     logger.debug(f"[Guardian] {type(e).__name__}: {e}")
 
-            # ── 9i) Transport Drift – veri rejimi değişim filtresi ──
+            # â”€â”€ 9i) Transport Drift â€“ veri rejimi deÄŸiÅŸim filtresi â”€â”€
             if isinstance(final_bets, list) and len(final_bets) > 0:
                 try:
                     if hasattr(db, "get_live_features"):
@@ -2442,18 +2844,18 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                 except Exception as e:
                     logger.debug(f"[Guardian] {type(e).__name__}: {e}")
 
-            # ── 9j) Quantum Annealer – optimal kupon sepeti ──
+            # â”€â”€ 9j) Quantum Annealer â€“ optimal kupon sepeti â”€â”€
             if isinstance(final_bets, list) and len(final_bets) > 3:
                 try:
                     qa_solution = q_annealer.optimize_from_bets(final_bets)
                     if qa_solution.n_bets > 0:
                         logger.info(
-                            f"[Annealer] Optimal portföy: {qa_solution.n_bets} bahis, "
+                            f"[Annealer] Optimal portfÃ¶y: {qa_solution.n_bets} bahis, "
                             f"Sharpe={qa_solution.sharpe_ratio:.2f}, "
-                            f"çeşitlilik={qa_solution.diversification:.0%} "
+                            f"Ã§eÅŸitlilik={qa_solution.diversification:.0%} "
                             f"({qa_solution.method}, {qa_solution.elapsed_ms:.0f}ms)"
                         )
-                        # Seçilmeyen bahisleri işaretle
+                        # SeÃ§ilmeyen bahisleri iÅŸaretle
                         selected_ids = set(qa_solution.selected_matches)
                         for bet in final_bets:
                             if isinstance(bet, dict):
@@ -2462,7 +2864,7 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                 except Exception as e:
                     logger.debug(f"[Guardian] {type(e).__name__}: {e}")
 
-            # ── 9k) Ricci Curvature – sistemik risk kontrolü ──
+            # â”€â”€ 9k) Ricci Curvature â€“ sistemik risk kontrolÃ¼ â”€â”€
             if isinstance(final_bets, list) and len(final_bets) > 0:
                 try:
                     match_list = [
@@ -2474,8 +2876,8 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                             ricci_report = ricci_flow.analyze(G, name=f"cycle_{cycle}")
                             if ricci_report.kill_betting:
                                 logger.warning(
-                                    f"[Ricci] KRİTİK: κ={ricci_report.avg_curvature:.4f} "
-                                    f"→ SİSTEMİK RİSK! Tüm bahisler durduruldu."
+                                    f"[Ricci] KRÄ°TÄ°K: Îº={ricci_report.avg_curvature:.4f} "
+                                    f"â†’ SÄ°STEMÄ°K RÄ°SK! TÃ¼m bahisler durduruldu."
                                 )
                                 final_bets = ricci_flow.adjust_bets_by_curvature(
                                     final_bets, ricci_report,
@@ -2483,7 +2885,7 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                             elif ricci_report.stress_level in ("high", "moderate"):
                                 logger.info(
                                     f"[Ricci] Stres={ricci_report.stress_level}: "
-                                    f"κ={ricci_report.avg_curvature:.4f}, "
+                                    f"Îº={ricci_report.avg_curvature:.4f}, "
                                     f"kriz={ricci_report.crisis_probability:.0%}, "
                                     f"stake x{ricci_report.stake_multiplier:.1f}"
                                 )
@@ -2493,7 +2895,7 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                 except Exception as e:
                     logger.debug(f"[Guardian] {type(e).__name__}: {e}")
 
-            # ── 9l) Mimic – insansı gecikme enjeksiyonu ──
+            # â”€â”€ 9l) Mimic â€“ insansÄ± gecikme enjeksiyonu â”€â”€
             if isinstance(final_bets, list) and len(final_bets) > 0:
                 try:
                     if mimic.should_browse_first():
@@ -2503,7 +2905,7 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                 except Exception as e:
                     logger.debug(f"[Guardian] {type(e).__name__}: {e}")
 
-            # ── 9m) Blind Strategy – şifreli Kelly hesaplama ──
+            # â”€â”€ 9m) Blind Strategy â€“ ÅŸifreli Kelly hesaplama â”€â”€
             if isinstance(final_bets, list) and len(final_bets) > 0:
                 try:
                     probs = [
@@ -2524,14 +2926,14 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                                 if isinstance(bet, dict) and idx < len(kelly_result.plaintext_result):
                                     bet["blind_kelly"] = kelly_result.plaintext_result[idx]
                             logger.debug(
-                                f"[Blind] Şifreli Kelly tamamlandı: "
+                                f"[Blind] Åifreli Kelly tamamlandÄ±: "
                                 f"{kelly_result.encryption_scheme or 'masked'}, "
                                 f"{kelly_result.compute_time_ms:.1f}ms"
                             )
                 except Exception as e:
                     logger.debug(f"[Guardian] {type(e).__name__}: {e}")
 
-            # ── 9n) War Room – multi-agent tartışma ──
+            # â”€â”€ 9n) War Room â€“ multi-agent tartÄ±ÅŸma â”€â”€
             if isinstance(final_bets, list) and len(final_bets) > 0:
                 try:
                     for bet in final_bets[:3]:
@@ -2558,7 +2960,7 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                                 logger.warning(
                                     f"[WarRoom] {bet.get('home_team','')} vs "
                                     f"{bet.get('away_team','')}: "
-                                    f"Çoğunluk SKIP! "
+                                    f"Ã‡oÄŸunluk SKIP! "
                                     f"({debate.bet_count}B/"
                                     f"{debate.skip_count}S/"
                                     f"{debate.hold_count}H)"
@@ -2567,9 +2969,9 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                                 logger.info(
                                     f"[WarRoom] {bet.get('home_team','')} vs "
                                     f"{bet.get('away_team','')}: "
-                                    f"OYBİRLİĞİ {debate.majority_verdict}!"
+                                    f"OYBÄ°RLÄ°ÄÄ° {debate.majority_verdict}!"
                                 )
-                            # Agent Poll → Telegram anketi gönder
+                            # Agent Poll â†’ Telegram anketi gÃ¶nder
                             try:
                                 match_info_poll = {
                                     "home": bet.get("home_team", ""),
@@ -2584,8 +2986,8 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                                 )
                                 await agent_poll.send_poll(council)
                                 logger.info(
-                                    f"[AgentPoll] Konsey anketi gönderildi: "
-                                    f"{council.home} vs {council.away} → "
+                                    f"[AgentPoll] Konsey anketi gÃ¶nderildi: "
+                                    f"{council.home} vs {council.away} â†’ "
                                     f"{council.consensus_emoji} {council.council_verdict}"
                                 )
                             except Exception as e:
@@ -2593,11 +2995,45 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                 except Exception as e:
                     logger.debug(f"[Guardian] {type(e).__name__}: {e}")
 
-            # ── 10) Sonuçları kaydet ──
-            db.save_signals(final_bets, cycle=cycle)
-            logger.success(f"Döngü #{cycle} tamamlandı – {len(final_bets)} sinyal üretildi.")
+            # â”€â”€ 9z) Konsolide Ceza Ã‡arpanÄ± â€“ tÃ¼m soft-scoring penaltÄ±larÄ±nÄ± uygula â”€â”€
+            if isinstance(final_bets, list):
+                for bet in final_bets:
+                    if isinstance(bet, dict):
+                        # TÃ¼m penaltÄ± Ã§arpanlarÄ±nÄ± topla
+                        combined_penalty = 1.0
+                        for pkey in ("uq_penalty", "philo_penalty", "iso_penalty", "entropy_penalty"):
+                            combined_penalty *= bet.get(pkey, 1.0)
+                        # Minimum stake korumasÄ±: %15'in altÄ±na dÃ¼ÅŸÃ¼rme
+                        combined_penalty = max(combined_penalty, 0.15)
+                        bet["combined_penalty"] = round(combined_penalty, 3)
+                        # Kelly stake'i Ã§arpanla ayarla
+                        if "kelly_stake" in bet:
+                            bet["kelly_stake_raw"] = bet["kelly_stake"]
+                            bet["kelly_stake"] = round(bet["kelly_stake"] * combined_penalty, 4)
+                        if "stake" in bet:
+                            bet["stake_raw"] = bet["stake"]
+                            bet["stake"] = round(bet["stake"] * combined_penalty, 2)
 
-            # ── 10-ev) Event Bus + gRPC – sinyalleri kaydet ve yayınla ──
+            # â”€â”€ FILTER AUDIT LOG â”€â”€
+            _filter_exit_count = len(final_bets) if isinstance(final_bets, list) else 0
+            if _filter_entry_count > 0:
+                survival_rate = _filter_exit_count / max(_filter_entry_count, 1)
+                logger.info(
+                    f"[FilterAudit] GiriÅŸ={_filter_entry_count} â†’ Ã‡Ä±kÄ±ÅŸ={_filter_exit_count} "
+                    f"(Hayatta kalma: {survival_rate:.0%}). "
+                    f"Filtre detay: {_filter_log}"
+                )
+                if survival_rate < 0.2:
+                    logger.warning(
+                        f"[FilterAudit] DÄ°KKAT: Filtre zinciri Ã§ok agresif! "
+                        f"Sinyallerin {1-survival_rate:.0%}'Ä± yok edildi."
+                    )
+
+            # â”€â”€ 10) SonuÃ§larÄ± kaydet â”€â”€
+            db.save_signals(final_bets, cycle=cycle)
+            logger.success(f"DÃ¶ngÃ¼ #{cycle} tamamlandÄ± â€“ {len(final_bets)} sinyal Ã¼retildi.")
+
+            # â”€â”€ 10-ev) Event Bus + gRPC â€“ sinyalleri kaydet ve yayÄ±nla â”€â”€
             for bet in final_bets:
                 if isinstance(bet, dict):
                     await event_bus.emit(Event(
@@ -2610,7 +3046,7 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                     # gRPC signal channel
                     await grpc_comm.send_signal(bet, source="analysis_loop")
 
-            # ── 10-sh) Shadow Testing – gölge stratejilere bahis at ──
+            # â”€â”€ 10-sh) Shadow Testing â€“ gÃ¶lge stratejilere bahis at â”€â”€
             for bet in final_bets:
                 if isinstance(bet, dict):
                     for strat_name in shadow.strategy_names:
@@ -2625,7 +3061,7 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                                 value_edge=bet.get("value_edge", 0),
                             )
 
-            # ── 10b) CLV kaydı + HITL + XAI + Telegram bildirimi ──
+            # â”€â”€ 10b) CLV kaydÄ± + HITL + XAI + Telegram bildirimi â”€â”€
             for bet in final_bets:
                 if not isinstance(bet, dict):
                     continue
@@ -2633,11 +3069,11 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                 odds = bet.get("odds", 0)
                 mid = bet.get("match_id", "")
 
-                # CLV giriş kaydı
+                # CLV giriÅŸ kaydÄ±
                 if odds > 1.0:
                     clv_tracker.record_entry(mid, bet.get("selection", ""), odds, ev)
 
-                # Value bildirimi – interaktif butonlu (Human-in-the-Loop)
+                # Value bildirimi â€“ interaktif butonlu (Human-in-the-Loop)
                 if ev > 0.02:
                     signal_id = hitl.create_signal(
                         match_id=mid,
@@ -2649,7 +3085,7 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                     )
                     await notifier.send_value_alert(bet, signal_id=signal_id)
 
-                    # Psycho Profiler – karar kaydı (model önerisi)
+                    # Psycho Profiler â€“ karar kaydÄ± (model Ã¶nerisi)
                     psycho.record_decision(
                         mid, bet.get("selection", ""),
                         human_decision="PENDING",
@@ -2659,7 +3095,7 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                         model_rec="BET",
                     )
 
-                    # RLHF – geri bildirim kaydı (sonuç geldiğinde ödül hesaplanır)
+                    # RLHF â€“ geri bildirim kaydÄ± (sonuÃ§ geldiÄŸinde Ã¶dÃ¼l hesaplanÄ±r)
                     feedback_loop.record_feedback(
                         match_id=mid,
                         selection=bet.get("selection", ""),
@@ -2668,18 +3104,18 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                         human_decision="approve",
                     )
 
-                    # Senaryo butonlarını gönder
+                    # Senaryo butonlarÄ±nÄ± gÃ¶nder
                     try:
                         scenario_markup = scenario_sim.build_inline_markup(mid)
                         if scenario_markup:
                             await notifier.send(
-                                f"📋 <b>Senaryo Analizi:</b> {mid}",
+                                f"ğŸ“‹ <b>Senaryo Analizi:</b> {mid}",
                                 reply_markup=scenario_markup,
                             )
                     except Exception as e:
                         logger.debug(f"[Guardian] {type(e).__name__}: {e}")
 
-                    # XAI: model kararını açıkla ve görsel gönder
+                    # XAI: model kararÄ±nÄ± aÃ§Ä±kla ve gÃ¶rsel gÃ¶nder
                     try:
                         await xai.explain_and_send(
                             bet, f"{mid} Analiz", chart_sender=chart_sender,
@@ -2687,7 +3123,7 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                     except Exception as e:
                         logger.debug(f"[Guardian] {type(e).__name__}: {e}")
 
-            # ── 10c) Hedge kontrolü – canlı maçlarda fırsat tara ──
+            # â”€â”€ 10c) Hedge kontrolÃ¼ â€“ canlÄ± maÃ§larda fÄ±rsat tara â”€â”€
             try:
                 active_bets = db.get_active_bets() if hasattr(db, "get_active_bets") else []
                 live_odds = db.get_live_odds() if hasattr(db, "get_live_odds") else {}
@@ -2698,7 +3134,7 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
             except Exception as e:
                 logger.debug(f"[Guardian] hedge_scan: {type(e).__name__}: {e}")
 
-            # ── 10z-1) Strategy Cockpit – Telegram HUD güncelle ──
+            # â”€â”€ 10z-1) Strategy Cockpit â€“ Telegram HUD gÃ¼ncelle â”€â”€
             if cockpit and notifier:
                 try:
                     status = portfolio_opt.status() if portfolio_opt else {}
@@ -2714,13 +3150,13 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                         regime_kelly=regime_kelly,
                         vol_analyzer=vol_analyzer,
                     )
-                    # Her 5 döngüde cockpit güncelle (spam önleme)
+                    # Her 5 dÃ¶ngÃ¼de cockpit gÃ¼ncelle (spam Ã¶nleme)
                     if cycle % 5 == 0:
                         await cockpit.update_cockpit(notifier)
                 except Exception as e:
                     logger.debug(f"[Guardian] cockpit: {type(e).__name__}: {e}")
 
-            # ── 10z-2) Strategy Evolver – her 100 döngüde DNA evrimleştir ──
+            # â”€â”€ 10z-2) Strategy Evolver â€“ her 100 dÃ¶ngÃ¼de DNA evrimleÅŸtir â”€â”€
             if strategy_evolver and cycle % 100 == 0:
                 try:
                     # Son 100 bahis sonucunu topla
@@ -2742,7 +3178,7 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                             f"best={evo_report.best_fitness:.4f}, "
                             f"avg={evo_report.avg_fitness:.4f}"
                         )
-                        # En iyi DNA'yı sisteme uygula
+                        # En iyi DNA'yÄ± sisteme uygula
                         best_dna = strategy_evolver.get_best_dna()
                         best_params = best_dna.to_dict()
                         if regime_kelly:
@@ -2755,23 +3191,23 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                 except Exception as e:
                     logger.debug(f"[Guardian] evolver: {type(e).__name__}: {e}")
 
-            # ── 10z-3) Guardian heartbeat & sağlık kontrolü ──
+            # â”€â”€ 10z-3) Guardian heartbeat & saÄŸlÄ±k kontrolÃ¼ â”€â”€
             if guardian:
                 guardian.heartbeat("analysis_loop")
                 if cycle % 20 == 0:
                     silent = guardian.check_heartbeats(timeout=600)
                     if silent:
                         logger.warning(
-                            f"[Guardian] Sessiz modüller: {', '.join(silent)}"
+                            f"[Guardian] Sessiz modÃ¼ller: {', '.join(silent)}"
                         )
                     gh_report = guardian.health_report()
                     if gh_report["open_circuits"]:
                         logger.error(
-                            f"[Guardian] Açık devreler: "
+                            f"[Guardian] AÃ§Ä±k devreler: "
                             f"{', '.join(gh_report['open_circuits'])}"
                         )
 
-            # ── 11) Her 10 döngüde: snapshot + sesli bülten + günlük rapor ──
+            # â”€â”€ 11) Her 10 dÃ¶ngÃ¼de: snapshot + sesli bÃ¼lten + gÃ¼nlÃ¼k rapor â”€â”€
             if cycle % 10 == 0:
                 dvc.snapshot(f"cycle_{cycle}")
                 await podcast.produce(final_bets)
@@ -2784,7 +3220,7 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                     "bets_won": status.get("win_rate", 0),
                 })
 
-            # ── 11b) Haftalık: Psikoloji raporu (her 50 döngüde) ──
+            # â”€â”€ 11b) HaftalÄ±k: Psikoloji raporu (her 50 dÃ¶ngÃ¼de) â”€â”€
             if cycle % 50 == 0:
                 try:
                     psych_report = psycho.weekly_report()
@@ -2794,43 +3230,74 @@ async def _analysis_loop(*, shutdown: asyncio.Event, **modules):
                     logger.debug(f"[Guardian] {type(e).__name__}: {e}")
 
         except Exception as e:
-            logger.exception(f"Döngü #{cycle} hatası: {e}")
-            # Hata bildirimi → Telegram
+            logger.exception(f"DÃ¶ngÃ¼ #{cycle} hatasÄ±: {e}")
+            # Hata bildirimi â†’ Telegram
             await notifier.send_error_alert(e, module="analysis_loop")
 
-        # Döngü arası bekleme (canlıda kısa, pre-match'te uzun)
+        # DÃ¶ngÃ¼ performans metrikleri
+        _cycle_elapsed = (_time.perf_counter() - _cycle_start) * 1000
+        _cycle_times.append(_cycle_elapsed)
+        if len(_cycle_times) > 100:
+            _cycle_times = _cycle_times[-100:]
+        _avg_cycle = sum(_cycle_times) / len(_cycle_times)
+        logger.info(
+            f"[Perf] DÃ¶ngÃ¼ #{cycle}: {_cycle_elapsed:.0f}ms "
+            f"(ort={_avg_cycle:.0f}ms, max={max(_cycle_times):.0f}ms)"
+        )
+        if super_log and hasattr(super_log, "log_library_event"):
+            super_log.log_library_event(
+                "analysis_loop", f"cycle_{cycle}",
+                cycle_ms=round(_cycle_elapsed, 1),
+                avg_ms=round(_avg_cycle, 1),
+            )
+
+        # DÃ¶ngÃ¼ arasÄ± bekleme (canlÄ±da kÄ±sa, pre-match'te uzun)
         await asyncio.sleep(30)
 
 
-# ═══════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 #  CLI KOMUTLARI
-# ═══════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 @app.command()
 def run(
-    mode: str = typer.Option("full", help="Çalışma modu: live | pre | full"),
-    headless: bool = typer.Option(True, help="Tarayıcı headless mi?"),
-    telegram: bool = typer.Option(False, help="Telegram botunu başlat"),
-    dashboard: bool = typer.Option(False, help="TUI dashboard aç"),
+    mode: str = typer.Option("full", help="Ã‡alÄ±ÅŸma modu: live | pre | full"),
+    headless: bool = typer.Option(True, help="TarayÄ±cÄ± headless mi?"),
+    telegram: bool = typer.Option(True, help="Telegram botunu baÅŸlat"),
+    dashboard: bool = typer.Option(False, help="TUI dashboard aÃ§"),
 ):
-    """Botu başlatır ve tüm katmanları ayağa kaldırır."""
-    for sig in (signal.SIGINT, signal.SIGTERM):
+    """Botu baÅŸlatÄ±r ve TÃœM katmanlarÄ± ayaÄŸa kaldÄ±rÄ±r.
+
+    VarsayÄ±lan: mode=full, telegram=True â†’ TÃ¼m Ã¶zellikler aktif.
+    'python bahis.py' veya 'python bahis.py run' ile Ã§alÄ±ÅŸtÄ±rÄ±labilir.
+    """
+    sigs = [signal.SIGINT, signal.SIGTERM]
+    if hasattr(signal, "SIGBREAK"):
+        sigs.append(signal.SIGBREAK)
+    for sig in sigs:
         try:
             signal.signal(sig, _handle_signal)
         except (OSError, ValueError):
             pass
-    asyncio.run(_boot(mode=mode, headless=headless, telegram=telegram, dashboard=dashboard))
+    logger.info(
+        f"[CLI] BaÅŸlatÄ±lÄ±yor: mode={mode}, headless={headless}, "
+        f"telegram={telegram}, dashboard={dashboard}"
+    )
+    try:
+        asyncio.run(_boot(mode=mode, headless=headless, telegram=telegram, dashboard=dashboard))
+    except KeyboardInterrupt:
+        logger.warning("KeyboardInterrupt alÄ±ndÄ± â€“ sÃ¼reÃ§ sonlandÄ±rÄ±lÄ±yor.")
 
 
 @app.command()
 def backtest(
-    start: str = typer.Option("2024-01-01", help="Başlangıç tarihi"),
-    end: str = typer.Option("2026-01-01", help="Bitiş tarihi"),
+    start: str = typer.Option("2024-01-01", help="BaÅŸlangÄ±Ã§ tarihi"),
+    end: str = typer.Option("2026-01-01", help="BitiÅŸ tarihi"),
 ):
-    """Geçmiş veri üzerinde strateji testi çalıştırır."""
+    """GeÃ§miÅŸ veri Ã¼zerinde strateji testi Ã§alÄ±ÅŸtÄ±rÄ±r."""
     from src.core.vector_backtester import VectorBacktester
     from src.memory.db_manager import DBManager
 
-    console.rule("[bold cyan]BACKTEST BAŞLATILIYOR[/]")
+    console.rule("[bold cyan]BACKTEST BAÅLATILIYOR[/]")
     db = DBManager()
     bt = VectorBacktester()
     results = bt.run(db=db, start=start, end=end)
@@ -2840,10 +3307,10 @@ def backtest(
 
 @app.command()
 def report():
-    """Strateji sağlık raporu üretir (PDF)."""
+    """Strateji saÄŸlÄ±k raporu Ã¼retir (PDF)."""
     from src.utils.strategy_health_report import StrategyHealthReport
 
-    console.rule("[bold cyan]RAPOR ÜRETİLİYOR[/]")
+    console.rule("[bold cyan]RAPOR ÃœRETÄ°LÄ°YOR[/]")
     rpt = StrategyHealthReport()
     path = rpt.generate_pdf()
     console.print(f"[green]Rapor kaydedildi:[/] {path}")
@@ -2851,10 +3318,10 @@ def report():
 
 @app.command()
 def doctor():
-    """Sistem bileşenlerini kontrol eder."""
+    """Sistem bileÅŸenlerini kontrol eder."""
     from src.ingestion.auto_healer import AutoHealer
 
-    console.rule("[bold cyan]SİSTEM SAĞLIK KONTROLÜ[/]")
+    console.rule("[bold cyan]SÄ°STEM SAÄLIK KONTROLÃœ[/]")
     healer = AutoHealer()
     healer.diagnose()
     console.rule("[bold green]KONTROL TAMAMLANDI[/]")
@@ -2862,31 +3329,31 @@ def doctor():
 
 @app.command()
 def docs():
-    """Otomatik dokümantasyonu günceller."""
+    """Otomatik dokÃ¼mantasyonu gÃ¼nceller."""
     from src.utils.auto_doc_generator import AutoDocGenerator
 
     gen = AutoDocGenerator()
     gen.generate()
-    console.print("[green]Dokümantasyon güncellendi.[/]")
+    console.print("[green]DokÃ¼mantasyon gÃ¼ncellendi.[/]")
 
 
 @app.command()
 def web():
-    """Streamlit web dashboard'u başlatır."""
+    """Streamlit web dashboard'u baÅŸlatÄ±r."""
     import subprocess
     dashboard_path = ROOT / "src" / "ui" / "streamlit_dashboard.py"
-    console.print(f"[cyan]Streamlit başlatılıyor →[/] {dashboard_path}")
+    console.print(f"[cyan]Streamlit baÅŸlatÄ±lÄ±yor â†’[/] {dashboard_path}")
     subprocess.run([sys.executable, "-m", "streamlit", "run", str(dashboard_path)])
 
 
 @app.command()
 def analyze(
-    home: str = typer.Argument(..., help="Ev sahibi takım"),
-    away: str = typer.Argument(..., help="Deplasman takımı"),
+    home: str = typer.Argument(..., help="Ev sahibi takÄ±m"),
+    away: str = typer.Argument(..., help="Deplasman takÄ±mÄ±"),
     home_xg: float = typer.Option(1.4, help="Ev sahibi xG"),
     away_xg: float = typer.Option(1.1, help="Deplasman xG"),
 ):
-    """Tek bir maçı derinlemesine analiz eder (Poisson + Dixon-Coles + MC + Elo + GB + VIX)."""
+    """Tek bir maÃ§Ä± derinlemesine analiz eder (Poisson + Dixon-Coles + MC + Elo + GB + VIX)."""
     from src.quant.poisson_model import PoissonModel
     from src.quant.monte_carlo_engine import MonteCarloEngine
     from src.quant.elo_glicko_rating import EloGlickoSystem
@@ -2912,7 +3379,7 @@ def analyze(
     btts = poisson_m.btts_probs(home_xg, away_xg)
     scores = poisson_m.most_likely_scores(home_xg, away_xg, 5)
 
-    # Dixon-Coles düzeltilmiş Poisson
+    # Dixon-Coles dÃ¼zeltilmiÅŸ Poisson
     dc_pred = dc.predict(home, away, home_xg, away_xg)
     dc_comparison = dc.compare_with_standard_poisson(home_xg, away_xg)
 
@@ -2933,8 +3400,8 @@ def analyze(
     }])
     gb_preds = gb.predict(gb_input)
 
-    # ── Model Karşılaştırma Tablosu ──
-    table = Table(title="📊 Model Karşılaştırması", show_lines=True)
+    # â”€â”€ Model KarÅŸÄ±laÅŸtÄ±rma Tablosu â”€â”€
+    table = Table(title="ğŸ“Š Model KarÅŸÄ±laÅŸtÄ±rmasÄ±", show_lines=True)
     table.add_column("Model", style="cyan", width=16)
     table.add_column("Ev (%)", justify="right")
     table.add_column("Beraberlik (%)", justify="right")
@@ -2951,91 +3418,91 @@ def analyze(
 
     console.print(table)
 
-    # ── Dixon-Coles Düzeltme Paneli ──
+    # â”€â”€ Dixon-Coles DÃ¼zeltme Paneli â”€â”€
     correction = dc_comparison.get("draw_correction", 0)
     correction_text = (
-        f"[yellow]Dixon-Coles beraberlik düzeltmesi:[/] {correction:+.3f}\n"
+        f"[yellow]Dixon-Coles beraberlik dÃ¼zeltmesi:[/] {correction:+.3f}\n"
         f"Standart Poisson beraberlik: {dc_comparison.get('std_draw', 0):.1%}\n"
         f"Dixon-Coles beraberlik: {dc_pred['prob_draw']:.1%}\n"
-        f"ρ (rho) parametresi: {dc_pred.get('rho', 0):.3f}\n\n"
+        f"Ï (rho) parametresi: {dc_pred.get('rho', 0):.3f}\n\n"
         f"[dim]{dc_comparison.get('note', '')}[/]"
     )
-    console.print(Panel(correction_text, title="🔧 Dixon-Coles Düzeltme", border_style="yellow"))
+    console.print(Panel(correction_text, title="ğŸ”§ Dixon-Coles DÃ¼zeltme", border_style="yellow"))
 
-    # ── Gol & Detay ──
-    console.print(f"\n[yellow]Ü 2.5:[/] Poisson={ou.get('over_25', 0):.1%} | DC={dc_pred.get('prob_over25', 0):.1%} | MC={sim['prob_over_25']:.1%}")
+    # â”€â”€ Gol & Detay â”€â”€
+    console.print(f"\n[yellow]Ãœ 2.5:[/] Poisson={ou.get('over_25', 0):.1%} | DC={dc_pred.get('prob_over25', 0):.1%} | MC={sim['prob_over_25']:.1%}")
     console.print(f"[yellow]KG Var:[/] Poisson={btts['btts_yes']:.1%} | DC={dc_pred.get('prob_btts', 0):.1%} | MC={sim['prob_btts']:.1%}")
     console.print(f"[yellow]Ort. Gol (MC):[/] {sim['avg_total_goals']:.2f}")
 
-    # ── En olası skorlar (Dixon-Coles) ──
-    console.print(f"\n[cyan]En olası skorlar (Dixon-Coles):[/]")
+    # â”€â”€ En olasÄ± skorlar (Dixon-Coles) â”€â”€
+    console.print(f"\n[cyan]En olasÄ± skorlar (Dixon-Coles):[/]")
     for s in dc_pred.get("top_scores", [])[:5]:
-        console.print(f"  {s['score']} → {s['prob']:.1%}")
+        console.print(f"  {s['score']} â†’ {s['prob']:.1%}")
 
-    # ── Zaman Decay bilgisi ──
-    console.print(f"\n[magenta]Zaman Decay:[/] yarı-ömür = {td.half_life_days:.0f} gün")
-    console.print(f"  30 gün önceki verinin ağırlığı: {td.weight(30):.2%}")
-    console.print(f"  180 gün önceki verinin ağırlığı: {td.weight(180):.2%}")
-    console.print(f"  365 gün önceki verinin ağırlığı: {td.weight(365):.2%}")
+    # â”€â”€ Zaman Decay bilgisi â”€â”€
+    console.print(f"\n[magenta]Zaman Decay:[/] yarÄ±-Ã¶mÃ¼r = {td.half_life_days:.0f} gÃ¼n")
+    console.print(f"  30 gÃ¼n Ã¶nceki verinin aÄŸÄ±rlÄ±ÄŸÄ±: {td.weight(30):.2%}")
+    console.print(f"  180 gÃ¼n Ã¶nceki verinin aÄŸÄ±rlÄ±ÄŸÄ±: {td.weight(180):.2%}")
+    console.print(f"  365 gÃ¼n Ã¶nceki verinin aÄŸÄ±rlÄ±ÄŸÄ±: {td.weight(365):.2%}")
 
 
 @app.command()
 def optimize(
-    generations: int = typer.Option(50, help="Genetik algoritma jenerasyon sayısı"),
-    population: int = typer.Option(100, help="Popülasyon büyüklüğü"),
+    generations: int = typer.Option(50, help="Genetik algoritma jenerasyon sayÄ±sÄ±"),
+    population: int = typer.Option(100, help="PopÃ¼lasyon bÃ¼yÃ¼klÃ¼ÄŸÃ¼"),
 ):
     """Genetik Algoritma ile strateji parametrelerini optimize eder."""
     from src.core.genetic_optimizer import GeneticOptimizer
     from src.core.vector_backtester import VectorBacktester
     from src.memory.db_manager import DBManager
 
-    console.rule("[bold cyan]GENETİK ALGORİTMA – PARAMETRE OPTİMİZASYONU[/]")
+    console.rule("[bold cyan]GENETÄ°K ALGORÄ°TMA â€“ PARAMETRE OPTÄ°MÄ°ZASYONU[/]")
 
     db = DBManager()
     bt = VectorBacktester()
     ga = GeneticOptimizer(population_size=population)
 
     def backtest_fn(params: dict) -> dict:
-        """Her birey için backtest çalıştır."""
+        """Her birey iÃ§in backtest Ã§alÄ±ÅŸtÄ±r."""
         return bt.run(db=db, params=params, start="2025-01-01", end="2026-01-01")
 
     best = ga.evolve(backtest_fn, generations=generations)
     ga.save_config(best)
 
-    console.print(f"\n[green]En İyi Parametreler:[/]")
+    console.print(f"\n[green]En Ä°yi Parametreler:[/]")
     from rich.table import Table
     table = Table(show_lines=True)
     table.add_column("Parametre", style="cyan")
-    table.add_column("Değer", justify="right")
+    table.add_column("DeÄŸer", justify="right")
     for k, v in best.genes.items():
         table.add_row(k, f"{v:.4f}")
     console.print(table)
 
     console.print(f"\n[bold green]ROI: {best.roi:.2%} | Drawdown: {best.drawdown:.1%} | Sharpe: {best.sharpe:.2f}[/]")
-    console.rule("[bold green]OPTİMİZASYON TAMAMLANDI – config.json güncellendi[/]")
+    console.rule("[bold green]OPTÄ°MÄ°ZASYON TAMAMLANDI â€“ config.json gÃ¼ncellendi[/]")
 
 
 @app.command()
 def hedge(
-    stake: float = typer.Argument(..., help="Orijinal bahis miktarı (₺)"),
-    odds: float = typer.Argument(..., help="Orijinal bahis oranı"),
-    selection: str = typer.Argument(..., help="Orijinal seçim: home/draw/away"),
-    live_home: float = typer.Option(0, help="Canlı ev sahibi oranı"),
-    live_draw: float = typer.Option(0, help="Canlı beraberlik oranı"),
-    live_away: float = typer.Option(0, help="Canlı deplasman oranı"),
+    stake: float = typer.Argument(..., help="Orijinal bahis miktarÄ± (â‚º)"),
+    odds: float = typer.Argument(..., help="Orijinal bahis oranÄ±"),
+    selection: str = typer.Argument(..., help="Orijinal seÃ§im: home/draw/away"),
+    live_home: float = typer.Option(0, help="CanlÄ± ev sahibi oranÄ±"),
+    live_draw: float = typer.Option(0, help="CanlÄ± beraberlik oranÄ±"),
+    live_away: float = typer.Option(0, help="CanlÄ± deplasman oranÄ±"),
 ):
-    """Canlı maçta hedge/arbitraj fırsatı hesaplar."""
+    """CanlÄ± maÃ§ta hedge/arbitraj fÄ±rsatÄ± hesaplar."""
     from src.core.hedge_calculator import HedgeCalculator
 
     console.rule("[bold cyan]HEDGE HESAPLAYICI[/]")
 
     calc = HedgeCalculator()
 
-    # Surebet kontrolü
+    # Surebet kontrolÃ¼
     if live_home > 0 and live_draw > 0 and live_away > 0:
         surebet = calc.check_surebet(live_home, live_draw, live_away)
         if surebet:
-            console.print(f"[bold red]🚨 SUREBET TESPİT EDİLDİ![/]")
+            console.print(f"[bold red]ğŸš¨ SUREBET TESPÄ°T EDÄ°LDÄ°![/]")
             console.print(surebet.action_text)
 
     # Hedge hesaplama
@@ -3050,27 +3517,27 @@ def hedge(
     if live_odds:
         opp = calc.calculate_hedge(stake, odds, selection, live_odds)
         if opp:
-            console.print(f"\n[bold green]💰 HEDGE FIRSATI:[/]")
+            console.print(f"\n[bold green]ğŸ’° HEDGE FIRSATI:[/]")
             console.print(opp.action_text)
-            console.print(f"Garanti Kâr: ₺{opp.guaranteed_profit:.2f} ({opp.guaranteed_profit_pct:.1%})")
+            console.print(f"Garanti KÃ¢r: â‚º{opp.guaranteed_profit:.2f} ({opp.guaranteed_profit_pct:.1%})")
         else:
-            console.print("[yellow]Şu an kârlı hedge fırsatı yok.[/]")
+            console.print("[yellow]Åu an kÃ¢rlÄ± hedge fÄ±rsatÄ± yok.[/]")
 
     # Cash-out
     if live_odds.get(selection, 0) > 0:
         co = calc.calculate_cashout(stake, odds, live_odds[selection])
-        console.print(f"\n[cyan]Cash-out değeri: ₺{co['cashout_value']:.2f} ({co['recommendation']})[/]")
+        console.print(f"\n[cyan]Cash-out deÄŸeri: â‚º{co['cashout_value']:.2f} ({co['recommendation']})[/]")
 
 
 @app.command()
 def xai(
-    home: str = typer.Argument(..., help="Ev sahibi takım"),
-    away: str = typer.Argument(..., help="Deplasman takımı"),
+    home: str = typer.Argument(..., help="Ev sahibi takÄ±m"),
+    away: str = typer.Argument(..., help="Deplasman takÄ±mÄ±"),
 ):
-    """Maç tahminini SHAP ile açıklar (Explainable AI)."""
+    """MaÃ§ tahminini SHAP ile aÃ§Ä±klar (Explainable AI)."""
     from src.quant.xai_explainer import XAIExplainer
 
-    console.rule(f"[bold cyan]XAI – {home} vs {away}[/]")
+    console.rule(f"[bold cyan]XAI â€“ {home} vs {away}[/]")
     explainer = XAIExplainer()
 
     # Basit feature set (demo)
@@ -3082,7 +3549,7 @@ def xai(
     }
 
     result = explainer.explain(features)
-    console.print(f"\n[bold]Model Kararı:[/]")
+    console.print(f"\n[bold]Model KararÄ±:[/]")
     console.print(result["explanation_text"])
 
     fig = explainer.plot_waterfall(features, title=f"{home} vs {away}")
@@ -3093,35 +3560,35 @@ def xai(
 
 @app.command()
 def fair_odds(
-    home_odds: float = typer.Argument(..., help="Ev sahibi oranı"),
-    draw_odds: float = typer.Argument(..., help="Beraberlik oranı"),
-    away_odds: float = typer.Argument(..., help="Deplasman oranı"),
-    model_home: float = typer.Option(0, help="Model ev sahibi olasılığı"),
+    home_odds: float = typer.Argument(..., help="Ev sahibi oranÄ±"),
+    draw_odds: float = typer.Argument(..., help="Beraberlik oranÄ±"),
+    away_odds: float = typer.Argument(..., help="Deplasman oranÄ±"),
+    model_home: float = typer.Option(0, help="Model ev sahibi olasÄ±lÄ±ÄŸÄ±"),
 ):
-    """Fair Value / No-Vig analizi – bahisçinin marjını çıkar."""
+    """Fair Value / No-Vig analizi â€“ bahisÃ§inin marjÄ±nÄ± Ã§Ä±kar."""
     from src.core.fair_value_engine import FairValueEngine
     from rich.table import Table
     from rich.panel import Panel
 
-    console.rule("[bold cyan]FAIR VALUE ANALİZİ[/]")
+    console.rule("[bold cyan]FAIR VALUE ANALÄ°ZÄ°[/]")
     engine = FairValueEngine()
 
     # No-vig hesaplama
     novig = engine.remove_vig(home_odds, draw_odds, away_odds)
-    console.print(f"\n[yellow]Bahisçi Marjı:[/] %{novig.get('raw_margin', 0):.2f}")
+    console.print(f"\n[yellow]BahisÃ§i MarjÄ±:[/] %{novig.get('raw_margin', 0):.2f}")
 
-    table = Table(title="Marjsız (No-Vig) Oranlar", show_lines=True)
-    table.add_column("Seçim", style="cyan")
+    table = Table(title="MarjsÄ±z (No-Vig) Oranlar", show_lines=True)
+    table.add_column("SeÃ§im", style="cyan")
     table.add_column("Piyasa", justify="right")
     table.add_column("No-Vig Oran", justify="right", style="green")
-    table.add_column("Gerçek Olasılık", justify="right")
+    table.add_column("GerÃ§ek OlasÄ±lÄ±k", justify="right")
 
     table.add_row("Ev", f"{home_odds:.2f}", f"{novig.get('novig_home_odds', 0):.3f}", f"{novig.get('novig_home', 0):.1%}")
     table.add_row("Ber", f"{draw_odds:.2f}", f"{novig.get('novig_draw_odds', 0):.3f}", f"{novig.get('novig_draw', 0):.1%}")
     table.add_row("Dep", f"{away_odds:.2f}", f"{novig.get('novig_away_odds', 0):.3f}", f"{novig.get('novig_away', 0):.1%}")
     console.print(table)
 
-    # Model olasılığı verilmişse Value Edge hesapla
+    # Model olasÄ±lÄ±ÄŸÄ± verilmiÅŸse Value Edge hesapla
     if model_home > 0:
         fv = engine.analyze(model_home, home_odds, "home")
         edge_color = "green" if fv.is_value else "red"
@@ -3130,7 +3597,7 @@ def fair_odds(
             f"Value Edge: [{edge_color}]{fv.value_edge_pct}[/]\n"
             f"Tier: {fv.tier.upper()}\n"
             f"Kelly Stake: {fv.kelly_stake:.2%}",
-            title="💰 Value Analizi", border_style=edge_color,
+            title="ğŸ’° Value Analizi", border_style=edge_color,
         ))
 
 
@@ -3139,29 +3606,29 @@ def fetch_data(
     league: str = typer.Option("super_lig", help="Lig kodu"),
     season: str = typer.Option("2526", help="Sezon kodu"),
 ):
-    """Tüm ücretsiz kaynaklardan veri toplar."""
+    """TÃ¼m Ã¼cretsiz kaynaklardan veri toplar."""
     from src.ingestion.data_sources import DataSourceAggregator
     from src.memory.db_manager import DBManager
 
-    console.rule("[bold cyan]VERİ TOPLAMA – TÜM KAYNAKLAR[/]")
+    console.rule("[bold cyan]VERÄ° TOPLAMA â€“ TÃœM KAYNAKLAR[/]")
     db = DBManager()
     agg = DataSourceAggregator(db=db)
 
     results = asyncio.run(agg.fetch_all(league, season))
     for source, data in results.items():
         n = len(data) if isinstance(data, list) else 0
-        console.print(f"  {'✓' if n > 0 else '✗'} [cyan]{source}[/]: {n} kayıt")
+        console.print(f"  {'âœ“' if n > 0 else 'âœ—'} [cyan]{source}[/]: {n} kayÄ±t")
 
-    console.rule("[bold green]VERİ TOPLAMA TAMAMLANDI[/]")
+    console.rule("[bold green]VERÄ° TOPLAMA TAMAMLANDI[/]")
 
 
 @app.command()
 def graph_query(
     query_type: str = typer.Argument(..., help="Sorgu tipi: referee_bias | h2h | player_impact"),
-    arg1: str = typer.Argument("", help="İlk argüman (hakem adı / takım A)"),
-    arg2: str = typer.Argument("", help="İkinci argüman (takım B)"),
+    arg1: str = typer.Argument("", help="Ä°lk argÃ¼man (hakem adÄ± / takÄ±m A)"),
+    arg2: str = typer.Argument("", help="Ä°kinci argÃ¼man (takÄ±m B)"),
 ):
-    """Neo4j Graph DB üzerinde sorgu çalıştırır."""
+    """Neo4j Graph DB Ã¼zerinde sorgu Ã§alÄ±ÅŸtÄ±rÄ±r."""
     from src.memory.neo4j_graph import Neo4jFootballGraph
     from rich.table import Table
 
@@ -3172,16 +3639,16 @@ def graph_query(
     if query_type == "referee_bias":
         result = g.query_referee_bias(arg1)
         console.print(f"[cyan]Hakem:[/] {arg1}")
-        console.print(f"  Ort. Ev Kartı:  {result.get('avg_home_cards', 0):.1f}")
-        console.print(f"  Ort. Dep Kartı: {result.get('avg_away_cards', 0):.1f}")
-        console.print(f"  Deplasman Yanlılığı: {result.get('away_bias', 0):+.1f}")
-        console.print(f"  Toplam Maç: {result.get('total_matches', 0)}")
+        console.print(f"  Ort. Ev KartÄ±:  {result.get('avg_home_cards', 0):.1f}")
+        console.print(f"  Ort. Dep KartÄ±: {result.get('avg_away_cards', 0):.1f}")
+        console.print(f"  Deplasman YanlÄ±lÄ±ÄŸÄ±: {result.get('away_bias', 0):+.1f}")
+        console.print(f"  Toplam MaÃ§: {result.get('total_matches', 0)}")
         if result.get("is_strict_away"):
-            console.print("[red]⚠️ Bu hakem deplasmana sert![/]")
+            console.print("[red]âš ï¸ Bu hakem deplasmana sert![/]")
 
     elif query_type == "h2h":
         results = g.query_h2h_graph(arg1, arg2)
-        table = Table(title=f"{arg1} vs {arg2} – Son Maçlar")
+        table = Table(title=f"{arg1} vs {arg2} â€“ Son MaÃ§lar")
         table.add_column("Tarih", style="cyan")
         table.add_column("Skor", justify="center")
         for r in results[:10]:
@@ -3193,7 +3660,7 @@ def graph_query(
 
     elif query_type == "player_impact":
         results = g.query_key_player_impact(arg1, top_n=5)
-        table = Table(title=f"{arg1} – Kilit Oyuncular (Graph)")
+        table = Table(title=f"{arg1} â€“ Kilit Oyuncular (Graph)")
         table.add_column("Oyuncu", style="cyan")
         table.add_column("Poz.", justify="center")
         table.add_column("Ort. Rating", justify="right")
@@ -3210,7 +3677,7 @@ def graph_query(
         console.print(table)
     else:
         console.print(f"[red]Bilinmeyen sorgu tipi: {query_type}[/]")
-        console.print("Geçerli tipler: referee_bias, h2h, player_impact")
+        console.print("GeÃ§erli tipler: referee_bias, h2h, player_impact")
 
     console.print(f"\n[dim]Graph Stats: {g.stats()}[/]")
     g.close()
@@ -3218,17 +3685,17 @@ def graph_query(
 
 @app.command()
 def network(
-    team: str = typer.Argument(..., help="Takım adı"),
-    missing: str = typer.Option("", help="Eksik oyuncular (virgülle ayır)"),
+    team: str = typer.Argument(..., help="TakÄ±m adÄ±"),
+    missing: str = typer.Option("", help="Eksik oyuncular (virgÃ¼lle ayÄ±r)"),
 ):
-    """Pas ağı analizi – oyuncu önem sıralaması ve eksiklik etkisi."""
+    """Pas aÄŸÄ± analizi â€“ oyuncu Ã¶nem sÄ±ralamasÄ± ve eksiklik etkisi."""
     from src.quant.network_centrality import PassNetworkAnalyzer
     from rich.table import Table
 
-    console.rule(f"[bold cyan]AĞ ANALİZİ – {team}[/]")
+    console.rule(f"[bold cyan]AÄ ANALÄ°ZÄ° â€“ {team}[/]")
     analyzer = PassNetworkAnalyzer()
 
-    # Demo: basit kadro ile ağ oluştur
+    # Demo: basit kadro ile aÄŸ oluÅŸtur
     demo_lineup = [
         {"name": "Kaleci", "position": "GK"},
         {"name": "Defans_1", "position": "DEF"},
@@ -3245,7 +3712,7 @@ def network(
     analyzer.load_from_match_data(team, {"lineup": demo_lineup})
 
     rankings = analyzer.calculate_centrality(team)
-    table = Table(title="Oyuncu Önem Sıralaması (Centrality)", show_lines=True)
+    table = Table(title="Oyuncu Ã–nem SÄ±ralamasÄ± (Centrality)", show_lines=True)
     table.add_column("#", style="dim", width=3)
     table.add_column("Oyuncu", style="cyan")
     table.add_column("Pozisyon", justify="center")
@@ -3261,7 +3728,7 @@ def network(
             f"{r.pagerank:.4f}",
             f"{r.betweenness:.4f}",
             f"{r.composite_score:.4f}",
-            "⭐" if r.is_key_player else "",
+            "â­" if r.is_key_player else "",
         )
     console.print(table)
 
@@ -3272,23 +3739,23 @@ def network(
         for p in penalties:
             color = {"critical": "red", "high": "yellow", "medium": "cyan"}.get(p.severity, "dim")
             console.print(
-                f"  [{color}]{p.player}[/]: xG çarpanı={p.penalty_factor:.2%}, "
-                f"şiddet={p.severity} ({p.reason})"
+                f"  [{color}]{p.player}[/]: xG Ã§arpanÄ±={p.penalty_factor:.2%}, "
+                f"ÅŸiddet={p.severity} ({p.reason})"
             )
         combined = analyzer.combined_penalty(team, missing_list)
-        console.print(f"\n[bold]Toplam xG düzeltmesi: {combined:.2%}[/]")
+        console.print(f"\n[bold]Toplam xG dÃ¼zeltmesi: {combined:.2%}[/]")
 
 
 @app.command()
 def seasonality(
-    team: str = typer.Argument(..., help="Takım adı"),
-    date: str = typer.Option("", help="Hedef tarih (YYYY-MM-DD). Boşsa bugün."),
+    team: str = typer.Argument(..., help="TakÄ±m adÄ±"),
+    date: str = typer.Option("", help="Hedef tarih (YYYY-MM-DD). BoÅŸsa bugÃ¼n."),
 ):
-    """Mevsimsellik analizi – takımın dönemsel performansı."""
+    """Mevsimsellik analizi â€“ takÄ±mÄ±n dÃ¶nemsel performansÄ±."""
     from src.quant.prophet_seasonality import ProphetSeasonalityAnalyzer
     from rich.panel import Panel
 
-    console.rule(f"[bold cyan]MEVSİMSELLİK – {team}[/]")
+    console.rule(f"[bold cyan]MEVSÄ°MSELLÄ°K â€“ {team}[/]")
     analyzer = ProphetSeasonalityAnalyzer()
 
     target = date if date else None
@@ -3299,32 +3766,32 @@ def seasonality(
         f"Tarih: {result.current_date}\n"
         f"Mevsimsel Etki: {result.seasonal_effect:+.1%}\n"
         f"Trend: {result.trend:+.1%}\n"
-        f"Negatif Sezon: {'EVET' if result.is_negative_season else 'Hayır'}\n"
-        f"AVOID Sinyali: {'⚠️ EVET' if result.avoid_signal else 'Hayır'}\n"
-        f"Güven: {result.confidence:.0%}\n"
+        f"Negatif Sezon: {'EVET' if result.is_negative_season else 'HayÄ±r'}\n"
+        f"AVOID Sinyali: {'âš ï¸ EVET' if result.avoid_signal else 'HayÄ±r'}\n"
+        f"GÃ¼ven: {result.confidence:.0%}\n"
         f"Metod: {result.method}\n\n"
         f"{result.explanation}",
-        title=f"📅 {team} – Mevsimsellik Raporu",
+        title=f"ğŸ“… {team} â€“ Mevsimsellik Raporu",
         border_style=color,
     ))
 
-    # Decomposition detayları
+    # Decomposition detaylarÄ±
     if result.decomposition:
         console.print(f"\n[dim]Decomposition: {result.decomposition}[/]")
 
 
 @app.command()
 def kalman_power(
-    top_n: int = typer.Option(20, help="Gösterilecek takım sayısı"),
+    top_n: int = typer.Option(20, help="GÃ¶sterilecek takÄ±m sayÄ±sÄ±"),
 ):
-    """Kalman Filtresi güç sıralaması."""
+    """Kalman Filtresi gÃ¼Ã§ sÄ±ralamasÄ±."""
     from src.quant.kalman_tracker import KalmanTeamTracker
     from rich.table import Table
 
-    console.rule("[bold cyan]KALMAN FİLTRESİ – GÜÇ SIRALAMASI[/]")
+    console.rule("[bold cyan]KALMAN FÄ°LTRESÄ° â€“ GÃœÃ‡ SIRALAMASI[/]")
     tracker = KalmanTeamTracker()
 
-    # Demo veri yükle
+    # Demo veri yÃ¼kle
     demo_results = [
         {"home": "Galatasaray", "away": "Fenerbahce", "hg": 2, "ag": 1, "date": "2026-02-01"},
         {"home": "Besiktas", "away": "Trabzonspor", "hg": 1, "ag": 1, "date": "2026-02-01"},
@@ -3338,25 +3805,25 @@ def kalman_power(
     rankings = tracker.power_rankings(top_n)
     table = Table(title="Kalman Power Rankings", show_lines=True)
     table.add_column("#", style="dim", width=3)
-    table.add_column("Takım", style="cyan", min_width=15)
-    table.add_column("Güç", justify="right", style="green")
+    table.add_column("TakÄ±m", style="cyan", min_width=15)
+    table.add_column("GÃ¼Ã§", justify="right", style="green")
     table.add_column("Momentum", justify="right")
     table.add_column("Belirsizlik", justify="right")
     table.add_column("Trend", justify="center")
 
-    trend_icons = {"rising": "[green]▲[/]", "falling": "[red]▼[/]", "stable": "[dim]●[/]"}
+    trend_icons = {"rising": "[green]â–²[/]", "falling": "[red]â–¼[/]", "stable": "[dim]â—[/]"}
     for r in rankings:
         table.add_row(
             str(r["rank"]),
             r["team"],
             f"{r['strength']:.1f}",
             f"{r['momentum']:+.2f}",
-            f"±{r['uncertainty']:.1f}",
-            trend_icons.get(r["trend"], "●"),
+            f"Â±{r['uncertainty']:.1f}",
+            trend_icons.get(r["trend"], "â—"),
         )
     console.print(table)
 
-    # Maç tahmini demo
+    # MaÃ§ tahmini demo
     if len(rankings) >= 2:
         t1 = rankings[0]["team"]
         t2 = rankings[-1]["team"]
@@ -3364,54 +3831,54 @@ def kalman_power(
         console.print(f"\n[cyan]{t1} vs {t2}:[/]")
         console.print(
             f"  Ev: {pred['prob_home']:.1%} | Ber: {pred['prob_draw']:.1%} | "
-            f"Dep: {pred['prob_away']:.1%} (güvenilirlik: {pred['reliability']:.0%})"
+            f"Dep: {pred['prob_away']:.1%} (gÃ¼venilirlik: {pred['reliability']:.0%})"
         )
 
 
 @app.command()
 def uncertainty(
-    prob: float = typer.Argument(..., help="Model olasılığı (0-1)"),
-    match_id: str = typer.Option("test", help="Maç ID"),
-    selection: str = typer.Option("home", help="Seçim: home/draw/away"),
+    prob: float = typer.Argument(..., help="Model olasÄ±lÄ±ÄŸÄ± (0-1)"),
+    match_id: str = typer.Option("test", help="MaÃ§ ID"),
+    selection: str = typer.Option("home", help="SeÃ§im: home/draw/away"),
 ):
-    """Conformal Prediction ile güven aralığı hesapla."""
+    """Conformal Prediction ile gÃ¼ven aralÄ±ÄŸÄ± hesapla."""
     from src.quant.uncertainty_quantifier import UncertaintyQuantifier
     from rich.panel import Panel
 
-    console.rule("[bold cyan]CONFORMAL PREDICTION – BELİRSİZLİK ANALİZİ[/]")
+    console.rule("[bold cyan]CONFORMAL PREDICTION â€“ BELÄ°RSÄ°ZLÄ°K ANALÄ°ZÄ°[/]")
     uq = UncertaintyQuantifier()
 
     result = uq.quantify(match_id, selection, prob)
 
     color = "green" if result.is_certain else ("red" if result.abstain else "yellow")
     decision = (
-        "[bold red]ABSTAIN – Bahis yapma![/]" if result.abstain
-        else ("[bold green]CERTAIN – Devam et[/]" if result.is_certain
-              else "[yellow]MODERATE – Dikkatli ol[/]")
+        "[bold red]ABSTAIN â€“ Bahis yapma![/]" if result.abstain
+        else ("[bold green]CERTAIN â€“ Devam et[/]" if result.is_certain
+              else "[yellow]MODERATE â€“ Dikkatli ol[/]")
     )
 
     console.print(Panel(
         f"Nokta Tahmini: {result.point_estimate:.1%}\n"
-        f"Güven Aralığı: [{result.lower_bound:.1%} – {result.upper_bound:.1%}]\n"
-        f"Aralık Genişliği: {result.interval_width:.1%}\n"
-        f"Güven Seviyesi: {result.confidence_level:.0%}\n"
-        f"Güvenilirlik: {result.reliability_score:.0%}\n\n"
+        f"GÃ¼ven AralÄ±ÄŸÄ±: [{result.lower_bound:.1%} â€“ {result.upper_bound:.1%}]\n"
+        f"AralÄ±k GeniÅŸliÄŸi: {result.interval_width:.1%}\n"
+        f"GÃ¼ven Seviyesi: {result.confidence_level:.0%}\n"
+        f"GÃ¼venilirlik: {result.reliability_score:.0%}\n\n"
         f"Karar: {decision}\n"
         f"{result.abstain_reason if result.abstain_reason else ''}\n\n"
         f"Metod: {result.method}",
-        title=f"Belirsizlik – {match_id} ({selection})",
+        title=f"Belirsizlik â€“ {match_id} ({selection})",
         border_style=color,
     ))
 
 
 @app.command()
-def chaos(
+def chaos_monkey(
     target: str = typer.Option("all", help="Hedef: scraper|database|validator|network|memory|asyncio|disk|all"),
-    intensity: str = typer.Option("medium", help="Şiddet: low|medium|high"),
+    intensity: str = typer.Option("medium", help="Åiddet: low|medium|high"),
 ):
-    """Chaos Engineering testlerini çalıştırır."""
-    console.rule("[bold red]CHAOS MONKEY – KAOS TESTLERİ[/]")
-    console.print("[yellow]tests/chaos_monkey.py çalıştırılıyor...[/]")
+    """Chaos Engineering testlerini Ã§alÄ±ÅŸtÄ±rÄ±r."""
+    console.rule("[bold red]CHAOS MONKEY â€“ KAOS TESTLERÄ°[/]")
+    console.print("[yellow]tests/chaos_monkey.py Ã§alÄ±ÅŸtÄ±rÄ±lÄ±yor...[/]")
 
     import subprocess
     subprocess.run([
@@ -3422,18 +3889,18 @@ def chaos(
 
 @app.command()
 def rl_train(
-    timesteps: int = typer.Option(100000, help="Eğitim adım sayısı"),
-    bankroll: float = typer.Option(10000, help="Başlangıç kasası"),
+    timesteps: int = typer.Option(100000, help="EÄŸitim adÄ±m sayÄ±sÄ±"),
+    bankroll: float = typer.Option(10000, help="BaÅŸlangÄ±Ã§ kasasÄ±"),
 ):
-    """RL ajanını (PPO) geçmiş veri ile eğitir."""
+    """RL ajanÄ±nÄ± (PPO) geÃ§miÅŸ veri ile eÄŸitir."""
     from src.quant.rl_betting_env import RLBettingAgent, BettingMatch
     import random
 
-    console.rule("[bold cyan]RL AJAN EĞİTİMİ – PPO[/]")
+    console.rule("[bold cyan]RL AJAN EÄÄ°TÄ°MÄ° â€“ PPO[/]")
 
     agent = RLBettingAgent(initial_bankroll=bankroll)
 
-    # Demo eğitim verisi (gerçek kullanımda DB'den gelir)
+    # Demo eÄŸitim verisi (gerÃ§ek kullanÄ±mda DB'den gelir)
     demo_matches = []
     for i in range(500):
         ph = random.uniform(0.25, 0.65)
@@ -3455,28 +3922,28 @@ def rl_train(
     result = agent.train(demo_matches, total_timesteps=timesteps)
     agent.save()
 
-    console.print(f"\n[green]Eğitim Sonuçları:[/]")
+    console.print(f"\n[green]EÄŸitim SonuÃ§larÄ±:[/]")
     console.print(f"  ROI: {result.get('roi', 0):.2%}")
     console.print(f"  Win Rate: {result.get('win_rate', 0):.0%}")
     console.print(f"  Method: {result.get('status', '?')}")
-    console.rule("[bold green]RL EĞİTİMİ TAMAMLANDI[/]")
+    console.rule("[bold green]RL EÄÄ°TÄ°MÄ° TAMAMLANDI[/]")
 
 
 @app.command()
 def similar(
-    home: str = typer.Argument(..., help="Ev sahibi takım"),
-    away: str = typer.Argument(..., help="Deplasman takımı"),
-    k: int = typer.Option(20, help="Benzer maç sayısı"),
+    home: str = typer.Argument(..., help="Ev sahibi takÄ±m"),
+    away: str = typer.Argument(..., help="Deplasman takÄ±mÄ±"),
+    k: int = typer.Option(20, help="Benzer maÃ§ sayÄ±sÄ±"),
 ):
-    """FAISS ile tarihsel benzer maçları bulur."""
+    """FAISS ile tarihsel benzer maÃ§larÄ± bulur."""
     from src.quant.vector_engine import VectorMatchEngine
     from rich.table import Table
     from rich.panel import Panel
 
-    console.rule(f"[bold cyan]TARİHSEL İKİZLER – {home} vs {away}[/]")
+    console.rule(f"[bold cyan]TARÄ°HSEL Ä°KÄ°ZLER â€“ {home} vs {away}[/]")
     engine = VectorMatchEngine(dim=32)
 
-    # Demo indeks (gerçek kullanımda DB'den yüklenir)
+    # Demo indeks (gerÃ§ek kullanÄ±mda DB'den yÃ¼klenir)
     import random
     demo_history = []
     for i in range(200):
@@ -3500,13 +3967,13 @@ def similar(
     report = engine.find_similar(query, k=k)
 
     console.print(Panel(
-        f"Benzer Maç: {report.k} | Metod: {report.method}\n"
-        f"Önerilen Sonuç: {report.suggested_result} "
-        f"(güven: {report.suggested_confidence:.0%})\n"
-        f"Dağılım: Ev={report.distribution.get('H',0)} | "
+        f"Benzer MaÃ§: {report.k} | Metod: {report.method}\n"
+        f"Ã–nerilen SonuÃ§: {report.suggested_result} "
+        f"(gÃ¼ven: {report.suggested_confidence:.0%})\n"
+        f"DaÄŸÄ±lÄ±m: Ev={report.distribution.get('H',0)} | "
         f"Ber={report.distribution.get('D',0)} | "
         f"Dep={report.distribution.get('A',0)}\n"
-        f"Ü2.5: {report.over_25_rate:.0%} | "
+        f"Ãœ2.5: {report.over_25_rate:.0%} | "
         f"KG Var: {report.btts_rate:.0%} | "
         f"Ort. Gol: {report.avg_total_goals:.1f}",
         title="Tarihsel Benzerlik Raporu",
@@ -3514,9 +3981,9 @@ def similar(
     ))
 
     if report.similar_matches:
-        table = Table(title="En Benzer Maçlar", show_lines=True)
+        table = Table(title="En Benzer MaÃ§lar", show_lines=True)
         table.add_column("Tarih", style="dim")
-        table.add_column("Maç", style="cyan")
+        table.add_column("MaÃ§", style="cyan")
         table.add_column("Skor", justify="center")
         table.add_column("Benzerlik", justify="right", style="green")
         for m in report.similar_matches[:10]:
@@ -3530,13 +3997,13 @@ def similar(
 
 @app.command()
 def copula(
-    n_matches: int = typer.Option(3, help="Kupondaki maç sayısı"),
+    n_matches: int = typer.Option(3, help="Kupondaki maÃ§ sayÄ±sÄ±"),
 ):
-    """Copula bağımlılık analizi – kupon riski."""
+    """Copula baÄŸÄ±mlÄ±lÄ±k analizi â€“ kupon riski."""
     from src.quant.copula_risk import CopulaRiskAnalyzer
     from rich.panel import Panel
 
-    console.rule("[bold cyan]COPULA BAĞIMLILIK ANALİZİ[/]")
+    console.rule("[bold cyan]COPULA BAÄIMLILIK ANALÄ°ZÄ°[/]")
 
     analyzer = CopulaRiskAnalyzer()
 
@@ -3555,36 +4022,36 @@ def copula(
 
     color = "red" if report.dangerous_pairs else "green"
     console.print(Panel(
-        f"Maç Sayısı: {report.n_matches}\n"
-        f"Analiz Edilen Çift: {report.pairs_analyzed}\n"
-        f"Tehlikeli Çift: {len(report.dangerous_pairs)}\n\n"
-        f"Naif Birleşik Olasılık: {report.naive_combined_prob:.4%}\n"
-        f"Copula Düzeltilmiş: {report.copula_combined_prob:.4%}\n"
-        f"Risk Düzeltmesi: {report.risk_adjustment:.0%}\n\n"
+        f"MaÃ§ SayÄ±sÄ±: {report.n_matches}\n"
+        f"Analiz Edilen Ã‡ift: {report.pairs_analyzed}\n"
+        f"Tehlikeli Ã‡ift: {len(report.dangerous_pairs)}\n\n"
+        f"Naif BirleÅŸik OlasÄ±lÄ±k: {report.naive_combined_prob:.4%}\n"
+        f"Copula DÃ¼zeltilmiÅŸ: {report.copula_combined_prob:.4%}\n"
+        f"Risk DÃ¼zeltmesi: {report.risk_adjustment:.0%}\n\n"
         f"Tavsiye: {report.recommendation}",
-        title="Kupon Bağımlılık Raporu",
+        title="Kupon BaÄŸÄ±mlÄ±lÄ±k Raporu",
         border_style=color,
     ))
 
 
 @app.command()
 def scenario(
-    home: str = typer.Argument(..., help="Ev sahibi takım"),
-    away: str = typer.Argument(..., help="Deplasman takımı"),
+    home: str = typer.Argument(..., help="Ev sahibi takÄ±m"),
+    away: str = typer.Argument(..., help="Deplasman takÄ±mÄ±"),
     scenario_id: str = typer.Option("early_goal_home", help="Senaryo ID"),
 ):
-    """İnteraktif senaryo simülasyonu."""
+    """Ä°nteraktif senaryo simÃ¼lasyonu."""
     from src.utils.telegram_scenario import ScenarioSimulator
     from rich.panel import Panel
 
-    console.rule(f"[bold cyan]SENARYO – {home} vs {away}[/]")
+    console.rule(f"[bold cyan]SENARYO â€“ {home} vs {away}[/]")
 
     sim = ScenarioSimulator()
     features = {"home_xg": 1.4, "away_xg": 1.1, "home_morale": 0.60, "away_morale": 0.50}
     result = sim.simulate(f"{home}_{away}", scenario_id, features)
 
     console.print(Panel(
-        result.explanation or "Sonuç yok.",
+        result.explanation or "SonuÃ§ yok.",
         title=result.scenario_label,
         border_style="cyan",
     ))
@@ -3594,22 +4061,22 @@ def scenario(
 
 @app.command()
 def shadow_report():
-    """Shadow Testing – tüm gölge stratejilerin performans raporu."""
+    """Shadow Testing â€“ tÃ¼m gÃ¶lge stratejilerin performans raporu."""
     from src.core.shadow_manager import ShadowManager
     from rich.table import Table
     from rich.panel import Panel
 
-    console.rule("[bold cyan]SHADOW TESTING – STRATEJİ KARŞILAŞTIRMA[/]")
+    console.rule("[bold cyan]SHADOW TESTING â€“ STRATEJÄ° KARÅILAÅTIRMA[/]")
     mgr = ShadowManager()
 
     if not mgr.strategy_names:
-        console.print("[yellow]Henüz kayıtlı gölge strateji yok.[/]")
-        console.print("[dim]Kullanım: shadow.register_strategy('strateji_adi')[/]")
+        console.print("[yellow]HenÃ¼z kayÄ±tlÄ± gÃ¶lge strateji yok.[/]")
+        console.print("[dim]KullanÄ±m: shadow.register_strategy('strateji_adi')[/]")
         return
 
     comparison = mgr.compare_all()
 
-    table = Table(title="Strateji Performansları", show_lines=True)
+    table = Table(title="Strateji PerformanslarÄ±", show_lines=True)
     table.add_column("Strateji", style="cyan")
     table.add_column("Mod", justify="center")
     table.add_column("Kasa", justify="right")
@@ -3646,16 +4113,16 @@ def shadow_report():
 
 @app.command()
 def events(
-    event_type: str = typer.Option("", help="Olay tipi filtresi (boş = hepsi)"),
-    match_id: str = typer.Option("", help="Maç ID filtresi"),
-    limit: int = typer.Option(20, help="Gösterilecek olay sayısı"),
+    event_type: str = typer.Option("", help="Olay tipi filtresi (boÅŸ = hepsi)"),
+    match_id: str = typer.Option("", help="MaÃ§ ID filtresi"),
+    limit: int = typer.Option(20, help="GÃ¶sterilecek olay sayÄ±sÄ±"),
 ):
-    """Event Store – kaydedilmiş olayları listeler."""
+    """Event Store â€“ kaydedilmiÅŸ olaylarÄ± listeler."""
     from src.core.event_bus import EventStore
     from rich.table import Table
     from datetime import datetime
 
-    console.rule("[bold cyan]EVENT STORE – OLAY GEÇMİŞİ[/]")
+    console.rule("[bold cyan]EVENT STORE â€“ OLAY GEÃ‡MÄ°ÅÄ°[/]")
     store = EventStore()
 
     results = store.query(
@@ -3665,7 +4132,7 @@ def events(
     )
 
     if not results:
-        console.print("[yellow]Kayıtlı olay bulunamadı.[/]")
+        console.print("[yellow]KayÄ±tlÄ± olay bulunamadÄ±.[/]")
         store.close()
         return
 
@@ -3673,7 +4140,7 @@ def events(
     table.add_column("Zaman", style="dim", width=19)
     table.add_column("Tip", style="cyan", width=18)
     table.add_column("Kaynak", width=14)
-    table.add_column("Maç", width=16)
+    table.add_column("MaÃ§", width=16)
     table.add_column("Detay", width=40)
 
     for ev in results[-limit:]:
@@ -3682,19 +4149,19 @@ def events(
         table.add_row(ts, ev.event_type, ev.source, ev.match_id, detail)
 
     console.print(table)
-    console.print(f"\n[dim]Toplam kayıtlı olay: {store.count()}[/]")
+    console.print(f"\n[dim]Toplam kayÄ±tlÄ± olay: {store.count()}[/]")
     store.close()
 
 
 @app.command()
 def replay(
-    match_id: str = typer.Argument(..., help="Yeniden oynatılacak maç ID"),
-    speed: float = typer.Option(10.0, help="Oynatma hızı (10x = 10 kat hızlı)"),
+    match_id: str = typer.Argument(..., help="Yeniden oynatÄ±lacak maÃ§ ID"),
+    speed: float = typer.Option(10.0, help="Oynatma hÄ±zÄ± (10x = 10 kat hÄ±zlÄ±)"),
 ):
-    """Event Replay – geçmiş maçı bugünkü kodla tekrar oynatır."""
+    """Event Replay â€“ geÃ§miÅŸ maÃ§Ä± bugÃ¼nkÃ¼ kodla tekrar oynatÄ±r."""
     from src.core.event_bus import EventBus, EventStore, ReplayEngine
 
-    console.rule(f"[bold cyan]REPLAY – {match_id}[/]")
+    console.rule(f"[bold cyan]REPLAY â€“ {match_id}[/]")
 
     store = EventStore()
     bus = EventBus(store=store, persist=False)
@@ -3702,32 +4169,32 @@ def replay(
 
     events = store.get_match_timeline(match_id)
     if not events:
-        console.print(f"[yellow]{match_id} için kayıtlı olay bulunamadı.[/]")
+        console.print(f"[yellow]{match_id} iÃ§in kayÄ±tlÄ± olay bulunamadÄ±.[/]")
         store.close()
         return
 
-    console.print(f"[cyan]{len(events)} olay bulundu – oynatılıyor ({speed}x)...[/]")
+    console.print(f"[cyan]{len(events)} olay bulundu â€“ oynatÄ±lÄ±yor ({speed}x)...[/]")
     result = asyncio.run(replayer.replay(events, speed=speed, real_time=True))
 
-    console.print(f"\n[green]Replay tamamlandı:[/]")
-    console.print(f"  Oynatılan: {result.get('events_replayed', 0)}")
+    console.print(f"\n[green]Replay tamamlandÄ±:[/]")
+    console.print(f"  OynatÄ±lan: {result.get('events_replayed', 0)}")
     console.print(f"  Hatalar: {result.get('errors', 0)}")
-    console.print(f"  Süre: {result.get('elapsed_seconds', 0):.1f}s")
+    console.print(f"  SÃ¼re: {result.get('elapsed_seconds', 0):.1f}s")
     store.close()
 
 
 @app.command()
 def trap_scan(
-    home_odds: float = typer.Option(1.80, help="Ev sahibi oranı"),
-    draw_odds: float = typer.Option(3.50, help="Beraberlik oranı"),
-    away_odds: float = typer.Option(4.20, help="Deplasman oranı"),
-    movement: float = typer.Option(0.0, help="Son 1 saat oran değişimi (%)"),
+    home_odds: float = typer.Option(1.80, help="Ev sahibi oranÄ±"),
+    draw_odds: float = typer.Option(3.50, help="Beraberlik oranÄ±"),
+    away_odds: float = typer.Option(4.20, help="Deplasman oranÄ±"),
+    movement: float = typer.Option(0.0, help="Son 1 saat oran deÄŸiÅŸimi (%)"),
 ):
-    """Isolation Forest – oran tuzak taraması."""
+    """Isolation Forest â€“ oran tuzak taramasÄ±."""
     from src.quant.isolation_anomaly import IsolationAnomalyDetector, MarketSnapshot
     from rich.panel import Panel
 
-    console.rule("[bold red]TUZAK TARAMA – ISOLATION FOREST[/]")
+    console.rule("[bold red]TUZAK TARAMA â€“ ISOLATION FOREST[/]")
 
     detector = IsolationAnomalyDetector()
     snap = MarketSnapshot(
@@ -3744,7 +4211,7 @@ def trap_scan(
 
     if not alerts:
         console.print(Panel(
-            f"Oran deseni NORMAL görünüyor.\n\n"
+            f"Oran deseni NORMAL gÃ¶rÃ¼nÃ¼yor.\n\n"
             f"Ev: {home_odds} | Ber: {draw_odds} | Dep: {away_odds}\n"
             f"Hareket: {movement:+.1%}",
             title="Tuzak Tarama Sonucu",
@@ -3755,7 +4222,7 @@ def trap_scan(
             color = "red" if a.severity in ("high", "critical") else "yellow"
             console.print(Panel(
                 f"Tip: {a.alert_type}\n"
-                f"Şiddet: {a.severity.upper()}\n"
+                f"Åiddet: {a.severity.upper()}\n"
                 f"Skor: {a.score}\n"
                 f"Aksiyon: {a.action}\n\n"
                 f"{a.description}",
@@ -3766,24 +4233,24 @@ def trap_scan(
 
 @app.command()
 def causal(
-    treatment: str = typer.Argument("red_card", help="Müdahale: red_card | injury_key_player | rain | home_advantage"),
-    outcome: str = typer.Option("goals", help="Sonuç değişkeni"),
+    treatment: str = typer.Argument("red_card", help="MÃ¼dahale: red_card | injury_key_player | rain | home_advantage"),
+    outcome: str = typer.Option("goals", help="SonuÃ§ deÄŸiÅŸkeni"),
 ):
-    """Causal Inference – nedensellik analizi."""
+    """Causal Inference â€“ nedensellik analizi."""
     from src.quant.causal_reasoner import CausalReasoner
     from rich.panel import Panel
     from rich.table import Table
 
-    console.rule(f"[bold cyan]NEDENSELLİK ANALİZİ – {treatment} → {outcome}[/]")
+    console.rule(f"[bold cyan]NEDENSELLÄ°K ANALÄ°ZÄ° â€“ {treatment} â†’ {outcome}[/]")
 
     reasoner = CausalReasoner()
 
     if treatment == "all":
         effects = reasoner.analyze_all_treatments(outcome)
-        table = Table(title="Tüm Nedensel Etkiler", show_lines=True)
-        table.add_column("Müdahale", style="cyan")
+        table = Table(title="TÃ¼m Nedensel Etkiler", show_lines=True)
+        table.add_column("MÃ¼dahale", style="cyan")
         table.add_column("ATE", justify="right")
-        table.add_column("Anlamlı", justify="center")
+        table.add_column("AnlamlÄ±", justify="center")
         table.add_column("Metod")
         table.add_column("Yorum", width=40)
 
@@ -3801,12 +4268,12 @@ def causal(
         effect = reasoner.estimate_effect(treatment, outcome)
         color = "green" if effect.is_significant else "yellow"
         console.print(Panel(
-            f"Müdahale: {effect.treatment}\n"
-            f"Sonuç: {effect.outcome}\n\n"
+            f"MÃ¼dahale: {effect.treatment}\n"
+            f"SonuÃ§: {effect.outcome}\n\n"
             f"ATE (Ortalama Tedavi Etkisi): {effect.ate:+.4f}\n"
-            f"Güven Aralığı: [{effect.ate_ci_lower:.3f}, {effect.ate_ci_upper:.3f}]\n"
-            f"p-değeri: {effect.p_value:.4f}\n"
-            f"İstatistiksel Anlamlılık: {'EVET' if effect.is_significant else 'HAYIR'}\n"
+            f"GÃ¼ven AralÄ±ÄŸÄ±: [{effect.ate_ci_lower:.3f}, {effect.ate_ci_upper:.3f}]\n"
+            f"p-deÄŸeri: {effect.p_value:.4f}\n"
+            f"Ä°statistiksel AnlamlÄ±lÄ±k: {'EVET' if effect.is_significant else 'HAYIR'}\n"
             f"Metod: {effect.method}\n\n"
             f"{effect.interpretation}",
             title="Nedensel Etki Raporu",
@@ -3816,48 +4283,48 @@ def causal(
 
 @app.command()
 def counterfactual(
-    match_id: str = typer.Argument(..., help="Maç ID"),
-    treatment: str = typer.Option("red_card", help="Müdahale"),
-    value: int = typer.Option(0, help="Karşı-olgusal değer (0=olmasaydı)"),
+    match_id: str = typer.Argument(..., help="MaÃ§ ID"),
+    treatment: str = typer.Option("red_card", help="MÃ¼dahale"),
+    value: int = typer.Option(0, help="KarÅŸÄ±-olgusal deÄŸer (0=olmasaydÄ±)"),
 ):
-    """Counterfactual analiz – 'Eğer X olmasaydı ne olurdu?'"""
+    """Counterfactual analiz â€“ 'EÄŸer X olmasaydÄ± ne olurdu?'"""
     from src.quant.causal_reasoner import CausalReasoner
     from rich.panel import Panel
 
-    console.rule(f"[bold cyan]KARŞI-OLGUSAL – {match_id}[/]")
+    console.rule(f"[bold cyan]KARÅI-OLGUSAL â€“ {match_id}[/]")
 
     reasoner = CausalReasoner()
     actual = {treatment: 1, "goals_home": 2, "goals_away": 1}
     cf = reasoner.counterfactual(match_id, {treatment: value}, actual)
 
     console.print(Panel(
-        f"Maç: {cf.match_id}\n"
+        f"MaÃ§: {cf.match_id}\n"
         f"Senaryo: {cf.scenario}\n\n"
-        f"Gerçek Sonuç: {cf.actual_outcome}\n"
-        f"Karşı-Olgusal: {cf.counterfactual_outcome}\n"
+        f"GerÃ§ek SonuÃ§: {cf.actual_outcome}\n"
+        f"KarÅŸÄ±-Olgusal: {cf.counterfactual_outcome}\n"
         f"Fark: {cf.difference}\n\n"
-        f"Güven: {cf.confidence:.0%}\n\n"
+        f"GÃ¼ven: {cf.confidence:.0%}\n\n"
         f"{cf.explanation}",
-        title="Karşı-Olgusal Analiz",
+        title="KarÅŸÄ±-Olgusal Analiz",
         border_style="cyan",
     ))
 
 
 @app.command()
 def topology(
-    n_players: int = typer.Option(11, help="Oyuncu sayısı"),
+    n_players: int = typer.Option(11, help="Oyuncu sayÄ±sÄ±"),
     formation: str = typer.Option("442", help="Formasyon (442, 433, 352)"),
 ):
-    """TDA – formasyon topolojik analizi."""
+    """TDA â€“ formasyon topolojik analizi."""
     from src.quant.topology_scanner import TopologyScanner
     from rich.panel import Panel
     import random
 
-    console.rule(f"[bold cyan]TOPOLOJİK FORMASYON ANALİZİ – {formation}[/]")
+    console.rule(f"[bold cyan]TOPOLOJÄ°K FORMASYON ANALÄ°ZÄ° â€“ {formation}[/]")
 
     scanner = TopologyScanner()
 
-    # Demo koordinatlar (formasyona göre)
+    # Demo koordinatlar (formasyona gÃ¶re)
     coords = []
     if formation == "442":
         base = [
@@ -3896,15 +4363,15 @@ def topology(
     console.print(Panel(
         f"Formasyon: {formation} ({n_players} oyuncu)\n"
         f"Metod: {state.method}\n\n"
-        f"{'─' * 40}\n"
-        f"Bütünlük: {state.formation_integrity:.0%}\n"
-        f"Kaplama Alanı: {state.convex_hull_area:.0f} m^2\n"
-        f"Sıkılık: {state.compactness:.0%}\n"
-        f"Genişlik: {state.width:.1f}m | Derinlik: {state.depth:.1f}m\n"
-        f"Savunma Hattı: {state.defensive_line_height:.1f}m\n\n"
-        f"{'─' * 40}\n"
-        f"H0 (Bağlı Bileşen): {state.h0_components}\n"
-        f"H1 (Delik/Boşluk): {state.h1_holes}\n"
+        f"{'â”€' * 40}\n"
+        f"BÃ¼tÃ¼nlÃ¼k: {state.formation_integrity:.0%}\n"
+        f"Kaplama AlanÄ±: {state.convex_hull_area:.0f} m^2\n"
+        f"SÄ±kÄ±lÄ±k: {state.compactness:.0%}\n"
+        f"GeniÅŸlik: {state.width:.1f}m | Derinlik: {state.depth:.1f}m\n"
+        f"Savunma HattÄ±: {state.defensive_line_height:.1f}m\n\n"
+        f"{'â”€' * 40}\n"
+        f"H0 (BaÄŸlÄ± BileÅŸen): {state.h0_components}\n"
+        f"H1 (Delik/BoÅŸluk): {state.h1_holes}\n"
         f"Persistence Entropy: {state.persistence_entropy:.4f}\n"
         f"Max Persistence: {state.max_persistence:.4f}",
         title="Topolojik Formasyon Raporu",
@@ -3919,25 +4386,25 @@ def topology(
         ))
 
 
-# ── Level 13: Physics of Information & Zero-Latency ──
+# â”€â”€ Level 13: Physics of Information & Zero-Latency â”€â”€
 
 
 @app.command()
 def nash(
-    prob_home: float = typer.Argument(0.55, help="Ev sahibi kazanma olasılığı"),
-    prob_draw: float = typer.Argument(0.25, help="Beraberlik olasılığı"),
-    prob_away: float = typer.Argument(0.20, help="Deplasman kazanma olasılığı"),
-    odds_home: float = typer.Option(1.80, help="Ev sahibi oranı"),
-    odds_draw: float = typer.Option(3.50, help="Beraberlik oranı"),
-    odds_away: float = typer.Option(4.50, help="Deplasman oranı"),
-    stake: float = typer.Option(100.0, help="Bahis miktarı"),
+    prob_home: float = typer.Argument(0.55, help="Ev sahibi kazanma olasÄ±lÄ±ÄŸÄ±"),
+    prob_draw: float = typer.Argument(0.25, help="Beraberlik olasÄ±lÄ±ÄŸÄ±"),
+    prob_away: float = typer.Argument(0.20, help="Deplasman kazanma olasÄ±lÄ±ÄŸÄ±"),
+    odds_home: float = typer.Option(1.80, help="Ev sahibi oranÄ±"),
+    odds_draw: float = typer.Option(3.50, help="Beraberlik oranÄ±"),
+    odds_away: float = typer.Option(4.50, help="Deplasman oranÄ±"),
+    stake: float = typer.Option(100.0, help="Bahis miktarÄ±"),
 ):
-    """Nash Dengesi – oyun teorisi ile optimal strateji."""
+    """Nash Dengesi â€“ oyun teorisi ile optimal strateji."""
     from src.quant.nash_solver import NashGameSolver
     from rich.panel import Panel
     from rich.table import Table
 
-    console.rule("[bold cyan]NASH DENGESİ – OYUN TEORİSİ[/]")
+    console.rule("[bold cyan]NASH DENGESÄ° â€“ OYUN TEORÄ°SÄ°[/]")
 
     solver = NashGameSolver()
     analysis = solver.analyze_match(
@@ -3949,23 +4416,23 @@ def nash(
     # Strateji tablosu
     tbl = Table(title="Bot Stratejisi (Nash Dengesi)", show_lines=True)
     tbl.add_column("Aksiyon", style="cyan")
-    tbl.add_column("Ağırlık", justify="right")
+    tbl.add_column("AÄŸÄ±rlÄ±k", justify="right")
     if analysis.equilibrium.bettor_strategy is not None:
         for name, w in zip(solver.ACTION_NAMES, analysis.equilibrium.bettor_strategy):
             style = "bold green" if w > 0.3 else "dim"
             tbl.add_row(name, f"{w:.1%}", style=style)
     console.print(tbl)
 
-    # Sonuç paneli
+    # SonuÃ§ paneli
     margin_str = f"{analysis.bookmaker_margin:.2%}" if analysis.bookmaker_margin else "?"
     console.print(Panel(
         f"Optimal Aksiyon: {analysis.optimal_action.upper()}\n"
-        f"Nash Beklenen Değer: {analysis.expected_value:+.1f}\n"
+        f"Nash Beklenen DeÄŸer: {analysis.expected_value:+.1f}\n"
         f"Risk-Adjusted EV: {analysis.risk_adjusted_ev:+.1f}\n"
-        f"Sömürülebilirlik: {analysis.equilibrium.exploitability:.0%}\n"
-        f"Büro Marjı: {margin_str}\n"
+        f"SÃ¶mÃ¼rÃ¼lebilirlik: {analysis.equilibrium.exploitability:.0%}\n"
+        f"BÃ¼ro MarjÄ±: {margin_str}\n"
         f"Metod: {analysis.equilibrium.method}\n\n"
-        f"💡 {analysis.recommendation}",
+        f"ğŸ’¡ {analysis.recommendation}",
         title="Oyun Teorisi Sonucu",
         border_style="green" if analysis.expected_value > 0 else "red",
     ))
@@ -3973,18 +4440,18 @@ def nash(
 
 @app.command()
 def entropy(
-    prob_home: float = typer.Argument(0.55, help="Ev sahibi olasılığı"),
-    prob_draw: float = typer.Argument(0.25, help="Beraberlik olasılığı"),
-    prob_away: float = typer.Argument(0.20, help="Deplasman olasılığı"),
-    odds_home: float = typer.Option(1.80, help="Ev sahibi oranı"),
-    odds_draw: float = typer.Option(3.50, help="Beraberlik oranı"),
-    odds_away: float = typer.Option(4.50, help="Deplasman oranı"),
+    prob_home: float = typer.Argument(0.55, help="Ev sahibi olasÄ±lÄ±ÄŸÄ±"),
+    prob_draw: float = typer.Argument(0.25, help="Beraberlik olasÄ±lÄ±ÄŸÄ±"),
+    prob_away: float = typer.Argument(0.20, help="Deplasman olasÄ±lÄ±ÄŸÄ±"),
+    odds_home: float = typer.Option(1.80, help="Ev sahibi oranÄ±"),
+    odds_draw: float = typer.Option(3.50, help="Beraberlik oranÄ±"),
+    odds_away: float = typer.Option(4.50, help="Deplasman oranÄ±"),
 ):
-    """Shannon Entropy – bilgi fiziği ile belirsizlik analizi."""
+    """Shannon Entropy â€“ bilgi fiziÄŸi ile belirsizlik analizi."""
     from src.quant.entropy_meter import EntropyMeter
     from rich.panel import Panel
 
-    console.rule("[bold cyan]SHANNON ENTROPİSİ – BİLGİ FİZİĞİ[/]")
+    console.rule("[bold cyan]SHANNON ENTROPÄ°SÄ° â€“ BÄ°LGÄ° FÄ°ZÄ°ÄÄ°[/]")
 
     meter = EntropyMeter()
     report = meter.analyze_match(
@@ -3996,28 +4463,28 @@ def entropy(
     colors = {"stable": "green", "uncertain": "yellow", "volatile": "bright_yellow", "chaotic": "red"}
     color = colors.get(report.chaos_level, "white")
 
-    max_entropy = 1.585  # log2(3) – 3 eşit olasılıklı sonuç
+    max_entropy = 1.585  # log2(3) â€“ 3 eÅŸit olasÄ±lÄ±klÄ± sonuÃ§
     bar_len = 30
     fill = int(bar_len * min(report.match_entropy / max_entropy, 1.0))
-    bar = "█" * fill + "░" * (bar_len - fill)
+    bar = "â–ˆ" * fill + "â–‘" * (bar_len - fill)
 
     console.print(Panel(
         f"Shannon Entropy: {report.match_entropy:.4f} bit\n"
         f"Max Entropy (1X2): {max_entropy:.3f} bit\n"
         f"Doluluk: [{bar}] {report.match_entropy / max_entropy:.0%}\n\n"
-        f"KL-Divergence (Model↔Piyasa): {report.kl_divergence:.4f}\n"
+        f"KL-Divergence (Modelâ†”Piyasa): {report.kl_divergence:.4f}\n"
         f"Cross Entropy: {report.cross_entropy:.4f}\n\n"
         f"Kaos Seviyesi: {report.chaos_level.upper()}\n"
-        f"Kill Switch: {'EVET' if report.kill_switch else 'Hayır'}\n\n"
-        f"💡 {report.recommendation}",
-        title="Bilgi Fiziği Raporu",
+        f"Kill Switch: {'EVET' if report.kill_switch else 'HayÄ±r'}\n\n"
+        f"ğŸ’¡ {report.recommendation}",
+        title="Bilgi FiziÄŸi Raporu",
         border_style=color,
     ))
 
 
 @app.command()
 def jit_bench():
-    """JIT Benchmark – hızlandırma testi."""
+    """JIT Benchmark â€“ hÄ±zlandÄ±rma testi."""
     from src.core.jit_accelerator import JITAccelerator
     from rich.table import Table
     import time as _time
@@ -4063,77 +4530,77 @@ def jit_bench():
     start = _time.perf_counter_ns()
     acc.distances(query, matrix)
     elapsed = (_time.perf_counter_ns() - start) / 1_000_000
-    results.append(("Euclidean 10K×32", f"{elapsed:.1f}ms"))
+    results.append(("Euclidean 10KÃ—32", f"{elapsed:.1f}ms"))
 
-    tbl = Table(title="JIT Benchmark Sonuçları", show_lines=True)
+    tbl = Table(title="JIT Benchmark SonuÃ§larÄ±", show_lines=True)
     tbl.add_column("Test", style="cyan")
-    tbl.add_column("Süre", justify="right", style="green")
+    tbl.add_column("SÃ¼re", justify="right", style="green")
     for name, dur in results:
         tbl.add_row(name, dur)
     console.print(tbl)
 
-    console.print(f"\n[bold]Numba JIT: {'Aktif ✓' if acc.is_jit_available else 'Devre Dışı ✗'}[/]")
+    console.print(f"\n[bold]Numba JIT: {'Aktif âœ“' if acc.is_jit_available else 'Devre DÄ±ÅŸÄ± âœ—'}[/]")
 
 
 @app.command()
 def psycho(
-    period: str = typer.Option("weekly", help="Dönem: weekly | monthly"),
+    period: str = typer.Option("weekly", help="DÃ¶nem: weekly | monthly"),
 ):
-    """Psikoloji Profili – yatırımcı davranış analizi."""
+    """Psikoloji Profili â€“ yatÄ±rÄ±mcÄ± davranÄ±ÅŸ analizi."""
     from src.utils.psycho_profiler import PsychoProfiler
     from rich.panel import Panel
 
-    console.rule("[bold cyan]YATIRIMCI PSİKOLOJİSİ PROFİLİ[/]")
+    console.rule("[bold cyan]YATIRIMCI PSÄ°KOLOJÄ°SÄ° PROFÄ°LÄ°[/]")
 
     profiler = PsychoProfiler()
     report = profiler.weekly_report() if period == "weekly" else profiler.monthly_report()
 
     if report.total_decisions == 0:
-        console.print("[yellow]Henüz karar verisi yok. Bot önerilere tepki verdikçe profil oluşacak.[/]")
+        console.print("[yellow]HenÃ¼z karar verisi yok. Bot Ã¶nerilere tepki verdikÃ§e profil oluÅŸacak.[/]")
         return
 
     console.print(Panel(
         f"Toplam Karar: {report.total_decisions}\n"
         f"  Onaylanan: {report.approved}\n"
         f"  Reddedilen: {report.rejected}\n\n"
-        f"{'─' * 40}\n"
-        f"Omission (kaçırılan): {report.omission_errors} maç → {report.omission_cost:,.0f} TL\n"
-        f"Commission (gereksiz): {report.commission_errors} maç → {report.commission_cost:,.0f} TL\n\n"
-        f"{'─' * 40}\n"
-        f"Risk İştahı: {report.risk_aversion_score:.0%}\n"
-        f"Kayıp Korkusu: {report.loss_aversion:.0%}\n"
-        f"Aşırı Güven: {report.overconfidence:.0%}\n"
+        f"{'â”€' * 40}\n"
+        f"Omission (kaÃ§Ä±rÄ±lan): {report.omission_errors} maÃ§ â†’ {report.omission_cost:,.0f} TL\n"
+        f"Commission (gereksiz): {report.commission_errors} maÃ§ â†’ {report.commission_cost:,.0f} TL\n\n"
+        f"{'â”€' * 40}\n"
+        f"Risk Ä°ÅŸtahÄ±: {report.risk_aversion_score:.0%}\n"
+        f"KayÄ±p Korkusu: {report.loss_aversion:.0%}\n"
+        f"AÅŸÄ±rÄ± GÃ¼ven: {report.overconfidence:.0%}\n"
         f"Recency Bias: {report.recency_bias:.0%}\n"
         f"Duygusal Karar: {report.emotional_decision_rate:.0%}\n\n"
-        f"{'─' * 40}\n"
+        f"{'â”€' * 40}\n"
         f"Bot ROI: {report.bot_alone_roi:.1%}\n"
-        f"İnsan+Bot ROI: {report.human_filter_roi:.1%}\n"
+        f"Ä°nsan+Bot ROI: {report.human_filter_roi:.1%}\n"
         f"Optimal Skor: {report.optimal_score:.0%}\n\n"
-        f"💡 {report.recommendation}",
-        title=f"{'Haftalık' if period == 'weekly' else 'Aylık'} Psikoloji Raporu",
+        f"ğŸ’¡ {report.recommendation}",
+        title=f"{'HaftalÄ±k' if period == 'weekly' else 'AylÄ±k'} Psikoloji Raporu",
         border_style="magenta",
     ))
 
 
-# ── Level 14: Digital Twin & Extreme Value Theory ──
+# â”€â”€ Level 14: Digital Twin & Extreme Value Theory â”€â”€
 
 
 @app.command()
 def twin(
-    home_team: str = typer.Argument("Galatasaray", help="Ev sahibi takım"),
-    away_team: str = typer.Argument("Fenerbahçe", help="Deplasman takımı"),
+    home_team: str = typer.Argument("Galatasaray", help="Ev sahibi takÄ±m"),
+    away_team: str = typer.Argument("FenerbahÃ§e", help="Deplasman takÄ±mÄ±"),
     home_quality: float = typer.Option(78, help="Ev sahibi kalite (0-100)"),
     away_quality: float = typer.Option(76, help="Deplasman kalite (0-100)"),
-    n_sims: int = typer.Option(1000, help="Simülasyon sayısı"),
+    n_sims: int = typer.Option(1000, help="SimÃ¼lasyon sayÄ±sÄ±"),
     formation: str = typer.Option("442", help="Formasyon"),
 ):
-    """Digital Twin – maçın sayısal ikizi (ABM simülasyon)."""
+    """Digital Twin â€“ maÃ§Ä±n sayÄ±sal ikizi (ABM simÃ¼lasyon)."""
     from src.quant.digital_twin_sim import DigitalTwinSimulator
     from rich.panel import Panel
     from rich.table import Table
 
-    console.rule(f"[bold cyan]SAYISAL İKİZ – {home_team} vs {away_team}[/]")
-    console.print(f"[dim]{n_sims} simülasyon başlatılıyor…[/]")
+    console.rule(f"[bold cyan]SAYISAL Ä°KÄ°Z â€“ {home_team} vs {away_team}[/]")
+    console.print(f"[dim]{n_sims} simÃ¼lasyon baÅŸlatÄ±lÄ±yorâ€¦[/]")
 
     sim = DigitalTwinSimulator()
     home_squad = sim.generate_team(home_team, quality=home_quality, formation=formation)
@@ -4143,52 +4610,52 @@ def twin(
         f"{home_team}_vs_{away_team}", home_squad, away_squad, n_sims=n_sims,
     )
 
-    # Skor dağılımı
-    tbl = Table(title="En Sık Skorlar", show_lines=True)
+    # Skor daÄŸÄ±lÄ±mÄ±
+    tbl = Table(title="En SÄ±k Skorlar", show_lines=True)
     tbl.add_column("Skor", style="cyan")
-    tbl.add_column("Olasılık", justify="right", style="green")
+    tbl.add_column("OlasÄ±lÄ±k", justify="right", style="green")
     for score, prob in sorted(report.score_distribution.items(),
                                key=lambda x: -x[1])[:8]:
         tbl.add_row(score, f"{prob:.1%}")
     console.print(tbl)
 
     console.print(Panel(
-        f"Simülasyon: {report.n_simulations} maç ({report.method})\n"
+        f"SimÃ¼lasyon: {report.n_simulations} maÃ§ ({report.method})\n"
         f"Formasyon: {formation}\n\n"
-        f"{'─' * 40}\n"
-        f"Ev Sahibi Kazanır: {report.prob_home:.1%}\n"
+        f"{'â”€' * 40}\n"
+        f"Ev Sahibi KazanÄ±r: {report.prob_home:.1%}\n"
         f"Beraberlik: {report.prob_draw:.1%}\n"
-        f"Deplasman Kazanır: {report.prob_away:.1%}\n\n"
-        f"{'─' * 40}\n"
+        f"Deplasman KazanÄ±r: {report.prob_away:.1%}\n\n"
+        f"{'â”€' * 40}\n"
         f"Ort. Gol (Ev): {report.avg_home_goals:.2f}\n"
         f"Ort. Gol (Dep): {report.avg_away_goals:.2f}\n"
         f"Ort. Toplam Gol: {report.avg_total_goals:.2f}\n"
-        f"Üst 2.5: {report.prob_over25:.1%}\n"
+        f"Ãœst 2.5: {report.prob_over25:.1%}\n"
         f"KG: {report.prob_btts:.1%}\n\n"
-        f"{'─' * 40}\n"
+        f"{'â”€' * 40}\n"
         f"xG (Ev): {report.avg_home_xg:.2f}\n"
         f"xG (Dep): {report.avg_away_xg:.2f}\n\n"
         f"{report.fatigue_impact or 'Yorgunluk verisi yok'}",
-        title=f"Sayısal İkiz Raporu – {home_team} vs {away_team}",
+        title=f"SayÄ±sal Ä°kiz Raporu â€“ {home_team} vs {away_team}",
         border_style="blue",
     ))
 
 
 @app.command()
 def evt(
-    n_samples: int = typer.Option(500, help="Geçmiş gözlem sayısı (demo)"),
-    stake: float = typer.Option(100, help="Bahis miktarı"),
+    n_samples: int = typer.Option(500, help="GeÃ§miÅŸ gÃ¶zlem sayÄ±sÄ± (demo)"),
+    stake: float = typer.Option(100, help="Bahis miktarÄ±"),
 ):
-    """EVT – Extreme Value Theory risk analizi."""
+    """EVT â€“ Extreme Value Theory risk analizi."""
     from src.quant.evt_risk_manager import EVTRiskManager
     from rich.panel import Panel
     import numpy as np
 
-    console.rule("[bold cyan]EXTREME VALUE THEORY – KUYRUK RİSKİ[/]")
+    console.rule("[bold cyan]EXTREME VALUE THEORY â€“ KUYRUK RÄ°SKÄ°[/]")
 
     mgr = EVTRiskManager()
 
-    # Demo: rastgele kayıp dağılımı (kalın kuyruklu)
+    # Demo: rastgele kayÄ±p daÄŸÄ±lÄ±mÄ± (kalÄ±n kuyruklu)
     np.random.seed(42)
     normal_losses = np.random.exponential(2.0, n_samples)
     # Fat tail ekle
@@ -4212,24 +4679,24 @@ def evt(
 
     console.print(Panel(
         f"GPD Parametreleri:\n"
-        f"  ξ (shape): {report.shape_xi:.4f}\n"
-        f"  σ (scale): {report.scale_sigma:.4f}\n"
-        f"  Eşik (POT): {report.threshold:.2f}\n"
-        f"  Aşım sayısı: {report.n_exceedances}\n"
+        f"  Î¾ (shape): {report.shape_xi:.4f}\n"
+        f"  Ïƒ (scale): {report.scale_sigma:.4f}\n"
+        f"  EÅŸik (POT): {report.threshold:.2f}\n"
+        f"  AÅŸÄ±m sayÄ±sÄ±: {report.n_exceedances}\n"
         f"  Metod: {report.method}\n\n"
-        f"{'─' * 40}\n"
+        f"{'â”€' * 40}\n"
         f"VaR (%95): {report.var_95:.1f} TL\n"
         f"VaR (%99): {report.var_99:.1f} TL\n"
         f"CVaR (%95): {report.cvar_95:.1f} TL\n"
         f"CVaR (%99): {report.cvar_99:.1f} TL\n\n"
-        f"{'─' * 40}\n"
-        f"Return Level (10 yıl): {report.return_level_10:.1f}\n"
-        f"Return Level (50 yıl): {report.return_level_50:.1f}\n"
-        f"Siyah Kuğu Olasılığı: {report.black_swan_prob:.2%}\n\n"
-        f"{'─' * 40}\n"
+        f"{'â”€' * 40}\n"
+        f"Return Level (10 yÄ±l): {report.return_level_10:.1f}\n"
+        f"Return Level (50 yÄ±l): {report.return_level_50:.1f}\n"
+        f"Siyah KuÄŸu OlasÄ±lÄ±ÄŸÄ±: {report.black_swan_prob:.2%}\n\n"
+        f"{'â”€' * 40}\n"
         f"Kuyruk: {report.tail_severity.upper()}\n"
-        f"Kelly Çarpanı: {report.kelly_adjustment:.0%}\n\n"
-        f"💡 {report.recommendation}",
+        f"Kelly Ã‡arpanÄ±: {report.kelly_adjustment:.0%}\n\n"
+        f"ğŸ’¡ {report.recommendation}",
         title="EVT Risk Raporu",
         border_style=color,
     ))
@@ -4237,31 +4704,31 @@ def evt(
 
 @app.command()
 def ask(
-    question: str = typer.Argument(..., help="Doğal dilde soru (Türkçe)"),
+    question: str = typer.Argument(..., help="DoÄŸal dilde soru (TÃ¼rkÃ§e)"),
 ):
-    """Text-to-SQL – doğal dilde veritabanı sorgulama."""
+    """Text-to-SQL â€“ doÄŸal dilde veritabanÄ± sorgulama."""
     from src.utils.query_assistant import QueryAssistant
     from rich.panel import Panel
 
-    console.rule("[bold cyan]DOĞAL DİL SORGU[/]")
+    console.rule("[bold cyan]DOÄAL DÄ°L SORGU[/]")
 
     assistant = QueryAssistant()
     result = assistant.ask(question)
 
     if result.error:
         console.print(Panel(
-            f"Soru: {result.question}\n\n❌ Hata: {result.error}",
-            title="Sorgu Hatası",
+            f"Soru: {result.question}\n\nâŒ Hata: {result.error}",
+            title="Sorgu HatasÄ±",
             border_style="red",
         ))
     else:
         console.print(Panel(
             f"Soru: {result.question}\n\n"
             f"SQL:\n{result.sql}\n\n"
-            f"{'─' * 40}\n"
-            f"Sonuç:\n{result.formatted_answer}\n\n"
-            f"⏱ {result.execution_time_ms:.0f}ms ({result.method}, "
-            f"güven: {result.confidence:.0%})",
+            f"{'â”€' * 40}\n"
+            f"SonuÃ§:\n{result.formatted_answer}\n\n"
+            f"â± {result.execution_time_ms:.0f}ms ({result.method}, "
+            f"gÃ¼ven: {result.confidence:.0%})",
             title="Sorgu Sonucu",
             border_style="green",
         ))
@@ -4270,15 +4737,15 @@ def ask(
 @app.command()
 def what_if(
     home_team: str = typer.Argument("Galatasaray", help="Ev sahibi"),
-    away_team: str = typer.Argument("Fenerbahçe", help="Deplasman"),
+    away_team: str = typer.Argument("FenerbahÃ§e", help="Deplasman"),
     scenario: str = typer.Option("key_player_injured", help="Senaryo: key_player_injured | fatigue_boost | red_card_60"),
-    n_sims: int = typer.Option(500, help="Simülasyon sayısı"),
+    n_sims: int = typer.Option(500, help="SimÃ¼lasyon sayÄ±sÄ±"),
 ):
-    """What-If – senaryo simülasyonu (Digital Twin)."""
+    """What-If â€“ senaryo simÃ¼lasyonu (Digital Twin)."""
     from src.quant.digital_twin_sim import DigitalTwinSimulator
     from rich.panel import Panel
 
-    console.rule(f"[bold cyan]WHAT-IF – {scenario.upper()}[/]")
+    console.rule(f"[bold cyan]WHAT-IF â€“ {scenario.upper()}[/]")
 
     sim = DigitalTwinSimulator()
     home_squad = sim.generate_team(home_team, quality=78)
@@ -4297,37 +4764,37 @@ def what_if(
     console.print(Panel(
         f"Senaryo: {result['scenario']}\n"
         f"Hedef: {result['target_player'] or 'Otomatik'}\n\n"
-        f"{'─' * 40}\n"
+        f"{'â”€' * 40}\n"
         f"{'':>15} {'NORMAL':>10} {'SENARYO':>10} {'FARK':>10}\n"
         f"{'Ev Sahibi':>15} {normal['prob_home']:>9.1%} {modified['prob_home']:>9.1%} {impact['prob_home_change']:>+9.1%}\n"
         f"{'Deplasman':>15} {normal['prob_away']:>9.1%} {modified['prob_away']:>9.1%} {impact['prob_away_change']:>+9.1%}\n"
         f"{'Toplam Gol':>15} {normal['avg_goals']:>9.2f} {modified['avg_goals']:>9.2f} {impact['goals_change']:>+9.2f}",
-        title=f"What-If Raporu – {home_team} vs {away_team}",
+        title=f"What-If Raporu â€“ {home_team} vs {away_team}",
         border_style="cyan",
     ))
 
 
-# ── Level 15: Distributed Computing & Fractal Geometry ──
+# â”€â”€ Level 15: Distributed Computing & Fractal Geometry â”€â”€
 
 
 @app.command()
 def fractal_hurst(
-    n_points: int = typer.Option(200, help="Veri noktası sayısı (demo)"),
+    n_points: int = typer.Option(200, help="Veri noktasÄ± sayÄ±sÄ± (demo)"),
     regime: str = typer.Option("trending", help="Demo rejim: trending | mean_reverting | random"),
 ):
-    """Fractal – Hurst Exponent analizi."""
+    """Fractal â€“ Hurst Exponent analizi."""
     from src.quant.fractal_analyzer import FractalAnalyzer
     from rich.panel import Panel
     import numpy as np
 
-    console.rule("[bold cyan]FRAKTAL ANALİZ – HURST EXPONENT[/]")
+    console.rule("[bold cyan]FRAKTAL ANALÄ°Z â€“ HURST EXPONENT[/]")
 
     np.random.seed(42)
     if regime == "trending":
-        # Trending: H > 0.5 (kalıcı seri)
+        # Trending: H > 0.5 (kalÄ±cÄ± seri)
         data = np.cumsum(np.random.randn(n_points) * 0.3 + 0.05)
     elif regime == "mean_reverting":
-        # Mean reverting: H < 0.5 (ortalamaya dönen)
+        # Mean reverting: H < 0.5 (ortalamaya dÃ¶nen)
         data = np.zeros(n_points)
         for i in range(1, n_points):
             data[i] = data[i - 1] * 0.3 + np.random.randn() * 0.5
@@ -4340,7 +4807,7 @@ def fractal_hurst(
 
     bar_len = 30
     fill = int(bar_len * h.hurst)
-    bar = "█" * fill + "░" * (bar_len - fill)
+    bar = "â–ˆ" * fill + "â–‘" * (bar_len - fill)
 
     colors = {
         "trending": "green", "weak_trending": "green",
@@ -4352,22 +4819,22 @@ def fractal_hurst(
     console.print(Panel(
         f"Veri: {n_points} nokta ({regime} demo)\n"
         f"Metod: {h.method}\n\n"
-        f"{'─' * 40}\n"
+        f"{'â”€' * 40}\n"
         f"Hurst Exponent: {h.hurst:.4f}\n"
         f"[{bar}]\n"
-        f"0.0 ←── Mean Revert ──── Random ──── Trending ──→ 1.0\n\n"
-        f"{'─' * 40}\n"
+        f"0.0 â†â”€â”€ Mean Revert â”€â”€â”€â”€ Random â”€â”€â”€â”€ Trending â”€â”€â†’ 1.0\n\n"
+        f"{'â”€' * 40}\n"
         f"Rejim: {h.regime.upper()}\n"
         f"Fraktal Boyut: {h.fractal_dimension:.4f}\n"
-        f"Kalıp Gücü: {h.pattern_strength:.4f}\n"
-        f"Kelly Çarpanı: {h.kelly_multiplier:.2f}x\n"
-        f"Güvenilirlik: {h.confidence:.2f}\n\n"
-        f"DFA α: {report.dfa_alpha:.4f}\n"
+        f"KalÄ±p GÃ¼cÃ¼: {h.pattern_strength:.4f}\n"
+        f"Kelly Ã‡arpanÄ±: {h.kelly_multiplier:.2f}x\n"
+        f"GÃ¼venilirlik: {h.confidence:.2f}\n\n"
+        f"DFA Î±: {report.dfa_alpha:.4f}\n"
         f"AC(1): {report.autocorrelation_lag1:.4f}\n"
         f"AC(5): {report.autocorrelation_lag5:.4f}\n"
-        f"Kararlı: {'Evet' if report.is_stable else 'Hayır'}\n\n"
-        f"{'─' * 40}\n"
-        f"💡 {h.recommended_strategy}",
+        f"KararlÄ±: {'Evet' if report.is_stable else 'HayÄ±r'}\n\n"
+        f"{'â”€' * 40}\n"
+        f"ğŸ’¡ {h.recommended_strategy}",
         title="Hurst Exponent Raporu",
         border_style=color,
     ))
@@ -4375,16 +4842,16 @@ def fractal_hurst(
 
 @app.command()
 def bsts(
-    n_points: int = typer.Option(60, help="Veri noktası sayısı"),
-    break_at: int = typer.Option(30, help="Kırılma noktası indeksi"),
-    effect_size: float = typer.Option(1.5, help="Müdahale etki büyüklüğü"),
+    n_points: int = typer.Option(60, help="Veri noktasÄ± sayÄ±sÄ±"),
+    break_at: int = typer.Option(30, help="KÄ±rÄ±lma noktasÄ± indeksi"),
+    effect_size: float = typer.Option(1.5, help="MÃ¼dahale etki bÃ¼yÃ¼klÃ¼ÄŸÃ¼"),
 ):
-    """BSTS – Bayesian Structural Time Series müdahale analizi."""
+    """BSTS â€“ Bayesian Structural Time Series mÃ¼dahale analizi."""
     from src.quant.bsts_impact import BSTSImpactAnalyzer
     from rich.panel import Panel
     import numpy as np
 
-    console.rule("[bold cyan]BSTS MÜDAHALEAnalizi[/]")
+    console.rule("[bold cyan]BSTS MÃœDAHALEAnalizi[/]")
 
     np.random.seed(42)
     pre = np.random.randn(break_at) * 0.5 + 1.5
@@ -4395,53 +4862,53 @@ def bsts(
     effect = analyzer.analyze_intervention(
         data=data,
         intervention_idx=break_at,
-        intervention_name="Hoca Değişimi (Demo)",
+        intervention_name="Hoca DeÄŸiÅŸimi (Demo)",
         metric="xG",
     )
 
     color = "green" if effect.is_significant else "yellow"
 
     console.print(Panel(
-        f"Müdahale: {effect.intervention}\n"
+        f"MÃ¼dahale: {effect.intervention}\n"
         f"Metrik: {effect.target_metric}\n"
         f"Metod: {effect.method}\n\n"
-        f"{'─' * 40}\n"
-        f"Önceki Ortalama: {effect.predicted_without:.3f}\n"
+        f"{'â”€' * 40}\n"
+        f"Ã–nceki Ortalama: {effect.predicted_without:.3f}\n"
         f"Sonraki Ortalama: {effect.actual:.3f}\n"
         f"Etki: {effect.avg_effect:+.3f} ({effect.relative_effect_pct:+.1f}%)\n"
-        f"Kümülatif Etki: {effect.cumulative_effect:+.3f}\n\n"
-        f"{'─' * 40}\n"
-        f"Anlamlılık: {'EVET' if effect.is_significant else 'HAYIR'} "
+        f"KÃ¼mÃ¼latif Etki: {effect.cumulative_effect:+.3f}\n\n"
+        f"{'â”€' * 40}\n"
+        f"AnlamlÄ±lÄ±k: {'EVET' if effect.is_significant else 'HAYIR'} "
         f"(p={effect.posterior_prob:.4f})\n"
-        f"Kalıcılık: {'KALICI' if effect.is_permanent else 'GEÇİCİ'}\n"
-        f"Yarı Ömür: {effect.half_life:.0f} maç\n\n"
-        f"💡 {effect.recommendation}",
-        title="Müdahale Etki Raporu",
+        f"KalÄ±cÄ±lÄ±k: {'KALICI' if effect.is_permanent else 'GEÃ‡Ä°CÄ°'}\n"
+        f"YarÄ± Ã–mÃ¼r: {effect.half_life:.0f} maÃ§\n\n"
+        f"ğŸ’¡ {effect.recommendation}",
+        title="MÃ¼dahale Etki Raporu",
         border_style=color,
     ))
 
-    # Kırılma tespiti
+    # KÄ±rÄ±lma tespiti
     breaks = analyzer.detect_breaks(data)
     if breaks:
         for bp in breaks:
             console.print(Panel(
-                f"Kırılma Noktası: {bp.index}\n"
-                f"Önceki: {bp.pre_mean:.3f} → Sonraki: {bp.post_mean:.3f}\n"
-                f"Değişim: {bp.change_pct:+.1f}%\n"
-                f"Anlamlılık: {'EVET' if bp.is_significant else 'HAYIR'} "
+                f"KÄ±rÄ±lma NoktasÄ±: {bp.index}\n"
+                f"Ã–nceki: {bp.pre_mean:.3f} â†’ Sonraki: {bp.post_mean:.3f}\n"
+                f"DeÄŸiÅŸim: {bp.change_pct:+.1f}%\n"
+                f"AnlamlÄ±lÄ±k: {'EVET' if bp.is_significant else 'HAYIR'} "
                 f"(p={bp.p_value:.4f})",
-                title="Yapısal Kırılma",
+                title="YapÄ±sal KÄ±rÄ±lma",
                 border_style="red" if bp.is_significant else "dim",
             ))
 
 
 @app.command()
 def cluster_status():
-    """Dağıtık küme durumu (Ray / ProcessPool)."""
+    """DaÄŸÄ±tÄ±k kÃ¼me durumu (Ray / ProcessPool)."""
     from src.core.distributed_core import DistributedCore
     from rich.panel import Panel
 
-    console.rule("[bold cyan]DAĞITIK KÜME DURUMU[/]")
+    console.rule("[bold cyan]DAÄITIK KÃœME DURUMU[/]")
 
     dist = DistributedCore()
     dist.start()
@@ -4456,26 +4923,26 @@ def cluster_status():
         f"GPU: {st.num_gpus}\n"
         f"Workers: {st.num_workers}\n"
         f"Object Store: {st.object_store_mb:.0f} MB\n\n"
-        f"Tamamlanan Görev: {st.tasks_completed}\n"
-        f"Havadaki Görev: {st.tasks_in_flight}\n"
+        f"Tamamlanan GÃ¶rev: {st.tasks_completed}\n"
+        f"Havadaki GÃ¶rev: {st.tasks_in_flight}\n"
         f"Uptime: {st.uptime_seconds:.0f}s",
-        title="Küme Durumu",
+        title="KÃ¼me Durumu",
         border_style=color,
     ))
 
     dist.shutdown()
 
 
-# ═══════════════════════════════════════════════
-#  Level 16 CLI – Transfer Learning, Transport Metric, Mimic
-# ═══════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+#  Level 16 CLI â€“ Transfer Learning, Transport Metric, Mimic
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 @app.command()
 def transfer(
-    source: str = typer.Option("europe_base", help="Kaynak model adı"),
+    source: str = typer.Option("europe_base", help="Kaynak model adÄ±"),
     target_league: str = typer.Option("super_lig", help="Hedef lig"),
-    epochs: int = typer.Option(20, help="Fine-tune epoch sayısı"),
+    epochs: int = typer.Option(20, help="Fine-tune epoch sayÄ±sÄ±"),
 ):
-    """Transfer Learning – lig arası bilgi transferi."""
+    """Transfer Learning â€“ lig arasÄ± bilgi transferi."""
     from src.quant.transfer_learner import TransferLearner
     from rich.panel import Panel
 
@@ -4483,11 +4950,11 @@ def transfer(
     loaded = learner.load(source)
 
     if loaded:
-        console.print(f"[green]✓ Model yüklendi:[/] {source}")
+        console.print(f"[green]âœ“ Model yÃ¼klendi:[/] {source}")
     else:
-        console.print(f"[yellow]Kaynak model bulunamadı: {source} – sıfırdan başlanacak.[/]")
+        console.print(f"[yellow]Kaynak model bulunamadÄ±: {source} â€“ sÄ±fÄ±rdan baÅŸlanacak.[/]")
 
-    # Demo: rastgele veri ile fine-tune (gerçek kullanımda DB'den gelir)
+    # Demo: rastgele veri ile fine-tune (gerÃ§ek kullanÄ±mda DB'den gelir)
     import numpy as np
     X_demo = np.random.randn(200, 20).astype(np.float32)
     y_demo = np.random.randint(0, 3, size=200)
@@ -4500,15 +4967,15 @@ def transfer(
     console.print(Panel(
         f"Source: {report.source_domain or source}\n"
         f"Target: {report.target_domain}\n"
-        f"Örnekler: {report.target_samples}\n"
+        f"Ã–rnekler: {report.target_samples}\n"
         f"Metod: {report.method}\n\n"
-        f"{'─' * 40}\n"
-        f"Önceki Doğruluk: {report.target_accuracy_before:.1%}\n"
-        f"Sonraki Doğruluk: {report.target_accuracy_after:.1%}\n"
-        f"İyileşme: {report.improvement_pct:+.1f}%\n"
-        f"Dondurulmuş Katman: {report.frozen_layers}\n"
-        f"Eğitilebilir Param: {report.trainable_params:,}\n\n"
-        f"💡 {report.recommendation}",
+        f"{'â”€' * 40}\n"
+        f"Ã–nceki DoÄŸruluk: {report.target_accuracy_before:.1%}\n"
+        f"Sonraki DoÄŸruluk: {report.target_accuracy_after:.1%}\n"
+        f"Ä°yileÅŸme: {report.improvement_pct:+.1f}%\n"
+        f"DondurulmuÅŸ Katman: {report.frozen_layers}\n"
+        f"EÄŸitilebilir Param: {report.trainable_params:,}\n\n"
+        f"ğŸ’¡ {report.recommendation}",
         title="Transfer Learning Raporu",
         border_style=color,
     ))
@@ -4516,22 +4983,22 @@ def transfer(
 
 @app.command()
 def drift(
-    n_ref: int = typer.Option(500, help="Referans örnek sayısı"),
-    n_live: int = typer.Option(100, help="Canlı örnek sayısı"),
+    n_ref: int = typer.Option(500, help="Referans Ã¶rnek sayÄ±sÄ±"),
+    n_live: int = typer.Option(100, help="CanlÄ± Ã¶rnek sayÄ±sÄ±"),
     inject_drift: bool = typer.Option(False, help="Yapay drift enjekte et"),
 ):
-    """Optimal Transport – model drift tespiti."""
+    """Optimal Transport â€“ model drift tespiti."""
     from src.quant.transport_metric import TransportMetric
     from rich.panel import Panel
     import numpy as np
 
     tm = TransportMetric()
 
-    # Referans (eğitim) dağılımı
+    # Referans (eÄŸitim) daÄŸÄ±lÄ±mÄ±
     X_ref = np.random.randn(n_ref, 10)
     tm.set_reference(X_ref)
 
-    # Canlı dağılım
+    # CanlÄ± daÄŸÄ±lÄ±m
     if inject_drift:
         X_live = np.random.randn(n_live, 10) + 0.8  # Mean shift
         console.print("[yellow]Yapay drift enjekte edildi (mean shift +0.8)[/]")
@@ -4552,13 +5019,13 @@ def drift(
         f"Wasserstein-ND: {report.wasserstein_2:.6f}\n"
         f"Sinkhorn: {report.sinkhorn:.6f}\n"
         f"MMD: {report.max_mean_discrepancy:.6f}\n\n"
-        f"{'─' * 40}\n"
+        f"{'â”€' * 40}\n"
         f"Drift Seviyesi: {report.drift_severity.upper()}\n"
-        f"Model Güvenilir: {'EVET' if report.model_reliable else 'HAYIR'}\n"
+        f"Model GÃ¼venilir: {'EVET' if report.model_reliable else 'HAYIR'}\n"
         f"Kill Betting: {'EVET' if report.kill_betting else 'HAYIR'}\n"
-        f"Kayma Boyutları: {report.drift_dimensions[:5]}\n\n"
-        f"💡 {report.recommendation}",
-        title="Optimal Transport – Drift Raporu",
+        f"Kayma BoyutlarÄ±: {report.drift_dimensions[:5]}\n\n"
+        f"ğŸ’¡ {report.recommendation}",
+        title="Optimal Transport â€“ Drift Raporu",
         border_style=color,
     ))
 
@@ -4566,9 +5033,9 @@ def drift(
 @app.command()
 def mimic_test(
     persona: str = typer.Option("random", help="Persona tipi (tired/excited/casual/professional/random)"),
-    steps: int = typer.Option(5, help="Simüle edilecek aksiyon sayısı"),
+    steps: int = typer.Option(5, help="SimÃ¼le edilecek aksiyon sayÄ±sÄ±"),
 ):
-    """Mimic Engine – insansı davranış simülasyonu."""
+    """Mimic Engine â€“ insansÄ± davranÄ±ÅŸ simÃ¼lasyonu."""
     import asyncio as aio
     from src.core.mimic_engine import MimicEngine
     from rich.panel import Panel
@@ -4586,38 +5053,38 @@ def mimic_test(
         border_style="blue",
     ))
 
-    # Fare hareketi simülasyonu
+    # Fare hareketi simÃ¼lasyonu
     path = engine.mouse_path((100, 200), (800, 500))
     console.print(f"[dim]Fare yolu: {len(path)} nokta[/]")
 
     # Yazma gecikmesi
-    text = "Galatasaray vs Fenerbahçe"
+    text = "Galatasaray vs FenerbahÃ§e"
     delays = engine.typing_delays(text)
     avg_d = sum(delays) / max(len(delays), 1)
-    console.print(f"[dim]Yazma: '{text}' → ort. {avg_d*1000:.0f}ms/tuş[/]")
+    console.print(f"[dim]Yazma: '{text}' â†’ ort. {avg_d*1000:.0f}ms/tuÅŸ[/]")
 
-    # Aksiyon simülasyonu
+    # Aksiyon simÃ¼lasyonu
     async def _run():
         for i in range(steps):
             if engine.should_hesitate():
                 h = await engine.hesitate()
-                console.print(f"  [{i+1}] Tereddüt: {h*1000:.0f}ms")
+                console.print(f"  [{i+1}] TereddÃ¼t: {h*1000:.0f}ms")
             d = await engine.human_delay(action=f"step_{i+1}")
             console.print(f"  [{i+1}] Aksiyon gecikmesi: {d*1000:.0f}ms")
 
     aio.run(_run())
-    console.print(f"[green]✓ {steps} aksiyon simüle edildi.[/]")
+    console.print(f"[green]âœ“ {steps} aksiyon simÃ¼le edildi.[/]")
 
 
-# ═══════════════════════════════════════════════
-#  Level 17 CLI – Federated, Hypergraph, Annealer, RLHF
-# ═══════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+#  Level 17 CLI â€“ Federated, Hypergraph, Annealer, RLHF
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 @app.command()
 def federated(
-    n_rounds: int = typer.Option(5, help="Federasyon round sayısı"),
-    local_epochs: int = typer.Option(5, help="Yerel eğitim epoch"),
+    n_rounds: int = typer.Option(5, help="Federasyon round sayÄ±sÄ±"),
+    local_epochs: int = typer.Option(5, help="Yerel eÄŸitim epoch"),
 ):
-    """Federated Learning – dağıtık sürü eğitimi."""
+    """Federated Learning â€“ daÄŸÄ±tÄ±k sÃ¼rÃ¼ eÄŸitimi."""
     from src.quant.federated_trainer import FederatedTrainer
     from rich.panel import Panel
     import numpy as np
@@ -4627,7 +5094,7 @@ def federated(
         input_dim=20, n_classes=3,
     )
 
-    # Demo veri (gerçek kullanımda DB'den gelir)
+    # Demo veri (gerÃ§ek kullanÄ±mda DB'den gelir)
     for league in ["super_lig", "premier_league", "bundesliga"]:
         n = np.random.randint(200, 500)
         X = np.random.randn(n, 20).astype(np.float32)
@@ -4638,18 +5105,18 @@ def federated(
 
     console.print(Panel(
         f"Ligler: {', '.join(report.leagues)}\n"
-        f"Client Sayısı: {report.num_clients}\n"
+        f"Client SayÄ±sÄ±: {report.num_clients}\n"
         f"Toplam Round: {report.total_rounds}\n"
         f"Metod: {report.method}\n\n"
-        f"{'─' * 40}\n"
-        f"Global Doğruluk: {report.global_accuracy:.1%}\n"
-        f"Yakınsama Roundu: {report.convergence_round}\n\n"
+        f"{'â”€' * 40}\n"
+        f"Global DoÄŸruluk: {report.global_accuracy:.1%}\n"
+        f"YakÄ±nsama Roundu: {report.convergence_round}\n\n"
         + "\n".join(
-            f"  • {cr.league}: acc={cr.accuracy:.1%}, loss={cr.loss:.4f} "
-            f"({cr.samples} örnek)"
+            f"  â€¢ {cr.league}: acc={cr.accuracy:.1%}, loss={cr.loss:.4f} "
+            f"({cr.samples} Ã¶rnek)"
             for cr in report.client_reports
         )
-        + f"\n\n💡 {report.recommendation}",
+        + f"\n\nğŸ’¡ {report.recommendation}",
         title="Federated Learning Raporu",
         border_style="green" if report.global_accuracy > 0.5 else "yellow",
     ))
@@ -4657,10 +5124,10 @@ def federated(
 
 @app.command()
 def hypergraph_test(
-    team: str = typer.Option("Galatasaray", help="Takım adı"),
-    missing: str = typer.Option("", help="Eksik oyuncu indeksleri (virgülle)"),
+    team: str = typer.Option("Galatasaray", help="TakÄ±m adÄ±"),
+    missing: str = typer.Option("", help="Eksik oyuncu indeksleri (virgÃ¼lle)"),
 ):
-    """Hypergraph – taktiksel birim kırılganlık analizi."""
+    """Hypergraph â€“ taktiksel birim kÄ±rÄ±lganlÄ±k analizi."""
     from src.quant.hypergraph_unit import HypergraphUnitAnalyzer, TacticalUnit
     from rich.panel import Panel
     import numpy as np
@@ -4669,11 +5136,11 @@ def hypergraph_test(
 
     ratings = np.array([75, 80, 72, 78, 85, 70, 82, 90, 65, 77, 88], dtype=np.float64)
     units = [
-        TacticalUnit("Defans Hattı", "defense", [0, 1, 2, 3],
+        TacticalUnit("Defans HattÄ±", "defense", [0, 1, 2, 3],
                       ["GK", "CB1", "CB2", "RB"], weight=1.5),
-        TacticalUnit("Orta Saha Üçlüsü", "midfield", [4, 5, 6],
+        TacticalUnit("Orta Saha ÃœÃ§lÃ¼sÃ¼", "midfield", [4, 5, 6],
                       ["CM1", "CM2", "CAM"], weight=1.2),
-        TacticalUnit("Hücum Bloğu", "attack", [7, 8, 9, 10],
+        TacticalUnit("HÃ¼cum BloÄŸu", "attack", [7, 8, 9, 10],
                       ["LW", "ST", "RW", "SS"], weight=1.0),
     ]
 
@@ -4683,25 +5150,25 @@ def hypergraph_test(
 
     lines = []
     for ua in report.unit_analyses:
-        alert = "🔴" if ua.failure_prob > 0.35 else "🟢"
+        alert = "ğŸ”´" if ua.failure_prob > 0.35 else "ğŸŸ¢"
         lines.append(
-            f"{alert} {ua.unit.name}: çöküş={ua.failure_prob:.1%}, "
+            f"{alert} {ua.unit.name}: Ã§Ã¶kÃ¼ÅŸ={ua.failure_prob:.1%}, "
             f"uyum={ua.cohesion:.2f}, yedeklilik={ua.redundancy:.2f}"
-            + (f" ⚠ zayıf={ua.weakest_link}" if ua.weakest_link else "")
+            + (f" âš  zayÄ±f={ua.weakest_link}" if ua.weakest_link else "")
         )
 
     color = "red" if report.defense_alert else ("yellow" if report.vulnerability_index > 0.3 else "green")
     console.print(Panel(
-        f"Takım: {report.team}\n"
+        f"TakÄ±m: {report.team}\n"
         f"Oyuncu: {report.n_players} | Birim: {report.n_units}\n"
         f"Eksik: {missing_list or 'Yok'}\n\n"
-        f"{'─' * 40}\n"
+        f"{'â”€' * 40}\n"
         + "\n".join(lines) + "\n\n"
-        f"{'─' * 40}\n"
-        f"Takım Uyumu: {report.team_cohesion:.2f}\n"
-        f"Kırılganlık: {report.vulnerability_index:.2f}\n"
-        f"Yapısal Entropi: {report.structural_entropy:.3f}\n\n"
-        f"💡 {report.recommendation}",
+        f"{'â”€' * 40}\n"
+        f"TakÄ±m Uyumu: {report.team_cohesion:.2f}\n"
+        f"KÄ±rÄ±lganlÄ±k: {report.vulnerability_index:.2f}\n"
+        f"YapÄ±sal Entropi: {report.structural_entropy:.3f}\n\n"
+        f"ğŸ’¡ {report.recommendation}",
         title="Hypergraph Birim Analizi",
         border_style=color,
     ))
@@ -4709,10 +5176,10 @@ def hypergraph_test(
 
 @app.command()
 def anneal(
-    n_candidates: int = typer.Option(30, help="Aday bahis sayısı"),
+    n_candidates: int = typer.Option(30, help="Aday bahis sayÄ±sÄ±"),
     max_bets: int = typer.Option(8, help="Maksimum kupon boyutu"),
 ):
-    """Quantum Annealer – optimal kupon sepeti optimizasyonu."""
+    """Quantum Annealer â€“ optimal kupon sepeti optimizasyonu."""
     from src.core.quantum_annealer import QuantumAnnealer, BetCandidate
     from rich.panel import Panel
     import numpy as np
@@ -4741,28 +5208,28 @@ def anneal(
 
     color = "green" if sol.sharpe_ratio > 1.0 else ("yellow" if sol.sharpe_ratio > 0 else "red")
     console.print(Panel(
-        f"Aday Havuzu: {n_candidates} maç\n"
-        f"Seçilen: {sol.n_bets} bahis\n"
+        f"Aday Havuzu: {n_candidates} maÃ§\n"
+        f"SeÃ§ilen: {sol.n_bets} bahis\n"
         f"Metod: {sol.method}\n"
-        f"Süre: {sol.elapsed_ms:.0f}ms\n\n"
-        f"{'─' * 40}\n"
+        f"SÃ¼re: {sol.elapsed_ms:.0f}ms\n\n"
+        f"{'â”€' * 40}\n"
         f"Sharpe Ratio: {sol.sharpe_ratio:.2f}\n"
         f"Beklenen Kar: {sol.expected_profit:.2f} TL\n"
         f"Beklenen Risk: {sol.expected_risk:.2f}\n"
         f"Stake: {sol.total_stake:.0f} TL\n"
-        f"Çeşitlilik: {sol.diversification:.0%}\n\n"
-        f"Seçilen Maçlar: {sol.selected_matches[:10]}\n\n"
-        f"💡 {sol.recommendation}",
-        title="Simulated Annealing – Optimal Portföy",
+        f"Ã‡eÅŸitlilik: {sol.diversification:.0%}\n\n"
+        f"SeÃ§ilen MaÃ§lar: {sol.selected_matches[:10]}\n\n"
+        f"ğŸ’¡ {sol.recommendation}",
+        title="Simulated Annealing â€“ Optimal PortfÃ¶y",
         border_style=color,
     ))
 
 
 @app.command()
 def rlhf(
-    days: int = typer.Option(30, help="Rapor süresi (gün)"),
+    days: int = typer.Option(30, help="Rapor sÃ¼resi (gÃ¼n)"),
 ):
-    """RLHF – İnsan geri bildirim istatistikleri."""
+    """RLHF â€“ Ä°nsan geri bildirim istatistikleri."""
     from src.utils.human_feedback_loop import HumanFeedbackLoop
     from rich.panel import Panel
 
@@ -4771,38 +5238,38 @@ def rlhf(
 
     console.print(Panel(
         f"Toplam Geri Bildirim: {stats.total_feedback}\n"
-        f"  ✅ Onay: {stats.approvals}\n"
-        f"  ❌ Ret: {stats.rejections}\n\n"
-        f"{'─' * 40}\n"
-        f"İnsan Doğruluğu: {stats.human_accuracy:.1%}\n"
-        f"Model Doğruluğu: {stats.model_accuracy:.1%}\n"
-        f"İnsan-Model Uyumu: {stats.agreement_rate:.1%}\n"
-        f"Ort. Ödül: {stats.avg_reward:+.3f}\n"
-        f"Toplam Ödül: {stats.total_reward:+.2f}\n\n"
-        f"{'─' * 40}\n"
-        f"Ret Sebepleri: {dict(stats.reason_distribution) or 'Henüz yok'}",
+        f"  âœ… Onay: {stats.approvals}\n"
+        f"  âŒ Ret: {stats.rejections}\n\n"
+        f"{'â”€' * 40}\n"
+        f"Ä°nsan DoÄŸruluÄŸu: {stats.human_accuracy:.1%}\n"
+        f"Model DoÄŸruluÄŸu: {stats.model_accuracy:.1%}\n"
+        f"Ä°nsan-Model Uyumu: {stats.agreement_rate:.1%}\n"
+        f"Ort. Ã–dÃ¼l: {stats.avg_reward:+.3f}\n"
+        f"Toplam Ã–dÃ¼l: {stats.total_reward:+.2f}\n\n"
+        f"{'â”€' * 40}\n"
+        f"Ret Sebepleri: {dict(stats.reason_distribution) or 'HenÃ¼z yok'}",
         title="RLHF Geri Bildirim Raporu",
         border_style="blue",
     ))
 
-    # Feature ayarlamaları
+    # Feature ayarlamalarÄ±
     adjustments = hfl.get_feature_adjustments()
     if adjustments:
         console.print(Panel(
             "\n".join(f"  {k}: {v:+.4f}" for k, v in adjustments.items()),
-            title="Feature Ağırlık Ayarlamaları",
+            title="Feature AÄŸÄ±rlÄ±k AyarlamalarÄ±",
             border_style="dim",
         ))
 
 
-# ═══════════════════════════════════════════════
-#  Level 18 CLI – Self-Healing, Fluid Dynamics, Ricci Curvature
-# ═══════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+#  Level 18 CLI â€“ Self-Healing, Fluid Dynamics, Ricci Curvature
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 @app.command()
 def fluid(
-    n_players: int = typer.Option(22, help="Oyuncu sayısı"),
+    n_players: int = typer.Option(22, help="Oyuncu sayÄ±sÄ±"),
 ):
-    """Fluid Dynamics – saha kontrolü ve akış analizi."""
+    """Fluid Dynamics â€“ saha kontrolÃ¼ ve akÄ±ÅŸ analizi."""
     from src.quant.fluid_pitch import FluidPitchAnalyzer, PlayerState
     from rich.panel import Panel
     import numpy as np
@@ -4835,25 +5302,25 @@ def fluid(
 
     color = "green" if report.home_control_pct > 55 else ("red" if report.away_control_pct > 55 else "yellow")
     console.print(Panel(
-        f"Saha Kontrolü: Ev={report.home_control_pct:.1f}% / Dep={report.away_control_pct:.1f}%\n"
+        f"Saha KontrolÃ¼: Ev={report.home_control_pct:.1f}% / Dep={report.away_control_pct:.1f}%\n"
         f"xT (Ev): {report.home_xt:.4f} | xT (Dep): {report.away_xt:.4f}\n"
-        f"Baskı: Ev={report.home_pressure_index:.3f} / Dep={report.away_pressure_index:.3f}\n\n"
-        f"{'─' * 40}\n"
+        f"BaskÄ±: Ev={report.home_pressure_index:.3f} / Dep={report.away_pressure_index:.3f}\n\n"
+        f"{'â”€' * 40}\n"
         f"Momentum: {report.momentum_score:+.3f} ({report.flow_direction})\n"
-        f"Açık Kanallar: {report.open_channels} ({report.dominant_channel or '-'})\n"
-        f"Savunma Kompaktlık: {report.defensive_compactness:.3f}\n\n"
-        f"💡 {report.recommendation}",
-        title="Akışkanlar Dinamiği – Saha Kontrolü",
+        f"AÃ§Ä±k Kanallar: {report.open_channels} ({report.dominant_channel or '-'})\n"
+        f"Savunma KompaktlÄ±k: {report.defensive_compactness:.3f}\n\n"
+        f"ğŸ’¡ {report.recommendation}",
+        title="AkÄ±ÅŸkanlar DinamiÄŸi â€“ Saha KontrolÃ¼",
         border_style=color,
     ))
 
 
 @app.command()
 def ricci(
-    n_teams: int = typer.Option(8, help="Takım sayısı"),
-    stress: bool = typer.Option(False, help="Stres senaryosu simüle et"),
+    n_teams: int = typer.Option(8, help="TakÄ±m sayÄ±sÄ±"),
+    stress: bool = typer.Option(False, help="Stres senaryosu simÃ¼le et"),
 ):
-    """Ricci Curvature – piyasa sistemik risk analizi."""
+    """Ricci Curvature â€“ piyasa sistemik risk analizi."""
     from src.quant.ricci_flow import RicciFlowAnalyzer
     from rich.panel import Panel
     import networkx as nx
@@ -4861,14 +5328,14 @@ def ricci(
 
     rfa = RicciFlowAnalyzer()
 
-    # Demo: takım ilişki ağı
+    # Demo: takÄ±m iliÅŸki aÄŸÄ±
     teams = ["GS", "FB", "BJK", "TS", "BAS", "ADN", "SIV", "ANT"][:n_teams]
     G = nx.Graph()
     for i in range(len(teams)):
         for j in range(i + 1, len(teams)):
             w = float(np.random.uniform(0.3, 1.0))
             if stress:
-                w *= 0.3  # Stres: düşük ağırlıklar → negatif eğrilik
+                w *= 0.3  # Stres: dÃ¼ÅŸÃ¼k aÄŸÄ±rlÄ±klar â†’ negatif eÄŸrilik
             G.add_edge(teams[i], teams[j], weight=w)
 
     report = rfa.analyze(G, name="cli_test")
@@ -4881,35 +5348,35 @@ def ricci(
         color = "green"
 
     edges_str = "\n".join(
-        f"  {u} ↔ {v}: κ={c:+.4f}" for u, v, c in report.critical_edges
+        f"  {u} â†” {v}: Îº={c:+.4f}" for u, v, c in report.critical_edges
     )
 
     console.print(Panel(
-        f"Ağ: {n_teams} takım, {report.n_edges} kenar\n"
+        f"AÄŸ: {n_teams} takÄ±m, {report.n_edges} kenar\n"
         f"Metod: {report.method}\n\n"
-        f"{'─' * 40}\n"
-        f"Ort. Eğrilik (κ): {report.avg_curvature:+.4f}\n"
+        f"{'â”€' * 40}\n"
+        f"Ort. EÄŸrilik (Îº): {report.avg_curvature:+.4f}\n"
         f"Min/Max: {report.min_curvature:+.4f} / {report.max_curvature:+.4f}\n"
         f"Std: {report.std_curvature:.4f}\n"
         f"Negatif Kenarlar: {report.n_negative}/{report.n_edges}\n\n"
-        f"{'─' * 40}\n"
+        f"{'â”€' * 40}\n"
         f"Stres: {report.stress_level.upper()}\n"
         f"Sistemik Risk: {report.systemic_risk:.0%}\n"
-        f"Kriz Olasılığı: {report.crisis_probability:.0%}\n"
-        f"Stake Çarpanı: x{report.stake_multiplier:.1f}\n"
+        f"Kriz OlasÄ±lÄ±ÄŸÄ±: {report.crisis_probability:.0%}\n"
+        f"Stake Ã‡arpanÄ±: x{report.stake_multiplier:.1f}\n"
         f"Kill Betting: {'EVET' if report.kill_betting else 'HAYIR'}\n\n"
         f"Kritik Kenarlar:\n{edges_str}\n\n"
-        f"💡 {report.recommendation}",
-        title="Ricci Curvature – Sistemik Risk",
+        f"ğŸ’¡ {report.recommendation}",
+        title="Ricci Curvature â€“ Sistemik Risk",
         border_style=color,
     ))
 
 
 @app.command()
 def healing_report(
-    days: int = typer.Option(30, help="Rapor süresi (gün)"),
+    days: int = typer.Option(30, help="Rapor sÃ¼resi (gÃ¼n)"),
 ):
-    """Self-Healing – otomatik kod iyileştirme raporu."""
+    """Self-Healing â€“ otomatik kod iyileÅŸtirme raporu."""
     from src.core.auto_healer import SelfHealingEngine
     from rich.panel import Panel
 
@@ -4918,37 +5385,37 @@ def healing_report(
 
     console.print(Panel(
         f"Toplam Deneme: {report.total_attempts}\n"
-        f"  ✅ Başarılı: {report.successful_heals}\n"
-        f"  ❌ Başarısız: {report.failed_heals}\n"
-        f"  🔄 Rollback: {report.rollbacks}\n"
-        f"  🚫 Bloklanmış: {report.blocked_patches}\n\n"
-        f"{'─' * 40}\n"
+        f"  âœ… BaÅŸarÄ±lÄ±: {report.successful_heals}\n"
+        f"  âŒ BaÅŸarÄ±sÄ±z: {report.failed_heals}\n"
+        f"  ğŸ”„ Rollback: {report.rollbacks}\n"
+        f"  ğŸš« BloklanmÄ±ÅŸ: {report.blocked_patches}\n\n"
+        f"{'â”€' * 40}\n"
         f"Benzersiz Hata: {report.unique_errors}\n\n"
-        f"En Sık Hatalar:\n"
+        f"En SÄ±k Hatalar:\n"
         + "\n".join(
-            f"  • {etype}: {count}x" for etype, count in report.top_errors
-        ) if report.top_errors else "  Henüz hata kaydı yok.",
+            f"  â€¢ {etype}: {count}x" for etype, count in report.top_errors
+        ) if report.top_errors else "  HenÃ¼z hata kaydÄ± yok.",
         title="Self-Healing Raporu",
         border_style="blue",
     ))
 
 
-# ═══════════════════════════════════════════════
-#  Level 19 CLI – Telemetry, Regime Switcher, SDE Pricer
-# ═══════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+#  Level 19 CLI â€“ Telemetry, Regime Switcher, SDE Pricer
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 @app.command()
 def regime(
-    n_periods: int = typer.Option(18, help="Zaman periyodu sayısı (~5dk her biri)"),
-    team: str = typer.Option("Galatasaray", help="Takım adı"),
+    n_periods: int = typer.Option(18, help="Zaman periyodu sayÄ±sÄ± (~5dk her biri)"),
+    team: str = typer.Option("Galatasaray", help="TakÄ±m adÄ±"),
 ):
-    """Hidden Markov – gizli rejim tespiti (Baskın/Dengeli/Pasif)."""
+    """Hidden Markov â€“ gizli rejim tespiti (BaskÄ±n/Dengeli/Pasif)."""
     from src.quant.regime_switcher import RegimeSwitcher
     from rich.panel import Panel
     import numpy as np
 
     rs = RegimeSwitcher(n_regimes=3)
 
-    # Demo: maç istatistikleri [şut, pas, top_kontrolü]
+    # Demo: maÃ§ istatistikleri [ÅŸut, pas, top_kontrolÃ¼]
     data = np.column_stack([
         np.random.poisson(3, n_periods) + np.array([2]*6 + [0]*6 + [1]*6)[:n_periods],
         np.random.normal(45, 8, n_periods),
@@ -4957,28 +5424,28 @@ def regime(
 
     report = rs.analyze_match(data, team=team, match_id="cli_test")
 
-    regime_seq = " → ".join(
+    regime_seq = " â†’ ".join(
         f"{c}{n}" for c, n in zip(
-            [{"Baskın": "🟢", "Dengeli": "🟡", "Pasif": "🔴"}.get(n, "⚪") for n in report.regime_names],
+            [{"BaskÄ±n": "ğŸŸ¢", "Dengeli": "ğŸŸ¡", "Pasif": "ğŸ”´"}.get(n, "âšª") for n in report.regime_names],
             report.regime_names,
         )
     )
 
     color = "red" if report.momentum_break else ("green" if report.current.regime_id == 0 else "yellow")
     console.print(Panel(
-        f"Takım: {report.team}\n"
+        f"TakÄ±m: {report.team}\n"
         f"Metod: {report.method}\n\n"
-        f"{'─' * 40}\n"
+        f"{'â”€' * 40}\n"
         f"Mevcut Rejim: {report.current.regime_name} "
-        f"(güven={report.current.confidence:.0%})\n"
-        f"Gol Çarpanı: x{report.current.goal_multiplier:.2f}\n\n"
-        f"Baskınlık: {report.dominance_pct:.0f}% | Pasiflik: {report.passivity_pct:.0f}%\n"
+        f"(gÃ¼ven={report.current.confidence:.0%})\n"
+        f"Gol Ã‡arpanÄ±: x{report.current.goal_multiplier:.2f}\n\n"
+        f"BaskÄ±nlÄ±k: {report.dominance_pct:.0f}% | Pasiflik: {report.passivity_pct:.0f}%\n"
         f"Stabilite: {report.stability:.2f}\n"
-        f"Momentum Kırılması: {'EVET' if report.momentum_break else 'HAYIR'}\n\n"
-        f"{'─' * 40}\n"
+        f"Momentum KÄ±rÄ±lmasÄ±: {'EVET' if report.momentum_break else 'HAYIR'}\n\n"
+        f"{'â”€' * 40}\n"
         f"Rejim Dizisi:\n{regime_seq}\n\n"
-        f"💡 {report.recommendation}",
-        title="Hidden Markov – Rejim Analizi",
+        f"ğŸ’¡ {report.recommendation}",
+        title="Hidden Markov â€“ Rejim Analizi",
         border_style=color,
     ))
 
@@ -4987,16 +5454,16 @@ def regime(
 def sde(
     current: float = typer.Option(1.85, help="Mevcut oran"),
     horizon: int = typer.Option(10, help="Tahmin ufku (dakika)"),
-    n_history: int = typer.Option(30, help="Geçmiş veri noktası sayısı"),
+    n_history: int = typer.Option(30, help="GeÃ§miÅŸ veri noktasÄ± sayÄ±sÄ±"),
 ):
-    """SDE Pricer – Ornstein-Uhlenbeck oran tahmini."""
+    """SDE Pricer â€“ Ornstein-Uhlenbeck oran tahmini."""
     from src.quant.sde_pricer import SDEPricer
     from rich.panel import Panel
     import numpy as np
 
     pricer = SDEPricer()
 
-    # Demo: oran geçmişi (mean-reverting)
+    # Demo: oran geÃ§miÅŸi (mean-reverting)
     fair = current + np.random.uniform(-0.1, 0.1)
     noise = np.cumsum(np.random.randn(n_history) * 0.02)
     history = fair + noise * 0.5
@@ -5005,7 +5472,7 @@ def sde(
 
     fc = pricer.forecast(history.tolist(), match_id="cli_test", horizon_min=horizon)
 
-    # MC simülasyon
+    # MC simÃ¼lasyon
     sim = pricer.simulate(
         current, fc.params.theta, fc.fair_value,
         fc.params.sigma, horizon_min=horizon,
@@ -5020,33 +5487,33 @@ def sde(
 
     console.print(Panel(
         f"Mevcut Oran: {fc.current_odds}\n"
-        f"Fair Value (μ): {fc.fair_value:.4f}\n"
+        f"Fair Value (Î¼): {fc.fair_value:.4f}\n"
         f"Beklenen ({horizon}dk): {fc.predicted_odds:.4f} "
         f"({fc.expected_change_pct:+.2f}%)\n"
-        f"Güven Aralığı: [{fc.ci_lower:.4f}, {fc.ci_upper:.4f}]\n\n"
-        f"{'─' * 40}\n"
+        f"GÃ¼ven AralÄ±ÄŸÄ±: [{fc.ci_lower:.4f}, {fc.ci_upper:.4f}]\n\n"
+        f"{'â”€' * 40}\n"
         f"OU Parametreleri:\n"
-        f"  θ (mean-reversion): {fc.params.theta:.4f}\n"
-        f"  μ (fair value): {fc.params.mu:.4f}\n"
-        f"  σ (volatilite): {fc.params.sigma:.4f}\n"
-        f"  Yarı Ömür: {fc.params.half_life:.1f} dk\n"
-        f"  R²: {fc.params.r_squared:.4f}\n\n"
-        f"{'─' * 40}\n"
+        f"  Î¸ (mean-reversion): {fc.params.theta:.4f}\n"
+        f"  Î¼ (fair value): {fc.params.mu:.4f}\n"
+        f"  Ïƒ (volatilite): {fc.params.sigma:.4f}\n"
+        f"  YarÄ± Ã–mÃ¼r: {fc.params.half_life:.1f} dk\n"
+        f"  RÂ²: {fc.params.r_squared:.4f}\n\n"
+        f"{'â”€' * 40}\n"
         f"Monte Carlo ({pricer._n_paths} yol):\n"
         f"  Ort: {sim['mean']:.4f} | Medyan: {sim['median']:.4f}\n"
-        f"  P(yukarı): {sim['prob_up']:.0%} | P(aşağı): {sim['prob_down']:.0%}\n"
+        f"  P(yukarÄ±): {sim['prob_up']:.0%} | P(aÅŸaÄŸÄ±): {sim['prob_down']:.0%}\n"
         f"  [p5, p95]: [{sim['p5']:.4f}, {sim['p95']:.4f}]\n\n"
         f"Sinyal: {fc.value_signal} | Edge: {fc.edge_pct:+.1f}%\n"
         f"Volatilite: {fc.volatility_rank}\n\n"
-        f"💡 {fc.recommendation}",
-        title="SDE Pricer – Ornstein-Uhlenbeck",
+        f"ğŸ’¡ {fc.recommendation}",
+        title="SDE Pricer â€“ Ornstein-Uhlenbeck",
         border_style=color,
     ))
 
 
 @app.command()
 def telemetry_report():
-    """Telemetry – sistem darboğaz raporu."""
+    """Telemetry â€“ sistem darboÄŸaz raporu."""
     from src.core.telemetry_tracer import TelemetryTracer
     from rich.panel import Panel
 
@@ -5066,7 +5533,7 @@ def telemetry_report():
         key=lambda x: -x[1]["avg_ms"],
     ):
         lines.append(
-            f"  {'🔴' if stats['avg_ms'] > 100 else '🟢'} {mod}: "
+            f"  {'ğŸ”´' if stats['avg_ms'] > 100 else 'ğŸŸ¢'} {mod}: "
             f"ort={stats['avg_ms']:.1f}ms, "
             f"max={stats['max_ms']:.1f}ms, "
             f"n={stats['count']}"
@@ -5074,43 +5541,43 @@ def telemetry_report():
 
     console.print(Panel(
         f"Toplam Span: {report.total_spans}\n"
-        f"Toplam Süre: {report.total_duration_ms:.1f}ms\n"
-        f"Hata Oranı: {report.error_rate:.1%}\n\n"
-        f"{'─' * 40}\n"
-        f"Modül Performansları:\n"
+        f"Toplam SÃ¼re: {report.total_duration_ms:.1f}ms\n"
+        f"Hata OranÄ±: {report.error_rate:.1%}\n\n"
+        f"{'â”€' * 40}\n"
+        f"ModÃ¼l PerformanslarÄ±:\n"
         + "\n".join(lines) + "\n\n"
-        f"{'─' * 40}\n"
-        f"Darboğaz: {report.bottleneck_module} "
+        f"{'â”€' * 40}\n"
+        f"DarboÄŸaz: {report.bottleneck_module} "
         f"({report.bottleneck_avg_ms:.1f}ms)\n\n"
-        f"💡 {report.recommendation}",
-        title="Telemetry – Darboğaz Raporu",
+        f"ğŸ’¡ {report.recommendation}",
+        title="Telemetry â€“ DarboÄŸaz Raporu",
         border_style="blue",
     ))
 
 
-# ═══════════════════════════════════════════════
-#  Level 20 CLI – Quantum Brain, Hawkes, Blind Strategy, War Room
-# ═══════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+#  Level 20 CLI â€“ Quantum Brain, Hawkes, Blind Strategy, War Room
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 @app.command()
 def quantum(
-    n_samples: int = typer.Option(200, help="Eğitim örneği sayısı"),
-    n_qubits: int = typer.Option(4, help="Qubit sayısı"),
-    epochs: int = typer.Option(20, help="Eğitim epok sayısı"),
+    n_samples: int = typer.Option(200, help="EÄŸitim Ã¶rneÄŸi sayÄ±sÄ±"),
+    n_qubits: int = typer.Option(4, help="Qubit sayÄ±sÄ±"),
+    epochs: int = typer.Option(20, help="EÄŸitim epok sayÄ±sÄ±"),
 ):
-    """Quantum Brain – VQC/QSVM ile maç tahmini."""
+    """Quantum Brain â€“ VQC/QSVM ile maÃ§ tahmini."""
     from src.quant.quantum_brain import QuantumBrain
     from rich.panel import Panel
     import numpy as np
 
     qb = QuantumBrain(n_qubits=n_qubits, n_layers=2, lr=0.01)
 
-    # Demo veri: [xG, şut, pas%, top_kontrolü]
+    # Demo veri: [xG, ÅŸut, pas%, top_kontrolÃ¼]
     X = np.random.randn(n_samples, n_qubits) * 0.5
     y = np.random.randint(0, 3, n_samples)
 
     report = qb.train(X, y, epochs=epochs)
 
-    # Tek maç tahmini
+    # Tek maÃ§ tahmini
     test_feat = np.random.randn(n_qubits) * 0.3
     pred = qb.predict_match(test_feat, match_id="cli_test")
 
@@ -5119,27 +5586,27 @@ def quantum(
     console.print(Panel(
         f"Metod: {report.method}\n"
         f"Qubit: {report.n_qubits} | Katman: {report.n_layers}\n"
-        f"Eğitim Doğruluğu: {report.accuracy:.1%}\n\n"
-        f"{'─' * 40}\n"
+        f"EÄŸitim DoÄŸruluÄŸu: {report.accuracy:.1%}\n\n"
+        f"{'â”€' * 40}\n"
         f"Test Tahmin: {labels.get(pred.prediction, '?')}\n"
-        f"Olasılıklar: Ev={pred.probabilities[0]:.0%}, "
+        f"OlasÄ±lÄ±klar: Ev={pred.probabilities[0]:.0%}, "
         f"Ber={pred.probabilities[1]:.0%}, "
         f"Dep={pred.probabilities[2]:.0%}\n"
-        f"Güven: {pred.confidence:.0%}\n"
-        f"Devre Derinliği: {pred.circuit_depth}\n"
+        f"GÃ¼ven: {pred.confidence:.0%}\n"
+        f"Devre DerinliÄŸi: {pred.circuit_depth}\n"
         f"Hesaplama: {pred.compute_time_ms:.1f}ms\n\n"
-        f"💡 {report.recommendation}",
-        title="Quantum Brain – VQC/QSVM",
+        f"ğŸ’¡ {report.recommendation}",
+        title="Quantum Brain â€“ VQC/QSVM",
         border_style=color,
     ))
 
 
 @app.command()
 def hawkes_cmd(
-    goals: str = typer.Option("12,35,37,78", help="Gol dakikaları (virgülle)"),
+    goals: str = typer.Option("12,35,37,78", help="Gol dakikalarÄ± (virgÃ¼lle)"),
     current_min: float = typer.Option(85.0, help="Mevcut dakika"),
 ):
-    """Hawkes Momentum – gol bulaşıcılığı analizi."""
+    """Hawkes Momentum â€“ gol bulaÅŸÄ±cÄ±lÄ±ÄŸÄ± analizi."""
     from src.quant.hawkes_momentum import HawkesMomentumAnalyzer
     from rich.panel import Panel
 
@@ -5160,45 +5627,45 @@ def hawkes_cmd(
 
     console.print(Panel(
         f"Metod: {report.method}\n"
-        f"Olay Sayısı: {report.n_events}\n"
+        f"Olay SayÄ±sÄ±: {report.n_events}\n"
         f"Son Olay: {report.last_event_min}. dk "
-        f"({report.time_since_last:.0f} dk önce)\n\n"
-        f"{'─' * 40}\n"
+        f"({report.time_since_last:.0f} dk Ã¶nce)\n\n"
+        f"{'â”€' * 40}\n"
         f"Hawkes Parametreleri:\n"
-        f"  μ (base rate): {report.params.mu:.4f}\n"
-        f"  α (excitement): {report.params.alpha:.4f}\n"
-        f"  β (decay): {report.params.beta:.4f}\n"
+        f"  Î¼ (base rate): {report.params.mu:.4f}\n"
+        f"  Î± (excitement): {report.params.alpha:.4f}\n"
+        f"  Î² (decay): {report.params.beta:.4f}\n"
         f"  BR (branching): {report.params.branching_ratio:.4f}\n"
-        f"  Yarı Ömür: {report.params.half_life:.1f} dk\n\n"
-        f"{'─' * 40}\n"
-        f"Anlık Yoğunluk: {report.current_intensity:.4f} "
+        f"  YarÄ± Ã–mÃ¼r: {report.params.half_life:.1f} dk\n\n"
+        f"{'â”€' * 40}\n"
+        f"AnlÄ±k YoÄŸunluk: {report.current_intensity:.4f} "
         f"(x{report.excitement_ratio:.1f} baseline)\n"
-        f"5dk Olasılık: {report.next_event_prob_5min:.0%}\n"
-        f"10dk Olasılık: {report.next_event_prob_10min:.0%}\n\n"
+        f"5dk OlasÄ±lÄ±k: {report.next_event_prob_5min:.0%}\n"
+        f"10dk OlasÄ±lÄ±k: {report.next_event_prob_10min:.0%}\n\n"
         f"Kritiklik: {report.criticality}\n"
         f"Momentum: {report.momentum_level}\n"
-        f"Üst Sinyali: {'EVET' if report.over_signal else 'HAYIR'}\n"
-        f"Gol Patlaması: {'EVET' if report.goal_burst_alert else 'HAYIR'}\n\n"
+        f"Ãœst Sinyali: {'EVET' if report.over_signal else 'HAYIR'}\n"
+        f"Gol PatlamasÄ±: {'EVET' if report.goal_burst_alert else 'HAYIR'}\n\n"
         f"Pik Dakika (+{next_pred['peak_minute']}dk): "
         f"{next_pred['peak_prob']:.0%}\n\n"
-        f"💡 {report.recommendation}",
-        title="Hawkes Momentum – Self-Exciting Process",
+        f"ğŸ’¡ {report.recommendation}",
+        title="Hawkes Momentum â€“ Self-Exciting Process",
         border_style=color,
     ))
 
 
 @app.command()
 def blind(
-    n_bets: int = typer.Option(5, help="Bahis sayısı"),
+    n_bets: int = typer.Option(5, help="Bahis sayÄ±sÄ±"),
 ):
-    """Blind Strategy – şifreli hesaplama raporu."""
+    """Blind Strategy â€“ ÅŸifreli hesaplama raporu."""
     from src.core.blind_strategy import BlindStrategyEngine
     from rich.panel import Panel
     import numpy as np
 
     bse = BlindStrategyEngine()
 
-    # Demo: şifreli Kelly
+    # Demo: ÅŸifreli Kelly
     probs = np.random.uniform(0.3, 0.7, n_bets).tolist()
     odds = [round(1 / max(p, 0.01) + np.random.uniform(-0.2, 0.5), 2) for p in probs]
 
@@ -5207,7 +5674,7 @@ def blind(
         probs, odds,
     )
 
-    # Demo: şifreli skor
+    # Demo: ÅŸifreli skor
     features = np.random.randn(8).tolist()
     weights = np.random.randn(8).tolist()
     score_result = bse.blind_score(features, weights)
@@ -5216,23 +5683,23 @@ def blind(
 
     console.print(Panel(
         f"Metod: {report.method}\n"
-        f"Toplam İşlem: {report.total_operations}\n"
-        f"Şifreli İşlem: {report.encrypted_ops}\n"
-        f"Plaintext İşlem: {report.plaintext_ops}\n\n"
-        f"{'─' * 40}\n"
-        f"Şifreli Kelly Sonuçları:\n"
+        f"Toplam Ä°ÅŸlem: {report.total_operations}\n"
+        f"Åifreli Ä°ÅŸlem: {report.encrypted_ops}\n"
+        f"Plaintext Ä°ÅŸlem: {report.plaintext_ops}\n\n"
+        f"{'â”€' * 40}\n"
+        f"Åifreli Kelly SonuÃ§larÄ±:\n"
         + "\n".join(
-            f"  Bahis {i+1}: odds={odds[i]:.2f}, p={probs[i]:.2f} → "
+            f"  Bahis {i+1}: odds={odds[i]:.2f}, p={probs[i]:.2f} â†’ "
             f"f*={kelly_result.plaintext_result[i]:.4f}"
             for i in range(min(n_bets, len(kelly_result.plaintext_result)))
         ) + "\n\n"
-        f"{'─' * 40}\n"
-        f"Şifreli Skor: {score_result.plaintext_result[0]:.4f}\n"
+        f"{'â”€' * 40}\n"
+        f"Åifreli Skor: {score_result.plaintext_result[0]:.4f}\n"
         f"Hesaplama: {kelly_result.compute_time_ms:.1f}ms (Kelly), "
         f"{score_result.compute_time_ms:.1f}ms (Score)\n"
-        f"Şifreleme: {kelly_result.encryption_scheme or 'masked'}\n\n"
-        f"💡 {report.recommendation}",
-        title="Blind Strategy – Homomorphic Encryption",
+        f"Åifreleme: {kelly_result.encryption_scheme or 'masked'}\n\n"
+        f"ğŸ’¡ {report.recommendation}",
+        title="Blind Strategy â€“ Homomorphic Encryption",
         border_style="blue",
     ))
 
@@ -5240,11 +5707,11 @@ def blind(
 @app.command()
 def warroom(
     home: str = typer.Option("Galatasaray", help="Ev sahibi"),
-    away: str = typer.Option("Fenerbahçe", help="Deplasman"),
+    away: str = typer.Option("FenerbahÃ§e", help="Deplasman"),
     odds: float = typer.Option(2.10, help="Oran"),
-    prob: float = typer.Option(0.55, help="Model olasılığı"),
+    prob: float = typer.Option(0.55, help="Model olasÄ±lÄ±ÄŸÄ±"),
 ):
-    """War Room – 3 ajan tartışması."""
+    """War Room â€“ 3 ajan tartÄ±ÅŸmasÄ±."""
     from src.utils.war_room import WarRoom
     from rich.panel import Panel
 
@@ -5273,47 +5740,47 @@ def warroom(
     else:
         color = "yellow"
 
-    lines = [f"Maç: {home} vs {away}\n"]
+    lines = [f"MaÃ§: {home} vs {away}\n"]
     for op in result.opinions:
         lines.append(f"{op.agent_name}:")
         lines.append(f"  \"{op.opinion}\"")
-        lines.append(f"  Karar: {op.verdict} (güven={op.confidence:.0%})\n")
+        lines.append(f"  Karar: {op.verdict} (gÃ¼ven={op.confidence:.0%})\n")
 
-    lines.append("─" * 40)
+    lines.append("â”€" * 40)
     lines.append(
-        f"OYLAMA: ✅BET={result.bet_count} ⏸️HOLD={result.hold_count} "
-        f"❌SKIP={result.skip_count}"
+        f"OYLAMA: âœ…BET={result.bet_count} â¸ï¸HOLD={result.hold_count} "
+        f"âŒSKIP={result.skip_count}"
     )
     lines.append(
         f"KARAR: {result.majority_verdict}"
-        + (" (OYBİRLİĞİ)" if result.consensus else "")
+        + (" (OYBÄ°RLÄ°ÄÄ°)" if result.consensus else "")
     )
 
     console.print(Panel(
         "\n".join(lines),
-        title="War Room – Multi-Agent Debate",
+        title="War Room â€“ Multi-Agent Debate",
         border_style=color,
     ))
 
 
-# ═══════════════════════════════════════════════
-#  Level 20+ CLI – Survival Estimator, Fatigue Engine
-# ═══════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+#  Level 20+ CLI â€“ Survival Estimator, Fatigue Engine
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 @app.command()
 def survival_cmd(
-    n_matches: int = typer.Option(50, help="Geçmiş maç sayısı"),
+    n_matches: int = typer.Option(50, help="GeÃ§miÅŸ maÃ§ sayÄ±sÄ±"),
     current_min: float = typer.Option(65.0, help="Mevcut dakika"),
-    last_goal_min: float = typer.Option(40.0, help="Son gol dakikası"),
-    team: str = typer.Option("Galatasaray", help="Takım"),
+    last_goal_min: float = typer.Option(40.0, help="Son gol dakikasÄ±"),
+    team: str = typer.Option("Galatasaray", help="TakÄ±m"),
 ):
-    """Survival Analysis – savunma sağkalım analizi."""
+    """Survival Analysis â€“ savunma saÄŸkalÄ±m analizi."""
     from src.quant.survival_estimator import SurvivalEstimator
     from rich.panel import Panel
     import numpy as np
 
     se = SurvivalEstimator()
 
-    # Demo: gol yemeye kadar geçen süreler
+    # Demo: gol yemeye kadar geÃ§en sÃ¼reler
     durations = np.concatenate([
         np.random.exponential(35, n_matches // 2),
         np.full(n_matches - n_matches // 2, 90.0),
@@ -5337,45 +5804,45 @@ def survival_cmd(
         color = "yellow"
 
     console.print(Panel(
-        f"Takım: {report.team}\n"
+        f"TakÄ±m: {report.team}\n"
         f"Metod: {report.method}\n"
         f"Mevcut Dakika: {report.current_minute:.0f}\n"
         f"Son Golden Beri: {report.minutes_since_last_goal:.0f} dk\n\n"
-        f"{'─' * 40}\n"
-        f"Sağkalım Parametreleri:\n"
+        f"{'â”€' * 40}\n"
+        f"SaÄŸkalÄ±m Parametreleri:\n"
         f"  S(t): {report.params.survival_prob:.0%} "
-        f"(sağkalım olasılığı)\n"
+        f"(saÄŸkalÄ±m olasÄ±lÄ±ÄŸÄ±)\n"
         f"  H(t): {report.params.cumulative_hazard:.4f} "
-        f"(kümülatif tehlike)\n"
+        f"(kÃ¼mÃ¼latif tehlike)\n"
         f"  h(t): {report.params.current_hazard:.6f} "
-        f"(anlık tehlike)\n"
+        f"(anlÄ±k tehlike)\n"
         f"  Medyan: {report.params.median_survival:.1f} dk\n\n"
-        f"{'─' * 40}\n"
+        f"{'â”€' * 40}\n"
         f"Tahminler:\n"
         f"  5dk gol yeme: {report.prob_concede_5min:.0%}\n"
         f"  10dk gol yeme: {report.prob_concede_10min:.0%}\n"
         f"  15dk gol yeme: {report.prob_concede_15min:.0%}\n"
         f"  Beklenen gol: {report.expected_time_to_goal:.1f} dk\n\n"
-        f"{'─' * 40}\n"
+        f"{'â”€' * 40}\n"
         f"Risk: {report.risk_level}\n"
-        f"Baraj Yıkılıyor: {'EVET' if report.dam_breaking else 'HAYIR'}\n"
-        f"Kale Sağlam: {'EVET' if report.fortress_mode else 'HAYIR'}\n"
+        f"Baraj YÄ±kÄ±lÄ±yor: {'EVET' if report.dam_breaking else 'HAYIR'}\n"
+        f"Kale SaÄŸlam: {'EVET' if report.fortress_mode else 'HAYIR'}\n"
         f"Tehlike Sivrilmesi: {'EVET' if report.hazard_spike else 'HAYIR'}\n"
-        f"Üst Sinyali: {'EVET' if report.over_signal else 'HAYIR'}\n"
+        f"Ãœst Sinyali: {'EVET' if report.over_signal else 'HAYIR'}\n"
         f"Alt Sinyali: {'EVET' if report.under_signal else 'HAYIR'}\n\n"
-        f"💡 {report.recommendation}",
-        title="Survival Analysis – Sağkalım",
+        f"ğŸ’¡ {report.recommendation}",
+        title="Survival Analysis â€“ SaÄŸkalÄ±m",
         border_style=color,
     ))
 
 
 @app.command()
 def fatigue_cmd(
-    n_players: int = typer.Option(11, help="Oyuncu sayısı"),
+    n_players: int = typer.Option(11, help="Oyuncu sayÄ±sÄ±"),
     current_min: float = typer.Option(75.0, help="Mevcut dakika"),
-    team: str = typer.Option("Galatasaray", help="Takım"),
+    team: str = typer.Option("Galatasaray", help="TakÄ±m"),
 ):
-    """Fatigue Engine – biyomekanik yorgunluk analizi."""
+    """Fatigue Engine â€“ biyomekanik yorgunluk analizi."""
     from src.quant.fatigue_engine import FatigueEngine
     from rich.panel import Panel
     from rich.table import Table
@@ -5387,7 +5854,7 @@ def fatigue_cmd(
     names = [
         "Muslera", "Boey", "Davinson", "Nelsson", "Kerem A.",
         "Torreira", "Mertens", "Ziyech",
-        "Icardi", "Barış A.", "Kerem D.",
+        "Icardi", "BarÄ±ÅŸ A.", "Kerem D.",
     ]
 
     players = []
@@ -5412,17 +5879,17 @@ def fatigue_cmd(
     )
 
     # Oyuncu tablosu
-    table = Table(title="Oyuncu Yorgunluk Detayı")
+    table = Table(title="Oyuncu Yorgunluk DetayÄ±")
     table.add_column("Oyuncu", style="bold")
     table.add_column("Pozisyon")
     table.add_column("Enerji", justify="right")
     table.add_column("Laktik", justify="right")
-    table.add_column("Bilişsel", justify="right")
+    table.add_column("BiliÅŸsel", justify="right")
     table.add_column("Hata%", justify="right")
     table.add_column("Durum")
 
     for p in sorted(report.players, key=lambda x: x.stamina):
-        status = "🔴 KRİTİK" if p.is_critical else ("🟡 Yorgun" if p.stamina < 40 else "🟢 İyi")
+        status = "ğŸ”´ KRÄ°TÄ°K" if p.is_critical else ("ğŸŸ¡ Yorgun" if p.stamina < 40 else "ğŸŸ¢ Ä°yi")
         table.add_row(
             p.player_name, p.position,
             f"{p.stamina:.0f}%",
@@ -5442,39 +5909,39 @@ def fatigue_cmd(
         color = "green"
 
     console.print(Panel(
-        f"Takım: {report.team} (dk {report.current_minute:.0f})\n\n"
-        f"{'─' * 40}\n"
-        f"Takım Özeti:\n"
+        f"TakÄ±m: {report.team} (dk {report.current_minute:.0f})\n\n"
+        f"{'â”€' * 40}\n"
+        f"TakÄ±m Ã–zeti:\n"
         f"  Ort. Enerji: {report.avg_stamina:.0f}%\n"
         f"  Min Enerji: {report.min_stamina:.0f}% ({report.weakest_player})\n"
         f"  Kritik Oyuncu: {report.critical_count}\n\n"
-        f"{'─' * 40}\n"
+        f"{'â”€' * 40}\n"
         f"Savunma:\n"
         f"  Ort. Enerji: {report.defense_avg_stamina:.0f}%\n"
-        f"  Kırılganlık: {report.defense_vulnerability:.0%}\n"
-        f"  Çöküş Riski: {'EVET' if report.defense_collapse_risk else 'HAYIR'}\n\n"
-        f"Hücum:\n"
+        f"  KÄ±rÄ±lganlÄ±k: {report.defense_vulnerability:.0%}\n"
+        f"  Ã‡Ã¶kÃ¼ÅŸ Riski: {'EVET' if report.defense_collapse_risk else 'HAYIR'}\n\n"
+        f"HÃ¼cum:\n"
         f"  Ort. Enerji: {report.attack_avg_stamina:.0f}%\n"
         f"  Etkinlik: {report.attack_effectiveness:.0%}\n\n"
-        f"{'─' * 40}\n"
+        f"{'â”€' * 40}\n"
         f"Kontra Atak Riski: {'EVET' if report.counter_attack_risk else 'HAYIR'}\n"
-        f"Geç Gol Sinyali: {'EVET' if report.late_goal_signal else 'HAYIR'}\n"
-        f"Oyuncu Değişikliği Etkisi: {report.substitution_impact:.0f}%\n\n"
-        f"💡 {report.recommendation}",
-        title="Fatigue Engine – Biyomekanik Yorgunluk",
+        f"GeÃ§ Gol Sinyali: {'EVET' if report.late_goal_signal else 'HAYIR'}\n"
+        f"Oyuncu DeÄŸiÅŸikliÄŸi Etkisi: {report.substitution_impact:.0f}%\n\n"
+        f"ğŸ’¡ {report.recommendation}",
+        title="Fatigue Engine â€“ Biyomekanik Yorgunluk",
         border_style=color,
     ))
 
 
-# ═══════════════════════════════════════════════
-#  Level 23 CLI – Chaos Filter, Homology Scanner, Rust Engine
-# ═══════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+#  Level 23 CLI â€“ Chaos Filter, Homology Scanner, Rust Engine
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 @app.command()
 def chaos(
-    n_points: int = typer.Option(100, help="Zaman serisi uzunluğu"),
+    n_points: int = typer.Option(100, help="Zaman serisi uzunluÄŸu"),
     regime: str = typer.Option("mixed", help="Rejim: stable|chaotic|mixed"),
 ):
-    """Chaos Filter – Lyapunov üssü ile kaos tespiti."""
+    """Chaos Filter â€“ Lyapunov Ã¼ssÃ¼ ile kaos tespiti."""
     from src.quant.chaos_filter import ChaosFilter
     from rich.panel import Panel
     import numpy as np
@@ -5492,7 +5959,7 @@ def chaos(
         for i in range(1, n_points):
             data[i] = r * data[i - 1] * (1 - data[i - 1])
     else:
-        # Karışık: ilk yarı stabil, ikinci yarı kaotik
+        # KarÄ±ÅŸÄ±k: ilk yarÄ± stabil, ikinci yarÄ± kaotik
         stable = 1.85 + np.cumsum(np.random.randn(n_points // 2) * 0.003)
         chaotic = np.zeros(n_points - n_points // 2)
         chaotic[0] = 0.5
@@ -5513,40 +5980,40 @@ def chaos(
 
     console.print(Panel(
         f"Metod: {report.method}\n"
-        f"Veri Noktası: {report.n_observations}\n\n"
-        f"{'─' * 40}\n"
+        f"Veri NoktasÄ±: {report.n_observations}\n\n"
+        f"{'â”€' * 40}\n"
         f"Kaos Parametreleri:\n"
-        f"  λ (Lyapunov): {report.params.max_lyapunov:.6f}\n"
+        f"  Î» (Lyapunov): {report.params.max_lyapunov:.6f}\n"
         f"  Kor. Boyut: {report.params.correlation_dim:.4f}\n"
         f"  Sample Entropi: {report.params.sample_entropy:.4f}\n"
         f"  Hurst: {report.params.hurst_exponent:.4f}\n"
         f"  DFA: {report.params.dfa:.4f}\n\n"
-        f"{'─' * 40}\n"
+        f"{'â”€' * 40}\n"
         f"Rejim: {report.regime}\n"
         f"Kaos Skoru: {report.chaos_score:.0%}\n"
         f"Tahmin Edilebilirlik: {report.predictability:.0%}\n\n"
-        f"Bahis İptal: {'EVET' if report.kill_betting else 'HAYIR'}\n"
-        f"Stake Düşür: {'EVET' if report.reduce_stake else 'HAYIR'}\n"
-        f"Güven Artır: {'EVET' if report.boost_confidence else 'HAYIR'}\n\n"
-        f"💡 {report.recommendation}",
-        title="Chaos Filter – Lyapunov Exponents",
+        f"Bahis Ä°ptal: {'EVET' if report.kill_betting else 'HAYIR'}\n"
+        f"Stake DÃ¼ÅŸÃ¼r: {'EVET' if report.reduce_stake else 'HAYIR'}\n"
+        f"GÃ¼ven ArtÄ±r: {'EVET' if report.boost_confidence else 'HAYIR'}\n\n"
+        f"ğŸ’¡ {report.recommendation}",
+        title="Chaos Filter â€“ Lyapunov Exponents",
         border_style=color,
     ))
 
 
 @app.command()
 def homology_cmd(
-    n_players: int = typer.Option(10, help="Oyuncu sayısı"),
+    n_players: int = typer.Option(10, help="Oyuncu sayÄ±sÄ±"),
     formation: str = typer.Option("442", help="Formasyon: 442|433|352"),
 ):
-    """Homology Scanner – topolojik organizasyon analizi."""
+    """Homology Scanner â€“ topolojik organizasyon analizi."""
     from src.quant.homology_scanner import HomologyScanner
     from rich.panel import Panel
     import numpy as np
 
     hs = HomologyScanner(max_dim=1, max_edge=50.0)
 
-    # Demo pozisyonlar (formasyona göre)
+    # Demo pozisyonlar (formasyona gÃ¶re)
     if formation == "433":
         positions = np.array([
             [5, 34],                         # GK
@@ -5569,11 +6036,11 @@ def homology_cmd(
             [70, 25], [70, 43],
         ])[:n_players]
 
-    # Gürültü ekle
+    # GÃ¼rÃ¼ltÃ¼ ekle
     positions = positions.astype(float) + np.random.randn(*positions.shape) * 3
 
     report = hs.analyze_team(
-        positions, team="Demo Takım", match_id="cli_test",
+        positions, team="Demo TakÄ±m", match_id="cli_test",
     )
 
     if report.team_panicking:
@@ -5585,7 +6052,7 @@ def homology_cmd(
     else:
         color = "blue"
 
-    # Kalıcılık dağılımı
+    # KalÄ±cÄ±lÄ±k daÄŸÄ±lÄ±mÄ±
     finite = [
         p for p in report.persistence_pairs
         if p.persistence < float("inf")
@@ -5594,38 +6061,38 @@ def homology_cmd(
     dim1 = [p for p in finite if p.dimension == 1]
 
     console.print(Panel(
-        f"Takım: {report.team}\n"
+        f"TakÄ±m: {report.team}\n"
         f"Metod: {report.method}\n"
-        f"Oyuncu Sayısı: {report.n_players}\n\n"
-        f"{'─' * 40}\n"
-        f"Betti Sayıları:\n"
-        f"  β₀ (Bağlı Bileşen): {report.betti_0}\n"
-        f"  β₁ (Döngü/Delik): {report.betti_1}\n\n"
-        f"Kalıcılık:\n"
-        f"  Toplam Özellik: {report.n_features}\n"
-        f"  H₀ (sonlu): {len(dim0)} | H₁: {len(dim1)}\n"
-        f"  Ort. Kalıcılık: {report.avg_persistence:.2f}\n"
-        f"  Maks Kalıcılık: {report.max_persistence:.2f}\n"
-        f"  Gürültü Oranı: {report.noise_ratio:.0%}\n\n"
-        f"{'─' * 40}\n"
+        f"Oyuncu SayÄ±sÄ±: {report.n_players}\n\n"
+        f"{'â”€' * 40}\n"
+        f"Betti SayÄ±larÄ±:\n"
+        f"  Î²â‚€ (BaÄŸlÄ± BileÅŸen): {report.betti_0}\n"
+        f"  Î²â‚ (DÃ¶ngÃ¼/Delik): {report.betti_1}\n\n"
+        f"KalÄ±cÄ±lÄ±k:\n"
+        f"  Toplam Ã–zellik: {report.n_features}\n"
+        f"  Hâ‚€ (sonlu): {len(dim0)} | Hâ‚: {len(dim1)}\n"
+        f"  Ort. KalÄ±cÄ±lÄ±k: {report.avg_persistence:.2f}\n"
+        f"  Maks KalÄ±cÄ±lÄ±k: {report.max_persistence:.2f}\n"
+        f"  GÃ¼rÃ¼ltÃ¼ OranÄ±: {report.noise_ratio:.0%}\n\n"
+        f"{'â”€' * 40}\n"
         f"Skorlar:\n"
         f"  Organizasyon: {report.organization_score:.0%}\n"
-        f"  Kompaktlık: {report.compactness_score:.0%}\n"
-        f"  Bağlantısallık: {report.connectivity_score:.0%}\n\n"
+        f"  KompaktlÄ±k: {report.compactness_score:.0%}\n"
+        f"  BaÄŸlantÄ±sallÄ±k: {report.connectivity_score:.0%}\n\n"
         f"Panik: {'EVET' if report.team_panicking else 'HAYIR'}\n"
         f"Organize: {'EVET' if report.organized_play else 'HAYIR'}\n"
         f"Kopuk Gruplar: {'EVET' if report.isolated_groups else 'HAYIR'}\n"
-        f"Pas Döngüleri: {'EVET' if report.passing_cycles else 'HAYIR'}\n"
+        f"Pas DÃ¶ngÃ¼leri: {'EVET' if report.passing_cycles else 'HAYIR'}\n"
         f"Formasyon Bozuk: {'EVET' if report.formation_broken else 'HAYIR'}\n\n"
-        f"💡 {report.recommendation}",
-        title="Homology Scanner – Persistent Homology",
+        f"ğŸ’¡ {report.recommendation}",
+        title="Homology Scanner â€“ Persistent Homology",
         border_style=color,
     ))
 
 
 @app.command()
 def rust_bench():
-    """Rust Engine – benchmark raporu."""
+    """Rust Engine â€“ benchmark raporu."""
     from src.core.rust_engine import RustEngine
     from rich.panel import Panel
     from rich.table import Table
@@ -5633,10 +6100,10 @@ def rust_bench():
     engine = RustEngine()
     report = engine.benchmark(n_sims=100_000)
 
-    table = Table(title="Benchmark Sonuçları")
+    table = Table(title="Benchmark SonuÃ§larÄ±")
     table.add_column("Fonksiyon", style="bold")
     table.add_column("Motor")
-    table.add_column("Süre (ms)", justify="right")
+    table.add_column("SÃ¼re (ms)", justify="right")
 
     for b in report.benchmarks:
         ms = b.rust_ms if b.engine == "rust" else b.python_ms
@@ -5653,25 +6120,25 @@ def rust_bench():
 
     console.print(Panel(
         f"Motor: {report.engine}\n"
-        f"Toplam Çağrı: {report.total_calls}\n"
-        f"Toplam Süre: {report.total_time_ms:.2f}ms\n"
-        f"Ort. Süre: {report.avg_time_ms:.2f}ms\n\n"
-        f"💡 {report.recommendation}",
-        title="Rust Engine – Demir Çekirdek",
+        f"Toplam Ã‡aÄŸrÄ±: {report.total_calls}\n"
+        f"Toplam SÃ¼re: {report.total_time_ms:.2f}ms\n"
+        f"Ort. SÃ¼re: {report.avg_time_ms:.2f}ms\n\n"
+        f"ğŸ’¡ {report.recommendation}",
+        title="Rust Engine â€“ Demir Ã‡ekirdek",
         border_style=color,
     ))
 
 
-# ═══════════════════════════════════════════════
-#  Level 24 CLI – AutoML, Synthetic, Fuzzy, Briefing
-# ═══════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+#  Level 24 CLI â€“ AutoML, Synthetic, Fuzzy, Briefing
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 @app.command()
 def automl_cmd(
-    n_samples: int = typer.Option(500, help="Eğitim örneği sayısı"),
-    n_features: int = typer.Option(10, help="Özellik sayısı"),
-    time_min: int = typer.Option(2, help="Arama süresi (dakika)"),
+    n_samples: int = typer.Option(500, help="EÄŸitim Ã¶rneÄŸi sayÄ±sÄ±"),
+    n_features: int = typer.Option(10, help="Ã–zellik sayÄ±sÄ±"),
+    time_min: int = typer.Option(2, help="Arama sÃ¼resi (dakika)"),
 ):
-    """AutoML – en iyi modeli otomatik bul."""
+    """AutoML â€“ en iyi modeli otomatik bul."""
     from src.quant.automl_engine import AutoMLEngine
     from rich.panel import Panel
     import numpy as np
@@ -5687,28 +6154,28 @@ def automl_cmd(
     color = "green" if result.best_score > 0.6 else ("yellow" if result.best_score > 0.45 else "red")
     console.print(Panel(
         f"Metod: {result.method}\n"
-        f"En İyi Model: {result.best_model_name}\n"
+        f"En Ä°yi Model: {result.best_model_name}\n"
         f"Skor: {result.best_score:.1%}\n"
         f"Denenen Model: {result.n_models_tried}\n"
-        f"Arama Süresi: {result.search_time_sec:.1f}s\n\n"
-        f"{'─' * 40}\n"
+        f"Arama SÃ¼resi: {result.search_time_sec:.1f}s\n\n"
+        f"{'â”€' * 40}\n"
         f"Parametreler:\n"
         + "\n".join(f"  {k}: {v}" for k, v in result.best_params.items())
         + f"\n\nModel Yolu: {result.model_path}\n"
         f"Pipeline Kodu: {result.pipeline_code}\n\n"
-        f"💡 {result.recommendation}",
-        title="AutoML – TPOT / RandomSearch",
+        f"ğŸ’¡ {result.recommendation}",
+        title="AutoML â€“ TPOT / RandomSearch",
         border_style=color,
     ))
 
 
 @app.command()
 def synthetic_cmd(
-    n_real: int = typer.Option(200, help="Gerçek veri satır sayısı"),
-    n_synthetic: int = typer.Option(5000, help="Üretilecek sentetik sayısı"),
-    n_features: int = typer.Option(8, help="Özellik sayısı"),
+    n_real: int = typer.Option(200, help="GerÃ§ek veri satÄ±r sayÄ±sÄ±"),
+    n_synthetic: int = typer.Option(5000, help="Ãœretilecek sentetik sayÄ±sÄ±"),
+    n_features: int = typer.Option(8, help="Ã–zellik sayÄ±sÄ±"),
 ):
-    """Synthetic Trainer – sentetik veri üretimi ve kalite kontrolü."""
+    """Synthetic Trainer â€“ sentetik veri Ã¼retimi ve kalite kontrolÃ¼."""
     from src.quant.synthetic_trainer import SyntheticTrainer
     from rich.panel import Panel
     from rich.table import Table
@@ -5716,26 +6183,26 @@ def synthetic_cmd(
 
     st = SyntheticTrainer(noise_scale=0.03)
 
-    # Demo gerçek veri
+    # Demo gerÃ§ek veri
     real = np.random.randn(n_real, n_features)
     real[:, 0] = np.random.poisson(1.5, n_real)  # xG
-    real[:, 1] = np.random.poisson(12, n_real)    # Şut
+    real[:, 1] = np.random.poisson(12, n_real)    # Åut
     real[:, 2] = np.random.normal(55, 10, n_real)  # Pas%
 
-    cols = ["xG", "Şut", "Pas%"] + [f"f{i}" for i in range(3, n_features)]
+    cols = ["xG", "Åut", "Pas%"] + [f"f{i}" for i in range(3, n_features)]
     synthetic = st.generate(real, n_samples=n_synthetic, column_names=cols)
     report = st.quality_check(real, synthetic, column_names=cols)
 
     # Kalite tablosu
-    table = Table(title="Sütun Bazlı Kalite Kontrolü")
-    table.add_column("Sütun", style="bold")
+    table = Table(title="SÃ¼tun BazlÄ± Kalite KontrolÃ¼")
+    table.add_column("SÃ¼tun", style="bold")
     table.add_column("KS Stat", justify="right")
     table.add_column("KS p-val", justify="right")
     table.add_column("Ort. Fark%", justify="right")
     table.add_column("Durum")
 
     for m in report.quality_metrics[:8]:
-        status = "✅" if m.passed else "❌"
+        status = "âœ…" if m.passed else "âŒ"
         table.add_row(
             m.column,
             f"{m.ks_statistic:.4f}",
@@ -5748,13 +6215,13 @@ def synthetic_cmd(
 
     colors = {"excellent": "green", "good": "yellow", "poor": "red"}
     console.print(Panel(
-        f"Gerçek: {report.n_real} satır | Sentetik: {report.n_synthetic} satır\n"
+        f"GerÃ§ek: {report.n_real} satÄ±r | Sentetik: {report.n_synthetic} satÄ±r\n"
         f"Metod: {report.method}\n\n"
-        f"{'─' * 40}\n"
+        f"{'â”€' * 40}\n"
         f"Genel Kalite: {report.overall_quality}\n"
-        f"Ort. KS p-değeri: {report.avg_ks_pvalue:.4f}\n"
-        f"Korelasyon Farkı: {report.correlation_diff:.4f}\n\n"
-        f"💡 {report.recommendation}",
+        f"Ort. KS p-deÄŸeri: {report.avg_ks_pvalue:.4f}\n"
+        f"Korelasyon FarkÄ±: {report.correlation_diff:.4f}\n\n"
+        f"ğŸ’¡ {report.recommendation}",
         title="Synthetic Data Vault",
         border_style=colors.get(report.overall_quality, "blue"),
     ))
@@ -5762,13 +6229,13 @@ def synthetic_cmd(
 
 @app.command()
 def fuzzy_cmd(
-    weather: float = typer.Option(0.7, help="Hava (0=güneş, 1=yağmur)"),
+    weather: float = typer.Option(0.7, help="Hava (0=gÃ¼neÅŸ, 1=yaÄŸmur)"),
     fatigue_val: float = typer.Option(0.6, help="Yorgunluk (0-1)"),
     travel: float = typer.Option(0.4, help="Deplasman mesafesi (0-1)"),
-    injury: float = typer.Option(0.3, help="Sakatlık (0-1)"),
+    injury: float = typer.Option(0.3, help="SakatlÄ±k (0-1)"),
     motivation: float = typer.Option(0.5, help="Motivasyon (0-1)"),
 ):
-    """Fuzzy Logic – bulanık mantık risk değerlendirmesi."""
+    """Fuzzy Logic â€“ bulanÄ±k mantÄ±k risk deÄŸerlendirmesi."""
     from src.quant.fuzzy_reasoning import FuzzyReasoningEngine, FuzzyInput
     from rich.panel import Panel
 
@@ -5787,28 +6254,28 @@ def fuzzy_cmd(
     output = fre.evaluate(inputs)
 
     colors = {
-        "düşük": "green", "orta": "yellow",
-        "yüksek": "red", "çok_yüksek": "red",
+        "dÃ¼ÅŸÃ¼k": "green", "orta": "yellow",
+        "yÃ¼ksek": "red", "Ã§ok_yÃ¼ksek": "red",
     }
 
-    rules_text = "\n".join(f"  • {r}" for r in output.active_rules) if output.active_rules else "  (Yok)"
+    rules_text = "\n".join(f"  â€¢ {r}" for r in output.active_rules) if output.active_rules else "  (Yok)"
 
     console.print(Panel(
         f"Metod: {output.method}\n\n"
-        f"{'─' * 40}\n"
+        f"{'â”€' * 40}\n"
         f"Girdiler:\n"
         f"  Hava: {weather:.1f} | Yorgunluk: {fatigue_val:.1f}\n"
-        f"  Deplasman: {travel:.1f} | Sakatlık: {injury:.1f}\n"
+        f"  Deplasman: {travel:.1f} | SakatlÄ±k: {injury:.1f}\n"
         f"  Motivasyon: {motivation:.1f}\n\n"
-        f"{'─' * 40}\n"
+        f"{'â”€' * 40}\n"
         f"Risk Skoru: {output.risk_score:.0f}/100\n"
         f"Risk Seviyesi: {output.risk_level}\n"
-        f"Güven Çarpanı: x{output.confidence_modifier:.1f}\n"
-        f"Gol Beklentisi Çarpanı: x{output.goal_expectation_mod:.2f}\n\n"
-        f"{'─' * 40}\n"
+        f"GÃ¼ven Ã‡arpanÄ±: x{output.confidence_modifier:.1f}\n"
+        f"Gol Beklentisi Ã‡arpanÄ±: x{output.goal_expectation_mod:.2f}\n\n"
+        f"{'â”€' * 40}\n"
         f"Aktif Kurallar:\n{rules_text}\n\n"
-        f"💡 {output.recommendation}",
-        title="Fuzzy Logic – Bulanık Mantık",
+        f"ğŸ’¡ {output.recommendation}",
+        title="Fuzzy Logic â€“ BulanÄ±k MantÄ±k",
         border_style=colors.get(output.risk_level, "blue"),
     ))
 
@@ -5816,10 +6283,10 @@ def fuzzy_cmd(
 @app.command()
 def briefing(
     bankroll: float = typer.Option(12450, help="Kasa (TL)"),
-    change: float = typer.Option(3.2, help="Günlük değişim (%)"),
-    roi: float = typer.Option(8.7, help="30 günlük ROI (%)"),
+    change: float = typer.Option(3.2, help="GÃ¼nlÃ¼k deÄŸiÅŸim (%)"),
+    roi: float = typer.Option(8.7, help="30 gÃ¼nlÃ¼k ROI (%)"),
 ):
-    """Daily Briefing – yönetici günlük özeti."""
+    """Daily Briefing â€“ yÃ¶netici gÃ¼nlÃ¼k Ã¶zeti."""
     from src.utils.daily_briefing import DailyBriefing, BriefingData
     from rich.panel import Panel
 
@@ -5835,13 +6302,13 @@ def briefing(
         total_bets_7d=23,
         profit_7d=850,
         top_opportunities=[
-            {"home": "Galatasaray", "away": "Fenerbahçe", "ev": 0.08, "kelly": 0.032},
-            {"home": "Beşiktaş", "away": "Trabzonspor", "ev": 0.05, "kelly": 0.021},
+            {"home": "Galatasaray", "away": "FenerbahÃ§e", "ev": 0.08, "kelly": 0.032},
+            {"home": "BeÅŸiktaÅŸ", "away": "Trabzonspor", "ev": 0.05, "kelly": 0.021},
             {"home": "Adana Demir", "away": "Gaziantep", "ev": 0.04, "kelly": 0.018},
         ],
         alerts=[
             "Model drift tespit (Wasserstein: 0.32)",
-            "GS defansı yorgun (stamina: 28%)",
+            "GS defansÄ± yorgun (stamina: 28%)",
         ],
         uptime_pct=99.7,
         error_rate=0.3,
@@ -5857,19 +6324,19 @@ def briefing(
     ))
 
     if report.summary:
-        console.print(f"\n[dim]Özet metodu: {report.method} "
+        console.print(f"\n[dim]Ã–zet metodu: {report.method} "
                       f"({report.generation_time_ms:.0f}ms)[/]")
 
 
-# ═══════════════════════════════════════════════
-#  Level 25 CLI – Uncertainty, Topology, GraphRAG
-# ═══════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+#  Level 25 CLI â€“ Uncertainty, Topology, GraphRAG
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 @app.command()
 def uncertainty_cmd(
-    n_samples: int = typer.Option(300, help="Eğitim örneği sayısı"),
-    n_features: int = typer.Option(6, help="Özellik sayısı"),
+    n_samples: int = typer.Option(300, help="EÄŸitim Ã¶rneÄŸi sayÄ±sÄ±"),
+    n_features: int = typer.Option(6, help="Ã–zellik sayÄ±sÄ±"),
 ):
-    """Epistemic vs Aleatoric – belirsizlik ayrımı demo."""
+    """Epistemic vs Aleatoric â€“ belirsizlik ayrÄ±mÄ± demo."""
     from src.quant.uncertainty_separator import UncertaintySeparator
     from rich.panel import Panel
     from rich.table import Table
@@ -5884,15 +6351,15 @@ def uncertainty_cmd(
 
     us.fit(X_train, y_train)
 
-    # Test maçları
+    # Test maÃ§larÄ±
     test_cases = [
-        ("Favori Maç (Bilinen)", np.array([2.0, 1.5, 0.3, 0.1, 0.5, 0.7])),
-        ("Belirsiz Maç (Veri Yok)", np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])),
-        ("Kaotik Maç (Yüksek Risk)", np.array([0.5, -0.5, 1.8, -1.2, 2.0, -0.8])),
+        ("Favori MaÃ§ (Bilinen)", np.array([2.0, 1.5, 0.3, 0.1, 0.5, 0.7])),
+        ("Belirsiz MaÃ§ (Veri Yok)", np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])),
+        ("Kaotik MaÃ§ (YÃ¼ksek Risk)", np.array([0.5, -0.5, 1.8, -1.2, 2.0, -0.8])),
     ]
 
-    table = Table(title="Epistemic vs Aleatoric Belirsizlik Ayrımı")
-    table.add_column("Maç", style="bold")
+    table = Table(title="Epistemic vs Aleatoric Belirsizlik AyrÄ±mÄ±")
+    table.add_column("MaÃ§", style="bold")
     table.add_column("Tahmin", justify="center")
     table.add_column("Epistemik", justify="right")
     table.add_column("Aleatorik", justify="right")
@@ -5918,27 +6385,27 @@ def uncertainty_cmd(
 
     console.print(table)
 
-    # Detaylı son rapor
+    # DetaylÄ± son rapor
     last = us.analyze(test_cases[-1][1], match_id="demo")
     console.print(Panel(
         f"Metod: {last.method}\n"
-        f"Model Sayısı: {last.n_samples}\n\n"
-        f"{'─' * 40}\n"
-        f"Epistemik Oranı: {last.epistemic_ratio:.0%} (bilgisizlik)\n"
-        f"Aleatorik Oranı: {last.aleatoric_ratio:.0%} (şans)\n"
-        f"Güven Çarpanı: x{last.confidence_modifier:.1f}\n\n"
-        f"💡 {last.recommendation}",
-        title="Belirsizlik Detayı",
+        f"Model SayÄ±sÄ±: {last.n_samples}\n\n"
+        f"{'â”€' * 40}\n"
+        f"Epistemik OranÄ±: {last.epistemic_ratio:.0%} (bilgisizlik)\n"
+        f"Aleatorik OranÄ±: {last.aleatoric_ratio:.0%} (ÅŸans)\n"
+        f"GÃ¼ven Ã‡arpanÄ±: x{last.confidence_modifier:.1f}\n\n"
+        f"ğŸ’¡ {last.recommendation}",
+        title="Belirsizlik DetayÄ±",
         border_style="cyan",
     ))
 
 
 @app.command()
 def topology_cmd(
-    n_matches: int = typer.Option(500, help="Tarihsel maç sayısı"),
-    n_features: int = typer.Option(7, help="Özellik sayısı"),
+    n_matches: int = typer.Option(500, help="Tarihsel maÃ§ sayÄ±sÄ±"),
+    n_features: int = typer.Option(7, help="Ã–zellik sayÄ±sÄ±"),
 ):
-    """Topology Mapper – topolojik küme haritası demo."""
+    """Topology Mapper â€“ topolojik kÃ¼me haritasÄ± demo."""
     from src.quant.topology_mapper import TopologyMapper
     from rich.panel import Panel
     import numpy as np
@@ -5951,13 +6418,13 @@ def topology_cmd(
     labels = np.random.randint(0, 3, n_matches)
     labels[:50] = 2     # Anomali grubu deplasman
 
-    cols = ["xG", "Şut", "Pas%", "Form", "OddH", "OddD", "OddA"]
+    cols = ["xG", "Åut", "Pas%", "Form", "OddH", "OddD", "OddA"]
     tm.fit(X, labels=labels, column_names=cols)
 
-    # Bugünkü maçlar
+    # BugÃ¼nkÃ¼ maÃ§lar
     test_cases = [
-        ("Normal Maç", np.random.randn(n_features) * 0.5),
-        ("Anomali Maç", np.random.randn(n_features) * 3.5),
+        ("Normal MaÃ§", np.random.randn(n_features) * 0.5),
+        ("Anomali MaÃ§", np.random.randn(n_features) * 3.5),
     ]
 
     for name, features in test_cases:
@@ -5966,28 +6433,28 @@ def topology_cmd(
 
         console.print(Panel(
             f"Metod: {report.method}\n\n"
-            f"{'─' * 40}\n"
-            f"Küme: #{report.assigned_cluster} ({report.cluster_size} maç)\n"
-            f"Küme Etiketi: {report.cluster_label}\n"
-            f"Küme Ort. Sonuç: {report.cluster_avg_outcome:.2f}\n"
+            f"{'â”€' * 40}\n"
+            f"KÃ¼me: #{report.assigned_cluster} ({report.cluster_size} maÃ§)\n"
+            f"KÃ¼me Etiketi: {report.cluster_label}\n"
+            f"KÃ¼me Ort. SonuÃ§: {report.cluster_avg_outcome:.2f}\n"
             f"Anomali Skoru: {report.anomaly_score:.0%}\n"
             f"Anomali: {'EVET' if report.is_anomalous else 'HAYIR'}\n\n"
-            f"Graf: {report.n_nodes} düğüm, {report.n_edges} bağ\n\n"
-            f"💡 {report.recommendation}",
-            title=f"Topology Mapper – {name}",
+            f"Graf: {report.n_nodes} dÃ¼ÄŸÃ¼m, {report.n_edges} baÄŸ\n\n"
+            f"ğŸ’¡ {report.recommendation}",
+            title=f"Topology Mapper â€“ {name}",
             border_style=color,
         ))
 
-    # HTML oluştur
+    # HTML oluÅŸtur
     html_path = tm.visualize("demo_mapper.html")
     console.print(f"\n[dim]HTML: {html_path}[/]")
 
 
 @app.command()
 def graphrag_cmd(
-    team: str = typer.Option("Galatasaray", help="Takım adı"),
+    team: str = typer.Option("Galatasaray", help="TakÄ±m adÄ±"),
 ):
-    """GraphRAG – bilgi grafiği kriz analizi demo."""
+    """GraphRAG â€“ bilgi grafiÄŸi kriz analizi demo."""
     from src.memory.graph_rag import GraphRAG
     from rich.panel import Panel
     from rich.table import Table
@@ -5996,12 +6463,12 @@ def graphrag_cmd(
 
     # Demo haberler
     news = [
-        {"title": f"{team} kaptanı sakatlık geçirdi, 3 hafta yok", "source": "spor_gazetesi"},
-        {"title": f"{team} teknik direktörü istifa sinyali verdi", "source": "tv_haberi"},
-        {"title": f"{team} taraftarı protesto düzenledi", "source": "sosyal_medya"},
-        {"title": f"{team} yeni transfer bombasını patlattı", "source": "transfer_haberi"},
-        {"title": f"{team} son maçta muhteşem galibiyet aldı", "source": "spor_gazetesi"},
-        {"title": f"{team} defans oyuncusu kadro dışı bırakıldı", "source": "kulüp_açıklama"},
+        {"title": f"{team} kaptanÄ± sakatlÄ±k geÃ§irdi, 3 hafta yok", "source": "spor_gazetesi"},
+        {"title": f"{team} teknik direktÃ¶rÃ¼ istifa sinyali verdi", "source": "tv_haberi"},
+        {"title": f"{team} taraftarÄ± protesto dÃ¼zenledi", "source": "sosyal_medya"},
+        {"title": f"{team} yeni transfer bombasÄ±nÄ± patlattÄ±", "source": "transfer_haberi"},
+        {"title": f"{team} son maÃ§ta muhteÅŸem galibiyet aldÄ±", "source": "spor_gazetesi"},
+        {"title": f"{team} defans oyuncusu kadro dÄ±ÅŸÄ± bÄ±rakÄ±ldÄ±", "source": "kulÃ¼p_aÃ§Ä±klama"},
     ]
 
     grag.ingest_news(news, team=team)
@@ -6014,22 +6481,22 @@ def graphrag_cmd(
         "crisis": "red", "meltdown": "red",
     }
 
-    events = "\n".join(f"  • {e}" for e in crisis.connected_events) if crisis.connected_events else "  (Yok)"
-    hidden = "\n".join(f"  • {h}" for h in crisis.hidden_connections) if crisis.hidden_connections else "  (Yok)"
+    events = "\n".join(f"  â€¢ {e}" for e in crisis.connected_events) if crisis.connected_events else "  (Yok)"
+    hidden = "\n".join(f"  â€¢ {h}" for h in crisis.hidden_connections) if crisis.hidden_connections else "  (Yok)"
 
     console.print(Panel(
         f"Metod: {crisis.method}\n\n"
-        f"{'─' * 40}\n"
+        f"{'â”€' * 40}\n"
         f"Kriz Skoru: {crisis.crisis_score:.0%}\n"
         f"Kriz Seviyesi: {crisis.crisis_level.upper()}\n"
         f"Negatif Haber: {crisis.negative_news_count}\n\n"
-        f"{'─' * 40}\n"
-        f"Bağlı Olaylar:\n{events}\n\n"
-        f"Kilit Varlıklar: {', '.join(crisis.key_entities[:5])}\n\n"
-        f"Gizli Bağlantılar:\n{hidden}\n\n"
-        + (f"{'─' * 40}\nLLM Analizi: {crisis.llm_analysis}\n\n" if crisis.llm_analysis else "")
-        + f"💡 {crisis.recommendation}",
-        title=f"GraphRAG – {team} Kriz Analizi",
+        f"{'â”€' * 40}\n"
+        f"BaÄŸlÄ± Olaylar:\n{events}\n\n"
+        f"Kilit VarlÄ±klar: {', '.join(crisis.key_entities[:5])}\n\n"
+        f"Gizli BaÄŸlantÄ±lar:\n{hidden}\n\n"
+        + (f"{'â”€' * 40}\nLLM Analizi: {crisis.llm_analysis}\n\n" if crisis.llm_analysis else "")
+        + f"ğŸ’¡ {crisis.recommendation}",
+        title=f"GraphRAG â€“ {team} Kriz Analizi",
         border_style=colors.get(crisis.crisis_level, "blue"),
     ))
 
@@ -6038,15 +6505,15 @@ def graphrag_cmd(
     console.print(f"\n[dim]Grafik: {stats}[/]")
 
 
-# ═══════════════════════════════════════════════
-#  Level 26 CLI – Probabilistic, Active Inference, MF-DFA
-# ═══════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+#  Level 26 CLI â€“ Probabilistic, Active Inference, MF-DFA
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 @app.command()
 def probabilistic_cmd(
-    n_matches: int = typer.Option(200, help="Eğitim maç sayısı"),
-    n_teams: int = typer.Option(6, help="Takım sayısı"),
+    n_matches: int = typer.Option(200, help="EÄŸitim maÃ§ sayÄ±sÄ±"),
+    n_teams: int = typer.Option(6, help="TakÄ±m sayÄ±sÄ±"),
 ):
-    """Probabilistic Engine – olasılıksal Bayesian maç tahmini."""
+    """Probabilistic Engine â€“ olasÄ±lÄ±ksal Bayesian maÃ§ tahmini."""
     from src.quant.probabilistic_engine import ProbabilisticEngine
     from rich.panel import Panel
     from rich.table import Table
@@ -6055,7 +6522,7 @@ def probabilistic_cmd(
     pe = ProbabilisticEngine(n_samples=1500, n_tune=500)
 
     # Demo veri
-    teams = [f"Takım_{chr(65 + i)}" for i in range(n_teams)]
+    teams = [f"TakÄ±m_{chr(65 + i)}" for i in range(n_teams)]
     home_teams, away_teams, hg_list, ag_list = [], [], [], []
     for _ in range(n_matches):
         h, a = np.random.choice(len(teams), 2, replace=False)
@@ -6068,26 +6535,26 @@ def probabilistic_cmd(
 
     console.print(Panel(
         f"Metod: {report.method}\n"
-        f"Takım: {report.n_teams} | Maç: {report.n_matches_trained}\n"
-        f"Eğitim: {report.fit_time_sec:.1f}s\n\n"
-        f"{'─' * 40}\n"
-        f"Ev Avantajı: {report.home_advantage.mean:.3f} "
-        f"± {report.home_advantage.std:.3f}\n"
+        f"TakÄ±m: {report.n_teams} | MaÃ§: {report.n_matches_trained}\n"
+        f"EÄŸitim: {report.fit_time_sec:.1f}s\n\n"
+        f"{'â”€' * 40}\n"
+        f"Ev AvantajÄ±: {report.home_advantage.mean:.3f} "
+        f"Â± {report.home_advantage.std:.3f}\n"
         f"  HDI: [{report.home_advantage.hdi_low:.3f}, "
         f"{report.home_advantage.hdi_high:.3f}]",
-        title="Probabilistic Engine – Bayesian Fit",
+        title="Probabilistic Engine â€“ Bayesian Fit",
         border_style="cyan",
     ))
 
     # Tahmin tablosu
-    table = Table(title="Olasılıksal Maç Tahminleri")
-    table.add_column("Maç", style="bold")
+    table = Table(title="OlasÄ±lÄ±ksal MaÃ§ Tahminleri")
+    table.add_column("MaÃ§", style="bold")
     table.add_column("Ev", justify="right")
     table.add_column("Ber", justify="right")
     table.add_column("Dep", justify="right")
-    table.add_column("Ü2.5", justify="right")
+    table.add_column("Ãœ2.5", justify="right")
     table.add_column("KG", justify="right")
-    table.add_column("En Olası Skor")
+    table.add_column("En OlasÄ± Skor")
 
     for _ in range(3):
         h, a = np.random.choice(len(teams), 2, replace=False)
@@ -6105,9 +6572,9 @@ def probabilistic_cmd(
 
 @app.command()
 def active_inf_cmd(
-    n_obs: int = typer.Option(100, help="Simüle edilecek gözlem sayısı"),
+    n_obs: int = typer.Option(100, help="SimÃ¼le edilecek gÃ¶zlem sayÄ±sÄ±"),
 ):
-    """Active Inference – serbest enerji ajanı demo."""
+    """Active Inference â€“ serbest enerji ajanÄ± demo."""
     from src.core.active_inference_agent import ActiveInferenceAgent
     from rich.panel import Panel
     from rich.table import Table
@@ -6117,11 +6584,11 @@ def active_inf_cmd(
         "poisson", "lightgbm", "lstm", "ensemble", "sentiment",
     ])
 
-    # Simüle edilmiş gözlemler
+    # SimÃ¼le edilmiÅŸ gÃ¶zlemler
     for i in range(n_obs):
         observed = np.random.choice([0, 1, 2], p=[0.45, 0.27, 0.28])
         for mod in ["poisson", "lightgbm", "lstm", "ensemble", "sentiment"]:
-            # Her modülün farklı doğruluk seviyesi
+            # Her modÃ¼lÃ¼n farklÄ± doÄŸruluk seviyesi
             noise = {"poisson": 0.3, "lightgbm": 0.15, "lstm": 0.25,
                      "ensemble": 0.1, "sentiment": 0.5}[mod]
             base = np.array([0.45, 0.27, 0.28])
@@ -6134,18 +6601,18 @@ def active_inf_cmd(
     prec = aia.get_precision_weights()
     alloc = aia.get_resource_allocation()
 
-    # Modül tablosu
-    table = Table(title="Modül Durumları (Active Inference)")
-    table.add_column("Modül", style="bold")
-    table.add_column("Doğruluk", justify="right")
+    # ModÃ¼l tablosu
+    table = Table(title="ModÃ¼l DurumlarÄ± (Active Inference)")
+    table.add_column("ModÃ¼l", style="bold")
+    table.add_column("DoÄŸruluk", justify="right")
     table.add_column("Precision", justify="right")
     table.add_column("Ort. Surprisal", justify="right")
-    table.add_column("Ensemble Ağırlık", justify="right")
+    table.add_column("Ensemble AÄŸÄ±rlÄ±k", justify="right")
     table.add_column("Kaynak", justify="right")
     table.add_column("Durum")
 
     for name, state in report.module_states.items():
-        status = "🔴 YENİDEN EĞİT" if state.needs_retraining else "🟢 STABIL"
+        status = "ğŸ”´ YENÄ°DEN EÄÄ°T" if state.needs_retraining else "ğŸŸ¢ STABIL"
         table.add_row(
             name,
             f"{state.accuracy:.0%}",
@@ -6161,23 +6628,23 @@ def active_inf_cmd(
     color = "red" if report.retrain_targets else "green"
     console.print(Panel(
         f"Metod: {report.method}\n\n"
-        f"{'─' * 40}\n"
+        f"{'â”€' * 40}\n"
         f"Ort. Surprisal: {report.avg_surprisal:.4f}\n"
         f"Serbest Enerji: {report.total_free_energy:.4f}\n\n"
-        f"Yeniden Eğitim: {', '.join(report.retrain_targets) or 'Yok'}\n"
-        f"Aktif Örnekleme: {', '.join(report.active_sampling_targets) or 'Yok'}\n\n"
-        f"💡 {report.recommendation}",
-        title="Active Inference – Serbest Enerji Raporu",
+        f"Yeniden EÄŸitim: {', '.join(report.retrain_targets) or 'Yok'}\n"
+        f"Aktif Ã–rnekleme: {', '.join(report.active_sampling_targets) or 'Yok'}\n\n"
+        f"ğŸ’¡ {report.recommendation}",
+        title="Active Inference â€“ Serbest Enerji Raporu",
         border_style=color,
     ))
 
 
 @app.command()
 def multifractal_cmd(
-    n_points: int = typer.Option(500, help="Zaman serisi uzunluğu"),
+    n_points: int = typer.Option(500, help="Zaman serisi uzunluÄŸu"),
     regime: str = typer.Option("mixed", help="Rejim: stable/chaotic/mixed"),
 ):
-    """MF-DFA – çoklu fraktal piyasa analizi demo."""
+    """MF-DFA â€“ Ã§oklu fraktal piyasa analizi demo."""
     from src.quant.multifractal_logic import MultifractalAnalyzer
     from rich.panel import Panel
     from rich.table import Table
@@ -6190,17 +6657,17 @@ def multifractal_cmd(
         data = np.cumsum(np.random.randn(n_points) * 0.01) + 2.0
     elif regime == "chaotic":
         data = np.cumsum(np.random.randn(n_points) * 0.1) + 2.0
-        data[200:250] += np.random.randn(50) * 0.5  # Şok
+        data[200:250] += np.random.randn(50) * 0.5  # Åok
     else:
         data = np.cumsum(np.random.randn(n_points) * 0.01) + 2.0
-        data[300:350] += np.random.randn(50) * 0.3  # Hafif şok
+        data[300:350] += np.random.randn(50) * 0.3  # Hafif ÅŸok
 
     report = mfa.analyze(data, match_id=f"demo_{regime}", market="odds")
     p = report.params
 
     # h(q) tablosu
     if p.h_values:
-        table = Table(title="h(q) – Genelleştirilmiş Hurst Üssü")
+        table = Table(title="h(q) â€“ GenelleÅŸtirilmiÅŸ Hurst ÃœssÃ¼")
         table.add_column("q", justify="right")
         table.add_column("h(q)", justify="right")
         for q_val in sorted(p.h_values.keys()):
@@ -6216,29 +6683,29 @@ def multifractal_cmd(
     console.print(Panel(
         f"Metod: {report.method}\n"
         f"Veri: {report.n_points} nokta\n\n"
-        f"{'─' * 40}\n"
-        f"h(2) – Standart Hurst: {p.hurst_q2:.4f}\n"
-        f"Δh – Çoklu fraktallik: {p.delta_h:.4f}\n"
-        f"α genişliği: {p.alpha_width:.4f}\n\n"
-        f"{'─' * 40}\n"
+        f"{'â”€' * 40}\n"
+        f"h(2) â€“ Standart Hurst: {p.hurst_q2:.4f}\n"
+        f"Î”h â€“ Ã‡oklu fraktallik: {p.delta_h:.4f}\n"
+        f"Î± geniÅŸliÄŸi: {p.alpha_width:.4f}\n\n"
+        f"{'â”€' * 40}\n"
         f"Rejim: {report.regime}\n"
         f"Trend: {'EVET' if report.is_trending else 'HAYIR'}\n"
-        f"Ortalamaya Dönüş: {'EVET' if report.is_mean_reverting else 'HAYIR'}\n"
-        f"Rejim Değişikliği: {'⚠️ EVET' if report.regime_change_signal else 'Hayır'}\n\n"
-        f"💡 {report.recommendation}",
-        title=f"MF-DFA – Çoklu Fraktal Analiz ({regime})",
+        f"Ortalamaya DÃ¶nÃ¼ÅŸ: {'EVET' if report.is_mean_reverting else 'HAYIR'}\n"
+        f"Rejim DeÄŸiÅŸikliÄŸi: {'âš ï¸ EVET' if report.regime_change_signal else 'HayÄ±r'}\n\n"
+        f"ğŸ’¡ {report.recommendation}",
+        title=f"MF-DFA â€“ Ã‡oklu Fraktal Analiz ({regime})",
         border_style=colors.get(report.regime, "blue"),
     ))
 
 
-# ═══════════════════════════════════════════════
-#  Level 27 CLI – Symbolic, Wavelet, Decision Flow
-# ═══════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+#  Level 27 CLI â€“ Symbolic, Wavelet, Decision Flow
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 @app.command()
 def symbolic_cmd(
-    n_samples: int = typer.Option(300, help="Eğitim örneği sayısı"),
+    n_samples: int = typer.Option(300, help="EÄŸitim Ã¶rneÄŸi sayÄ±sÄ±"),
 ):
-    """Symbolic Discovery – sembolik regresyon formül keşfi."""
+    """Symbolic Discovery â€“ sembolik regresyon formÃ¼l keÅŸfi."""
     from src.quant.symbolic_discovery import SymbolicDiscovery
     from rich.panel import Panel
     from rich.table import Table
@@ -6254,15 +6721,15 @@ def symbolic_cmd(
     goals = np.sqrt(xg) * form ** 1.1 + np.random.randn(n_samples) * 0.3
 
     X = np.column_stack([xg, shots, form, possession])
-    report = sd.discover(X, goals, feature_names=["xG", "Şut", "Form", "Pas%"], target="gol")
+    report = sd.discover(X, goals, feature_names=["xG", "Åut", "Form", "Pas%"], target="gol")
 
     # Pareto front tablosu
     if report.pareto_front:
-        table = Table(title="Pareto Front – Keşfedilen Formüller")
+        table = Table(title="Pareto Front â€“ KeÅŸfedilen FormÃ¼ller")
         table.add_column("#", justify="right")
-        table.add_column("Formül", style="bold")
-        table.add_column("R²", justify="right")
-        table.add_column("Karmaşıklık", justify="right")
+        table.add_column("FormÃ¼l", style="bold")
+        table.add_column("RÂ²", justify="right")
+        table.add_column("KarmaÅŸÄ±klÄ±k", justify="right")
         table.add_column("Skor", justify="right")
 
         for i, f in enumerate(report.pareto_front[:8], 1):
@@ -6279,34 +6746,34 @@ def symbolic_cmd(
     color = "green" if report.best_formula.r2 > 0.5 else "yellow"
     console.print(Panel(
         f"Metod: {report.method}\n"
-        f"Veri: {report.n_samples} maç, {report.n_features} özellik\n"
+        f"Veri: {report.n_samples} maÃ§, {report.n_features} Ã¶zellik\n"
         f"Arama: {report.n_generations} nesil, {report.search_time_sec:.1f}s\n\n"
-        f"{'─' * 40}\n"
-        f"EN İYİ FORMÜL:\n"
+        f"{'â”€' * 40}\n"
+        f"EN Ä°YÄ° FORMÃœL:\n"
         f"  {report.best_formula.equation}\n\n"
-        f"R²: {report.best_formula.r2:.1%} | "
-        f"Karmaşıklık: {report.best_formula.complexity}\n\n"
-        f"💡 {report.recommendation}",
-        title="Symbolic Discovery – Formül Keşfi",
+        f"RÂ²: {report.best_formula.r2:.1%} | "
+        f"KarmaÅŸÄ±klÄ±k: {report.best_formula.complexity}\n\n"
+        f"ğŸ’¡ {report.recommendation}",
+        title="Symbolic Discovery â€“ FormÃ¼l KeÅŸfi",
         border_style=color,
     ))
 
 
 @app.command()
 def wavelet_cmd(
-    n_points: int = typer.Option(200, help="Zaman serisi uzunluğu"),
-    noise_level: float = typer.Option(0.1, help="Gürültü seviyesi"),
+    n_points: int = typer.Option(200, help="Zaman serisi uzunluÄŸu"),
+    noise_level: float = typer.Option(0.1, help="GÃ¼rÃ¼ltÃ¼ seviyesi"),
 ):
-    """Wavelet Denoiser – sinyal temizleme demo."""
+    """Wavelet Denoiser â€“ sinyal temizleme demo."""
     from src.quant.wavelet_denoiser import WaveletDenoiser
     from rich.panel import Panel
     import numpy as np
 
     wd = WaveletDenoiser(wavelet="db4", level=4)
 
-    # Demo: trend + gürültü + fake moves
+    # Demo: trend + gÃ¼rÃ¼ltÃ¼ + fake moves
     t = np.linspace(0, 10, n_points)
-    trend = 2.0 + 0.3 * np.sin(t * 0.5)  # Gerçek trend
+    trend = 2.0 + 0.3 * np.sin(t * 0.5)  # GerÃ§ek trend
     noise = np.random.randn(n_points) * noise_level
     signal = trend + noise
     # Fake moves (3 adet ani spike)
@@ -6320,34 +6787,34 @@ def wavelet_cmd(
     energy_text = "\n".join(
         f"  Seviye {k}: {v:.1f}%"
         for k, v in sorted(report.energy_by_level.items())
-    ) if report.energy_by_level else "  (hesaplanamadı)"
+    ) if report.energy_by_level else "  (hesaplanamadÄ±)"
 
     color = "red" if report.fake_move_detected else "green"
     console.print(Panel(
         f"Metod: {r.method} (wavelet: {r.wavelet})\n"
         f"Veri: {len(r.original)} nokta, seviye: {r.level}\n\n"
-        f"{'─' * 40}\n"
-        f"Gürültü: %{r.noise_pct:.1f}\n"
-        f"SNR: {r.snr_before:.1f} → {r.snr_after:.1f} dB\n"
+        f"{'â”€' * 40}\n"
+        f"GÃ¼rÃ¼ltÃ¼: %{r.noise_pct:.1f}\n"
+        f"SNR: {r.snr_before:.1f} â†’ {r.snr_after:.1f} dB\n"
         f"Threshold: {r.threshold:.6f}\n\n"
-        f"{'─' * 40}\n"
+        f"{'â”€' * 40}\n"
         f"Trend: {r.trend_direction} ({r.trend_slope:+.6f})\n"
         f"Fake Move: {'EVET (' + str(len(report.fake_move_times)) + ')' if report.fake_move_detected else 'HAYIR'}\n"
         f"{'  t = ' + str(report.fake_move_times[:5]) if report.fake_move_times else ''}\n\n"
-        f"Enerji Dağılımı:\n{energy_text}\n"
-        f"Baskın Frekans: {report.dominant_frequency}\n\n"
-        f"💡 {report.recommendation}",
-        title="Wavelet Denoiser – Sinyal Temizleme",
+        f"Enerji DaÄŸÄ±lÄ±mÄ±:\n{energy_text}\n"
+        f"BaskÄ±n Frekans: {report.dominant_frequency}\n\n"
+        f"ğŸ’¡ {report.recommendation}",
+        title="Wavelet Denoiser â€“ Sinyal Temizleme",
         border_style=color,
     ))
 
 
 @app.command()
 def decision_flow_cmd(
-    home: str = typer.Option("Galatasaray", help="Ev sahibi takım"),
-    away: str = typer.Option("Fenerbahçe", help="Deplasman takımı"),
+    home: str = typer.Option("Galatasaray", help="Ev sahibi takÄ±m"),
+    away: str = typer.Option("FenerbahÃ§e", help="Deplasman takÄ±mÄ±"),
 ):
-    """Decision Flow – karar akış şeması demo."""
+    """Decision Flow â€“ karar akÄ±ÅŸ ÅŸemasÄ± demo."""
     from src.utils.decision_flow_gen import (
         DecisionFlowGenerator, DecisionFlow, DecisionStep,
     )
@@ -6360,14 +6827,14 @@ def decision_flow_cmd(
         home_team=home,
         away_team=away,
         steps=[
-            DecisionStep("Kadro Kontrolü", "TAMAM", "11/11 fit", "pass", "lineup"),
-            DecisionStep("xG Analizi", "YÜKSEK", "xG=1.82", "pass", "poisson"),
-            DecisionStep("Oran Değeri (EV)", "+8.5%", "EV=+8.5%", "pass", "fair_value"),
-            DecisionStep("Form Trendi", "YÜKSELİŞ", "Mom=0.78", "pass", "lstm"),
-            DecisionStep("Hava Durumu", "YAĞMURLU", "Risk↑", "warn", "fuzzy"),
-            DecisionStep("Yorgunluk", "YÜKSEK", "Stamina=35%", "warn", "fatigue"),
-            DecisionStep("Kaos Filtresi", "STABİL", "λ=-0.03", "pass", "chaos"),
-            DecisionStep("Belirsizlik", "DÜŞÜK", "ε=0.12", "pass", "uncertainty"),
+            DecisionStep("Kadro KontrolÃ¼", "TAMAM", "11/11 fit", "pass", "lineup"),
+            DecisionStep("xG Analizi", "YÃœKSEK", "xG=1.82", "pass", "poisson"),
+            DecisionStep("Oran DeÄŸeri (EV)", "+8.5%", "EV=+8.5%", "pass", "fair_value"),
+            DecisionStep("Form Trendi", "YÃœKSELÄ°Å", "Mom=0.78", "pass", "lstm"),
+            DecisionStep("Hava Durumu", "YAÄMURLU", "Riskâ†‘", "warn", "fuzzy"),
+            DecisionStep("Yorgunluk", "YÃœKSEK", "Stamina=35%", "warn", "fatigue"),
+            DecisionStep("Kaos Filtresi", "STABÄ°L", "Î»=-0.03", "pass", "chaos"),
+            DecisionStep("Belirsizlik", "DÃœÅÃœK", "Îµ=0.12", "pass", "uncertainty"),
         ],
         final_decision="OYNA",
         confidence=0.75,
@@ -6376,26 +6843,26 @@ def decision_flow_cmd(
 
     # Metin
     text = dfg.generate_text(flow)
-    console.print(Panel(text, title="Karar Akış Şeması", border_style="cyan"))
+    console.print(Panel(text, title="Karar AkÄ±ÅŸ ÅemasÄ±", border_style="cyan"))
 
     # Mermaid
     mermaid = dfg.generate_mermaid(flow)
     console.print(f"\n[dim]Mermaid.js:[/]\n{mermaid}")
 
-    # Görsel
+    # GÃ¶rsel
     path = dfg.generate_image(flow)
-    console.print(f"\n[dim]Görsel: {path}[/]")
+    console.print(f"\n[dim]GÃ¶rsel: {path}[/]")
 
 
-# ═══════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 # LEVEL 28: Volatility & Stream CLI
-# ═══════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 @app.command()
 def volatility_cmd(
-    n_points: int = typer.Option(200, help="Zaman serisi uzunluğu"),
-    team: str = typer.Option("Galatasaray", help="Takım adı"),
+    n_points: int = typer.Option(200, help="Zaman serisi uzunluÄŸu"),
+    team: str = typer.Option("Galatasaray", help="TakÄ±m adÄ±"),
 ):
-    """GARCH Volatility Analyzer – oynaklık kümelenmesi tespiti."""
+    """GARCH Volatility Analyzer â€“ oynaklÄ±k kÃ¼melenmesi tespiti."""
     from src.quant.volatility_analyzer import VolatilityAnalyzer
     from rich.panel import Panel
     from rich.table import Table
@@ -6403,13 +6870,13 @@ def volatility_cmd(
 
     va = VolatilityAnalyzer(model_type="GARCH", p=1, q=1)
 
-    # Sentetik oran verisi: trend + kümeleşen oynaklık
+    # Sentetik oran verisi: trend + kÃ¼meleÅŸen oynaklÄ±k
     np.random.seed(42)
     base = 1.85
     prices = [base]
     vol_state = 0.01
     for i in range(n_points - 1):
-        if np.random.random() < 0.05:  # %5 rejim değişimi
+        if np.random.random() < 0.05:  # %5 rejim deÄŸiÅŸimi
             vol_state = np.random.choice([0.005, 0.02, 0.05, 0.10])
         shock = np.random.normal(0, vol_state)
         prices.append(max(prices[-1] + shock, 1.01))
@@ -6419,37 +6886,37 @@ def volatility_cmd(
 
     report = va.analyze(log_ret, match_id="demo", team=team, market="odds")
 
-    table = Table(title=f"GARCH Volatility – {team}")
+    table = Table(title=f"GARCH Volatility â€“ {team}")
     table.add_column("Metrik", style="cyan")
-    table.add_column("Değer", style="bold")
+    table.add_column("DeÄŸer", style="bold")
 
     table.add_row("Metod", report.method)
-    table.add_row("Gözlem Sayısı", str(report.n_observations))
-    table.add_row("Anlık σ", f"{report.current_volatility:.6f}")
-    table.add_row("Ortalama σ", f"{report.avg_volatility:.6f}")
-    table.add_row("σ Yüzdeliği", f"{report.volatility_percentile:.1f}%")
-    table.add_row("Rejim", f"{'🔴' if report.regime == 'crisis' else '🟡' if report.regime == 'storm' else '🟢'} {report.regime}")
-    table.add_row("Rejim Değişimi", "✅ Evet" if report.regime_change else "❌ Hayır")
+    table.add_row("GÃ¶zlem SayÄ±sÄ±", str(report.n_observations))
+    table.add_row("AnlÄ±k Ïƒ", f"{report.current_volatility:.6f}")
+    table.add_row("Ortalama Ïƒ", f"{report.avg_volatility:.6f}")
+    table.add_row("Ïƒ YÃ¼zdeliÄŸi", f"{report.volatility_percentile:.1f}%")
+    table.add_row("Rejim", f"{'ğŸ”´' if report.regime == 'crisis' else 'ğŸŸ¡' if report.regime == 'storm' else 'ğŸŸ¢'} {report.regime}")
+    table.add_row("Rejim DeÄŸiÅŸimi", "âœ… Evet" if report.regime_change else "âŒ HayÄ±r")
     table.add_row("VaR 95%", f"{report.var_95:.6f}")
     table.add_row("VaR 99%", f"{report.var_99:.6f}")
-    table.add_row("Kelly Çarpanı", f"x{report.kelly_multiplier:.2f}")
-    table.add_row("1 Gün σ Tahmini", f"{report.forecast_1d:.6f}")
-    table.add_row("5 Gün σ Tahmini", f"{report.forecast_5d:.6f}")
+    table.add_row("Kelly Ã‡arpanÄ±", f"x{report.kelly_multiplier:.2f}")
+    table.add_row("1 GÃ¼n Ïƒ Tahmini", f"{report.forecast_1d:.6f}")
+    table.add_row("5 GÃ¼n Ïƒ Tahmini", f"{report.forecast_5d:.6f}")
 
     p = report.params
-    table.add_row("ω (omega)", f"{p.omega:.8f}")
-    table.add_row("α (ARCH)", f"{p.alpha:.6f}")
-    table.add_row("β (GARCH)", f"{p.beta:.6f}")
-    table.add_row("Persistence (α+β)", f"{p.persistence:.6f}")
-    table.add_row("Yarı Ömür", f"{p.half_life:.1f} periyot")
+    table.add_row("Ï‰ (omega)", f"{p.omega:.8f}")
+    table.add_row("Î± (ARCH)", f"{p.alpha:.6f}")
+    table.add_row("Î² (GARCH)", f"{p.beta:.6f}")
+    table.add_row("Persistence (Î±+Î²)", f"{p.persistence:.6f}")
+    table.add_row("YarÄ± Ã–mÃ¼r", f"{p.half_life:.1f} periyot")
 
     console.print(table)
-    console.print(Panel(report.recommendation, title="Öneri", border_style="yellow"))
+    console.print(Panel(report.recommendation, title="Ã–neri", border_style="yellow"))
 
 
 @app.command()
 def stream_cmd():
-    """Stream Processor – canlı veri akışı demo."""
+    """Stream Processor â€“ canlÄ± veri akÄ±ÅŸÄ± demo."""
     from src.core.stream_processor import StreamProcessor, StreamEvent
     from rich.panel import Panel
     from rich.table import Table
@@ -6467,7 +6934,7 @@ def stream_cmd():
         sp.register_consumer("logger", log_handler)
         await sp.start()
 
-        # 50 olay gönder
+        # 50 olay gÃ¶nder
         np.random.seed(42)
         for i in range(50):
             await sp.emit(StreamEvent(
@@ -6478,7 +6945,7 @@ def stream_cmd():
             ))
             await asyncio.sleep(0.01)
 
-        await asyncio.sleep(0.5)  # İşleme zamanı
+        await asyncio.sleep(0.5)  # Ä°ÅŸleme zamanÄ±
 
         stats = sp.get_stats()
         await sp.stop()
@@ -6488,7 +6955,7 @@ def stream_cmd():
 
     table = Table(title="Stream Processor Stats")
     table.add_column("Metrik", style="cyan")
-    table.add_column("Değer", style="bold")
+    table.add_column("DeÄŸer", style="bold")
 
     table.add_row("Toplam Olay", str(stats.total_events))
     table.add_row("Olay/sn", f"{stats.events_per_sec:.1f}")
@@ -6497,7 +6964,7 @@ def stream_cmd():
     table.add_row("Ort. Gecikme", f"{stats.avg_latency_ms:.3f} ms")
     table.add_row("Hatalar", str(stats.errors))
     table.add_row("Uptime", f"{stats.uptime_sec:.1f} sn")
-    table.add_row("İşlenen", str(len(events)))
+    table.add_row("Ä°ÅŸlenen", str(len(events)))
 
     console.print(table)
 
@@ -6510,16 +6977,16 @@ def stream_cmd():
                 f"Avg: {agg.avg_value:.3f}, "
                 f"Std: {agg.std_value:.4f}, "
                 f"Range: [{agg.min_value:.3f}, {agg.max_value:.3f}]",
-                title=f"Window – {mid}",
+                title=f"Window â€“ {mid}",
                 border_style="blue",
             ))
 
 
 @app.command()
 def orchestrator_cmd(
-    stage: str = typer.Option("", help="Tek stage çalıştır (ingestion/memory/quant/risk/utils)"),
+    stage: str = typer.Option("", help="Tek stage Ã§alÄ±ÅŸtÄ±r (ingestion/memory/quant/risk/utils)"),
 ):
-    """Workflow Orchestrator – Prefect pipeline durum raporu."""
+    """Workflow Orchestrator â€“ Prefect pipeline durum raporu."""
     from src.core.workflow_orchestrator import (
         WorkflowOrchestrator,
         INGESTION_TASKS, MEMORY_TASKS, QUANT_TASKS, RISK_TASKS, UTILS_TASKS,
@@ -6529,7 +6996,7 @@ def orchestrator_cmd(
 
     orch = WorkflowOrchestrator(max_retries=3)
 
-    # Stage bazlı task sayıları
+    # Stage bazlÄ± task sayÄ±larÄ±
     stages = {
         "ingestion": INGESTION_TASKS,
         "memory": MEMORY_TASKS,
@@ -6538,44 +7005,44 @@ def orchestrator_cmd(
         "utils": UTILS_TASKS,
     }
 
-    table = Table(title="Workflow Orchestrator – Pipeline Yapısı")
+    table = Table(title="Workflow Orchestrator â€“ Pipeline YapÄ±sÄ±")
     table.add_column("Stage", style="cyan")
-    table.add_column("Task Sayısı", style="bold")
-    table.add_column("Çalışma Modu", style="green")
-    table.add_column("Örnek Task'lar", style="dim")
+    table.add_column("Task SayÄ±sÄ±", style="bold")
+    table.add_column("Ã‡alÄ±ÅŸma Modu", style="green")
+    table.add_column("Ã–rnek Task'lar", style="dim")
 
     total = 0
     for stage_name, tasks in stages.items():
         total += len(tasks)
-        mode = "Paralel" if stage_name in ("ingestion", "quant", "utils") else "Sıralı"
-        examples = ", ".join(t.name for t in tasks[:3]) + ("…" if len(tasks) > 3 else "")
+        mode = "Paralel" if stage_name in ("ingestion", "quant", "utils") else "SÄ±ralÄ±"
+        examples = ", ".join(t.name for t in tasks[:3]) + ("â€¦" if len(tasks) > 3 else "")
         table.add_row(stage_name.upper(), str(len(tasks)), mode, examples)
 
-    table.add_row("─" * 10, "─" * 5, "─" * 10, "─" * 20)
+    table.add_row("â”€" * 10, "â”€" * 5, "â”€" * 10, "â”€" * 20)
     table.add_row("TOPLAM", str(total), "", "")
     console.print(table)
 
     console.print(Panel(
-        "Pipeline Akışı:\n"
-        "  1. INGESTION (Paralel) → Veri toplama\n"
-        "  2. MEMORY (Sıralı) → Veri depolama & bağlam\n"
-        "  3. QUANT (Paralel) → Kantitatif analiz\n"
-        "  4. RISK (Sıralı) → Risk yönetimi & karar\n"
-        "  5. UTILS (Paralel) → Raporlama & bildirim\n\n"
+        "Pipeline AkÄ±ÅŸÄ±:\n"
+        "  1. INGESTION (Paralel) â†’ Veri toplama\n"
+        "  2. MEMORY (SÄ±ralÄ±) â†’ Veri depolama & baÄŸlam\n"
+        "  3. QUANT (Paralel) â†’ Kantitatif analiz\n"
+        "  4. RISK (SÄ±ralÄ±) â†’ Risk yÃ¶netimi & karar\n"
+        "  5. UTILS (Paralel) â†’ Raporlama & bildirim\n\n"
         "Retry: Her task 3 kez tekrar dener (exp. backoff)\n"
-        "Circuit Breaker: 3 ardışık hata → task devre dışı",
+        "Circuit Breaker: 3 ardÄ±ÅŸÄ±k hata â†’ task devre dÄ±ÅŸÄ±",
         title="Mimari", border_style="blue",
     ))
 
 
-# ═══════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 # LEVEL 29: Particle Filter & Deep Logging & Causal Discovery CLI
-# ═══════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 @app.command()
 def particle_cmd(
-    n_minutes: int = typer.Option(45, help="Simülasyon dakika sayısı"),
+    n_minutes: int = typer.Option(45, help="SimÃ¼lasyon dakika sayÄ±sÄ±"),
 ):
-    """Particle Strength Tracker – dinamik güç takibi demo."""
+    """Particle Strength Tracker â€“ dinamik gÃ¼Ã§ takibi demo."""
     from src.quant.particle_strength_tracker import (
         ParticleStrengthTracker, MatchObservation,
     )
@@ -6603,24 +7070,24 @@ def particle_cmd(
         reports.append(r)
 
     last = reports[-1]
-    table = Table(title=f"Particle Filter – dk.{last.minute}")
+    table = Table(title=f"Particle Filter â€“ dk.{last.minute}")
     table.add_column("Metrik", style="cyan")
-    table.add_column("Değer", style="bold")
+    table.add_column("DeÄŸer", style="bold")
 
     s = last.state
-    table.add_row("Ev Sahibi Gücü", f"{s.home_power:.4f}")
-    table.add_row("Deplasman Gücü", f"{s.away_power:.4f}")
-    table.add_row("Güç Farkı", f"{s.power_diff:+.4f}")
+    table.add_row("Ev Sahibi GÃ¼cÃ¼", f"{s.home_power:.4f}")
+    table.add_row("Deplasman GÃ¼cÃ¼", f"{s.away_power:.4f}")
+    table.add_row("GÃ¼Ã§ FarkÄ±", f"{s.power_diff:+.4f}")
     table.add_row("Momentum", f"{s.momentum:+.4f}")
     table.add_row("Yorgunluk (Ev)", f"{s.fatigue_home:.4f}")
     table.add_row("Yorgunluk (Dep)", f"{s.fatigue_away:.4f}")
-    table.add_row("ESS Oranı", f"{last.ess_ratio:.1%}")
-    table.add_row("P(Ev Kazanır)", f"{last.home_win_prob:.1%}")
+    table.add_row("ESS OranÄ±", f"{last.ess_ratio:.1%}")
+    table.add_row("P(Ev KazanÄ±r)", f"{last.home_win_prob:.1%}")
     table.add_row("P(Beraberlik)", f"{last.draw_prob:.1%}")
-    table.add_row("P(Dep Kazanır)", f"{last.away_win_prob:.1%}")
+    table.add_row("P(Dep KazanÄ±r)", f"{last.away_win_prob:.1%}")
 
     shifts = [r for r in reports if r.momentum_shift.detected]
-    table.add_row("Momentum Kaymaları", str(len(shifts)))
+    table.add_row("Momentum KaymalarÄ±", str(len(shifts)))
 
     console.print(table)
 
@@ -6629,18 +7096,18 @@ def particle_cmd(
             ms = sh.momentum_shift
             console.print(Panel(
                 f"dk.{ms.minute}: {ms.direction} "
-                f"(Δ={ms.magnitude:.3f}, "
-                f"önceki={ms.previous_power_diff:+.3f} → "
-                f"şimdi={ms.current_power_diff:+.3f})",
+                f"(Î”={ms.magnitude:.3f}, "
+                f"Ã¶nceki={ms.previous_power_diff:+.3f} â†’ "
+                f"ÅŸimdi={ms.current_power_diff:+.3f})",
                 title="Momentum Shift", border_style="red",
             ))
 
 
 @app.command()
 def causal_cmd(
-    n_samples: int = typer.Option(200, help="Veri örneği sayısı"),
+    n_samples: int = typer.Option(200, help="Veri Ã¶rneÄŸi sayÄ±sÄ±"),
 ):
-    """Causal Discovery – nedensellik DAG keşfi demo."""
+    """Causal Discovery â€“ nedensellik DAG keÅŸfi demo."""
     from src.quant.causal_discovery import CausalDiscovery
     from rich.panel import Panel
     from rich.table import Table
@@ -6648,29 +7115,29 @@ def causal_cmd(
 
     cd = CausalDiscovery(significance=0.05, max_cond_size=2)
 
-    # Sentetik veri: xG → goals, shots → xG, poss → shots (nedensellik zinciri)
+    # Sentetik veri: xG â†’ goals, shots â†’ xG, poss â†’ shots (nedensellik zinciri)
     np.random.seed(42)
     possession = np.random.normal(55, 10, n_samples)
     shots = 0.3 * possession + np.random.normal(0, 2, n_samples)
     xg = 0.15 * shots + np.random.normal(0, 0.3, n_samples)
     goals = 0.8 * xg + np.random.normal(0, 0.5, n_samples)
     corners = 0.1 * possession + np.random.normal(5, 2, n_samples)  # Sahte korelasyon
-    fouls = np.random.normal(12, 3, n_samples)  # Bağımsız
+    fouls = np.random.normal(12, 3, n_samples)  # BaÄŸÄ±msÄ±z
 
     data = np.column_stack([possession, shots, xg, goals, corners, fouls])
     names = ["possession", "shots", "xG", "goals", "corners", "fouls"]
 
     report = cd.analyze_match(data, names, target="goals", match_id="demo")
 
-    table = Table(title="Causal Discovery – DAG")
-    table.add_column("Neden → Sonuç", style="cyan")
-    table.add_column("Güç", style="bold")
+    table = Table(title="Causal Discovery â€“ DAG")
+    table.add_column("Neden â†’ SonuÃ§", style="cyan")
+    table.add_column("GÃ¼Ã§", style="bold")
     table.add_column("Tip", style="green")
-    table.add_column("Güven", style="yellow")
+    table.add_column("GÃ¼ven", style="yellow")
 
     for edge in report.dag.edges[:10]:
         table.add_row(
-            f"{edge.source} → {edge.target}",
+            f"{edge.source} â†’ {edge.target}",
             f"{edge.strength:.3f}",
             edge.edge_type,
             f"{edge.direction_confidence:.0%}",
@@ -6678,36 +7145,36 @@ def causal_cmd(
 
     console.print(table)
     console.print(f"\n[cyan]Metod:[/] {report.method}")
-    console.print(f"[cyan]Kök Nedenler:[/] {', '.join(report.dag.root_causes) or 'Yok'}")
+    console.print(f"[cyan]KÃ¶k Nedenler:[/] {', '.join(report.dag.root_causes) or 'Yok'}")
     console.print(f"[cyan]Yaprak Etkiler:[/] {', '.join(report.dag.leaf_effects) or 'Yok'}")
-    console.print(f"[cyan]Gol Kök Nedenleri:[/] {', '.join(report.goal_root_causes) or 'Yok'}")
+    console.print(f"[cyan]Gol KÃ¶k Nedenleri:[/] {', '.join(report.goal_root_causes) or 'Yok'}")
     console.print(f"[cyan]Sahte Korelasyonlar:[/] {len(report.spurious_correlations)}")
-    console.print(f"[cyan]Ters Nedensellik Uyarıları:[/] {len(report.reverse_causation_warnings)}")
-    console.print(Panel(report.recommendation, title="Öneri", border_style="yellow"))
+    console.print(f"[cyan]Ters Nedensellik UyarÄ±larÄ±:[/] {len(report.reverse_causation_warnings)}")
+    console.print(Panel(report.recommendation, title="Ã–neri", border_style="yellow"))
 
 
 @app.command()
 def super_log_cmd():
-    """Super Logger – yapılandırılmış log sistemi demo."""
+    """Super Logger â€“ yapÄ±landÄ±rÄ±lmÄ±ÅŸ log sistemi demo."""
     from src.utils.super_logger import SuperLogger
     from rich.panel import Panel
     from rich.table import Table
 
     sl = SuperLogger(log_dir="data/logs")
 
-    # Modül logları
+    # ModÃ¼l loglarÄ±
     lg_poisson = sl.get_module_logger("quant.poisson")
     lg_lstm = sl.get_module_logger("quant.lstm")
     lg_risk = sl.get_module_logger("core.risk")
 
-    lg_poisson.bind(match_id="gs_fb", duration_ms=12.5).info("Tahmin üretildi")
-    lg_lstm.bind(match_id="gs_fb", duration_ms=45.8).info("Momentum hesaplandı")
-    lg_risk.bind(match_id="gs_fb", duration_ms=3.2).info("Risk değerlendirmesi")
+    lg_poisson.bind(match_id="gs_fb", duration_ms=12.5).info("Tahmin Ã¼retildi")
+    lg_lstm.bind(match_id="gs_fb", duration_ms=45.8).info("Momentum hesaplandÄ±")
+    lg_risk.bind(match_id="gs_fb", duration_ms=3.2).info("Risk deÄŸerlendirmesi")
 
     # Timed context
     with sl.timed("quant.poisson", match_id="gs_ts"):
         import time
-        time.sleep(0.01)  # Simülasyon
+        time.sleep(0.01)  # SimÃ¼lasyon
 
     # Karar logu
     sl.log_decision(
@@ -6718,14 +7185,14 @@ def super_log_cmd():
         outputs={"prob_home": 0.55, "fair_odds": 1.82},
     )
 
-    table = Table(title="Super Logger – Yapılandırılmış Log Sistemi")
-    table.add_column("Özellik", style="cyan")
-    table.add_column("Değer", style="bold")
+    table = Table(title="Super Logger â€“ YapÄ±landÄ±rÄ±lmÄ±ÅŸ Log Sistemi")
+    table.add_column("Ã–zellik", style="cyan")
+    table.add_column("DeÄŸer", style="bold")
 
     table.add_row("Log Dizini", str(sl.get_log_dir()))
-    table.add_row("Log Dosyaları", str(len(sl.get_log_files())))
+    table.add_row("Log DosyalarÄ±", str(len(sl.get_log_files())))
     table.add_row("Rotation", "100 MB")
-    table.add_row("Retention", "30 gün")
+    table.add_row("Retention", "30 gÃ¼n")
     table.add_row("Compression", "gzip")
     table.add_row("Format", "JSON (JSONL)")
 
@@ -6743,18 +7210,18 @@ def super_log_cmd():
     if files:
         console.print(Panel(
             "\n".join(files[:10]),
-            title="Log Dosyaları", border_style="blue",
+            title="Log DosyalarÄ±", border_style="blue",
         ))
 
 
 @app.command()
 def agent_poll_cmd(
-    home: str = typer.Option("Galatasaray", help="Ev sahibi takım"),
-    away: str = typer.Option("Fenerbahçe", help="Deplasman takımı"),
-    odds: float = typer.Option(2.10, help="Bahis oranı"),
-    ev: float = typer.Option(0.08, help="Beklenen değer"),
+    home: str = typer.Option("Galatasaray", help="Ev sahibi takÄ±m"),
+    away: str = typer.Option("FenerbahÃ§e", help="Deplasman takÄ±mÄ±"),
+    odds: float = typer.Option(2.10, help="Bahis oranÄ±"),
+    ev: float = typer.Option(0.08, help="Beklenen deÄŸer"),
 ):
-    """Agent Poll – Ajan Konseyi oylama demo."""
+    """Agent Poll â€“ Ajan Konseyi oylama demo."""
     from src.utils.war_room import WarRoom
     from src.utils.agent_poll_system import AgentPollSystem
     from rich.panel import Panel
@@ -6772,53 +7239,53 @@ def agent_poll_cmd(
     debate = wr.debate(match_info, match_id="demo_derbi")
     council = poll_sys.create_council_decision(debate, match_info)
 
-    # Ajan oyları tablosu
+    # Ajan oylarÄ± tablosu
     table = Table(title=f"Karar Konseyi: {home} vs {away}")
     table.add_column("Ajan", style="cyan")
     table.add_column("Oy", style="bold")
-    table.add_column("Güven", style="yellow")
+    table.add_column("GÃ¼ven", style="yellow")
     table.add_column("Anahtar Metrik", style="green")
-    table.add_column("Gerekçe", style="dim")
+    table.add_column("GerekÃ§e", style="dim")
 
     for v in council.votes:
-        vote_emoji = "✅" if v.vote == "EVET" else "❌" if v.vote == "HAYIR" else "🤔"
+        vote_emoji = "âœ…" if v.vote == "EVET" else "âŒ" if v.vote == "HAYIR" else "ğŸ¤”"
         table.add_row(
             f"{v.agent_emoji} {v.agent_name}",
             f"{vote_emoji} {v.vote}",
             f"{v.confidence:.0%}",
             v.key_metric,
-            v.reasoning[:60] + "…" if len(v.reasoning) > 60 else v.reasoning,
+            v.reasoning[:60] + "â€¦" if len(v.reasoning) > 60 else v.reasoning,
         )
 
     console.print(table)
 
-    # Konsensüs
-    _, desc = poll_sys.CONSENSUS_MAP.get(council.consensus_type, ("❓", "?"))
+    # KonsensÃ¼s
+    _, desc = poll_sys.CONSENSUS_MAP.get(council.consensus_type, ("â“", "?"))
     console.print(Panel(
         f"{council.consensus_emoji} {desc}\n\n"
         f"EVET: {council.yes_count} | HAYIR: {council.no_count} | "
         f"KARASIZ: {council.undecided_count}\n\n"
-        f"Konsey Kararı: {council.council_verdict}",
+        f"Konsey KararÄ±: {council.council_verdict}",
         title="Oylama Sonucu", border_style="green",
     ))
 
-    # Telegram mesaj önizleme
+    # Telegram mesaj Ã¶nizleme
     msg = poll_sys.format_council_message(council)
-    console.print(Panel(msg, title="Telegram Mesaj Önizleme", border_style="blue"))
+    console.print(Panel(msg, title="Telegram Mesaj Ã–nizleme", border_style="blue"))
 
-    # Anket seçenekleri
-    console.print("\n[bold]Anket Seçenekleri:[/]")
+    # Anket seÃ§enekleri
+    console.print("\n[bold]Anket SeÃ§enekleri:[/]")
     for i, opt in enumerate(poll_sys.get_poll_options(), 1):
         console.print(f"  {i}. {opt}")
 
 
-# ═══════════════════════════════════════════════
-#  YENİ MODÜL CLI KOMUTLARI (v2)
-# ═══════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+#  YENÄ° MODÃœL CLI KOMUTLARI (v2)
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 @app.command()
 def regime_kelly_cmd(
-    bankroll: float = typer.Option(10000.0, help="Başlangıç kasası"),
-    prob: float = typer.Option(0.55, help="Kazanma olasılığı"),
+    bankroll: float = typer.Option(10000.0, help="BaÅŸlangÄ±Ã§ kasasÄ±"),
+    prob: float = typer.Option(0.55, help="Kazanma olasÄ±lÄ±ÄŸÄ±"),
     odds: float = typer.Option(2.10, help="Oran"),
 ):
     """Regime-Aware Kelly Criterion ile stake hesapla."""
@@ -6831,20 +7298,20 @@ def regime_kelly_cmd(
     console.print(f"  Regime Mult: {decision.regime_multiplier:.2f}")
     console.print(f"  Final Kelly: {decision.final_kelly:.4f}")
     console.print(f"  Stake: {decision.stake_amount:.2f}")
-    console.print(f"  Onay: {'✅' if decision.approved else '❌ ' + decision.rejection_reason}")
+    console.print(f"  Onay: {'âœ…' if decision.approved else 'âŒ ' + decision.rejection_reason}")
     if decision.adjustments:
         for adj in decision.adjustments:
-            console.print(f"  └─ {adj}")
+            console.print(f"  â””â”€ {adj}")
 
 
 @app.command()
 def fisher_cmd(
-    ref_mean: float = typer.Option(2.0, help="Referans dağılım ortalaması"),
+    ref_mean: float = typer.Option(2.0, help="Referans daÄŸÄ±lÄ±m ortalamasÄ±"),
     ref_std: float = typer.Option(0.3, help="Referans std sapma"),
-    cur_mean: float = typer.Option(2.5, help="Mevcut oran ortalaması"),
+    cur_mean: float = typer.Option(2.5, help="Mevcut oran ortalamasÄ±"),
     cur_std: float = typer.Option(0.4, help="Mevcut std sapma"),
 ):
-    """Fisher-Rao Information Geometry ile dağılım mesafesi ölç."""
+    """Fisher-Rao Information Geometry ile daÄŸÄ±lÄ±m mesafesi Ã¶lÃ§."""
     from src.quant.fisher_geometry import FisherGeometry
     import numpy as np
     fg = FisherGeometry()
@@ -6856,18 +7323,18 @@ def fisher_cmd(
     console.print(f"  KL Divergence: {report.kl_divergence:.4f}")
     console.print(f"  Hellinger: {report.hellinger_distance:.4f}")
     console.print(f"  det(I): {report.fim_determinant:.4f}")
-    console.print(f"  Anomali: {'⚠️ EVET' if report.is_anomaly else '✅ Hayır'}")
-    console.print(f"  Rejim Değişimi: {'🔴 EVET' if report.regime_shift else '🟢 Hayır'}")
+    console.print(f"  Anomali: {'âš ï¸ EVET' if report.is_anomaly else 'âœ… HayÄ±r'}")
+    console.print(f"  Rejim DeÄŸiÅŸimi: {'ğŸ”´ EVET' if report.regime_shift else 'ğŸŸ¢ HayÄ±r'}")
     console.print(f"  Tavsiye: {report.recommendation}")
 
 
 @app.command()
 def philo_cmd(
-    prob: float = typer.Option(0.72, help="Model olasılığı"),
-    conf: float = typer.Option(0.85, help="Model güveni"),
-    sample_size: int = typer.Option(200, help="Örneklem büyüklüğü"),
+    prob: float = typer.Option(0.72, help="Model olasÄ±lÄ±ÄŸÄ±"),
+    conf: float = typer.Option(0.85, help="Model gÃ¼veni"),
+    sample_size: int = typer.Option(200, help="Ã–rneklem bÃ¼yÃ¼klÃ¼ÄŸÃ¼"),
 ):
-    """Philosophical Engine – epistemik felsefi analiz."""
+    """Philosophical Engine â€“ epistemik felsefi analiz."""
     from src.quant.philosophical_engine import PhilosophicalEngine
     phi = PhilosophicalEngine()
     report = phi.evaluate(
@@ -6875,7 +7342,7 @@ def philo_cmd(
         sample_size=sample_size, strategy_age_days=30,
         model_count=5, match_id="cli_test",
     )
-    console.rule("[bold cyan]EPİSTEMİK ANALİZ[/]")
+    console.rule("[bold cyan]EPÄ°STEMÄ°K ANALÄ°Z[/]")
     console.print(f"  Epistemik Skor: {report.epistemic_score:.2f}")
     console.print(f"  Dunning-Kruger: {report.dunning_kruger_score:.2f}")
     console.print(f"  Black Swan Risk: {report.black_swan_risk:.2f}")
@@ -6883,24 +7350,24 @@ def philo_cmd(
     console.print(f"  Lindy Score: {report.lindy_score:.2f}")
     console.print(f"  Falsifiability: {report.falsifiability:.2f}")
     console.print(f"  Meta-Uncertainty: {report.meta_uncertainty:.2f}")
-    console.print(f"  Onay: {'✅' if report.epistemic_approved else '❌'}")
+    console.print(f"  Onay: {'âœ…' if report.epistemic_approved else 'âŒ'}")
     if report.rejection_reasons:
         for reason in report.rejection_reasons:
-            console.print(f"  └─ ❌ {reason}")
+            console.print(f"  â””â”€ âŒ {reason}")
     for ref in report.reflections:
-        console.print(f"  └─ 💭 {ref}")
+        console.print(f"  â””â”€ ğŸ’­ {ref}")
 
 
 @app.command()
 def evolver_cmd(
-    pop: int = typer.Option(50, help="Popülasyon büyüklüğü"),
-    generations: int = typer.Option(5, help="Nesil sayısı"),
+    pop: int = typer.Option(50, help="PopÃ¼lasyon bÃ¼yÃ¼klÃ¼ÄŸÃ¼"),
+    generations: int = typer.Option(5, help="Nesil sayÄ±sÄ±"),
 ):
-    """Strategy Evolver – otonom strateji evrimi simülasyonu."""
+    """Strategy Evolver â€“ otonom strateji evrimi simÃ¼lasyonu."""
     import numpy as np
     from src.core.strategy_evolver import StrategyEvolver
     evolver = StrategyEvolver(population_size=pop)
-    console.rule("[bold cyan]STRATEJİ EVRİMİ[/]")
+    console.rule("[bold cyan]STRATEJÄ° EVRÄ°MÄ°[/]")
     for gen in range(1, generations + 1):
         mock_results = [
             {
@@ -6920,17 +7387,17 @@ def evolver_cmd(
             f"worst={report.worst_fitness:.4f}"
         )
     best = evolver.get_best_dna()
-    console.print("\n[bold]En İyi DNA Parametreleri:[/]")
+    console.print("\n[bold]En Ä°yi DNA Parametreleri:[/]")
     for k, v in best.to_dict().items():
         console.print(f"  {k}: {v:.4f}")
 
 
 @app.command()
 def guardian_cmd():
-    """Guardian sağlık raporu – hata istatistikleri."""
+    """Guardian saÄŸlÄ±k raporu â€“ hata istatistikleri."""
     from src.core.exception_guardian import ExceptionGuardian
     guardian = ExceptionGuardian()
-    # Demo hatalar üret
+    # Demo hatalar Ã¼ret
     import random
     modules = ["poisson", "lightgbm", "lstm", "ensemble", "kelly"]
     for mod in modules:
@@ -6939,16 +7406,18 @@ def guardian_cmd():
                 if random.random() < 0.3:
                     raise ValueError(f"Demo hata in {mod}")
     report = guardian.health_report()
-    console.rule("[bold cyan]GUARDIAN SAĞLIK RAPORU[/]")
+    console.rule("[bold cyan]GUARDIAN SAÄLIK RAPORU[/]")
     console.print(f"  Toplam Hata: {report['total_errors']}")
-    console.print(f"  Açık Devreler: {report['open_circuits'] or 'Yok'}")
+    console.print(f"  AÃ§Ä±k Devreler: {report['open_circuits'] or 'Yok'}")
     for mod, stats in report["modules"].items():
         console.print(
             f"  {mod}: {stats['total_errors']} hata, "
-            f"circuit={'🔴' if stats['circuit_open'] else '🟢'}"
+            f"circuit={'ğŸ”´' if stats['circuit_open'] else 'ğŸŸ¢'}"
         )
 
 
-# ═══════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 if __name__ == "__main__":
     app()
+
+

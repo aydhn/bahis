@@ -292,15 +292,43 @@ class ProphetSeasonalityAnalyzer:
     def _predict_heuristic(self, team: str,
                             target_date: datetime) -> SeasonalityResult:
         """Prophet yoksa → Türk ligi takvimi ile heuristic tahmin."""
+        month_names = {
+            1: "Ocak", 2: "Şubat", 3: "Mart", 4: "Nisan",
+            5: "Mayıs", 6: "Haziran", 7: "Temmuz", 8: "Ağustos",
+            9: "Eylül", 10: "Ekim", 11: "Kasım", 12: "Aralık",
+        }
         month = target_date.month
         month_data = self._calendar.MONTH_EFFECTS.get(month, {})
+        label = month_data.get("label", "")
+
+        # ── FIX: Hiç tarihsel veri yoksa → generic takvim etkisi UYGULAMA ──
+        # Generic -10% gibi değerler gerçek olmayan sinyale yol açıyor.
+        team_data = self._data.get(team)
+        if team_data is None:
+            return SeasonalityResult(
+                team=team,
+                current_date=target_date.strftime("%Y-%m-%d"),
+                trend=0.0,
+                seasonal_effect=0.0,
+                is_negative_season=False,
+                avoid_signal=False,
+                confidence=0.10,
+                decomposition={
+                    "method": "no_data",
+                    "month": month,
+                    "month_label": label,
+                },
+                method="neutral_fallback",
+                explanation=(
+                    f"⚪ {team} – {month_names.get(month, '?')}: "
+                    f"Tarihsel veri yok, nötr varsayım uygulandı."
+                ),
+            )
 
         effect = month_data.get("effect", 0.0)
         volatility = month_data.get("volatility", 1.0)
-        label = month_data.get("label", "")
 
         # Eğer tarihi veri varsa, takıma özel ay ortalaması hesapla
-        team_data = self._data.get(team)
         if team_data is not None and PANDAS_OK and len(team_data) > 10:
             try:
                 team_data = team_data.copy()

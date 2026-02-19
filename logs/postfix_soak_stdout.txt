@@ -1,0 +1,4 @@
+───────────────────── QUANT BETTING BOT â€“ BAÅLATILIYOR ──────────────────────
+checkpoint directory created: ./model
+saving model version 0.0
+─────────────────────── TÃœM KATMANLAR HAZIR â€“ 59.5s ────────────────────────

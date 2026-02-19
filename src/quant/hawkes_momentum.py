@@ -44,6 +44,12 @@ try:
 except ImportError:
     SCIPY_OK = False
 
+try:
+    from numba import njit
+    NUMBA_OK = True
+except ImportError:
+    NUMBA_OK = False
+
 
 # ═══════════════════════════════════════════════
 #  VERİ YAPILARI
@@ -86,15 +92,12 @@ class HawkesReport:
 
 
 # ═══════════════════════════════════════════════
-#  HAWKES YOĞUNLUK HESAPLAMALARI
+#  HAWKES YOĞUNLUK HESAPLAMALARI (Numba JIT)
 # ═══════════════════════════════════════════════
-def hawkes_intensity(t: float, events: np.ndarray,
-                      mu: float, alpha: float,
-                      beta: float) -> float:
-    """Hawkes koşullu yoğunluğu.
 
-    λ*(t) = μ + Σ α · exp(-β(t - tᵢ))  [tᵢ < t]
-    """
+def _hawkes_intensity_py(t: float, events: np.ndarray,
+                          mu: float, alpha: float, beta: float) -> float:
+    """Python fallback."""
     past = events[events < t]
     if len(past) == 0:
         return mu
@@ -102,36 +105,66 @@ def hawkes_intensity(t: float, events: np.ndarray,
     return mu + excitement
 
 
-def hawkes_log_likelihood(params: np.ndarray,
-                            events: np.ndarray,
-                            T: float) -> float:
-    """Negatif log-likelihood (minimize edilecek).
-
-    L = Σ log λ*(tᵢ) - ∫₀ᵀ λ*(t) dt
-    """
+def _hawkes_ll_py(params: np.ndarray, events: np.ndarray, T: float) -> float:
+    """Python fallback log-likelihood."""
     mu, alpha, beta = params
     if mu <= 0 or alpha < 0 or beta <= 0:
         return 1e10
-
     n = len(events)
     if n == 0:
         return mu * T
-
-    # Σ log λ*(tᵢ)
     log_sum = 0.0
     for i in range(n):
-        lam = hawkes_intensity(events[i], events, mu, alpha, beta)
+        lam = _hawkes_intensity_py(events[i], events, mu, alpha, beta)
         if lam > 0:
             log_sum += np.log(lam)
         else:
             return 1e10
-
-    # ∫₀ᵀ λ*(t) dt = μT + (α/β) Σ (1 - exp(-β(T - tᵢ)))
     integral = mu * T
     for ti in events:
-        integral += (alpha / beta) * (1 - np.exp(-beta * (T - ti)))
-
+        integral += (alpha / beta) * (1.0 - np.exp(-beta * (T - ti)))
     return -(log_sum - integral)
+
+
+if NUMBA_OK:
+    @njit(cache=True)
+    def _hawkes_intensity_jit(t, events, mu, alpha, beta):
+        s = 0.0
+        for i in range(len(events)):
+            if events[i] < t:
+                s += np.exp(-beta * (t - events[i]))
+        return mu + alpha * s
+
+    @njit(cache=True)
+    def _hawkes_ll_jit(mu, alpha, beta, events, T):
+        if mu <= 0 or alpha < 0 or beta <= 0:
+            return 1e10
+        n = len(events)
+        if n == 0:
+            return mu * T
+        log_sum = 0.0
+        for i in range(n):
+            lam = 0.0
+            for j in range(i):
+                lam += np.exp(-beta * (events[i] - events[j]))
+            lam = mu + alpha * lam
+            if lam > 0:
+                log_sum += np.log(lam)
+            else:
+                return 1e10
+        integral = mu * T
+        for i in range(n):
+            integral += (alpha / beta) * (1.0 - np.exp(-beta * (T - events[i])))
+        return -(log_sum - integral)
+
+    def hawkes_intensity(t, events, mu, alpha, beta):
+        return float(_hawkes_intensity_jit(t, events, mu, alpha, beta))
+
+    def hawkes_log_likelihood(params, events, T):
+        return float(_hawkes_ll_jit(params[0], params[1], params[2], events, T))
+else:
+    hawkes_intensity = _hawkes_intensity_py
+    hawkes_log_likelihood = _hawkes_ll_py
 
 
 def estimate_hawkes_params(events: np.ndarray,

@@ -60,6 +60,16 @@ class APIHijacker:
             "wait_ms": 5000,
         },
         {
+            "url": "https://www.sofascore.com/basketball",
+            "name": "sofascore_basketball",
+            "wait_ms": 5000,
+        },
+        {
+            "url": "https://www.sofascore.com/tennis",
+            "name": "sofascore_tennis",
+            "wait_ms": 4000,
+        },
+        {
             "url": "https://www.flashscore.com.tr/",
             "name": "flashscore",
             "wait_ms": 3000,
@@ -146,7 +156,10 @@ class APIHijacker:
                 pages.append(page)
                 logger.info(f"[Hijack] ✓ Dinleniyor: {target['name']} ({target['url']})")
             except Exception as e:
-                logger.warning(f"[Hijack] ✗ {target['name']} bağlanamadı: {e}")
+                if shutdown.is_set():
+                    logger.info(f"[Hijack] {target['name']} kapanışta atlandı.")
+                else:
+                    logger.warning(f"[Hijack] ✗ {target['name']} bağlanamadı: {e}")
 
         # Periyodik yenileme ile dinlemeye devam et
         refresh_cycle = 0

@@ -156,19 +156,28 @@ class JobScheduler:
     async def start(self):
         """Zamanlayıcıyı başlatır."""
         if self._scheduler and APSCHEDULER_OK:
-            self._scheduler.start()
-            logger.success(f"[Scheduler] Başlatıldı – {len(self._jobs)} görev.")
+            try:
+                if not self._scheduler.running:
+                    self._scheduler.start()
+                logger.success(f"[Scheduler] Başlatıldı – {len(self._jobs)} görev.")
+            except Exception as e:
+                logger.warning(f"[Scheduler] APScheduler başlatılamadı ({e}) – fallback moduna geçiliyor.")
+                self._scheduler = None
+                await self._start_fallback()
         else:
             await self._start_fallback()
 
     async def stop(self):
         """Zamanlayıcıyı durdurur."""
         if self._scheduler and APSCHEDULER_OK:
-            self._scheduler.shutdown(wait=False)
-            logger.info("[Scheduler] Durduruldu.")
-        else:
-            for task in self._fallback_tasks:
-                task.cancel()
+            try:
+                if self._scheduler.running:
+                    self._scheduler.shutdown(wait=False)
+                    logger.info("[Scheduler] Durduruldu.")
+            except Exception as e:
+                logger.debug(f"[Scheduler] Durdurma hatası (görmezden geliniyor): {e}")
+        for task in self._fallback_tasks:
+            task.cancel()
 
     # ═══════════════════════════════════════════
     #  FALLBACK: APScheduler yoksa asyncio döngüsü

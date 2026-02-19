@@ -76,9 +76,9 @@ class FairValueEngine:
 
     # Value Edge sınıflandırma eşikleri
     TIERS = {
-        "premium": 0.10,    # >10% edge → yüksek güven
-        "standard": 0.05,   # 5-10% → normal value
-        "marginal": 0.02,   # 2-5% → düşük güven
+        "premium": 0.08,    # >8% edge → yüksek güven
+        "standard": 0.04,   # 4-8% → normal value
+        "marginal": 0.02,   # 2-4% → düşük güven
     }
 
     def __init__(self, min_edge: float = 0.02, kelly_fraction: float = 0.25,
@@ -88,10 +88,48 @@ class FairValueEngine:
         self._max_odds = max_odds
         self._min_prob = min_prob
         self._history: list[FairValueResult] = []
+        # CLV Tracking (Closing Line Value) - karlılık kalibrasyonu
+        self._clv_history: list[float] = []  # market_close / fair_odds -1
+        self._hit_count = 0
+        self._miss_count = 0
         logger.debug(
             f"FairValueEngine: min_edge={min_edge:.0%}, "
             f"kelly={kelly_fraction:.0%}"
         )
+
+    @property
+    def adaptive_kelly(self) -> float:
+        """CLV performansına göre dinamik Kelly fraction.
+
+        Model closing line'ı düzenli yeniyorsa Kelly artırılır.
+        Yeniliyorsa düşürülür. Bu, karlılığın en güçlü prediktörüdür.
+        """
+        if len(self._clv_history) < 20:
+            return self._kelly_fraction
+        recent = self._clv_history[-50:]
+        avg_clv = float(np.mean(recent))
+        if avg_clv > 0.03:
+            return min(self._kelly_fraction * 1.5, 0.40)
+        elif avg_clv > 0.01:
+            return min(self._kelly_fraction * 1.2, 0.35)
+        elif avg_clv < -0.02:
+            return max(self._kelly_fraction * 0.6, 0.10)
+        return self._kelly_fraction
+
+    def record_clv(self, closing_odds: float, fair_odds: float):
+        """Closing Line Value kaydı - model kalibrasyonu."""
+        if closing_odds > 1.0 and fair_odds > 1.0:
+            clv = (closing_odds / fair_odds) - 1.0
+            self._clv_history.append(clv)
+            if len(self._clv_history) > 500:
+                self._clv_history = self._clv_history[-300:]
+
+    def record_result(self, won: bool):
+        """Bahis sonucu kaydı."""
+        if won:
+            self._hit_count += 1
+        else:
+            self._miss_count += 1
 
     # ═══════════════════════════════════════════
     #  TEK BAHİS ANALİZİ
@@ -312,12 +350,19 @@ class FairValueEngine:
         """Optimal Kelly stake hesapla.
 
         Kelly% = (p * o - 1) / (o - 1) * fraction
+        CLV performansına göre fraction dinamik ayarlanır.
         """
         if odds <= 1.0 or prob <= 0:
             return 0.0
 
         kelly = (prob * odds - 1) / (odds - 1)
-        kelly *= self._kelly_fraction  # Fractional Kelly
+        kelly *= self.adaptive_kelly  # CLV-aware Fractional Kelly
+
+        # Yüksek oran bahislerinde Kelly'yi daha fazla kıs (varyans kontrolü)
+        if odds > 5.0:
+            kelly *= 0.6
+        elif odds > 3.0:
+            kelly *= 0.8
 
         return max(kelly, 0.0)
 

@@ -333,19 +333,22 @@ class ExceptionGuardian:
                 "WARNING": "warning",
             }.get(severity, "error")
 
+            safe_exc = str(exc)[:200].replace("<", "[").replace(">", "]")
             msg = (
                 f"[Guardian] {module} [{category}/{severity}]: "
-                f"{type(exc).__name__}: {str(exc)[:200]}"
+                f"{type(exc).__name__}: {safe_exc}"
             )
             if occurrence > 1:
                 msg += f" (#{occurrence})"
             if context:
-                msg += f" | ctx: {context}"
+                safe_ctx = str(context)[:200].replace("<", "[").replace(">", "]")
+                msg += f" | ctx: {safe_ctx}"
 
             getattr(logger, log_level)(msg)
 
             if severity == "CRITICAL" or occurrence == 1:
-                logger.debug(f"[Guardian] Stack:\n{stack[:1000]}")
+                safe_stack = stack[:1000].replace("<", "[").replace(">", "]")
+                logger.debug(f"[Guardian] Stack:\n{safe_stack}")
 
         # Alarm callback
         if severity == "CRITICAL" and self._alert_cb and occurrence <= 3:
@@ -377,8 +380,12 @@ def install_global_hook(guardian: ExceptionGuardian | None = None) -> None:
     def guardian_hook(exc_type, exc_value, exc_tb):
         if guardian:
             tb = "".join(traceback.format_exception(exc_type, exc_value, exc_tb))
+            # Loguru'nun colorizer'ı <module> gibi etiketleri renk yönergesi
+            # olarak yorumlar – açı parantezlerini [] ile değiştir
+            safe_tb = tb[:2000].replace("<", "[").replace(">", "]")
+            safe_val = str(exc_value).replace("<", "[").replace(">", "]")
             logger.critical(
-                f"[Guardian] UNCAUGHT: {exc_type.__name__}: {exc_value}\n{tb[:2000]}"
+                f"[Guardian] UNCAUGHT: {exc_type.__name__}: {safe_val}\n{safe_tb}"
             )
         original_hook(exc_type, exc_value, exc_tb)
 

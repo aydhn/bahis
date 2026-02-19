@@ -311,6 +311,22 @@ class PortfolioOptimizer:
         return self._current_bankroll
 
     def status(self) -> dict:
+        total_pnl = sum(self._pnl_history)
+        win_count = sum(1 for p in self._pnl_history if p > 0)
+        n_bets = max(len(self._pnl_history), 1)
+
+        # Sharpe Ratio (günlük PnL bazlı)
+        if len(self._pnl_history) > 5:
+            pnl_arr = np.array(self._pnl_history)
+            pnl_std = float(np.std(pnl_arr))
+            pnl_mean = float(np.mean(pnl_arr))
+            sharpe = (pnl_mean / pnl_std * np.sqrt(252)) if pnl_std > 0 else 0.0
+        else:
+            sharpe = 0.0
+
+        # ROI
+        roi = total_pnl / max(self._initial_bankroll, 1)
+
         return {
             "bankroll": self._current_bankroll,
             "peak": self._peak_bankroll,
@@ -319,9 +335,10 @@ class PortfolioOptimizer:
             "mode": self._mode.value,
             "total_bets": len(self._pnl_history),
             "paper_bets": len(self._paper_pnl),
-            "total_pnl": sum(self._pnl_history),
+            "total_pnl": total_pnl,
             "paper_pnl": sum(self._paper_pnl),
-            "win_rate": (
-                sum(1 for p in self._pnl_history if p > 0) / max(len(self._pnl_history), 1)
-            ),
+            "win_rate": win_count / n_bets,
+            "roi": roi,
+            "roi_pct": f"{roi:+.1%}",
+            "sharpe_ratio": round(sharpe, 2),
         }

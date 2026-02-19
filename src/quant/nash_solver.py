@@ -23,6 +23,7 @@ Fallback: scipy.optimize (linear programming)
 """
 from __future__ import annotations
 
+import warnings
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -176,7 +177,11 @@ class NashGameSolver:
             game = nash.Game(bettor_pay, bookmaker_pay)
 
             # Support enumeration
-            equilibria = list(game.support_enumeration())
+            with warnings.catch_warnings():
+                # Degenerate oyunlarda nashpy/numpy RuntimeWarning spam üretebiliyor.
+                # Bu blokta uyarıları bastırıp sonuç yoksa fallback'e gidiyoruz.
+                warnings.simplefilter("ignore", RuntimeWarning)
+                equilibria = list(game.support_enumeration())
 
             if equilibria:
                 best_eq = max(equilibria,

@@ -1,0 +1,4 @@
+────────────────────── QUANT BETTING BOT – BAŞLATILIYOR ───────────────────────
+checkpoint directory created: ./model
+saving model version 0.0
+───────────────────────── TÜM KATMANLAR HAZIR – 30.1s ─────────────────────────

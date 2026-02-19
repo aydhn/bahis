@@ -18,6 +18,7 @@ Kurulum:
 """
 from __future__ import annotations
 
+import asyncio
 import json
 import os
 from pathlib import Path
@@ -533,7 +534,7 @@ def start_webapp(host: str = "0.0.0.0", port: int = 8080, **kwargs):
     uvicorn.run(app, host=host, port=port, log_level="warning")
 
 
-async def start_webapp_async(host: str = "0.0.0.0", port: int = 8080, **kwargs):
+async def start_webapp_async(host: str = "0.0.0.0", port: int = 8080, shutdown=None, **kwargs):
     """Asyncio event loop içinden başlat."""
     if not FASTAPI_OK:
         return
@@ -545,7 +546,20 @@ async def start_webapp_async(host: str = "0.0.0.0", port: int = 8080, **kwargs):
     config = uvicorn.Config(app, host=host, port=port, log_level="warning")
     server = uvicorn.Server(config)
     logger.info(f"[WebApp] TWA sunucu başlatıldı → http://{host}:{port}")
-    await server.serve()
+    if shutdown is None:
+        await server.serve()
+        return
+
+    server_task = asyncio.create_task(server.serve(), name="webapp_uvicorn")
+    try:
+        await shutdown.wait()
+        server.should_exit = True
+        await asyncio.wait_for(server_task, timeout=8)
+    except asyncio.TimeoutError:
+        logger.warning("[WebApp] Sunucu zamanında kapanmadı.")
+    except asyncio.CancelledError:
+        server.should_exit = True
+        raise
 
 
 if __name__ == "__main__":

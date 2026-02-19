@@ -182,10 +182,23 @@ class IsolationAnomalyDetector:
 
         if isinstance(snapshot, dict):
             mid = snapshot.get("match_id", match_id)
-            snap = MarketSnapshot(**{
-                k: v for k, v in snapshot.items()
-                if k in MarketSnapshot.__dataclass_fields__
-            })
+            # None değerleri varsayılana dönüştür (Polars null koruma)
+            _defaults = {
+                "home_odds": 0.0, "draw_odds": 0.0, "away_odds": 0.0,
+                "over_25_odds": 0.0, "under_25_odds": 0.0, "volume": 0.0,
+                "bookmaker_count": 0, "odds_movement_pct": 0.0, "timestamp": 0.0,
+            }
+            _safe = {}
+            for k, v in snapshot.items():
+                if k in MarketSnapshot.__dataclass_fields__:
+                    if v is None:
+                        _safe[k] = _defaults.get(k, 0.0)
+                    else:
+                        try:
+                            _safe[k] = float(v) if k in _defaults else v
+                        except (TypeError, ValueError):
+                            _safe[k] = _defaults.get(k, 0.0)
+            snap = MarketSnapshot(**_safe)
             snap.match_id = mid
         else:
             snap = snapshot
@@ -374,6 +387,8 @@ class IsolationAnomalyDetector:
         Oranların ima ettiği olasılık toplamı (overround) anormal ise
         büro fiyatlama hatası veya kasıtlı manipülasyon.
         """
+        if not snap.home_odds or not snap.draw_odds or not snap.away_odds:
+            return None
         if snap.home_odds <= 1 or snap.draw_odds <= 1 or snap.away_odds <= 1:
             return None
 

@@ -9,6 +9,7 @@ telegram_mini_app.py – Profesyonel Telegram bot entegrasyonu.
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import os
 import traceback
 from datetime import datetime
@@ -31,8 +32,9 @@ ALERT_EMOJI = {
 class TelegramNotifier:
     """Telegram bildirim motoru – tek sorumluluk: mesaj formatla ve gönder."""
 
-    def __init__(self, token: str = "", chat_id: int | str = ""):
-        self._token = token or os.getenv("TELEGRAM_BOT_TOKEN", "")
+    def __init__(self, token: str = "", chat_id: int | str = "", enabled: bool = True):
+        self._enabled = enabled
+        self._token = (token or os.getenv("TELEGRAM_BOT_TOKEN", "")) if enabled else ""
         self._chat_id = str(chat_id or os.getenv("TELEGRAM_CHAT_ID", ""))
         self._bot = None
         self._ready = False
@@ -40,6 +42,9 @@ class TelegramNotifier:
         self._init_bot()
 
     def _init_bot(self):
+        if not self._enabled:
+            logger.info("TelegramNotifier devre disi (enabled=False).")
+            return
         if not self._token:
             logger.info("Telegram token yok – bildirimler devre dışı.")
             return
@@ -56,10 +61,49 @@ class TelegramNotifier:
     # ═══════════════════════════════════════════
     #  ANA MESAJ GÖNDERİM
     # ═══════════════════════════════════════════
+    @staticmethod
+    def _sanitize_html(text: str) -> str:
+        """HTML parse hatası verecek kaçırılmış tag'leri temizler.
+
+        Telegram HTML parser'ı sadece belirli tag'leri destekler:
+        <b>, <i>, <u>, <s>, <code>, <pre>, <a>.
+        Diğer tüm <tag> ifadeleri &lt;tag&gt; ile escape edilir.
+        """
+        import re
+        import html as _html
+        ALLOWED_TAGS = {"b", "i", "u", "s", "code", "pre", "a", "tg-spoiler",
+                        "strong", "em", "ins", "del", "span", "tg-emoji"}
+
+        # 1) Python obje repr'ları: <Handle ...>, <Task ...>, <module ...>, <function ...>
+        text = re.sub(
+            r"<([a-zA-Z_][a-zA-Z0-9_.]*\s+[^>]{2,})>",
+            lambda m: _html.escape(m.group(0)),
+            text,
+        )
+
+        # 2) Kalan HTML tag'lerini kontrol et
+        def _replace_tag(match):
+            full = match.group(0)
+            tag_content = match.group(1).lower().strip()
+            tag_name = tag_content.split()[0].lstrip("/").split("=")[0]
+            if tag_name in ALLOWED_TAGS:
+                return full
+            return _html.escape(full)
+
+        text = re.sub(r"<(/?\w[^>]*)>", _replace_tag, text)
+
+        # 3) Eşleşmemiş < karakterlerini escape et
+        text = re.sub(r"<(?![/a-zA-Z])", "&lt;", text)
+        return text
+
     async def send(self, text: str, chat_id: str | None = None,
                    parse_mode: str = "HTML", reply_markup=None,
                    return_message_id: bool = False):
-        """HTML formatlı mesaj gönderir. return_message_id=True ile msg ID döner."""
+        """HTML formatlı mesaj gönderir. return_message_id=True ile msg ID döner.
+
+        HTML sanitization: Desteklenmeyen tag'ler otomatik escape edilir.
+        Mesaj 4096 karakteri aşarsa kırpılır.
+        """
         if not self._ready or not self._bot:
             logger.debug(f"Telegram DEMO: {text[:80]}…")
             return False
@@ -68,6 +112,12 @@ class TelegramNotifier:
         if not target:
             logger.warning("Telegram chat_id belirtilmemiş.")
             return False
+
+        if parse_mode == "HTML":
+            text = self._sanitize_html(text)
+
+        if len(text) > 4096:
+            text = text[:4090] + "\n…"
 
         try:
             msg = await self._bot.send_message(
@@ -79,7 +129,27 @@ class TelegramNotifier:
             self._message_count += 1
             return msg.message_id if return_message_id else True
         except Exception as e:
-            logger.error(f"Telegram gönderim hatası: {e}")
+            err_str = str(e)
+            if "parse entities" in err_str.lower() or "can't parse" in err_str.lower():
+                logger.warning(f"HTML parse hatası, plain text ile yeniden deneniyor: {e}")
+                try:
+                    import html as _html
+                    plain = _html.unescape(text)
+                    plain = plain.replace("<b>", "").replace("</b>", "")
+                    plain = plain.replace("<i>", "").replace("</i>", "")
+                    plain = plain.replace("<code>", "").replace("</code>", "")
+                    plain = plain.replace("<pre>", "").replace("</pre>", "")
+                    msg = await self._bot.send_message(
+                        chat_id=target, text=plain[:4096],
+                        reply_markup=reply_markup,
+                        disable_web_page_preview=True,
+                    )
+                    self._message_count += 1
+                    return msg.message_id if return_message_id else True
+                except Exception as e2:
+                    logger.error(f"Telegram plain text gönderimi de başarısız: {e2}")
+            else:
+                logger.error(f"Telegram gönderim hatası: {e}")
             return 0 if return_message_id else False
 
     async def edit_message(self, message_id: int, text: str,
@@ -145,16 +215,31 @@ class TelegramNotifier:
         conf_bar = self._progress_bar(conf, 10)
         now = datetime.now().strftime("%H:%M:%S")
 
+        # Spor türüne göre emoji ve etiket
+        sport = signal.get("sport", "football")
+        sport_emoji_map = {
+            "football": "⚽", "basketball": "🏀", "tennis": "🎾",
+            "volleyball": "🏐", "handball": "🤾", "ice-hockey": "🏒",
+        }
+        sport_emoji = sport_emoji_map.get(sport, "🏆")
+        league = signal.get("league", "")
+        country = signal.get("country", "")
+        league_line = f"🏆 <b>Lig:</b> {league}" if league else ""
+        if country:
+            league_line += f" ({country})"
+
         mode_text = ""
         if mode == "PAPER":
             mode_text = "\n🧪 <b>MOD: PAPER TRADING (Sanal)</b>\n"
         elif mode == "REDUCED":
             mode_text = "\n⚠️ <b>MOD: AZALTILMIŞ STAKE</b>\n"
 
+        league_text = f"{league_line}\n" if league_line else ""
         text = (
             f"{emoji} <b>{title}</b>\n"
             f"{'━' * 28}\n\n"
-            f"⚽ <b>Maç:</b> {home} – {away}\n"
+            f"{sport_emoji} <b>Maç:</b> {home} – {away}\n"
+            f"{league_text}"
             f"🎯 <b>Seçim:</b> <code>{selection.upper()}</code>\n"
             f"📊 <b>Model Tahmini:</b> %{conf*100:.1f}\n"
             f"💰 <b>Piyasa Oranı:</b> {odds:.2f}\n"
@@ -192,21 +277,33 @@ class TelegramNotifier:
                                module: str = "bahis.py",
                                include_log_tail: bool = True) -> bool:
         """Sistem hatası bildirimi + log'un son satırları."""
+        import html as _html
+        import re
+        
+        # Traceback'i al ve Python obje temsilcilerini temizle
         tb = traceback.format_exception(type(error), error, error.__traceback__)
-        tb_short = "".join(tb[-3:])[:500]
+        tb_text = "".join(tb[-3:])[:500]
+        # <Handle ...>, <Task ...>, <Future ...> vb. obje temsilcilerini temizle
+        tb_clean = re.sub(r'<[A-Z][a-zA-Z0-9_]*\s+[^>]*>', '[OBJ]', tb_text)
+        tb_short = _html.escape(tb_clean)
 
         # Log dosyasının son satırlarını oku
         log_tail = ""
         if include_log_tail:
-            log_tail = self._read_log_tail(n_lines=10)
+            raw_log = self._read_log_tail(n_lines=10)
+            # Log'daki potansiyel HTML tag'lerini temizle
+            log_clean = re.sub(r'<[A-Z][a-zA-Z0-9_]*\s+[^>]*>', '[OBJ]', raw_log)
+            log_tail = _html.escape(log_clean)
 
         now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        err_msg = _html.escape(str(error)[:200])
+        module_safe = _html.escape(str(module))
 
         text = (
             f"🚨 <b>SİSTEM HATASI</b>\n"
             f"{'━' * 28}\n\n"
-            f"📦 <b>Modül:</b> <code>{module}</code>\n"
-            f"❌ <b>Hata:</b> <code>{type(error).__name__}: {str(error)[:200]}</code>\n\n"
+            f"📦 <b>Modül:</b> <code>{module_safe}</code>\n"
+            f"❌ <b>Hata:</b> <code>{type(error).__name__}: {err_msg}</code>\n\n"
             f"📋 <b>Traceback:</b>\n"
             f"<pre>{tb_short}</pre>\n"
         )
@@ -219,7 +316,7 @@ class TelegramNotifier:
 
         text += f"\n<i>🕐 {now}</i>"
 
-        return await self.send(text)
+        return await self.send(text, parse_mode="HTML")
 
     # ═══════════════════════════════════════════
     #  SCRAPER ÇÖKME BİLDİRİMİ
@@ -292,7 +389,7 @@ class TelegramNotifier:
     @staticmethod
     def _read_log_tail(n_lines: int = 10) -> str:
         error_log = LOG_DIR / "error.log"
-        main_log = LOG_DIR / "bahis.log"
+        main_log = LOG_DIR / "bot_run.log"
 
         target = error_log if error_log.exists() else main_log
         if not target.exists():
@@ -377,15 +474,13 @@ class TelegramApp:
 
             await self._app.initialize()
             await self._app.start()
-            await self._app.updater.start_polling()
+            if self._app.updater:
+                await self._app.updater.start_polling()
 
             logger.info("Telegram bot başlatıldı.")
             while not shutdown.is_set():
                 await asyncio.sleep(1)
-
-            await self._app.updater.stop()
-            await self._app.stop()
-            await self._app.shutdown()
+            await self._safe_shutdown()
 
         except ImportError:
             logger.warning("python-telegram-bot yüklü değil.")
@@ -393,10 +488,23 @@ class TelegramApp:
         except Exception as e:
             logger.error(f"Telegram hatası: {e}")
             await self._notifier.send_error_alert(e, module="telegram_mini_app")
+            await self._safe_shutdown()
 
     async def _demo_mode(self, shutdown: asyncio.Event):
         while not shutdown.is_set():
             await asyncio.sleep(30)
+
+    async def _safe_shutdown(self):
+        """PTB lifecycle kapanışını güvenli sırada uygula."""
+        if not self._app:
+            return
+        with contextlib.suppress(Exception):
+            if self._app.updater and self._app.updater.running:
+                await self._app.updater.stop()
+        with contextlib.suppress(Exception):
+            await self._app.stop()
+        with contextlib.suppress(Exception):
+            await self._app.shutdown()
 
     # ═══════════════════════════════════════════
     #  /start

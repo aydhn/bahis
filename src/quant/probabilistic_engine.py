@@ -53,6 +53,12 @@ try:
 except ImportError:
     SCIPY_OK = False
 
+try:
+    from numba import njit, prange
+    NUMBA_OK = True
+except ImportError:
+    NUMBA_OK = False
+
 
 # ═══════════════════════════════════════════════
 #  VERİ YAPILARI
@@ -139,6 +145,42 @@ def metropolis_hastings(log_posterior_fn, init: np.ndarray,
         f"[ProbEngine] MH: kabul oranı = {accepted / n_samples:.1%}"
     )
     return samples
+
+
+# ═══════════════════════════════════════════════
+#  Numba JIT – Monte Carlo skor simülasyonu
+# ═══════════════════════════════════════════════
+if NUMBA_OK:
+    @njit(cache=True, parallel=True)
+    def _mc_score_probs(home_rate: np.ndarray, away_rate: np.ndarray):
+        """JIT-hızlandırılmış Monte Carlo skor simülasyonu.
+
+        Returns: (p_home, p_draw, p_away, p_over25, p_btts, n)
+        """
+        n = len(home_rate)
+        home_wins = 0
+        draws = 0
+        away_wins = 0
+        over25 = 0
+        btts = 0
+        for i in prange(n):
+            hg = np.random.poisson(home_rate[i])
+            ag = np.random.poisson(away_rate[i])
+            if hg > ag:
+                home_wins += 1
+            elif hg == ag:
+                draws += 1
+            else:
+                away_wins += 1
+            if hg + ag > 2:
+                over25 += 1
+            if hg > 0 and ag > 0:
+                btts += 1
+        fn = float(n)
+        return (home_wins / fn, draws / fn, away_wins / fn,
+                over25 / fn, btts / fn, n)
+else:
+    _mc_score_probs = None
 
 
 def hdi(samples: np.ndarray, prob: float = 0.95) -> tuple[float, float]:
@@ -443,7 +485,7 @@ class ProbabilisticEngine:
     def _compute_predictions(self, home_rate: np.ndarray,
                                away_rate: np.ndarray,
                                pred: MatchPrediction) -> MatchPrediction:
-        """Posterior rate'lerden olasılıkları hesapla."""
+        """Posterior rate'lerden olasılıkları hesapla. Numba JIT ile hızlandırılmış."""
         pred.n_samples = len(home_rate)
 
         # Gol dağılımı
@@ -459,22 +501,34 @@ class ProbabilisticEngine:
             round(x, 2) for x in hdi(away_rate)
         )
 
-        # Monte Carlo skor simülasyonu
+        # Monte Carlo skor simülasyonu (Numba JIT fast path)
+        if _mc_score_probs is not None:
+            hr = np.ascontiguousarray(home_rate, dtype=np.float64)
+            ar = np.ascontiguousarray(away_rate, dtype=np.float64)
+            ph, pd_, pa, po25, pbtts, _ = _mc_score_probs(hr, ar)
+            pred.p_home = round(ph, 4)
+            pred.p_draw = round(pd_, 4)
+            pred.p_away = round(pa, 4)
+            pred.p_over25 = round(po25, 4)
+            pred.p_under25 = round(1.0 - po25, 4)
+            pred.p_btts = round(pbtts, 4)
+        else:
+            home_goals_sim = np.random.poisson(home_rate)
+            away_goals_sim = np.random.poisson(away_rate)
+            pred.p_home = round(float(np.mean(home_goals_sim > away_goals_sim)), 4)
+            pred.p_draw = round(float(np.mean(home_goals_sim == away_goals_sim)), 4)
+            pred.p_away = round(float(np.mean(home_goals_sim < away_goals_sim)), 4)
+            pred.p_over25 = round(float(np.mean(
+                (home_goals_sim + away_goals_sim) > 2.5,
+            )), 4)
+            pred.p_under25 = round(1 - pred.p_over25, 4)
+            pred.p_btts = round(float(np.mean(
+                (home_goals_sim > 0) & (away_goals_sim > 0),
+            )), 4)
+
+        # En olası skorlar (always use numpy for score counting)
         home_goals_sim = np.random.poisson(home_rate)
         away_goals_sim = np.random.poisson(away_rate)
-
-        pred.p_home = round(float(np.mean(home_goals_sim > away_goals_sim)), 4)
-        pred.p_draw = round(float(np.mean(home_goals_sim == away_goals_sim)), 4)
-        pred.p_away = round(float(np.mean(home_goals_sim < away_goals_sim)), 4)
-        pred.p_over25 = round(float(np.mean(
-            (home_goals_sim + away_goals_sim) > 2.5,
-        )), 4)
-        pred.p_under25 = round(1 - pred.p_over25, 4)
-        pred.p_btts = round(float(np.mean(
-            (home_goals_sim > 0) & (away_goals_sim > 0),
-        )), 4)
-
-        # En olası skorlar
         score_counts: dict[tuple[int, int], int] = {}
         for hg, ag in zip(home_goals_sim, away_goals_sim):
             key = (int(hg), int(ag))
@@ -490,6 +544,206 @@ class ProbabilisticEngine:
         ]
 
         return pred
+
+    def predict_for_dataframe(self, df) -> list[dict]:
+        """DataFrame veya numpy array üzerinden toplu tahmin üretir.
+
+        Her satır bir maçı temsil eder. home_team, away_team ve match_id
+        sütunları varsa kullanır, yoksa varsayılan isimlendirme yapar.
+        """
+        results = []
+        try:
+            import polars as pl
+            if isinstance(df, pl.DataFrame):
+                rows = df.to_dicts()
+            elif hasattr(df, "tolist"):
+                rows = [{"match_id": f"m{i}", "home_team": f"team_h{i}", "away_team": f"team_a{i}"}
+                        for i in range(len(df))]
+            else:
+                rows = list(df) if hasattr(df, "__iter__") else []
+        except Exception:
+            rows = []
+
+        for row in rows:
+            home = row.get("home_team", "unknown_home")
+            away = row.get("away_team", "unknown_away")
+            mid = row.get("match_id", f"{home}_vs_{away}")
+            pred = self.predict(home, away, mid)
+            results.append({
+                "match_id": mid,
+                "home_team": home,
+                "away_team": away,
+                "p_home": pred.p_home,
+                "p_draw": pred.p_draw,
+                "p_away": pred.p_away,
+                "p_over25": pred.p_over25,
+                "p_under25": pred.p_under25,
+                "p_btts": pred.p_btts,
+                "home_goals_mean": pred.home_goals_mean,
+                "away_goals_mean": pred.away_goals_mean,
+                "method": pred.method,
+                "recommendation": pred.recommendation,
+            })
+        return results
+
+    def ensemble(self, **kwargs) -> list[dict]:
+        """Farklı model tahminlerini log-odds Bayesian ensemble ile birleştirir.
+
+        Log-odds uzayında birleştirme ile olasılık tutarlılığı sağlar.
+        Dinamik ağırlıklar: model çeşitliliği ve uyum analizi.
+
+        Args:
+            **kwargs: model_name=predictions şeklinde her modelin çıktısı.
+
+        Returns:
+            Birleştirilmiş tahmin listesi.
+        """
+        base_weights = {
+            "bayesian": 0.25, "mtl": 0.12, "kan": 0.08,
+            "poisson": 0.10, "dixon_coles": 0.08, "gradient": 0.07,
+            "glm": 0.05, "tail": 0.05, "causal": 0.05,
+            "intervals": 0.03, "signatures": 0.03, "jumps": 0.03,
+            "geometric": 0.03, "monte_carlo": 0.03,
+        }
+
+        CLIP_MIN, CLIP_MAX = 0.01, 0.99
+
+        def _to_logodds(p: float) -> float:
+            p = max(CLIP_MIN, min(p, CLIP_MAX))
+            return float(np.log(p / (1.0 - p)))
+
+        def _from_logodds(lo: float) -> float:
+            return float(1.0 / (1.0 + np.exp(-lo)))
+
+        all_predictions: dict[str, dict] = {}
+
+        for model_name, preds in kwargs.items():
+            if preds is None:
+                continue
+            w = base_weights.get(model_name, 0.02)
+
+            pred_list = []
+            if isinstance(preds, list):
+                pred_list = preds
+            elif hasattr(preds, "to_dicts"):
+                try:
+                    pred_list = preds.to_dicts()
+                except Exception:
+                    continue
+            elif isinstance(preds, dict):
+                pred_list = [preds]
+
+            for pred in pred_list:
+                if not isinstance(pred, dict):
+                    continue
+                mid = pred.get("match_id", "")
+                if not mid:
+                    continue
+
+                if mid not in all_predictions:
+                    all_predictions[mid] = {
+                        "match_id": mid,
+                        "home_team": pred.get("home_team", ""),
+                        "away_team": pred.get("away_team", ""),
+                        "logodds_home": [],
+                        "logodds_draw": [],
+                        "logodds_away": [],
+                        "logodds_over25": [],
+                        "weights": [],
+                        "sources": [],
+                        "recommendations": [],
+                    }
+
+                entry = all_predictions[mid]
+                ph = pred.get("p_home", 0)
+                pd_ = pred.get("p_draw", 0)
+                pa = pred.get("p_away", 0)
+                po25 = pred.get("p_over25", 0)
+
+                if isinstance(ph, (int, float)) and ph > 0:
+                    entry["logodds_home"].append(_to_logodds(ph))
+                    entry["logodds_draw"].append(_to_logodds(pd_ or 0.33))
+                    entry["logodds_away"].append(_to_logodds(pa or 0.33))
+                    entry["logodds_over25"].append(_to_logodds(po25 or 0.5))
+                    entry["weights"].append(w)
+                    entry["sources"].append(model_name)
+
+                rec = pred.get("recommendation", "")
+                if rec:
+                    entry["recommendations"].append(f"[{model_name}] {rec}")
+
+        result = []
+        for mid, entry in all_predictions.items():
+            wts = np.array(entry["weights"])
+            n_sources = len(entry["sources"])
+
+            if n_sources == 0 or wts.sum() <= 0:
+                result.append({
+                    "match_id": mid, "home_team": entry["home_team"],
+                    "away_team": entry["away_team"],
+                    "p_home": 0.33, "p_draw": 0.34, "p_away": 0.33,
+                    "p_over25": 0.5, "confidence": 0.0, "sources": [],
+                    "n_models": 0,
+                })
+                continue
+
+            wts_norm = wts / wts.sum()
+
+            # Log-odds uzayında ağırlıklı ortalama
+            lo_h = float(np.dot(wts_norm, entry["logodds_home"]))
+            lo_d = float(np.dot(wts_norm, entry["logodds_draw"]))
+            lo_a = float(np.dot(wts_norm, entry["logodds_away"]))
+            lo_o25 = float(np.dot(wts_norm, entry["logodds_over25"]))
+
+            ph = _from_logodds(lo_h)
+            pd_ = _from_logodds(lo_d)
+            pa = _from_logodds(lo_a)
+            p_o25 = _from_logodds(lo_o25)
+
+            # Normalizasyon (1X2 olasılıkları toplamı = 1.0)
+            total = ph + pd_ + pa
+            if total > 0:
+                ph, pd_, pa = ph / total, pd_ / total, pa / total
+            else:
+                ph, pd_, pa = 0.33, 0.34, 0.33
+
+            # Gelişmiş güven skoru:
+            # 1) Model sayısı (daha fazla = daha güvenilir)
+            diversity_score = min(n_sources / 6.0, 1.0)
+            # 2) Model uyumu (log-odds varyansı düşükse modeller hemfikir)
+            lo_std = float(np.std(entry["logodds_home"])) if n_sources > 1 else 1.0
+            agreement_score = max(0.0, 1.0 - lo_std / 3.0)
+            # 3) Dominant olasılık netliği (daha belirgin = daha güvenilir)
+            clarity = max(ph, pd_, pa)
+            clarity_score = (clarity - 0.33) / 0.67
+
+            confidence = (
+                0.40 * diversity_score
+                + 0.35 * agreement_score
+                + 0.25 * clarity_score
+            )
+            confidence = max(0.05, min(confidence, 0.99))
+
+            result.append({
+                "match_id": mid,
+                "home_team": entry["home_team"],
+                "away_team": entry["away_team"],
+                "p_home": round(ph, 4),
+                "p_draw": round(pd_, 4),
+                "p_away": round(pa, 4),
+                "p_over25": round(p_o25, 4),
+                "confidence": round(confidence, 4),
+                "sources": entry["sources"],
+                "n_models": n_sources,
+                "model_agreement": round(agreement_score, 3),
+                "recommendation": "; ".join(entry["recommendations"][:3]),
+            })
+
+        if not result:
+            result = [{"match_id": "none", "p_home": 0.33, "p_draw": 0.34,
+                        "p_away": 0.33, "confidence": 0.0, "sources": [],
+                        "n_models": 0}]
+        return result
 
     def _advice(self, p: MatchPrediction) -> str:
         winner = "Ev" if p.p_home > p.p_away else "Dep"

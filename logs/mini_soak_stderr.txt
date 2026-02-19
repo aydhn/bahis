@@ -1,0 +1,53 @@
+00:56:01 | INFO     | __main__ – [CLI] Başlatılıyor: mode=full, headless=True, telegram=False, dashboard=False
+WARNING (pytensor.configdefaults): g++ not available, if using conda: `conda install gxx`
+WARNING (pytensor.configdefaults): g++ not detected!  PyTensor will be unable to compile C-implementations and will default to Python. Performance may be severely degraded. To remove this warning, set PyTensor flags cxx to an empty string.
+00:57:21 | INFO     | src.quant.uncertainty_quantifier – mapie yüklü değil – heuristic uncertainty aktif.
+00:57:26 | INFO     | src.quant.digital_twin_sim – mesa yüklü değil – pure Python simulation fallback.
+c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\nolds\datasets.py:9: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  import pkg_resources
+c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\rdt\transformers\utils.py:18: DeprecationWarning: module 'sre_parse' is deprecated
+  import sre_parse  # isort:skip
+00:57:40 | INFO     | src.core.jax_accelerator – JAX aktif – backend: cpu
+00:57:45 | INFO     | __main__ – [Boot] Mod=full, headless=True, telegram=False, dashboard=False
+00:57:45 | INFO     | __main__ – Layer 0 – Infrastructure başlatılıyor…
+00:57:45 | INFO     | src.utils.log_rotator – [LogRotator] Rotasyon tamamlandı: 0 arşivlendi, 9 korundu
+00:57:45 | INFO     | src.core.exception_guardian – [Guardian] Başlatıldı: budget=50/h, circuit_thresh=15
+00:57:45 | INFO     | src.core.exception_guardian – [Guardian] Global exception hook kuruldu
+00:57:45 | INFO     | src.core.regime_kelly – [RegimeKelly] Başlatıldı: bankroll=10000, fraction=0.25, min_edge=4%
+00:57:45 | INFO     | src.core.strategy_evolver – [Evolver] Başlatıldı: pop=50, elitism=5, tournament=3
+00:57:45 | SUCCESS  | __main__ – Layer 0 hazır ✓ (0.03s)
+00:57:45 | INFO     | __main__ – Layer 2 – Memory & Context başlatılıyor…
+00:57:45 | INFO     | src.memory.db_manager – [DBManager] Başlatıldı (sqlite) → C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\data\bahis.duckdb
+00:57:51 | SUCCESS  | __main__ – Layer 2 hazır ✓ (6.24s)
+00:57:51 | INFO     | __main__ – Layer 1 – Sensors & Ingestion başlatılıyor…
+00:57:51 | SUCCESS  | __main__ – Layer 1 hazır ✓ (0.07s)
+00:57:51 | INFO     | __main__ – Layer 3 – Quantitative Brain başlatılıyor…
+00:57:51 | INFO     | src.quant.kan_interpreter – KAN modeli oluşturuldu.
+00:57:51 | WARNING  | src.quant.lstm_trend – [LSTM] Model yüklenemedi: [Errno 2] No such file or directory: 'models/lstm_trend.pt'
+00:57:51 | INFO     | src.ingestion.vision_live – [Vision] YOLOv8n yüklendi.
+00:57:53 | SUCCESS  | __main__ – Layer 3 hazır ✓ (1.66s)
+00:57:53 | INFO     | __main__ – Layer 6 – Graph Intelligence başlatılıyor…
+00:57:57 | WARNING  | src.memory.neo4j_graph – [Neo4j] Bağlantı hatası: Couldn't connect to localhost:7687 (resolved to ('[::1]:7687', '127.0.0.1:7687')):
+Failed to establish connection to ResolvedIPv6Address(('::1', 7687, 0, 0)) (reason [WinError 10061] Hedef makine etkin olarak reddettiğinden bağlantı kurulamadı)
+Failed to establish connection to ResolvedIPv4Address(('127.0.0.1', 7687)) (reason [WinError 10061] Hedef makine etkin olarak reddettiğinden bağlantı kurulamadı) – in-memory mod.
+00:57:57 | INFO     | src.memory.neo4j_graph – [Neo4j] Fallback: networkx in-memory graph aktif.
+00:57:57 | SUCCESS  | __main__ – Layer 6 hazır ✓ (4.11s)
+00:57:57 | INFO     | __main__ – Layer 4 – Risk & Execution başlatılıyor…
+00:57:57 | INFO     | src.core.jit_accelerator – [JIT] Warmup tamamlandı (336ms)
+2026-02-19 00:58:01,925	INFO worker.py:2007 -- Started a local Ray instance.
+00:58:05 | WARNING  | src.utils.super_logger – FutureWarning: Tip: In future versions of Ray, Ray will no longer override accelerator visible devices env var if num_gpus=0 or num_gpus=None (default). To enable this behavior and turn off this error message, set RAY_ACCEL_ENV_VAR_OVERRIDE_ON_ZERO=0 (c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\ray\_private\worker.py:2046)
+00:58:05 | INFO     | src.core.distributed_core – [Dist] Ray başlatıldı: CPU=12.0, GPU=0, Memory=3.8GB
+00:58:06 | INFO     | src.core.shadow_manager – [Shadow] Durum yüklendi: 0 strateji.
+00:58:06 | SUCCESS  | __main__ – Layer 4 hazır ✓ (9.42s)
+00:58:06 | INFO     | __main__ – Layer 5 – Ops & Interface başlatılıyor…
+00:58:06 | INFO     | src.core.workflow_orchestrator – [Orchestrator] Başlatıldı: retries=3, backoff=2.0x, prefect=✓
+00:58:06 | INFO     | __main__ – [Orchestrator] 85 modül kaydedildi.
+00:58:06 | SUCCESS  | __main__ – Layer 5 hazır ✓ (0.01s)
+00:58:15 | INFO     | src.memory.dvc_manager – Snapshot oluşturuldu: boot (32247 dosya)
+00:58:15 | INFO     | __main__ – [Boot] Tüm katmanlar 30.1 saniyede ayağa kalktı
+00:58:16 | INFO     | src.ui.telegram_mini_app – TelegramNotifier hazır.
+00:58:16 | INFO     | __main__ – [PreFetch] Boot sırasında TÜM SPORLAR verisi çekiliyor…
+00:58:16 | INFO     | src.ingestion.metric_exporter – Prometheus metrikleri → http://localhost:9090/metrics
+00:58:16 | INFO     | src.ingestion.async_data_factory – Canlı veri fabrikası başlatıldı.
+00:58:16 | INFO     | src.ingestion.api_hijacker – [Hijack] Ağ dinleyici başlatılıyor…
+00:58:16 | INFO     | src.ingestion.async_data_factory – Pre-match veri fabrikası başlatıldı.

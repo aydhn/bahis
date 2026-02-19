@@ -1,0 +1,783 @@
+00:46:25 | INFO     | __main__ – [CLI] Başlatılıyor: mode=full, headless=True, telegram=False, dashboard=False
+WARNING (pytensor.configdefaults): g++ not available, if using conda: `conda install gxx`
+WARNING (pytensor.configdefaults): g++ not detected!  PyTensor will be unable to compile C-implementations and will default to Python. Performance may be severely degraded. To remove this warning, set PyTensor flags cxx to an empty string.
+00:46:41 | INFO     | src.quant.uncertainty_quantifier – mapie yüklü değil – heuristic uncertainty aktif.
+00:46:43 | INFO     | src.quant.digital_twin_sim – mesa yüklü değil – pure Python simulation fallback.
+c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\nolds\datasets.py:9: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  import pkg_resources
+c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\rdt\transformers\utils.py:18: DeprecationWarning: module 'sre_parse' is deprecated
+  import sre_parse  # isort:skip
+00:46:49 | INFO     | src.core.jax_accelerator – JAX aktif – backend: cpu
+00:46:52 | INFO     | __main__ – [Boot] Mod=full, headless=True, telegram=False, dashboard=False
+00:46:52 | INFO     | __main__ – Layer 0 – Infrastructure başlatılıyor…
+00:46:52 | INFO     | src.utils.log_rotator – [LogRotator] Rotasyon tamamlandı: 0 arşivlendi, 9 korundu
+00:46:52 | INFO     | src.core.exception_guardian – [Guardian] Başlatıldı: budget=50/h, circuit_thresh=15
+00:46:52 | INFO     | src.core.exception_guardian – [Guardian] Global exception hook kuruldu
+00:46:52 | INFO     | src.core.regime_kelly – [RegimeKelly] Başlatıldı: bankroll=10000, fraction=0.25, min_edge=4%
+00:46:52 | INFO     | src.core.strategy_evolver – [Evolver] Başlatıldı: pop=50, elitism=5, tournament=3
+00:46:52 | SUCCESS  | __main__ – Layer 0 hazır ✓ (0.03s)
+00:46:52 | INFO     | __main__ – Layer 2 – Memory & Context başlatılıyor…
+00:46:52 | INFO     | src.memory.db_manager – [DBManager] Başlatıldı (sqlite) → C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\data\bahis.duckdb
+00:46:58 | SUCCESS  | __main__ – Layer 2 hazır ✓ (5.84s)
+00:46:58 | INFO     | __main__ – Layer 1 – Sensors & Ingestion başlatılıyor…
+00:46:58 | SUCCESS  | __main__ – Layer 1 hazır ✓ (0.06s)
+00:46:58 | INFO     | __main__ – Layer 3 – Quantitative Brain başlatılıyor…
+00:46:58 | INFO     | src.quant.kan_interpreter – KAN modeli oluşturuldu.
+00:46:58 | WARNING  | src.quant.lstm_trend – [LSTM] Model yüklenemedi: [Errno 2] No such file or directory: 'models/lstm_trend.pt'
+00:46:58 | INFO     | src.ingestion.vision_live – [Vision] YOLOv8n yüklendi.
+00:46:59 | SUCCESS  | __main__ – Layer 3 hazır ✓ (1.01s)
+00:46:59 | INFO     | __main__ – Layer 6 – Graph Intelligence başlatılıyor…
+00:47:03 | WARNING  | src.memory.neo4j_graph – [Neo4j] Bağlantı hatası: Couldn't connect to localhost:7687 (resolved to ('[::1]:7687', '127.0.0.1:7687')):
+Failed to establish connection to ResolvedIPv6Address(('::1', 7687, 0, 0)) (reason [WinError 10061] Hedef makine etkin olarak reddettiğinden bağlantı kurulamadı)
+Failed to establish connection to ResolvedIPv4Address(('127.0.0.1', 7687)) (reason [WinError 10061] Hedef makine etkin olarak reddettiğinden bağlantı kurulamadı) – in-memory mod.
+00:47:03 | INFO     | src.memory.neo4j_graph – [Neo4j] Fallback: networkx in-memory graph aktif.
+00:47:03 | SUCCESS  | __main__ – Layer 6 hazır ✓ (4.10s)
+00:47:03 | INFO     | __main__ – Layer 4 – Risk & Execution başlatılıyor…
+00:47:03 | INFO     | src.core.jit_accelerator – [JIT] Warmup tamamlandı (193ms)
+2026-02-19 00:47:06,266	INFO worker.py:2007 -- Started a local Ray instance.
+00:47:09 | WARNING  | src.utils.super_logger – FutureWarning: Tip: In future versions of Ray, Ray will no longer override accelerator visible devices env var if num_gpus=0 or num_gpus=None (default). To enable this behavior and turn off this error message, set RAY_ACCEL_ENV_VAR_OVERRIDE_ON_ZERO=0 (c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\ray\_private\worker.py:2046)
+00:47:09 | INFO     | src.core.distributed_core – [Dist] Ray başlatıldı: CPU=12.0, GPU=0, Memory=2.9GB
+00:47:10 | INFO     | src.core.shadow_manager – [Shadow] Durum yüklendi: 0 strateji.
+00:47:10 | SUCCESS  | __main__ – Layer 4 hazır ✓ (6.82s)
+00:47:10 | INFO     | __main__ – Layer 5 – Ops & Interface başlatılıyor…
+00:47:10 | INFO     | src.core.workflow_orchestrator – [Orchestrator] Başlatıldı: retries=3, backoff=2.0x, prefect=✓
+00:47:10 | INFO     | __main__ – [Orchestrator] 85 modül kaydedildi.
+00:47:10 | SUCCESS  | __main__ – Layer 5 hazır ✓ (0.01s)
+00:47:17 | INFO     | src.memory.dvc_manager – Snapshot oluşturuldu: boot (32187 dosya)
+00:47:17 | INFO     | __main__ – [Boot] Tüm katmanlar 25.0 saniyede ayağa kalktı
+00:47:18 | INFO     | src.ui.telegram_mini_app – TelegramNotifier hazır.
+00:47:18 | INFO     | __main__ – [PreFetch] Boot sırasında TÜM SPORLAR verisi çekiliyor…
+00:47:18 | INFO     | src.ingestion.metric_exporter – Prometheus metrikleri → http://localhost:9090/metrics
+00:47:18 | INFO     | src.ingestion.async_data_factory – Canlı veri fabrikası başlatıldı.
+00:47:18 | INFO     | src.ingestion.api_hijacker – [Hijack] Ağ dinleyici başlatılıyor…
+00:47:18 | INFO     | src.ingestion.async_data_factory – Pre-match veri fabrikası başlatıldı.
+00:47:24 | INFO     | src.ingestion.async_data_factory – Playwright tarayıcısı (yeniden) başlatıldı.
+00:47:29 | INFO     | src.ingestion.api_hijacker – [Hijack] 🆕 Endpoint keşfedildi: https://www.sofascore.com/api/v1/sport/football/categories/all [other] (sofascore)
+00:47:29 | INFO     | src.ingestion.api_hijacker – [Hijack] 🆕 Endpoint keşfedildi: https://www.sofascore.com/api/v1/sport/football/trending-top-players [other] (sofascore)
+00:47:29 | INFO     | src.ingestion.api_hijacker – [Hijack] 🆕 Endpoint keşfedildi: https://www.sofascore.com/api/v1/odds/providers/TR/web [other] (sofascore)
+00:47:29 | INFO     | src.ingestion.api_hijacker – [Hijack] 🆕 Endpoint keşfedildi: https://www.sofascore.com/api/v1/sport/football/scheduled-events/*-02-19 [match_list] (sofascore)
+00:47:33 | INFO     | src.ingestion.api_hijacker – [Hijack] 🆕 Endpoint keşfedildi: https://www.sofascore.com/api/v1/event/newly-added-events [match_list] (sofascore)
+00:47:33 | INFO     | src.ingestion.api_hijacker – [Hijack] 🆕 Endpoint keşfedildi: https://www.sofascore.com/api/v1/odds/providers/TR/web-odds [other] (sofascore)
+00:47:33 | INFO     | src.ingestion.api_hijacker – [Hijack] 🆕 Endpoint keşfedildi: https://www.sofascore.com/api/v1/odds/*/featured-events-by-popularity/football [other] (sofascore)
+00:47:33 | INFO     | src.ingestion.api_hijacker – [Hijack] 🆕 Endpoint keşfedildi: https://www.sofascore.com/api/v1/odds/*/featured-events/football [other] (sofascore)
+00:47:33 | INFO     | src.ingestion.api_hijacker – [Hijack] 🆕 Endpoint keşfedildi: https://www.sofascore.com/api/v1/sport/football/odds/*/*-02-19 [odds] (sofascore)
+00:47:34 | INFO     | src.ingestion.api_hijacker – [Hijack] 🆕 Endpoint keşfedildi: https://www.sofascore.com/api/v1/odds/providers/TR/web-featured [other] (sofascore)
+00:47:34 | INFO     | src.ingestion.api_hijacker – [Hijack] 🆕 Endpoint keşfedildi: https://www.sofascore.com/api/v1/event/*/votes [other] (sofascore)
+00:47:34 | INFO     | src.ingestion.api_hijacker – [Hijack] 🆕 Endpoint keşfedildi: https://www.sofascore.com/api/v1/event/*/odds/*/featured [other] (sofascore)
+00:47:34 | INFO     | src.ingestion.api_hijacker – [Hijack] 🆕 Endpoint keşfedildi: https://www.sofascore.com/api/v1/event/* [other] (sofascore)
+00:47:34 | INFO     | src.ingestion.api_hijacker – [Hijack] 🆕 Endpoint keşfedildi: https://www.sofascore.com/api/v1/event/*/odds/*/all [other] (sofascore)
+00:47:34 | INFO     | src.ingestion.data_sources – [Sofascore] Tüm sporlar: 0 etkinlik çekildi.
+[2026-02-19 00:47:41,055 E 20072 37420] core_worker_process.cc:842: Failed to establish connection to the metrics exporter agent. Metrics will not be exported. Exporter agent status: RpcError: Running out of retries to initialize the metrics agent. rpc_code: 14
+00:47:41 | INFO     | src.ingestion.async_data_factory – FlashScore: 23 maç tarandı.
+00:47:41 | INFO     | src.ingestion.async_data_factory – FlashScore: 23 maç tarandı.
+00:47:49 | WARNING  | __main__ – [PreFetch] Sofascore boş – CSV fallback deneniyor…
+00:47:54 | INFO     | src.ingestion.api_hijacker – [Hijack] ✓ Dinleniyor: sofascore (https://www.sofascore.com/football)
+00:47:59 | INFO     | src.ingestion.api_hijacker – [Hijack] 🆕 Endpoint keşfedildi: https://www.sofascore.com/api/v1/odds/*/featured-events-by-popularity/basketball [other] (sofascore_basketball)
+00:47:59 | INFO     | src.ingestion.api_hijacker – [Hijack] 🆕 Endpoint keşfedildi: https://www.sofascore.com/api/v1/sport/basketball/odds/*/*-02-19 [odds] (sofascore_basketball)
+00:47:59 | INFO     | src.ingestion.api_hijacker – [Hijack] 🆕 Endpoint keşfedildi: https://www.sofascore.com/api/v1/odds/*/featured-events/basketball [other] (sofascore_basketball)
+00:48:04 | ERROR    | src.ingestion.data_sources – [CSV] Hata (super_lig/2526) url=https://www.football-data.co.uk/mmz4281/2526/T1.csv: ConnectTimeout: ConnectTimeout('')
+Traceback (most recent call last):
+
+  File "c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\httpx\_transports\default.py", line 101, in map_httpcore_exceptions
+    yield
+  File "c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\httpx\_transports\default.py", line 394, in handle_async_request
+    resp = await self._pool.handle_async_request(req)
+                 │    │     │                    └ <Request [b'GET']>
+                 │    │     └ <function AsyncConnectionPool.handle_async_request at 0x000001F667658B80>
+                 │    └ <AsyncConnectionPool [Requests: 0 active, 0 queued | Connections: 0 active, 0 idle]>
+                 └ <httpx.AsyncHTTPTransport object at 0x000001F71342FDD0>
+  File "c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\httpcore\_async\connection_pool.py", line 256, in handle_async_request
+    raise exc from None
+  File "c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\httpcore\_async\connection_pool.py", line 236, in handle_async_request
+    response = await connection.handle_async_request(
+                     │          └ <function AsyncHTTPConnection.handle_async_request at 0x000001F66764BE20>
+                     └ <AsyncHTTPConnection [CONNECTION FAILED]>
+  File "c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\httpcore\_async\connection.py", line 101, in handle_async_request
+    raise exc
+  File "c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\httpcore\_async\connection.py", line 78, in handle_async_request
+    stream = await self._connect(request)
+                   │    │        └ <Request [b'GET']>
+                   │    └ <function AsyncHTTPConnection._connect at 0x000001F66764BEC0>
+                   └ <AsyncHTTPConnection [CONNECTION FAILED]>
+  File "c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\httpcore\_async\connection.py", line 124, in _connect
+    stream = await self._network_backend.connect_tcp(**kwargs)
+                   │    │                │             └ {'host': 'www.football-data.co.uk', 'port': 443, 'local_address': None, 'timeout': 15, 'socket_options': None}
+                   │    │                └ <function AutoBackend.connect_tcp at 0x000001F667649F80>
+                   │    └ <httpcore._backends.auto.AutoBackend object at 0x000001F713464750>
+                   └ <AsyncHTTPConnection [CONNECTION FAILED]>
+  File "c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\httpcore\_backends\auto.py", line 31, in connect_tcp
+    return await self._backend.connect_tcp(
+                 │    │        └ <function AnyIOBackend.connect_tcp at 0x000001F667674C20>
+                 │    └ <httpcore.AnyIOBackend object at 0x000001F7132D4090>
+                 └ <httpcore._backends.auto.AutoBackend object at 0x000001F713464750>
+  File "c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\httpcore\_backends\anyio.py", line 113, in connect_tcp
+    with map_exceptions(exc_map):
+         │              └ {<class 'TimeoutError'>: <class 'httpcore.ConnectTimeout'>, <class 'OSError'>: <class 'httpcore.ConnectError'>, <class 'anyio...
+         └ <function map_exceptions at 0x000001F6672FCCC0>
+  File "C:\Users\immor\AppData\Local\Programs\Python\Python311\Lib\contextlib.py", line 158, in __exit__
+    self.gen.throw(typ, value, traceback)
+    │    │   │     │    │      └ <traceback object at 0x000001F710F09500>
+    │    │   │     │    └ TimeoutError()
+    │    │   │     └ <class 'TimeoutError'>
+    │    │   └ <method 'throw' of 'generator' objects>
+    │    └ <generator object map_exceptions at 0x000001F6BF2C3640>
+    └ <contextlib._GeneratorContextManager object at 0x000001F71338E450>
+  File "c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\httpcore\_exceptions.py", line 14, in map_exceptions
+    raise to_exc(exc) from exc
+          └ <class 'httpcore.ConnectTimeout'>
+
+httpcore.ConnectTimeout
+
+
+The above exception was the direct cause of the following exception:
+
+
+Traceback (most recent call last):
+
+  File "c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\bahis.py", line 7426, in <module>
+    app()
+    └ <typer.main.Typer object at 0x000001F62C2CCD10>
+
+  File "c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\typer\main.py", line 1132, in __call__
+    return get_command(self)(*args, **kwargs)
+           │           │      │       └ {}
+           │           │      └ ()
+           │           └ <typer.main.Typer object at 0x000001F62C2CCD10>
+           └ <function get_command at 0x000001F62BE8E8E0>
+  File "c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\click\core.py", line 1485, in __call__
+    return self.main(*args, **kwargs)
+           │    │     │       └ {}
+           │    │     └ ()
+           │    └ <function TyperGroup.main at 0x000001F62BE82DE0>
+           └ <TyperGroup bahis>
+  File "c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\typer\core.py", line 814, in main
+    return _main(
+           └ <function _main at 0x000001F62BE81B20>
+  File "c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\typer\core.py", line 190, in _main
+    rv = self.invoke(ctx)
+         │    │      └ <click.core.Context object at 0x000001F62C31B750>
+         │    └ <function Group.invoke at 0x000001F62BE089A0>
+         └ <TyperGroup bahis>
+  File "c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\click\core.py", line 1873, in invoke
+    return _process_result(sub_ctx.command.invoke(sub_ctx))
+           │               │       │       │      └ <click.core.Context object at 0x000001F6291D9F50>
+           │               │       │       └ <function Command.invoke at 0x000001F62BE03740>
+           │               │       └ <TyperCommand run>
+           │               └ <click.core.Context object at 0x000001F6291D9F50>
+           └ <function Group.invoke.<locals>._process_result at 0x000001F62C31C9A0>
+  File "c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\click\core.py", line 1269, in invoke
+    return ctx.invoke(self.callback, **ctx.params)
+           │   │      │    │           │   └ {'mode': 'full', 'headless': True, 'telegram': False, 'dashboard': False}
+           │   │      │    │           └ <click.core.Context object at 0x000001F6291D9F50>
+           │   │      │    └ <function run at 0x000001F62C2CAA20>
+           │   │      └ <TyperCommand run>
+           │   └ <function Context.invoke at 0x000001F62BE02980>
+           └ <click.core.Context object at 0x000001F6291D9F50>
+  File "c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\click\core.py", line 824, in invoke
+    return callback(*args, **kwargs)
+           │         │       └ {'mode': 'full', 'headless': True, 'telegram': False, 'dashboard': False}
+           │         └ ()
+           └ <function run at 0x000001F62C2CAA20>
+  File "c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\typer\main.py", line 1511, in wrapper
+    return callback(**use_params)
+           │          └ {'mode': 'full', 'headless': True, 'telegram': False, 'dashboard': False}
+           └ <function run at 0x000001F62C2CAAC0>
+
+  File "c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\bahis.py", line 3291, in run
+    asyncio.run(_boot(mode=mode, headless=headless, telegram=telegram, dashboard=dashboard))
+    │       │   │          │              │                  │                   └ False
+    │       │   │          │              │                  └ False
+    │       │   │          │              └ True
+    │       │   │          └ 'full'
+    │       │   └ <function _boot at 0x000001F62C2CA8E0>
+    │       └ <function run at 0x000001F62BB74540>
+    └ <module 'asyncio' from 'C:\\Users\\immor\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\asyncio\\__init__.py'>
+
+  File "C:\Users\immor\AppData\Local\Programs\Python\Python311\Lib\asyncio\runners.py", line 190, in run
+    return runner.run(main)
+           │      │   └ <coroutine object _boot at 0x000001F6298B5A10>
+           │      └ <function Runner.run at 0x000001F62BBF4AE0>
+           └ <asyncio.runners.Runner object at 0x000001F62C2C3250>
+  File "C:\Users\immor\AppData\Local\Programs\Python\Python311\Lib\asyncio\runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           │    │     │                  └ <Task pending name='Task-1' coro=<_boot() running at c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\bahis.py:827> cb=[_run...
+           │    │     └ <function BaseEventLoop.run_until_complete at 0x000001F62BBF25C0>
+           │    └ <ProactorEventLoop running=True closed=False debug=False>
+           └ <asyncio.runners.Runner object at 0x000001F62C2C3250>
+  File "C:\Users\immor\AppData\Local\Programs\Python\Python311\Lib\asyncio\base_events.py", line 641, in run_until_complete
+    self.run_forever()
+    │    └ <function ProactorEventLoop.run_forever at 0x000001F62BCBA7A0>
+    └ <ProactorEventLoop running=True closed=False debug=False>
+  File "C:\Users\immor\AppData\Local\Programs\Python\Python311\Lib\asyncio\windows_events.py", line 321, in run_forever
+    super().run_forever()
+  File "C:\Users\immor\AppData\Local\Programs\Python\Python311\Lib\asyncio\base_events.py", line 608, in run_forever
+    self._run_once()
+    │    └ <function BaseEventLoop._run_once at 0x000001F62BBF4360>
+    └ <ProactorEventLoop running=True closed=False debug=False>
+  File "C:\Users\immor\AppData\Local\Programs\Python\Python311\Lib\asyncio\base_events.py", line 1936, in _run_once
+    handle._run()
+    │      └ <function Handle._run at 0x000001F62BB498A0>
+    └ <Handle Task.task_wakeup(<Future finished result=None>)>
+  File "C:\Users\immor\AppData\Local\Programs\Python\Python311\Lib\asyncio\events.py", line 84, in _run
+    self._context.run(self._callback, *self._args)
+    │    │            │    │           │    └ <member '_args' of 'Handle' objects>
+    │    │            │    │           └ <Handle Task.task_wakeup(<Future finished result=None>)>
+    │    │            │    └ <member '_callback' of 'Handle' objects>
+    │    │            └ <Handle Task.task_wakeup(<Future finished result=None>)>
+    │    └ <member '_context' of 'Handle' objects>
+    └ <Handle Task.task_wakeup(<Future finished result=None>)>
+
+  File "c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\bahis.py", line 827, in _boot
+    _csv_data = await _csv_src.get_historical("super_lig", "2526")
+                      │        └ <function FootballCSVSource.get_historical at 0x000001F64DDDED40>
+                      └ <src.ingestion.data_sources.FootballCSVSource object at 0x000001F6BFA6EBD0>
+
+> File "C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\src\ingestion\data_sources.py", line 238, in get_historical
+    resp = await client.get(url)
+                 │      │   └ 'https://www.football-data.co.uk/mmz4281/2526/T1.csv'
+                 │      └ <function AsyncClient.get at 0x000001F64A617D80>
+                 └ <httpx.AsyncClient object at 0x000001F7133C8590>
+
+  File "c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\httpx\_client.py", line 1768, in get
+    return await self.request(
+                 │    └ <function AsyncClient.request at 0x000001F64A617920>
+                 └ <httpx.AsyncClient object at 0x000001F7133C8590>
+  File "c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\httpx\_client.py", line 1540, in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+                 │    │    │             │                      └ <httpx._client.UseClientDefault object at 0x000001F64A5FACD0>
+                 │    │    │             └ <httpx._client.UseClientDefault object at 0x000001F64A5FACD0>
+                 │    │    └ <Request('GET', 'https://www.football-data.co.uk/mmz4281/2526/T1.csv')>
+                 │    └ <function AsyncClient.send at 0x000001F64A617B00>
+                 └ <httpx.AsyncClient object at 0x000001F7133C8590>
+  File "c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\httpx\_client.py", line 1629, in send
+    response = await self._send_handling_auth(
+                     │    └ <function AsyncClient._send_handling_auth at 0x000001F64A617BA0>
+                     └ <httpx.AsyncClient object at 0x000001F7133C8590>
+  File "c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\httpx\_client.py", line 1657, in _send_handling_auth
+    response = await self._send_handling_redirects(
+                     │    └ <function AsyncClient._send_handling_redirects at 0x000001F64A617C40>
+                     └ <httpx.AsyncClient object at 0x000001F7133C8590>
+  File "c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\httpx\_client.py", line 1694, in _send_handling_redirects
+    response = await self._send_single_request(request)
+                     │    │                    └ <Request('GET', 'https://www.football-data.co.uk/mmz4281/2526/T1.csv')>
+                     │    └ <function AsyncClient._send_single_request at 0x000001F64A617CE0>
+                     └ <httpx.AsyncClient object at 0x000001F7133C8590>
+  File "c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\httpx\_client.py", line 1730, in _send_single_request
+    response = await transport.handle_async_request(request)
+                     │         │                    └ <Request('GET', 'https://www.football-data.co.uk/mmz4281/2526/T1.csv')>
+                     │         └ <function AsyncHTTPTransport.handle_async_request at 0x000001F64A614860>
+                     └ <httpx.AsyncHTTPTransport object at 0x000001F71342FDD0>
+  File "c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\httpx\_transports\default.py", line 393, in handle_async_request
+    with map_httpcore_exceptions():
+         └ <function map_httpcore_exceptions at 0x000001F64A607E20>
+  File "C:\Users\immor\AppData\Local\Programs\Python\Python311\Lib\contextlib.py", line 158, in __exit__
+    self.gen.throw(typ, value, traceback)
+    │    │   │     │    │      └ <traceback object at 0x000001F710F09A40>
+    │    │   │     │    └ ConnectTimeout(TimeoutError())
+    │    │   │     └ <class 'httpcore.ConnectTimeout'>
+    │    │   └ <method 'throw' of 'generator' objects>
+    │    └ <generator object map_httpcore_exceptions at 0x000001F6BF2C3540>
+    └ <contextlib._GeneratorContextManager object at 0x000001F713423310>
+  File "c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\httpx\_transports\default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+          │          └ ''
+          └ <class 'httpx.ConnectTimeout'>
+
+httpx.ConnectTimeout
+00:48:19 | ERROR    | src.ingestion.data_sources – [CSV] Hata (epl/2526) url=https://www.football-data.co.uk/mmz4281/2526/E0.csv: ConnectTimeout: ConnectTimeout('')
+Traceback (most recent call last):
+
+  File "c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\httpx\_transports\default.py", line 101, in map_httpcore_exceptions
+    yield
+  File "c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\httpx\_transports\default.py", line 394, in handle_async_request
+    resp = await self._pool.handle_async_request(req)
+                 │    │     │                    └ <Request [b'GET']>
+                 │    │     └ <function AsyncConnectionPool.handle_async_request at 0x000001F667658B80>
+                 │    └ <AsyncConnectionPool [Requests: 0 active, 0 queued | Connections: 0 active, 0 idle]>
+                 └ <httpx.AsyncHTTPTransport object at 0x000001F6BD23A5D0>
+  File "c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\httpcore\_async\connection_pool.py", line 256, in handle_async_request
+    raise exc from None
+  File "c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\httpcore\_async\connection_pool.py", line 236, in handle_async_request
+    response = await connection.handle_async_request(
+                     │          └ <function AsyncHTTPConnection.handle_async_request at 0x000001F66764BE20>
+                     └ <AsyncHTTPConnection [CONNECTION FAILED]>
+  File "c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\httpcore\_async\connection.py", line 101, in handle_async_request
+    raise exc
+  File "c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\httpcore\_async\connection.py", line 78, in handle_async_request
+    stream = await self._connect(request)
+                   │    │        └ <Request [b'GET']>
+                   │    └ <function AsyncHTTPConnection._connect at 0x000001F66764BEC0>
+                   └ <AsyncHTTPConnection [CONNECTION FAILED]>
+  File "c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\httpcore\_async\connection.py", line 124, in _connect
+    stream = await self._network_backend.connect_tcp(**kwargs)
+                   │    │                │             └ {'host': 'www.football-data.co.uk', 'port': 443, 'local_address': None, 'timeout': 15, 'socket_options': None}
+                   │    │                └ <function AutoBackend.connect_tcp at 0x000001F667649F80>
+                   │    └ <httpcore._backends.auto.AutoBackend object at 0x000001F714BA40D0>
+                   └ <AsyncHTTPConnection [CONNECTION FAILED]>
+  File "c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\httpcore\_backends\auto.py", line 31, in connect_tcp
+    return await self._backend.connect_tcp(
+                 │    │        └ <function AnyIOBackend.connect_tcp at 0x000001F667674C20>
+                 │    └ <httpcore.AnyIOBackend object at 0x000001F710EFFED0>
+                 └ <httpcore._backends.auto.AutoBackend object at 0x000001F714BA40D0>
+  File "c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\httpcore\_backends\anyio.py", line 113, in connect_tcp
+    with map_exceptions(exc_map):
+         │              └ {<class 'TimeoutError'>: <class 'httpcore.ConnectTimeout'>, <class 'OSError'>: <class 'httpcore.ConnectError'>, <class 'anyio...
+         └ <function map_exceptions at 0x000001F6672FCCC0>
+  File "C:\Users\immor\AppData\Local\Programs\Python\Python311\Lib\contextlib.py", line 158, in __exit__
+    self.gen.throw(typ, value, traceback)
+    │    │   │     │    │      └ <traceback object at 0x000001F71129A4C0>
+    │    │   │     │    └ TimeoutError()
+    │    │   │     └ <class 'TimeoutError'>
+    │    │   └ <method 'throw' of 'generator' objects>
+    │    └ <generator object map_exceptions at 0x000001F713024740>
+    └ <contextlib._GeneratorContextManager object at 0x000001F7118BAB90>
+  File "c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\httpcore\_exceptions.py", line 14, in map_exceptions
+    raise to_exc(exc) from exc
+          └ <class 'httpcore.ConnectTimeout'>
+
+httpcore.ConnectTimeout
+
+
+The above exception was the direct cause of the following exception:
+
+
+Traceback (most recent call last):
+
+  File "c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\bahis.py", line 7426, in <module>
+    app()
+    └ <typer.main.Typer object at 0x000001F62C2CCD10>
+
+  File "c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\typer\main.py", line 1132, in __call__
+    return get_command(self)(*args, **kwargs)
+           │           │      │       └ {}
+           │           │      └ ()
+           │           └ <typer.main.Typer object at 0x000001F62C2CCD10>
+           └ <function get_command at 0x000001F62BE8E8E0>
+  File "c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\click\core.py", line 1485, in __call__
+    return self.main(*args, **kwargs)
+           │    │     │       └ {}
+           │    │     └ ()
+           │    └ <function TyperGroup.main at 0x000001F62BE82DE0>
+           └ <TyperGroup bahis>
+  File "c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\typer\core.py", line 814, in main
+    return _main(
+           └ <function _main at 0x000001F62BE81B20>
+  File "c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\typer\core.py", line 190, in _main
+    rv = self.invoke(ctx)
+         │    │      └ <click.core.Context object at 0x000001F62C31B750>
+         │    └ <function Group.invoke at 0x000001F62BE089A0>
+         └ <TyperGroup bahis>
+  File "c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\click\core.py", line 1873, in invoke
+    return _process_result(sub_ctx.command.invoke(sub_ctx))
+           │               │       │       │      └ <click.core.Context object at 0x000001F6291D9F50>
+           │               │       │       └ <function Command.invoke at 0x000001F62BE03740>
+           │               │       └ <TyperCommand run>
+           │               └ <click.core.Context object at 0x000001F6291D9F50>
+           └ <function Group.invoke.<locals>._process_result at 0x000001F62C31C9A0>
+  File "c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\click\core.py", line 1269, in invoke
+    return ctx.invoke(self.callback, **ctx.params)
+           │   │      │    │           │   └ {'mode': 'full', 'headless': True, 'telegram': False, 'dashboard': False}
+           │   │      │    │           └ <click.core.Context object at 0x000001F6291D9F50>
+           │   │      │    └ <function run at 0x000001F62C2CAA20>
+           │   │      └ <TyperCommand run>
+           │   └ <function Context.invoke at 0x000001F62BE02980>
+           └ <click.core.Context object at 0x000001F6291D9F50>
+  File "c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\click\core.py", line 824, in invoke
+    return callback(*args, **kwargs)
+           │         │       └ {'mode': 'full', 'headless': True, 'telegram': False, 'dashboard': False}
+           │         └ ()
+           └ <function run at 0x000001F62C2CAA20>
+  File "c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\typer\main.py", line 1511, in wrapper
+    return callback(**use_params)
+           │          └ {'mode': 'full', 'headless': True, 'telegram': False, 'dashboard': False}
+           └ <function run at 0x000001F62C2CAAC0>
+
+  File "c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\bahis.py", line 3291, in run
+    asyncio.run(_boot(mode=mode, headless=headless, telegram=telegram, dashboard=dashboard))
+    │       │   │          │              │                  │                   └ False
+    │       │   │          │              │                  └ False
+    │       │   │          │              └ True
+    │       │   │          └ 'full'
+    │       │   └ <function _boot at 0x000001F62C2CA8E0>
+    │       └ <function run at 0x000001F62BB74540>
+    └ <module 'asyncio' from 'C:\\Users\\immor\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\asyncio\\__init__.py'>
+
+  File "C:\Users\immor\AppData\Local\Programs\Python\Python311\Lib\asyncio\runners.py", line 190, in run
+    return runner.run(main)
+           │      │   └ <coroutine object _boot at 0x000001F6298B5A10>
+           │      └ <function Runner.run at 0x000001F62BBF4AE0>
+           └ <asyncio.runners.Runner object at 0x000001F62C2C3250>
+  File "C:\Users\immor\AppData\Local\Programs\Python\Python311\Lib\asyncio\runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           │    │     │                  └ <Task pending name='Task-1' coro=<_boot() running at c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\bahis.py:829> cb=[_run...
+           │    │     └ <function BaseEventLoop.run_until_complete at 0x000001F62BBF25C0>
+           │    └ <ProactorEventLoop running=True closed=False debug=False>
+           └ <asyncio.runners.Runner object at 0x000001F62C2C3250>
+  File "C:\Users\immor\AppData\Local\Programs\Python\Python311\Lib\asyncio\base_events.py", line 641, in run_until_complete
+    self.run_forever()
+    │    └ <function ProactorEventLoop.run_forever at 0x000001F62BCBA7A0>
+    └ <ProactorEventLoop running=True closed=False debug=False>
+  File "C:\Users\immor\AppData\Local\Programs\Python\Python311\Lib\asyncio\windows_events.py", line 321, in run_forever
+    super().run_forever()
+  File "C:\Users\immor\AppData\Local\Programs\Python\Python311\Lib\asyncio\base_events.py", line 608, in run_forever
+    self._run_once()
+    │    └ <function BaseEventLoop._run_once at 0x000001F62BBF4360>
+    └ <ProactorEventLoop running=True closed=False debug=False>
+  File "C:\Users\immor\AppData\Local\Programs\Python\Python311\Lib\asyncio\base_events.py", line 1936, in _run_once
+    handle._run()
+    │      └ <function Handle._run at 0x000001F62BB498A0>
+    └ <Handle Task.task_wakeup(<Future finished result=None>)>
+  File "C:\Users\immor\AppData\Local\Programs\Python\Python311\Lib\asyncio\events.py", line 84, in _run
+    self._context.run(self._callback, *self._args)
+    │    │            │    │           │    └ <member '_args' of 'Handle' objects>
+    │    │            │    │           └ <Handle Task.task_wakeup(<Future finished result=None>)>
+    │    │            │    └ <member '_callback' of 'Handle' objects>
+    │    │            └ <Handle Task.task_wakeup(<Future finished result=None>)>
+    │    └ <member '_context' of 'Handle' objects>
+    └ <Handle Task.task_wakeup(<Future finished result=None>)>
+
+  File "c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\bahis.py", line 829, in _boot
+    _csv_data = await _csv_src.get_historical("epl", "2526")
+                      │        └ <function FootballCSVSource.get_historical at 0x000001F64DDDED40>
+                      └ <src.ingestion.data_sources.FootballCSVSource object at 0x000001F6BFA6EBD0>
+
+> File "C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\src\ingestion\data_sources.py", line 238, in get_historical
+    resp = await client.get(url)
+                 │      │   └ 'https://www.football-data.co.uk/mmz4281/2526/E0.csv'
+                 │      └ <function AsyncClient.get at 0x000001F64A617D80>
+                 └ <httpx.AsyncClient object at 0x000001F710F09590>
+
+  File "c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\httpx\_client.py", line 1768, in get
+    return await self.request(
+                 │    └ <function AsyncClient.request at 0x000001F64A617920>
+                 └ <httpx.AsyncClient object at 0x000001F710F09590>
+  File "c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\httpx\_client.py", line 1540, in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+                 │    │    │             │                      └ <httpx._client.UseClientDefault object at 0x000001F64A5FACD0>
+                 │    │    │             └ <httpx._client.UseClientDefault object at 0x000001F64A5FACD0>
+                 │    │    └ <Request('GET', 'https://www.football-data.co.uk/mmz4281/2526/E0.csv')>
+                 │    └ <function AsyncClient.send at 0x000001F64A617B00>
+                 └ <httpx.AsyncClient object at 0x000001F710F09590>
+  File "c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\httpx\_client.py", line 1629, in send
+    response = await self._send_handling_auth(
+                     │    └ <function AsyncClient._send_handling_auth at 0x000001F64A617BA0>
+                     └ <httpx.AsyncClient object at 0x000001F710F09590>
+  File "c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\httpx\_client.py", line 1657, in _send_handling_auth
+    response = await self._send_handling_redirects(
+                     │    └ <function AsyncClient._send_handling_redirects at 0x000001F64A617C40>
+                     └ <httpx.AsyncClient object at 0x000001F710F09590>
+  File "c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\httpx\_client.py", line 1694, in _send_handling_redirects
+    response = await self._send_single_request(request)
+                     │    │                    └ <Request('GET', 'https://www.football-data.co.uk/mmz4281/2526/E0.csv')>
+                     │    └ <function AsyncClient._send_single_request at 0x000001F64A617CE0>
+                     └ <httpx.AsyncClient object at 0x000001F710F09590>
+  File "c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\httpx\_client.py", line 1730, in _send_single_request
+    response = await transport.handle_async_request(request)
+                     │         │                    └ <Request('GET', 'https://www.football-data.co.uk/mmz4281/2526/E0.csv')>
+                     │         └ <function AsyncHTTPTransport.handle_async_request at 0x000001F64A614860>
+                     └ <httpx.AsyncHTTPTransport object at 0x000001F6BD23A5D0>
+  File "c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\httpx\_transports\default.py", line 393, in handle_async_request
+    with map_httpcore_exceptions():
+         └ <function map_httpcore_exceptions at 0x000001F64A607E20>
+  File "C:\Users\immor\AppData\Local\Programs\Python\Python311\Lib\contextlib.py", line 158, in __exit__
+    self.gen.throw(typ, value, traceback)
+    │    │   │     │    │      └ <traceback object at 0x000001F71129A6C0>
+    │    │   │     │    └ ConnectTimeout(TimeoutError())
+    │    │   │     └ <class 'httpcore.ConnectTimeout'>
+    │    │   └ <method 'throw' of 'generator' objects>
+    │    └ <generator object map_httpcore_exceptions at 0x000001F713024440>
+    └ <contextlib._GeneratorContextManager object at 0x000001F714B93010>
+  File "c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\httpx\_transports\default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+          │          └ ''
+          └ <class 'httpx.ConnectTimeout'>
+
+httpx.ConnectTimeout
+00:48:19 | INFO     | apscheduler.schedulers.base – Adding job tentatively -- it will be properly scheduled when the scheduler starts
+00:48:19 | INFO     | src.core.job_scheduler – [Scheduler] Cron eklendi: fikstur_cek @ 11:0
+00:48:19 | INFO     | apscheduler.schedulers.base – Adding job tentatively -- it will be properly scheduled when the scheduler starts
+00:48:19 | INFO     | src.core.job_scheduler – [Scheduler] Interval eklendi: oran_kontrol her 600s
+00:48:19 | INFO     | apscheduler.schedulers.base – Adding job tentatively -- it will be properly scheduled when the scheduler starts
+00:48:19 | INFO     | src.core.job_scheduler – [Scheduler] Cron eklendi: gunluk_rapor @ 23:30
+00:48:19 | INFO     | apscheduler.schedulers.base – Adding job tentatively -- it will be properly scheduled when the scheduler starts
+00:48:19 | INFO     | src.core.job_scheduler – [Scheduler] Cron eklendi: lstm_train @ 3:0
+00:48:19 | INFO     | apscheduler.schedulers.base – Adding job tentatively -- it will be properly scheduled when the scheduler starts
+00:48:19 | INFO     | src.core.job_scheduler – [Scheduler] Cron eklendi: veri_topla @ 10:0
+00:48:19 | INFO     | apscheduler.schedulers.base – Adding job tentatively -- it will be properly scheduled when the scheduler starts
+00:48:19 | INFO     | src.core.job_scheduler – [Scheduler] Cron eklendi: prophet_cache_temizle @ 6:0
+00:48:19 | INFO     | apscheduler.schedulers.base – Adding job tentatively -- it will be properly scheduled when the scheduler starts
+00:48:19 | INFO     | src.core.job_scheduler – [Scheduler] Cron eklendi: rl_train @ 4:0
+00:48:19 | INFO     | apscheduler.schedulers.base – Adding job tentatively -- it will be properly scheduled when the scheduler starts
+00:48:19 | INFO     | src.core.job_scheduler – [Scheduler] Cron eklendi: gunluk_brifing @ 9:0
+00:48:19 | INFO     | apscheduler.schedulers.base – Adding job tentatively -- it will be properly scheduled when the scheduler starts
+00:48:19 | INFO     | src.core.job_scheduler – [Scheduler] Cron eklendi: log_rotate @ 2:0
+00:48:19 | INFO     | src.ingestion.scraper_agent – ScraperAgent – tüm ajanlar başlatılıyor…
+00:48:19 | INFO     | src.ingestion.lineup_monitor – [Lineup] Kadro izleme başladı.
+00:48:19 | INFO     | src.ui.webapp_server – [WebApp] TWA sunucu başlatıldı → http://0.0.0.0:8080
+00:48:19 | INFO     | apscheduler.schedulers.base – Added job "fikstur_cek" to job store "default"
+00:48:19 | INFO     | apscheduler.schedulers.base – Added job "oran_kontrol" to job store "default"
+00:48:19 | INFO     | apscheduler.schedulers.base – Added job "gunluk_rapor" to job store "default"
+00:48:19 | INFO     | apscheduler.schedulers.base – Added job "lstm_train" to job store "default"
+00:48:19 | INFO     | apscheduler.schedulers.base – Added job "veri_topla" to job store "default"
+00:48:19 | INFO     | apscheduler.schedulers.base – Added job "prophet_cache_temizle" to job store "default"
+00:48:19 | INFO     | apscheduler.schedulers.base – Added job "rl_train" to job store "default"
+00:48:19 | INFO     | apscheduler.schedulers.base – Added job "gunluk_brifing" to job store "default"
+00:48:19 | INFO     | apscheduler.schedulers.base – Added job "log_rotate" to job store "default"
+00:48:19 | INFO     | apscheduler.schedulers.base – Scheduler started
+00:48:19 | SUCCESS  | src.core.job_scheduler – [Scheduler] Başlatıldı – 9 görev.
+00:48:19 | INFO     | __main__ – ═══ Analiz Döngüsü #1 ═══
+00:48:20 | WARNING  | src.utils.super_logger – UserWarning: std(): degrees of freedom is [= 0. Correction should be strictly less than the reduction factor (input numel divided by output numel). (Triggered internally at C:\actions-runner\_work\pytorch\pytorch\pytorch\aten\src\ATen\native\ReduceOps.cpp:1857.) (c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\kan\MultKAN.py:813)
+00:48:20 | WARNING  | src.utils.super_logger – UserWarning: std(): degrees of freedom is [= 0. Correction should be strictly less than the reduction factor (input numel divided by output numel). (Triggered internally at C:\actions-runner\_work\pytorch\pytorch\pytorch\aten\src\ATen\native\ReduceOps.cpp:1857.) (c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\kan\MultKAN.py:823)
+00:48:20 | WARNING  | src.utils.super_logger – UserWarning: std(): degrees of freedom is [= 0. Correction should be strictly less than the reduction factor (input numel divided by output numel). (Triggered internally at C:\actions-runner\_work\pytorch\pytorch\pytorch\aten\src\ATen\native\ReduceOps.cpp:1857.) (c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\kan\MultKAN.py:824)
+00:48:20 | WARNING  | src.utils.super_logger – UserWarning: std(): degrees of freedom is [= 0. Correction should be strictly less than the reduction factor (input numel divided by output numel). (Triggered internally at C:\actions-runner\_work\pytorch\pytorch\pytorch\aten\src\ATen\native\ReduceOps.cpp:1857.) (c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\kan\MultKAN.py:825)
+00:48:27 | WARNING  | src.utils.super_logger – DeprecationWarning: websockets.legacy is deprecated; see https://websockets.readthedocs.io/en/stable/howto/upgrade.html for upgrade instructions (c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\websockets\legacy\__init__.py:6)
+00:48:27 | WARNING  | src.utils.super_logger – DeprecationWarning: websockets.server.WebSocketServerProtocol is deprecated (c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\uvicorn\protocols\websockets\websockets_impl.py:17)
+00:48:30 | WARNING  | src.ingestion.api_hijacker – [Hijack] ✗ sofascore_basketball bağlanamadı: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://www.sofascore.com/basketball", waiting until "networkidle"
+
+00:48:30 | INFO     | src.ingestion.scraper_agent – [Mackolik] 0 maç çekildi.
+00:48:35 | INFO     | src.ingestion.api_hijacker – [Hijack] 🆕 Endpoint keşfedildi: https://www.sofascore.com/api/v1/odds/*/featured-events-by-popularity/tennis [other] (sofascore_tennis)
+00:48:35 | INFO     | src.ingestion.api_hijacker – [Hijack] 🆕 Endpoint keşfedildi: https://www.sofascore.com/api/v1/odds/*/featured-events/tennis [other] (sofascore_tennis)
+00:48:35 | INFO     | src.ingestion.api_hijacker – [Hijack] 🆕 Endpoint keşfedildi: https://www.sofascore.com/api/v1/sport/tennis/odds/*/*-02-19 [odds] (sofascore_tennis)
+00:48:39 | INFO     | src.ingestion.scraper_agent – [Mackolik] 0 oran çekildi.
+00:48:48 | INFO     | src.ingestion.data_sources – [Sofascore] Tüm sporlar: 0 etkinlik çekildi.
+00:49:06 | INFO     | src.ingestion.api_hijacker – [Hijack] ✓ Dinleniyor: sofascore_tennis (https://www.sofascore.com/tennis)
+00:49:11 | INFO     | src.ingestion.async_data_factory – FlashScore: 23 maç tarandı.
+00:49:11 | INFO     | src.ingestion.async_data_factory – FlashScore: 23 maç tarandı.
+00:49:15 | INFO     | src.ingestion.data_sources – [Agg] Bugün tüm sporlar: 0 etkinlik (futbol + basketbol + diğer)
+00:49:20 | INFO     | src.ingestion.api_hijacker – [Hijack] ✓ Dinleniyor: flashscore (https://www.flashscore.com.tr/)
+00:49:23 | INFO     | src.ingestion.api_hijacker – [Hijack] 🆕 Endpoint keşfedildi: https://www.mackolik.com/perform/p0/ajax/components/competition/livescores/json [other] (mackolik)
+00:49:41 | INFO     | __main__ – [Prophet] Rizespor vs Kocaelispor: Mevsimsel anomali yok.
+00:49:41 | INFO     | __main__ – [Prophet] Eyüpspor vs Gençlerbirliği: Mevsimsel anomali yok.
+00:49:41 | INFO     | __main__ – [Prophet] Alanyaspor vs Başakşehir: Mevsimsel anomali yok.
+00:49:41 | INFO     | __main__ – [Prophet] Konyaspor vs Galatasaray: Mevsimsel anomali yok.
+00:49:41 | INFO     | __main__ – [Prophet] Kayserispor vs Antalyaspor: Mevsimsel anomali yok.
+00:49:41 | INFO     | __main__ – [Prophet] Gaziantep FK vs Trabzonspor: Mevsimsel anomali yok.
+00:49:41 | INFO     | __main__ – [Prophet] Beşiktaş vs Göztepe: Mevsimsel anomali yok.
+00:49:41 | INFO     | __main__ – [Prophet] Karagümrük vs Samsunspor: Mevsimsel anomali yok.
+00:49:41 | INFO     | __main__ – [Prophet] Fenerbahçe vs Kasımpaşa: Mevsimsel anomali yok.
+00:49:41 | INFO     | __main__ – [Prophet] Başakşehir vs Konyaspor: Mevsimsel anomali yok.
+00:49:41 | INFO     | __main__ – [Prophet] Trabzonspor vs Karagümrük: Mevsimsel anomali yok.
+00:49:41 | INFO     | __main__ – [Prophet] Kasımpaşa vs Karagümrük: Mevsimsel anomali yok.
+00:49:41 | INFO     | __main__ – [Prophet] Başakşehir vs Beşiktaş: Mevsimsel anomali yok.
+00:49:41 | INFO     | __main__ – [Prophet] Göztepe vs Kayserispor: Mevsimsel anomali yok.
+00:49:41 | INFO     | __main__ – [Prophet] Kocaelispor vs Gaziantep FK: Mevsimsel anomali yok.
+00:49:41 | INFO     | __main__ – [Prophet] Trabzonspor vs Fenerbahçe: Mevsimsel anomali yok.
+00:49:41 | INFO     | __main__ – [Prophet] Alanyaspor vs Konyaspor: Mevsimsel anomali yok.
+00:49:41 | INFO     | __main__ – [Prophet] Gençlerbirliği vs Rizespor: Mevsimsel anomali yok.
+00:49:41 | INFO     | __main__ – [Prophet] Antalyaspor vs Samsunspor: Mevsimsel anomali yok.
+00:49:41 | INFO     | __main__ – [Prophet] Galatasaray vs Eyüpspor: Mevsimsel anomali yok.
+00:49:41 | INFO     | __main__ – [Prophet] Fenerbahçe vs Gençlerbirliği: Mevsimsel anomali yok.
+00:49:41 | INFO     | __main__ – [Prophet] Gaziantep FK vs Kasımpaşa: Mevsimsel anomali yok.
+00:49:41 | INFO     | __main__ – [Prophet] Kayserispor vs Kocaelispor: Mevsimsel anomali yok.
+00:49:41 | INFO     | __main__ – [Vector] Eyüpspor vs Gençlerbirliği: Tarihsel benzerlik → D (100%), Ü2.5: 0%
+00:49:41 | INFO     | __main__ – [Vector] Alanyaspor vs Başakşehir: Tarihsel benzerlik → D (100%), Ü2.5: 0%
+00:49:41 | INFO     | __main__ – [Vector] Konyaspor vs Galatasaray: Tarihsel benzerlik → D (100%), Ü2.5: 0%
+00:49:41 | INFO     | __main__ – [Vector] Kayserispor vs Antalyaspor: Tarihsel benzerlik → D (100%), Ü2.5: 0%
+00:49:41 | INFO     | __main__ – [Vector] Gaziantep FK vs Trabzonspor: Tarihsel benzerlik → D (100%), Ü2.5: 0%
+00:49:41 | INFO     | __main__ – [Vector] Beşiktaş vs Göztepe: Tarihsel benzerlik → D (100%), Ü2.5: 0%
+00:49:41 | INFO     | __main__ – [Vector] Karagümrük vs Samsunspor: Tarihsel benzerlik → D (100%), Ü2.5: 0%
+00:49:41 | INFO     | __main__ – [Vector] Fenerbahçe vs Kasımpaşa: Tarihsel benzerlik → D (100%), Ü2.5: 0%
+00:49:41 | INFO     | __main__ – [Vector] Başakşehir vs Konyaspor: Tarihsel benzerlik → D (100%), Ü2.5: 0%
+00:49:41 | INFO     | __main__ – [Vector] Trabzonspor vs Karagümrük: Tarihsel benzerlik → D (100%), Ü2.5: 0%
+00:49:41 | INFO     | __main__ – [Vector] Kasımpaşa vs Karagümrük: Tarihsel benzerlik → D (100%), Ü2.5: 0%
+00:49:41 | INFO     | __main__ – [Vector] Başakşehir vs Beşiktaş: Tarihsel benzerlik → D (100%), Ü2.5: 0%
+00:49:41 | INFO     | __main__ – [Vector] Göztepe vs Kayserispor: Tarihsel benzerlik → D (100%), Ü2.5: 0%
+00:49:41 | INFO     | __main__ – [Vector] Kocaelispor vs Gaziantep FK: Tarihsel benzerlik → D (100%), Ü2.5: 0%
+00:49:41 | INFO     | __main__ – [Vector] Trabzonspor vs Fenerbahçe: Tarihsel benzerlik → D (100%), Ü2.5: 0%
+00:49:41 | INFO     | __main__ – [Vector] Alanyaspor vs Konyaspor: Tarihsel benzerlik → D (100%), Ü2.5: 0%
+00:49:41 | INFO     | __main__ – [Vector] Gençlerbirliği vs Rizespor: Tarihsel benzerlik → D (100%), Ü2.5: 0%
+00:49:41 | INFO     | __main__ – [Vector] Antalyaspor vs Samsunspor: Tarihsel benzerlik → D (100%), Ü2.5: 0%
+00:49:41 | INFO     | __main__ – [Vector] Galatasaray vs Eyüpspor: Tarihsel benzerlik → D (100%), Ü2.5: 0%
+00:49:41 | INFO     | __main__ – [Vector] Fenerbahçe vs Gençlerbirliği: Tarihsel benzerlik → D (100%), Ü2.5: 0%
+00:49:41 | INFO     | __main__ – [Vector] Gaziantep FK vs Kasımpaşa: Tarihsel benzerlik → D (100%), Ü2.5: 0%
+00:49:41 | INFO     | __main__ – [Vector] Kayserispor vs Kocaelispor: Tarihsel benzerlik → D (100%), Ü2.5: 0%
+00:49:55 | WARNING  | src.utils.super_logger – RuntimeWarning: Mean of empty slice. (c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\numpy\_core\fromnumeric.py:3860)
+00:49:55 | WARNING  | src.utils.super_logger – RuntimeWarning: invalid value encountered in scalar divide (c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\numpy\_core\_methods.py:144)
+00:49:55 | WARNING  | src.utils.super_logger – RuntimeWarning: 
+An even number of (0) equilibria was returned. This
+indicates that the game is degenerate. Consider using another algorithm
+to investigate.
+                   (c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\nashpy\algorithms\support_enumeration.py:260)
+00:49:55 | WARNING  | src.utils.super_logger – RuntimeWarning: 
+An even number of (0) equilibria was returned. This
+indicates that the game is degenerate. Consider using another algorithm
+to investigate.
+                   (c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\nashpy\algorithms\support_enumeration.py:260)
+00:49:55 | WARNING  | src.utils.super_logger – RuntimeWarning: 
+An even number of (0) equilibria was returned. This
+indicates that the game is degenerate. Consider using another algorithm
+to investigate.
+                   (c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\nashpy\algorithms\support_enumeration.py:260)
+00:49:55 | WARNING  | src.utils.super_logger – RuntimeWarning: 
+An even number of (0) equilibria was returned. This
+indicates that the game is degenerate. Consider using another algorithm
+to investigate.
+                   (c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\nashpy\algorithms\support_enumeration.py:260)
+00:49:55 | WARNING  | src.utils.super_logger – RuntimeWarning: 
+An even number of (0) equilibria was returned. This
+indicates that the game is degenerate. Consider using another algorithm
+to investigate.
+                   (c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\nashpy\algorithms\support_enumeration.py:260)
+00:49:55 | WARNING  | src.utils.super_logger – RuntimeWarning: 
+An even number of (0) equilibria was returned. This
+indicates that the game is degenerate. Consider using another algorithm
+to investigate.
+                   (c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\nashpy\algorithms\support_enumeration.py:260)
+00:49:55 | WARNING  | src.utils.super_logger – RuntimeWarning: 
+An even number of (0) equilibria was returned. This
+indicates that the game is degenerate. Consider using another algorithm
+to investigate.
+                   (c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\nashpy\algorithms\support_enumeration.py:260)
+00:49:56 | WARNING  | src.utils.super_logger – RuntimeWarning: 
+An even number of (0) equilibria was returned. This
+indicates that the game is degenerate. Consider using another algorithm
+to investigate.
+                   (c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\nashpy\algorithms\support_enumeration.py:260)
+00:49:56 | WARNING  | src.utils.super_logger – RuntimeWarning: 
+An even number of (0) equilibria was returned. This
+indicates that the game is degenerate. Consider using another algorithm
+to investigate.
+                   (c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\nashpy\algorithms\support_enumeration.py:260)
+00:49:56 | WARNING  | src.utils.super_logger – RuntimeWarning: 
+An even number of (0) equilibria was returned. This
+indicates that the game is degenerate. Consider using another algorithm
+to investigate.
+                   (c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\nashpy\algorithms\support_enumeration.py:260)
+00:49:56 | WARNING  | src.utils.super_logger – RuntimeWarning: 
+An even number of (0) equilibria was returned. This
+indicates that the game is degenerate. Consider using another algorithm
+to investigate.
+                   (c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\nashpy\algorithms\support_enumeration.py:260)
+00:49:56 | WARNING  | src.utils.super_logger – RuntimeWarning: 
+An even number of (0) equilibria was returned. This
+indicates that the game is degenerate. Consider using another algorithm
+to investigate.
+                   (c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\nashpy\algorithms\support_enumeration.py:260)
+00:49:56 | WARNING  | src.utils.super_logger – RuntimeWarning: 
+An even number of (0) equilibria was returned. This
+indicates that the game is degenerate. Consider using another algorithm
+to investigate.
+                   (c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\nashpy\algorithms\support_enumeration.py:260)
+00:49:56 | WARNING  | src.utils.super_logger – RuntimeWarning: 
+An even number of (0) equilibria was returned. This
+indicates that the game is degenerate. Consider using another algorithm
+to investigate.
+                   (c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\nashpy\algorithms\support_enumeration.py:260)
+00:49:56 | WARNING  | src.utils.super_logger – RuntimeWarning: 
+An even number of (0) equilibria was returned. This
+indicates that the game is degenerate. Consider using another algorithm
+to investigate.
+                   (c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\nashpy\algorithms\support_enumeration.py:260)
+00:49:56 | WARNING  | src.utils.super_logger – RuntimeWarning: 
+An even number of (0) equilibria was returned. This
+indicates that the game is degenerate. Consider using another algorithm
+to investigate.
+                   (c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\nashpy\algorithms\support_enumeration.py:260)
+00:49:56 | WARNING  | src.utils.super_logger – RuntimeWarning: 
+An even number of (0) equilibria was returned. This
+indicates that the game is degenerate. Consider using another algorithm
+to investigate.
+                   (c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\nashpy\algorithms\support_enumeration.py:260)
+00:49:56 | WARNING  | src.utils.super_logger – RuntimeWarning: 
+An even number of (0) equilibria was returned. This
+indicates that the game is degenerate. Consider using another algorithm
+to investigate.
+                   (c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\nashpy\algorithms\support_enumeration.py:260)
+00:49:56 | WARNING  | src.utils.super_logger – RuntimeWarning: 
+An even number of (0) equilibria was returned. This
+indicates that the game is degenerate. Consider using another algorithm
+to investigate.
+                   (c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\nashpy\algorithms\support_enumeration.py:260)
+00:49:56 | WARNING  | src.utils.super_logger – RuntimeWarning: 
+An even number of (0) equilibria was returned. This
+indicates that the game is degenerate. Consider using another algorithm
+to investigate.
+                   (c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\nashpy\algorithms\support_enumeration.py:260)
+00:49:57 | WARNING  | src.utils.super_logger – RuntimeWarning: 
+An even number of (0) equilibria was returned. This
+indicates that the game is degenerate. Consider using another algorithm
+to investigate.
+                   (c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\nashpy\algorithms\support_enumeration.py:260)
+00:49:57 | WARNING  | src.utils.super_logger – RuntimeWarning: 
+An even number of (0) equilibria was returned. This
+indicates that the game is degenerate. Consider using another algorithm
+to investigate.
+                   (c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\nashpy\algorithms\support_enumeration.py:260)
+00:49:57 | WARNING  | src.utils.super_logger – RuntimeWarning: 
+An even number of (0) equilibria was returned. This
+indicates that the game is degenerate. Consider using another algorithm
+to investigate.
+                   (c:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\nashpy\algorithms\support_enumeration.py:260)
+00:49:58 | INFO     | __main__ – [Twin] Rizespor vs Kocaelispor: H=14% D=76% A=10% (skor=0-0, Ü2.5=0%)
+00:50:00 | INFO     | __main__ – [Twin] Eyüpspor vs Gençlerbirliği: H=14% D=74% A=12% (skor=0-0, Ü2.5=1%)
+00:50:02 | INFO     | __main__ – [Twin] Alanyaspor vs Başakşehir: H=14% D=70% A=16% (skor=0-0, Ü2.5=0%)
+00:50:04 | INFO     | __main__ – [Twin] Konyaspor vs Galatasaray: H=16% D=72% A=12% (skor=0-0, Ü2.5=0%)
+00:50:06 | INFO     | __main__ – [Twin] Kayserispor vs Antalyaspor: H=18% D=72% A=10% (skor=0-0, Ü2.5=0%)
+00:50:08 | INFO     | __main__ – [Twin] Gaziantep FK vs Trabzonspor: H=10% D=76% A=14% (skor=0-0, Ü2.5=0%)
+00:50:09 | INFO     | __main__ – [Twin] Beşiktaş vs Göztepe: H=19% D=70% A=12% (skor=0-0, Ü2.5=1%)
+00:50:11 | INFO     | __main__ – [Twin] Karagümrük vs Samsunspor: H=14% D=71% A=16% (skor=0-0, Ü2.5=0%)
+00:50:13 | INFO     | __main__ – [Twin] Fenerbahçe vs Kasımpaşa: H=14% D=76% A=11% (skor=0-0, Ü2.5=0%)
+00:50:14 | INFO     | __main__ – [Twin] Başakşehir vs Konyaspor: H=16% D=72% A=12% (skor=0-0, Ü2.5=0%)
+00:50:16 | INFO     | __main__ – [Twin] Trabzonspor vs Karagümrük: H=16% D=68% A=16% (skor=0-0, Ü2.5=1%)
+00:50:18 | INFO     | __main__ – [Twin] Kasımpaşa vs Karagümrük: H=7% D=76% A=17% (skor=0-0, Ü2.5=2%)
+00:50:19 | INFO     | __main__ – [Twin] Başakşehir vs Beşiktaş: H=15% D=67% A=18% (skor=0-0, Ü2.5=0%)
+00:50:21 | INFO     | __main__ – [Twin] Göztepe vs Kayserispor: H=16% D=67% A=16% (skor=0-0, Ü2.5=2%)
+00:50:23 | INFO     | __main__ – [Twin] Kocaelispor vs Gaziantep FK: H=16% D=75% A=9% (skor=0-0, Ü2.5=0%)
+00:50:24 | INFO     | __main__ – [Twin] Trabzonspor vs Fenerbahçe: H=12% D=73% A=16% (skor=0-0, Ü2.5=0%)
+00:50:26 | INFO     | __main__ – [Twin] Alanyaspor vs Konyaspor: H=14% D=67% A=18% (skor=0-0, Ü2.5=0%)
+00:50:28 | INFO     | __main__ – [Twin] Gençlerbirliği vs Rizespor: H=20% D=69% A=12% (skor=0-0, Ü2.5=2%)
+00:50:29 | INFO     | __main__ – [Twin] Antalyaspor vs Samsunspor: H=14% D=68% A=18% (skor=0-0, Ü2.5=0%)
+00:50:31 | INFO     | __main__ – [Twin] Galatasaray vs Eyüpspor: H=8% D=76% A=16% (skor=0-0, Ü2.5=0%)
+00:50:33 | INFO     | __main__ – [Twin] Fenerbahçe vs Gençlerbirliği: H=14% D=69% A=18% (skor=0-0, Ü2.5=0%)
+00:50:35 | INFO     | __main__ – [Twin] Gaziantep FK vs Kasımpaşa: H=16% D=70% A=14% (skor=0-0, Ü2.5=0%)
+00:50:36 | INFO     | __main__ – [Twin] Kayserispor vs Kocaelispor: H=12% D=68% A=20% (skor=0-0, Ü2.5=0%)
+00:50:37 | WARNING  | src.ingestion.api_hijacker – [Hijack] ✗ mackolik bağlanamadı: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://www.mackolik.com/canli-sonuclar", waiting until "networkidle"
+
+00:50:38 | INFO     | src.quant.sentiment_analyzer – [Sentiment] Kocaelispor: 0.14 (20 haber)
+00:50:38 | INFO     | src.quant.sentiment_analyzer – [Sentiment] Rizespor: 0.07 (20 haber)
+00:50:40 | INFO     | src.ingestion.api_hijacker – [Hijack] 🆕 Endpoint keşfedildi: https://www.mackolik.com/perform/p0/ajax/components/competition/livescores/json-update [other] (mackolik)
+00:50:40 | INFO     | src.quant.sentiment_analyzer – [Sentiment] Gençlerbirliği: 0.01 (20 haber)
+00:50:40 | INFO     | src.quant.sentiment_analyzer – [Sentiment] Eyüpspor: 0.03 (20 haber)
+00:50:42 | INFO     | src.quant.sentiment_analyzer – [Sentiment] Başakşehir: 0.04 (20 haber)
+00:50:42 | INFO     | src.quant.sentiment_analyzer – [Sentiment] Alanyaspor: 0.12 (20 haber)
+00:50:44 | INFO     | src.quant.sentiment_analyzer – [Sentiment] Galatasaray: 0.02 (20 haber)
+00:50:44 | INFO     | src.quant.sentiment_analyzer – [Sentiment] Konyaspor: 0.02 (20 haber)
+00:50:46 | INFO     | src.quant.sentiment_analyzer – [Sentiment] Antalyaspor: 0.06 (20 haber)
+00:50:46 | INFO     | src.quant.sentiment_analyzer – [Sentiment] Kayserispor: 0.09 (20 haber)
+00:50:48 | INFO     | src.quant.sentiment_analyzer – [Sentiment] Gaziantep FK: 0.04 (20 haber)
+00:50:48 | INFO     | src.quant.sentiment_analyzer – [Sentiment] Trabzonspor: 0.05 (20 haber)
+00:50:49 | INFO     | src.quant.sentiment_analyzer – [Sentiment] Göztepe: 0.04 (20 haber)
+00:50:49 | INFO     | src.quant.sentiment_analyzer – [Sentiment] Beşiktaş: 0.00 (20 haber)
+00:50:51 | INFO     | src.ingestion.async_data_factory – FlashScore: 23 maç tarandı.
+00:50:51 | INFO     | src.ingestion.async_data_factory – FlashScore: 23 maç tarandı.
+00:50:51 | INFO     | src.quant.sentiment_analyzer – [Sentiment] Samsunspor: 0.01 (20 haber)
+00:50:51 | INFO     | src.quant.sentiment_analyzer – [Sentiment] Karagümrük: 0.14 (20 haber)
+00:50:53 | INFO     | src.quant.sentiment_analyzer – [Sentiment] Kasımpaşa: 0.03 (20 haber)
+00:50:53 | INFO     | src.quant.sentiment_analyzer – [Sentiment] Fenerbahçe: 0.05 (20 haber)
+00:50:54 | INFO     | src.quant.sentiment_analyzer – [Sentiment] Başakşehir: 0.04 (20 haber)
+00:50:54 | INFO     | src.quant.sentiment_analyzer – [Sentiment] Konyaspor: 0.02 (20 haber)
+00:50:55 | INFO     | src.quant.sentiment_analyzer – [Sentiment] Karagümrük: 0.14 (20 haber)
+00:50:55 | INFO     | src.quant.sentiment_analyzer – [Sentiment] Trabzonspor: 0.05 (20 haber)
+00:50:56 | INFO     | src.quant.sentiment_analyzer – [Sentiment] Karagümrük: 0.14 (20 haber)
+00:50:56 | INFO     | src.quant.sentiment_analyzer – [Sentiment] Kasımpaşa: 0.03 (20 haber)
+00:50:58 | INFO     | src.quant.sentiment_analyzer – [Sentiment] Başakşehir: 0.04 (20 haber)
+00:50:58 | INFO     | src.quant.sentiment_analyzer – [Sentiment] Beşiktaş: 0.00 (20 haber)
+00:50:59 | INFO     | src.quant.sentiment_analyzer – [Sentiment] Göztepe: 0.04 (20 haber)
+00:50:59 | INFO     | src.quant.sentiment_analyzer – [Sentiment] Kayserispor: 0.09 (20 haber)
+00:51:00 | INFO     | src.quant.sentiment_analyzer – [Sentiment] Gaziantep FK: 0.04 (20 haber)
+00:51:00 | INFO     | src.quant.sentiment_analyzer – [Sentiment] Kocaelispor: 0.14 (20 haber)
+00:51:02 | INFO     | src.quant.sentiment_analyzer – [Sentiment] Fenerbahçe: 0.05 (20 haber)
+00:51:02 | INFO     | src.quant.sentiment_analyzer – [Sentiment] Trabzonspor: 0.05 (20 haber)
+00:51:03 | INFO     | src.quant.sentiment_analyzer – [Sentiment] Konyaspor: 0.02 (20 haber)
+00:51:03 | INFO     | src.quant.sentiment_analyzer – [Sentiment] Alanyaspor: 0.12 (20 haber)
+00:51:04 | INFO     | src.quant.sentiment_analyzer – [Sentiment] Rizespor: 0.07 (20 haber)
+00:51:04 | INFO     | src.quant.sentiment_analyzer – [Sentiment] Gençlerbirliği: 0.01 (20 haber)
+00:51:06 | INFO     | src.quant.sentiment_analyzer – [Sentiment] Antalyaspor: 0.06 (20 haber)
+00:51:06 | INFO     | src.quant.sentiment_analyzer – [Sentiment] Samsunspor: 0.01 (20 haber)
+00:51:07 | INFO     | src.quant.sentiment_analyzer – [Sentiment] Eyüpspor: 0.03 (20 haber)
+00:51:07 | INFO     | src.quant.sentiment_analyzer – [Sentiment] Galatasaray: 0.02 (20 haber)
+00:55:05 | WARNING  | src.ingestion.async_data_factory – FlashScore scrape hatası: Browser.new_context: Connection closed while reading from the driver

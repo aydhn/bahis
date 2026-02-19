@@ -41,8 +41,8 @@ except ImportError:
     HTTPX_OK = False
 
 try:
-    import google.generativeai as genai
-    GEMINI_OK = True
+    from src.utils.gemini_client import gemini_generate, GEMINI_OK as _GEMINI_OK
+    GEMINI_OK = _GEMINI_OK
 except ImportError:
     GEMINI_OK = False
 
@@ -125,10 +125,8 @@ def _summarize_gemini(raw_text: str) -> str:
     if not GEMINI_OK:
         return ""
     try:
-        model = genai.GenerativeModel("gemini-1.5-flash")
-        full = f"{BRIEFING_SYSTEM_PROMPT}\n\n{raw_text}"
-        response = model.generate_content(full)
-        return response.text if response else ""
+        result = gemini_generate(prompt=raw_text, system=BRIEFING_SYSTEM_PROMPT)
+        return result
     except Exception:
         pass
     return ""
@@ -193,10 +191,13 @@ class DailyBriefing:
     def collect_data(self, db: Any = None,
                        portfolio: Any = None,
                        health: Any = None,
-                       chaos_filter: Any = None) -> BriefingData:
-        """Sistemden veri topla."""
+                       chaos_filter: Any = None,
+                       super_log: Any = None,
+                       guardian: Any = None) -> BriefingData:
+        """Sistemden veri topla – genişletilmiş metrikler."""
         data = BriefingData()
 
+        # Portfolio metrikleri
         if portfolio:
             try:
                 if hasattr(portfolio, "get_bankroll"):
@@ -207,26 +208,72 @@ class DailyBriefing:
                         data.bankroll_change_pct = round(
                             pnl / data.bankroll * 100, 2,
                         )
-            except Exception:
-                pass
+                if hasattr(portfolio, "get_sharpe"):
+                    data.sharpe_ratio = portfolio.get_sharpe()
+                if hasattr(portfolio, "get_max_drawdown"):
+                    data.max_drawdown = portfolio.get_max_drawdown()
+            except Exception as e:
+                logger.debug(f"[Briefing] Portfolio veri hatası: {e}")
 
+        # Sağlık metrikleri
         if health:
             try:
                 if hasattr(health, "get_win_rate"):
                     data.win_rate_7d = health.get_win_rate(days=7)
                 if hasattr(health, "get_roi"):
                     data.roi_30d = health.get_roi(days=30)
-            except Exception:
-                pass
+                if hasattr(health, "get_model_accuracy"):
+                    data.model_accuracy = health.get_model_accuracy()
+                if hasattr(health, "get_uptime"):
+                    data.uptime_pct = health.get_uptime()
+            except Exception as e:
+                logger.debug(f"[Briefing] Health veri hatası: {e}")
 
+        # Fırsat taraması
         if db:
             try:
                 if hasattr(db, "get_todays_opportunities"):
                     data.top_opportunities = db.get_todays_opportunities(
                         limit=3,
                     )
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"[Briefing] DB veri hatası: {e}")
+
+        # SuperLogger metrikleri
+        if super_log:
+            try:
+                if hasattr(super_log, "summarize_session"):
+                    session = super_log.summarize_session()
+                    data.error_rate = session.get("error_rate", 0.0) * 100
+                    if session.get("total_errors", 0) > 10:
+                        data.alerts.append(
+                            f"Yüksek hata oranı: {session['total_errors']} hata"
+                        )
+            except Exception as e:
+                logger.debug(f"[Briefing] SuperLog veri hatası: {e}")
+
+        # Guardian metrikleri
+        if guardian:
+            try:
+                if hasattr(guardian, "health_report"):
+                    gh = guardian.health_report()
+                    if gh.get("open_circuits"):
+                        for circuit in gh["open_circuits"]:
+                            data.alerts.append(f"Açık devre: {circuit}")
+            except Exception as e:
+                logger.debug(f"[Briefing] Guardian veri hatası: {e}")
+
+        # Chaos filter
+        if chaos_filter:
+            try:
+                if hasattr(chaos_filter, "get_chaos_score"):
+                    data.market_chaos_score = chaos_filter.get_chaos_score()
+                    if data.market_chaos_score > 0.7:
+                        data.alerts.append(
+                            f"Yüksek piyasa kaosu: {data.market_chaos_score:.2f}"
+                        )
+            except Exception as e:
+                logger.debug(f"[Briefing] Chaos veri hatası: {e}")
 
         return data
 

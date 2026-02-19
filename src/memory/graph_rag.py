@@ -71,8 +71,8 @@ except ImportError:
     HTTPX_OK = False
 
 try:
-    import google.generativeai as genai
-    GEMINI_OK = True
+    from src.utils.gemini_client import gemini_generate, GEMINI_OK as _GEMINI_OK
+    GEMINI_OK = _GEMINI_OK
 except ImportError:
     GEMINI_OK = False
 
@@ -272,6 +272,39 @@ class GraphRAG:
                         pass
             except Exception:
                 self._driver = None
+
+    def add_match(self, match_id: str, home_team: str,
+                    away_team: str, kickoff: str = "") -> None:
+        """Maçı bilgi grafiğine ekle (takım düğümleri + PLAYS ilişkisi)."""
+        match_id = str(match_id or "").strip()
+        home_team = str(home_team or "").strip()
+        away_team = str(away_team or "").strip()
+        kickoff = str(kickoff or "").strip()
+        if not match_id or not home_team or not away_team:
+            return
+
+        if self._mem_graph is not None:
+            self._mem_graph.add_node(match_id, type="match", kickoff=kickoff)
+            self._mem_graph.add_node(home_team, type="team")
+            self._mem_graph.add_node(away_team, type="team")
+            self._mem_graph.add_edge(home_team, match_id, relation="PLAYS_HOME")
+            self._mem_graph.add_edge(away_team, match_id, relation="PLAYS_AWAY")
+
+        if self._driver:
+            try:
+                with self._driver.session() as session:
+                    session.run(
+                        "MERGE (m:Match {id: $mid}) "
+                        "SET m.kickoff = $kickoff "
+                        "MERGE (h:Team {name: $home}) "
+                        "MERGE (a:Team {name: $away}) "
+                        "MERGE (h)-[:PLAYS_HOME]->(m) "
+                        "MERGE (a)-[:PLAYS_AWAY]->(m)",
+                        mid=match_id, home=home_team,
+                        away=away_team, kickoff=kickoff,
+                    )
+            except Exception as e:
+                logger.debug(f"[GraphRAG] Neo4j add_match hatası: {e}")
 
     def ingest_news(self, news_items: list[dict],
                       team: str = "") -> int:
@@ -509,13 +542,12 @@ class GraphRAG:
             except Exception:
                 pass
 
-        # Gemini
+        # Gemini (google-genai SDK)
         if self._llm_backend in ("gemini", "auto") and GEMINI_OK:
             try:
-                model = genai.GenerativeModel("gemini-1.5-flash")
-                response = model.generate_content(f"{system}\n\n{prompt}")
-                if response and response.text:
-                    return response.text.strip()
+                result = gemini_generate(prompt=prompt, system=system)
+                if result:
+                    return result
             except Exception:
                 pass
 

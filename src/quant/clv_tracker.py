@@ -240,7 +240,13 @@ class CorrelationMatrix:
                 m_exist = existing.get("market", "1X2") + "_" + existing.get("selection", "home")
                 same_match = bet.get("match_id") == existing.get("match_id")
 
-                corr = 0.8 if same_match else self.get_correlation(m_new, m_exist)
+                if same_match:
+                    corr = 0.8
+                elif m_new == m_exist:
+                    # Farklı maçlar, aynı market tipi → bağımsız sinyaller
+                    corr = 0.20
+                else:
+                    corr = self.get_correlation(m_new, m_exist)
                 max_corr_with_portfolio = max(max_corr_with_portfolio, abs(corr))
 
             if max_corr_with_portfolio <= self._max_corr:

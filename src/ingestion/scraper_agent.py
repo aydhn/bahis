@@ -100,34 +100,74 @@ class BaseScraper:
 #  MACKOLIK SCRAPER
 # ═══════════════════════════════════════════════════════
 class MackolikScraper(BaseScraper):
-    """Mackolik.com'dan maç ve oran verisi çeker."""
+    """Mackolik.com'dan maç ve oran verisi çeker.
+
+    Fallback zinciri:
+      1. mackolik.com/canli-sonuclar  (fixture)
+      2. mackolik.com/iddaa           (oran – yeni URL; /iddaa/tum-maclar 404)
+      3. mackolik.com/iddaa/bugunku-maclar (alternatif)
+      4. Tüm URL'ler başarısız → boş liste dön
+    """
 
     BASE_URL = "https://www.mackolik.com"
+    FIXTURE_URLS = [
+        "/canli-sonuclar",
+        "/maclar",
+        "/bugunun-maclari",
+    ]
+    ODDS_URLS = [
+        "/iddaa",
+        "/iddaa/bugunku-maclar",
+        "/iddaa/maclar",
+    ]
 
     def __init__(self):
         super().__init__("Mackolik")
 
+    async def _fetch_first_ok(self, url_paths: list[str]) -> str | None:
+        """URL listesini sırayla dene, ilk 200 yanıtı dön."""
+        for path in url_paths:
+            url = self.BASE_URL + path
+            html = await self._fetch(url)
+            if html:
+                # 404 sayfası kontrolü: içeriğin çok kısa olmadığını doğrula
+                if len(html) > 2000:
+                    logger.debug(f"[Mackolik] Çalışan URL: {url}")
+                    return html
+                logger.debug(f"[Mackolik] {url} → boş/hatalı içerik ({len(html)}b)")
+            else:
+                logger.debug(f"[Mackolik] {url} → başarısız")
+        logger.warning("[Mackolik] Tüm URL'ler başarısız – Mackolik atlanıyor.")
+        return None
+
     async def scrape_fixtures(self) -> list[dict]:
-        """Günün maçlarını çeker."""
-        html = await self._fetch(f"{self.BASE_URL}/canli-sonuclar")
+        """Günün maçlarını çeker (fallback URL zinciri ile)."""
+        html = await self._fetch_first_ok(self.FIXTURE_URLS)
         if not html or not BS4_AVAILABLE:
             return []
 
         soup = BeautifulSoup(html, "lxml")
         matches = []
 
-        rows = soup.select(".match-row, .p-match, [data-type='match']")
+        rows = soup.select(
+            ".match-row, .p-match, [data-type='match'], "
+            ".match-item, .fixture-row, [class*='match']"
+        )
         for row in rows[:50]:
             try:
-                home_el = row.select_one(".home-team, .team-home, .p-home")
-                away_el = row.select_one(".away-team, .team-away, .p-away")
-                time_el = row.select_one(".match-time, .p-time, .time")
+                home_el = row.select_one(
+                    ".home-team, .team-home, .p-home, [class*='home']"
+                )
+                away_el = row.select_one(
+                    ".away-team, .team-away, .p-away, [class*='away']"
+                )
+                time_el = row.select_one(".match-time, .p-time, .time, [class*='time']")
 
                 home = home_el.get_text(strip=True) if home_el else ""
                 away = away_el.get_text(strip=True) if away_el else ""
                 match_time = time_el.get_text(strip=True) if time_el else ""
 
-                if home and away:
+                if home and away and len(home) > 1:
                     matches.append({
                         "home_team": home,
                         "away_team": away,
@@ -142,19 +182,28 @@ class MackolikScraper(BaseScraper):
         return matches
 
     async def scrape_odds(self) -> list[dict]:
-        """İddaa oranlarını çeker."""
-        html = await self._fetch(f"{self.BASE_URL}/iddaa/tum-maclar")
+        """İddaa oranlarını çeker (fallback URL zinciri ile)."""
+        html = await self._fetch_first_ok(self.ODDS_URLS)
         if not html or not BS4_AVAILABLE:
+            logger.info("[Mackolik] Oran sayfası alınamadı – atlanıyor.")
             return []
 
         soup = BeautifulSoup(html, "lxml")
         odds_data = []
 
-        rows = soup.select("tr.odd-row, tr[data-match], .iddaa-row")
+        rows = soup.select(
+            "tr.odd-row, tr[data-match], .iddaa-row, "
+            "[class*='iddaa-match'], [class*='bet-row'], "
+            "tr[class*='match']"
+        )
         for row in rows[:100]:
             try:
-                teams_el = row.select_one(".teams, .match-name")
-                odds_els = row.select(".odd-value, .odds, td.odd")
+                teams_el = row.select_one(
+                    ".teams, .match-name, [class*='teams'], [class*='match-name']"
+                )
+                odds_els = row.select(
+                    ".odd-value, .odds, td.odd, [class*='odd'], [class*='oran']"
+                )
 
                 if teams_el and len(odds_els) >= 3:
                     teams = teams_el.get_text(strip=True)
@@ -190,34 +239,65 @@ class MackolikScraper(BaseScraper):
 #  SOFASCORE SCRAPER
 # ═══════════════════════════════════════════════════════
 class SofascoreScraper(BaseScraper):
-    """Sofascore API'den maç istatistikleri çeker."""
+    """Sofascore API'den çok sporlu maç verileri çeker.
+
+    Desteklenen sporlar: futbol, basketbol, tenis, voleybol, hentbol, hokey.
+    """
 
     API_BASE = "https://api.sofascore.com/api/v1"
+    SPORTS = ["football", "basketball", "tennis", "volleyball", "handball", "ice-hockey"]
 
     def __init__(self):
         super().__init__("Sofascore")
 
-    async def scrape_live(self) -> list[dict]:
-        """Canlı maçları API'den çeker."""
+    async def scrape_live(self, sport: str = "football") -> list[dict]:
+        """Belirli sporun canlı maçlarını API'den çeker."""
         await self._ensure_client()
-        await _async_jitter(2.0, 5.0)
+        await _async_jitter(1.0, 3.0)
 
         try:
+            _ss_headers = {
+                "User-Agent": random_ua(),
+                "Accept": "application/json, text/plain, */*",
+                "Accept-Language": "tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7",
+                "Accept-Encoding": "gzip, deflate, br",
+                "Origin": "https://www.sofascore.com",
+                "Referer": "https://www.sofascore.com/",
+                "Sec-Fetch-Dest": "empty",
+                "Sec-Fetch-Mode": "cors",
+                "Sec-Fetch-Site": "same-site",
+                "Sec-Ch-Ua": '"Chromium";v="131", "Not_A Brand";v="24"',
+                "Sec-Ch-Ua-Mobile": "?0",
+                "Sec-Ch-Ua-Platform": '"Windows"',
+                "Cache-Control": "no-cache",
+                "Pragma": "no-cache",
+            }
+            # Canlı endpoint dene; 403 alırsa scheduled dene
             resp = await self._client.get(
-                f"{self.API_BASE}/sport/football/events/live",
-                headers={"User-Agent": random_ua()},
+                f"{self.API_BASE}/sport/{sport}/events/live",
+                headers=_ss_headers,
             )
+            if resp.status_code == 403:
+                # 403 → scheduled endpoint dene
+                from datetime import datetime as _dt
+                today = _dt.now().strftime("%Y-%m-%d")
+                resp = await self._client.get(
+                    f"{self.API_BASE}/sport/{sport}/scheduled-events/{today}",
+                    headers=_ss_headers,
+                )
             if resp.status_code != 200:
-                logger.warning(f"[Sofascore] API yanıtı: {resp.status_code}")
+                logger.debug(f"[Sofascore] {sport} API yanıtı: {resp.status_code}")
                 return []
 
             data = resp.json()
             events = data.get("events", [])
             matches = []
-            for ev in events[:50]:
+            for ev in events[:100]:
                 home = ev.get("homeTeam", {}).get("name", "")
                 away = ev.get("awayTeam", {}).get("name", "")
-                tournament = ev.get("tournament", {}).get("name", "")
+                tournament = ev.get("tournament", {})
+                tournament_name = tournament.get("name", "")
+                country = tournament.get("category", {}).get("name", "")
 
                 home_score = ev.get("homeScore", {}).get("current", 0)
                 away_score = ev.get("awayScore", {}).get("current", 0)
@@ -226,18 +306,31 @@ class SofascoreScraper(BaseScraper):
                     "match_id": f"sofa_{ev.get('id', '')}",
                     "home_team": home,
                     "away_team": away,
-                    "league": tournament,
+                    "league": tournament_name,
+                    "country": country,
+                    "sport": sport,
                     "home_score": home_score,
                     "away_score": away_score,
                     "status": "live",
                     "source": "sofascore",
                 })
 
-            logger.info(f"[Sofascore] {len(matches)} canlı maç çekildi.")
+            logger.info(f"[Sofascore] {sport}: {len(matches)} canlı maç çekildi.")
             return matches
         except Exception as e:
-            logger.warning(f"[Sofascore] API hatası: {e}")
+            logger.warning(f"[Sofascore] {sport} API hatası: {e}")
             return []
+
+    async def scrape_all_live(self) -> list[dict]:
+        """TÜM sporlardan canlı maçları çek."""
+        all_matches = []
+        for sport in self.SPORTS:
+            try:
+                matches = await self.scrape_live(sport)
+                all_matches.extend(matches)
+            except Exception as e:
+                logger.debug(f"[Sofascore] {sport} canlı hata: {e}")
+        return all_matches
 
     async def scrape_team_stats(self, team_id: int) -> dict:
         """Takım istatistiklerini çeker."""
@@ -453,13 +546,13 @@ class ScraperAgent:
 
     async def _scrape_sofascore(self):
         async def _do():
-            live = await self._sofascore.scrape_live()
-            self._store_matches(live, "sofascore")
-            return len(live)
+            all_matches = await self._sofascore.scrape_all_live()
+            self._store_matches(all_matches, "sofascore")
+            return len(all_matches)
 
         result = await self._cb_sofascore.call_async(_do)
         if result:
-            logger.debug(f"[CB:sofascore] Başarılı – {result} kayıt.")
+            logger.debug(f"[CB:sofascore] Başarılı – {result} kayıt (çok sporlu).")
 
     def _store_matches(self, matches: list[dict], source: str):
         for m in matches:
@@ -472,7 +565,9 @@ class ScraperAgent:
 
             self._db.upsert_match({
                 "match_id": match_id,
+                "sport": m.get("sport", "football"),
                 "league": m.get("league", ""),
+                "country": m.get("country", ""),
                 "home_team": m.get("home_team", ""),
                 "away_team": m.get("away_team", ""),
                 "kickoff": m.get("kickoff", datetime.utcnow().isoformat()),

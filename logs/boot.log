@@ -1,0 +1,845 @@
+2026-02-19 10:35:09.148 | INFO     | __main__:run:3281 â€“ [CLI] BaÅŸlatÄ±lÄ±yor: mode=full, headless=True, telegram=True, dashboard=False
+2026-02-19 10:35:24.809 | INFO     | src.quant.uncertainty_quantifier:<module>:31 â€“ mapie yüklü değil – heuristic uncertainty aktif.
+2026-02-19 10:35:26.172 | INFO     | src.quant.digital_twin_sim:<module>:37 â€“ mesa yüklü değil – pure Python simulation fallback.
+2026-02-19 10:35:28.911 | DEBUG    | src.quant.hawkes_momentum:<module>:39 â€“ tick yüklü değil – manuel Hawkes fallback.
+2026-02-19 10:35:30.844 | DEBUG    | src.quant.symbolic_discovery:<module>:39 â€“ pysr devre dışı – juliacall/Julia kurulum gecikmesi önlendi. Genetik formül arama fallback aktif.
+2026-02-19 10:35:30.983 | INFO     | src.core.jax_accelerator:<module>:16 â€“ JAX aktif – backend: cpu
+2026-02-19 10:35:31.206 | DEBUG    | src.core.rust_engine:<module>:54 â€“ [Rust] quant_core bulunamadı – Numba/NumPy fallback.
+2026-02-19 10:35:31.218 | DEBUG    | src.core.active_inference_agent:<module>:47 â€“ pymdp yüklü değil – numpy Active Inference fallback.
+2026-02-19 10:35:32.590 | INFO     | __main__:_boot:357 â€“ [Boot] Mod=full, headless=True, telegram=True, dashboard=False
+2026-02-19 10:35:32.590 | INFO     | __main__:_boot:361 â€“ Layer 0 â€“ Infrastructure baÅŸlatÄ±lÄ±yorâ€¦
+2026-02-19 10:35:32.591 | DEBUG    | src.memory.smart_cache:__init__:42 â€“ TTLCache başlatıldı: TTL=3600.0s, max=1000
+2026-02-19 10:35:32.591 | DEBUG    | src.memory.smart_cache:__init__:134 â€“ SmartCache başlatıldı (L1+L2+L3).
+2026-02-19 10:35:32.597 | DEBUG    | src.utils.super_logger:__init__:262 â€“ [SuperLogger] Başlatıldı: dir=data/logs, rotation=100 MB, retention=30 days, stdlib_bridge=aktif, warnings_capture=aktif
+2026-02-19 10:35:32.598 | DEBUG    | src.utils.log_rotator:__init__:52 â€“ [LogRotator] Başlatıldı: log_dir=C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\logs, archive_days=3, compress=True
+2026-02-19 10:35:32.600 | INFO     | src.utils.log_rotator:rotate:134 â€“ [LogRotator] Rotasyon tamamlandı: 0 arşivlendi, 9 korundu
+2026-02-19 10:35:32.600 | INFO     | src.core.exception_guardian:__init__:160 â€“ [Guardian] Başlatıldı: budget=50/h, circuit_thresh=15
+2026-02-19 10:35:32.601 | INFO     | src.core.exception_guardian:install_global_hook:393 â€“ [Guardian] Global exception hook kuruldu
+2026-02-19 10:35:32.601 | INFO     | src.core.regime_kelly:__init__:167 â€“ [RegimeKelly] Başlatıldı: bankroll=10000, fraction=0.25, min_edge=4%
+2026-02-19 10:35:32.603 | INFO     | src.core.strategy_evolver:__init__:153 â€“ [Evolver] Başlatıldı: pop=50, elitism=5, tournament=3
+2026-02-19 10:35:32.603 | DEBUG    | src.quant.fisher_geometry:__init__:183 â€“ [FisherGeo] Başlatıldı: anomaly_thresh=2.0, regime_thresh=1.5
+2026-02-19 10:35:32.603 | DEBUG    | src.quant.philosophical_engine:__init__:95 â€“ [PhiloEngine] Başlatıldı: cal_win=200, min_score=0.45
+2026-02-19 10:35:32.604 | DEBUG    | src.utils.strategy_cockpit:__init__:113 â€“ [Cockpit] Komuta merkezi başlatıldı.
+2026-02-19 10:35:32.604 | SUCCESS  | __main__:_boot:409 â€“ Layer 0 hazÄ±r âœ“ (0.01s)
+2026-02-19 10:35:32.604 | INFO     | __main__:_boot:413 â€“ Layer 2 â€“ Memory & Context baÅŸlatÄ±lÄ±yorâ€¦
+2026-02-19 10:35:32.632 | INFO     | src.memory.db_manager:__init__:144 â€“ [DBManager] Başlatıldı (sqlite) → C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\data\bahis.duckdb
+2026-02-19 10:35:32.643 | DEBUG    | src.memory.feature_cache:__init__:25 â€“ FeatureCache başlatıldı → C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\data\cache (limit 2.0 GB)
+2026-02-19 10:35:33.594 | DEBUG    | src.memory.lance_memory:_init_db:92 â€“ LanceDB embeddings tablosu zaten mevcut – açılıyor.
+2026-02-19 10:35:33.607 | DEBUG    | src.memory.lance_memory:_init_db:94 â€“ LanceMemory başlatıldı.
+2026-02-19 10:35:33.607 | DEBUG    | src.memory.zero_copy_bridge:__init__:17 â€“ ZeroCopyBridge başlatıldı.
+2026-02-19 10:35:37.672 | DEBUG    | src.memory.graph_rag:__init__:245 â€“ [GraphRAG] Başlatıldı (backend=auto, neo4j=fallback)
+2026-02-19 10:35:37.673 | DEBUG    | src.memory.dvc_manager:__init__:24 â€“ DVCManager başlatıldı (DVC: yok).
+2026-02-19 10:35:37.673 | SUCCESS  | __main__:_boot:420 â€“ Layer 2 hazÄ±r âœ“ (5.07s)
+2026-02-19 10:35:37.673 | INFO     | __main__:_boot:424 â€“ Layer 1 â€“ Sensors & Ingestion baÅŸlatÄ±lÄ±yorâ€¦
+2026-02-19 10:35:37.675 | DEBUG    | src.ingestion.async_data_factory:__init__:56 â€“ DataFactory başlatıldı.
+2026-02-19 10:35:37.675 | DEBUG    | src.ingestion.api_hijacker:__init__:107 â€“ APIHijacker v2 (Network Sniffer) başlatıldı.
+2026-02-19 10:35:37.675 | DEBUG    | src.ingestion.metric_exporter:__init__:54 â€“ MetricExporter başlatıldı.
+2026-02-19 10:35:37.675 | DEBUG    | src.ingestion.auto_healer:__init__:52 â€“ AutoHealer başlatıldı.
+2026-02-19 10:35:37.675 | DEBUG    | src.ingestion.vision_tracker:__init__:50 â€“ VisionTracker başlatıldı.
+2026-02-19 10:35:37.707 | DEBUG    | src.ingestion.stealth_browser:__init__:91 â€“ StealthBrowser başlatıldı (engine=auto).
+2026-02-19 10:35:37.708 | SUCCESS  | __main__:_boot:431 â€“ Layer 1 hazÄ±r âœ“ (0.03s)
+2026-02-19 10:35:37.708 | INFO     | __main__:_boot:435 â€“ Layer 3 â€“ Quantitative Brain baÅŸlatÄ±lÄ±yorâ€¦
+2026-02-19 10:35:37.709 | DEBUG    | src.quant.probabilistic_engine:__init__:231 â€“ [ProbEngine] Başlatıldı: samples=2000, tune=1000, pymc=OK
+2026-02-19 10:35:37.709 | DEBUG    | src.quant.evt_tail_scanner:__init__:50 â€“ EVTTailScanner başlatıldı (threshold_q=0.9)
+2026-02-19 10:35:37.709 | DEBUG    | src.quant.causal_discovery:__init__:281 â€“ [CausalDiscovery] Başlatıldı: α=0.05, max_cond=3, backend=causal-learn
+2026-02-19 10:35:37.710 | DEBUG    | src.quant.conformal_quantile_bridge:__init__:30 â€“ ConformalQuantileBridge başlatıldı.
+2026-02-19 10:35:37.710 | DEBUG    | src.quant.path_signature_engine:__init__:24 â€“ PathSignatureEngine başlatıldı.
+2026-02-19 10:35:37.710 | DEBUG    | src.quant.jump_diffusion_model:__init__:18 â€“ JumpDiffusionModel başlatıldı.
+2026-02-19 10:35:37.711 | DEBUG    | src.quant.geometric_intelligence:__init__:26 â€“ GeometricIntelligence başlatıldı.
+2026-02-19 10:35:37.712 | DEBUG    | src.quant.multi_task_backbone:__init__:85 â€“ MultiTaskBackbone başlatıldı (device=cpu).
+2026-02-19 10:35:37.739 | INFO     | src.quant.kan_interpreter:__init__:38 â€“ KAN modeli oluşturuldu.
+2026-02-19 10:35:37.739 | DEBUG    | src.quant.kan_interpreter:__init__:42 â€“ KANInterpreter başlatıldı.
+2026-02-19 10:35:37.739 | DEBUG    | src.quant.rl_trader:__init__:126 â€“ RLTrader başlatıldı.
+2026-02-19 10:35:37.786 | DEBUG    | src.quant.gcn_pitch_graph:__init__:58 â€“ GCNPitchGraph başlatıldı.
+2026-02-19 10:35:37.786 | DEBUG    | src.quant.poisson_model:__init__:20 â€“ PoissonModel başlatıldı.
+2026-02-19 10:35:37.786 | DEBUG    | src.quant.monte_carlo_engine:__init__:20 â€“ MonteCarloEngine başlatıldı – 10,000 simülasyon.
+2026-02-19 10:35:37.788 | DEBUG    | src.quant.elo_glicko_rating:__init__:45 â€“ EloRating başlatıldı.
+2026-02-19 10:35:37.788 | DEBUG    | src.quant.elo_glicko_rating:__init__:161 â€“ Glicko2Rating başlatıldı.
+2026-02-19 10:35:37.789 | DEBUG    | src.quant.elo_glicko_rating:__init__:249 â€“ EloGlickoSystem başlatıldı.
+2026-02-19 10:35:37.795 | DEBUG    | src.quant.sentiment_analyzer:__init__:64 â€“ SentimentAnalyzer başlatıldı.
+2026-02-19 10:35:37.795 | DEBUG    | src.quant.anomaly_detector:__init__:21 â€“ AnomalyDetector başlatıldı (Z>2.0).
+2026-02-19 10:35:37.795 | DEBUG    | src.quant.time_decay:__init__:46 â€“ TimeDecay başlatıldı: λ=0.005, yarı-ömür=139 gün
+2026-02-19 10:35:37.795 | DEBUG    | src.quant.dixon_coles_model:__init__:47 â€“ DixonColesModel başlatıldı (ρ=-0.13, decay=0.005).
+2026-02-19 10:35:37.795 | DEBUG    | src.quant.time_decay:__init__:159 â€“ TeamVolatilityIndex başlatıldı.
+2026-02-19 10:35:37.797 | DEBUG    | src.quant.gradient_boosting:__init__:70 â€“ FeatureEngineer başlatıldı.
+2026-02-19 10:35:37.797 | DEBUG    | src.quant.gradient_boosting:__init__:193 â€“ GradientBoostingModel başlatıldı (engine=lightgbm).
+2026-02-19 10:35:37.797 | DEBUG    | src.quant.gradient_boosting:__init__:70 â€“ FeatureEngineer başlatıldı.
+2026-02-19 10:35:37.797 | DEBUG    | src.quant.bayesian_hierarchical:__init__:83 â€“ BayesianHierarchical başlatıldı: league=super_lig, avg_goals=1.35
+2026-02-19 10:35:37.797 | DEBUG    | src.quant.bayesian_hierarchical:__init__:265 â€“ NPxGFilter başlatıldı.
+2026-02-19 10:35:37.797 | DEBUG    | src.quant.clv_tracker:__init__:51 â€“ CLVTracker başlatıldı.
+2026-02-19 10:35:37.797 | DEBUG    | src.quant.clv_tracker:__init__:176 â€“ CorrelationMatrix başlatıldı (max_corr=0.8)
+2026-02-19 10:35:37.799 | DEBUG    | src.quant.ensemble_stacking:__init__:105 â€“ EnsembleStacking başlatıldı.
+2026-02-19 10:35:37.799 | DEBUG    | src.quant.lstm_trend:__init__:182 â€“ LSTMTrendAnalyzer başlatıldı (PyTorch=✓).
+2026-02-19 10:35:37.799 | WARNING  | src.quant.lstm_trend:load_model:398 â€“ [LSTM] Model yüklenemedi: [Errno 2] No such file or directory: 'models/lstm_trend.pt'
+2026-02-19 10:35:37.799 | DEBUG    | src.quant.xai_explainer:__init__:86 â€“ XAIExplainer başlatıldı (SHAP=✓).
+2026-02-19 10:35:37.801 | DEBUG    | src.ingestion.news_rag:__init__:94 â€“ NewsRAG başlatıldı (Gemini=✗, HF=✗).
+2026-02-19 10:35:37.801 | DEBUG    | src.quant.glm_model:__init__:96 â€“ GLMGoalPredictor başlatıldı (family=poisson).
+2026-02-19 10:35:37.801 | DEBUG    | src.quant.network_centrality:__init__:96 â€“ PassNetworkAnalyzer başlatıldı.
+2026-02-19 10:35:37.801 | DEBUG    | src.quant.prophet_seasonality:__init__:112 â€“ ProphetSeasonalityAnalyzer başlatıldı.
+2026-02-19 10:35:37.801 | DEBUG    | src.quant.uncertainty_quantifier:__init__:116 â€“ UncertaintyQuantifier başlatıldı (alpha=0.05, method=score, abstain=0.5)
+2026-02-19 10:35:37.801 | DEBUG    | src.quant.kalman_tracker:__init__:110 â€“ KalmanTeamTracker başlatıldı (Q=2.0, R=8.0)
+2026-02-19 10:35:37.801 | DEBUG    | src.quant.rl_betting_env:__init__:265 â€“ RLBettingAgent başlatıldı.
+2026-02-19 10:35:37.803 | DEBUG    | src.quant.rl_betting_env:load:458 â€“ [RL] Model bulunamadı: C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\models\rl\ppo_betting_agent.zip
+2026-02-19 10:35:37.803 | DEBUG    | src.quant.vector_engine:__init__:118 â€“ VectorMatchEngine başlatıldı (dim=32).
+2026-02-19 10:35:37.803 | DEBUG    | src.quant.copula_risk:__init__:106 â€“ CopulaRiskAnalyzer başlatıldı (family=auto).
+2026-02-19 10:35:37.803 | DEBUG    | src.utils.telegram_scenario:__init__:158 â€“ ScenarioSimulator: 8 senaryo.
+2026-02-19 10:35:37.803 | DEBUG    | src.quant.isolation_anomaly:__init__:112 â€“ IsolationAnomalyDetector başlatıldı.
+2026-02-19 10:35:37.849 | INFO     | src.ingestion.vision_live:__init__:125 â€“ [Vision] YOLOv8n yüklendi.
+2026-02-19 10:35:37.849 | DEBUG    | src.ingestion.vision_live:__init__:240 â€“ [Vision] LiveMatchVision başlatıldı (fps=1.0).
+2026-02-19 10:35:37.849 | DEBUG    | src.quant.causal_reasoner:__init__:159 â€“ CausalReasoner başlatıldı.
+2026-02-19 10:35:37.849 | DEBUG    | src.quant.topology_scanner:__init__:136 â€“ [TDA] TopologyScanner başlatıldı (method=giotto-tda)
+2026-02-19 10:35:37.849 | DEBUG    | src.quant.nash_solver:__init__:148 â€“ NashGameSolver başlatıldı.
+2026-02-19 10:35:37.849 | DEBUG    | src.quant.entropy_meter:__init__:183 â€“ [Entropy] Meter başlatıldı (kill=2.5 bit).
+2026-02-19 10:35:37.849 | DEBUG    | src.quant.evt_risk_manager:__init__:205 â€“ [EVT] Risk Manager başlatıldı.
+2026-02-19 10:35:37.849 | DEBUG    | src.quant.digital_twin_sim:__init__:303 â€“ [Twin] Digital Twin Simulator başlatıldı.
+2026-02-19 10:35:37.849 | DEBUG    | src.quant.bsts_impact:__init__:225 â€“ [BSTS] Impact Analyzer başlatıldı.
+2026-02-19 10:35:37.849 | DEBUG    | src.quant.fractal_analyzer:__init__:251 â€“ [Fractal] Analyzer başlatıldı.
+2026-02-19 10:35:37.849 | DEBUG    | src.quant.transfer_learner:__init__:181 â€“ [Transfer] Learner başlatıldı (method=pytorch).
+2026-02-19 10:35:37.849 | DEBUG    | src.quant.transport_metric:__init__:222 â€“ [Transport] Metric başlatıldı (drift=0.25, kill=0.5)
+2026-02-19 10:35:37.855 | DEBUG    | src.quant.federated_trainer:__init__:271 â€“ [Federated] Trainer başlatıldı: 5 lig client'ı
+2026-02-19 10:35:37.855 | DEBUG    | src.quant.hypergraph_unit:__init__:198 â€“ [Hypergraph] UnitAnalyzer başlatıldı.
+2026-02-19 10:35:37.855 | DEBUG    | src.quant.fluid_pitch:__init__:278 â€“ [Fluid] PitchAnalyzer başlatıldı.
+2026-02-19 10:35:37.856 | DEBUG    | src.quant.ricci_flow:__init__:205 â€“ [Ricci] FlowAnalyzer başlatıldı (alpha=0.5)
+2026-02-19 10:35:37.856 | DEBUG    | src.quant.regime_switcher:__init__:210 â€“ [Regime] Switcher başlatıldı: 3 rejim, method=hmmlearn
+2026-02-19 10:35:37.856 | DEBUG    | src.quant.sde_pricer:__init__:259 â€“ [SDE] Pricer başlatıldı (dt=1.0, paths=1000)
+2026-02-19 10:35:38.177 | DEBUG    | pennylane.logging.decorators:wrapper_exit:71 â€“ Calling [__init__(self=[default.qubit device (wires=4) at 0x1b355425350], wires=4, shots=None, seed='global', max_workers=None)]=None from C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\pennylane\devices\device_constructor.py::L292
+2026-02-19 10:35:38.177 | DEBUG    | pennylane.workflow.qnode:__init__:533 â€“ Creating QNode(func=[function create_vqc.[locals].circuit at 0x000001B355E6B880], device=[default.qubit device (wires=4) at 0x1b355425350], interface=autograd, diff_method=best, grad_on_execution=best, cache=auto, cachesize=10000, max_diff=1, gradient_kwargs=None
+2026-02-19 10:35:38.180 | DEBUG    | pennylane.logging.decorators:wrapper_entry:57 â€“ Calling [supports_derivatives(self=[default.qubit device (wires=4) at 0x1b355425350], execution_config=ExecutionConfig(grad_on_execution=None, use_device_gradient=None, use_device_jacobian_product=False, gradient_method='best', gradient_keyword_arguments={}, device_options={}, interface=[Interface.NUMPY: 'numpy'], derivative_order=1, mcm_config=MCMConfig(mcm_method=None, postselect_mode=None), convert_to_numpy=True, executor_backend=[class 'pennylane.concurrency.executors.native.multiproc.MPPoolExec']), circuit=None)] from C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\pennylane\workflow\qnode.py::L172
+2026-02-19 10:35:38.181 | DEBUG    | src.quant.quantum_brain:__init__:170 â€“ [Quantum] Brain başlatıldı: 4 qubit, 2 katman, method=pennylane_vqc
+2026-02-19 10:35:38.181 | DEBUG    | src.quant.hawkes_momentum:__init__:260 â€“ [Hawkes] MomentumAnalyzer başlatıldı.
+2026-02-19 10:35:38.181 | DEBUG    | src.quant.survival_estimator:__init__:201 â€“ [Survival] Estimator başlatıldı.
+2026-02-19 10:35:38.182 | DEBUG    | src.quant.fatigue_engine:__init__:246 â€“ [Fatigue] Engine başlatıldı.
+2026-02-19 10:35:38.182 | DEBUG    | src.quant.chaos_filter:__init__:228 â€“ [Chaos] Filter başlatıldı: emb_dim=3, lag=1
+2026-02-19 10:35:38.182 | DEBUG    | src.quant.homology_scanner:__init__:237 â€“ [Homology] Scanner başlatıldı: max_dim=1, max_edge=50.0
+2026-02-19 10:35:38.182 | DEBUG    | src.core.rust_engine:__init__:263 â€“ [Rust] Motor: numba
+2026-02-19 10:35:38.182 | DEBUG    | src.quant.automl_engine:__init__:124 â€“ [AutoML] Engine başlatıldı: gen=5, pop=50, cv=5
+2026-02-19 10:35:38.183 | DEBUG    | src.quant.synthetic_trainer:__init__:144 â€“ [Synthetic] Trainer başlatıldı.
+2026-02-19 10:35:38.187 | DEBUG    | src.quant.fuzzy_reasoning:__init__:195 â€“ [Fuzzy] Reasoning Engine başlatıldı.
+2026-02-19 10:35:38.187 | DEBUG    | src.quant.uncertainty_separator:__init__:215 â€“ [Uncertainty] Separator başlatıldı: n_models=10, n_classes=3
+2026-02-19 10:35:38.188 | DEBUG    | src.quant.topology_mapper:__init__:191 â€“ [Mapper] Başlatıldı: cubes=10, overlap=0.3, clusters/cube=3
+2026-02-19 10:35:38.188 | DEBUG    | src.quant.probabilistic_engine:__init__:231 â€“ [ProbEngine] Başlatıldı: samples=2000, tune=1000, pymc=OK
+2026-02-19 10:35:38.188 | DEBUG    | src.core.active_inference_agent:__init__:227 â€“ [ActiveInf] Başlatıldı: 6 modül
+2026-02-19 10:35:38.188 | DEBUG    | src.quant.multifractal_logic:__init__:276 â€“ [MF-DFA] Başlatıldı: q=[-5, 5], step=0.5, min_scale=8
+2026-02-19 10:35:38.188 | DEBUG    | src.quant.symbolic_discovery:__init__:252 â€“ [Symbolic] Engine başlatıldı: max_cplx=20, pysr=fallback
+2026-02-19 10:35:38.188 | DEBUG    | src.quant.wavelet_denoiser:__init__:155 â€“ [Wavelet] Denoiser başlatıldı: db4, level=4, pywt=OK
+2026-02-19 10:35:38.188 | DEBUG    | src.quant.volatility_analyzer:__init__:179 â€“ [Volatility] Analyzer başlatıldı: type=GARCH(1,1), arch=OK
+2026-02-19 10:35:38.188 | DEBUG    | src.quant.particle_strength_tracker:__init__:184 â€“ [Particle] Tracker başlatıldı: N=1000, σ_proc=0.02, σ_obs=0.15
+2026-02-19 10:35:38.190 | SUCCESS  | __main__:_boot:572 â€“ Layer 3 hazÄ±r âœ“ (0.48s)
+2026-02-19 10:35:38.190 | INFO     | __main__:_boot:576 â€“ Layer 6 â€“ Graph Intelligence baÅŸlatÄ±lÄ±yorâ€¦
+2026-02-19 10:35:38.190 | DEBUG    | src.memory.neo4j_graph:__init__:60 â€“ Neo4jFootballGraph başlatıldı (uri=bolt://localhost:7687).
+2026-02-19 10:35:42.254 | WARNING  | src.memory.neo4j_graph:connect:80 â€“ [Neo4j] Bağlantı hatası: Couldn't connect to localhost:7687 (resolved to ('[::1]:7687', '127.0.0.1:7687')):
+Failed to establish connection to ResolvedIPv6Address(('::1', 7687, 0, 0)) (reason [WinError 10061] Hedef makine etkin olarak reddettiğinden bağlantı kurulamadı)
+Failed to establish connection to ResolvedIPv4Address(('127.0.0.1', 7687)) (reason [WinError 10061] Hedef makine etkin olarak reddettiğinden bağlantı kurulamadı) – in-memory mod.
+2026-02-19 10:35:42.255 | INFO     | src.memory.neo4j_graph:_init_fallback:368 â€“ [Neo4j] Fallback: networkx in-memory graph aktif.
+2026-02-19 10:35:42.256 | SUCCESS  | __main__:_boot:580 â€“ Layer 6 hazÄ±r âœ“ (4.07s)
+2026-02-19 10:35:42.256 | INFO     | __main__:_boot:584 â€“ Layer 4 â€“ Risk & Execution baÅŸlatÄ±lÄ±yorâ€¦
+2026-02-19 10:35:42.257 | DEBUG    | src.core.constrained_risk_solver:__init__:26 â€“ ConstrainedRiskSolver başlatıldı.
+2026-02-19 10:35:42.257 | DEBUG    | src.core.systemic_risk_covar:__init__:18 â€“ SystemicRiskCoVaR başlatıldı.
+2026-02-19 10:35:42.258 | DEBUG    | src.core.vector_backtester:__init__:23 â€“ VectorBacktester başlatıldı.
+2026-02-19 10:35:42.258 | DEBUG    | src.core.black_litterman_optimizer:__init__:17 â€“ BlackLittermanOptimizer başlatıldı.
+2026-02-19 10:35:42.258 | DEBUG    | src.core.pnl_stabilizer:__init__:40 â€“ PnLStabilizer başlatıldı.
+2026-02-19 10:35:42.259 | DEBUG    | src.core.model_quantizer:__init__:20 â€“ ModelQuantizer başlatıldı.
+2026-02-19 10:35:42.259 | DEBUG    | src.core.jax_accelerator:__init__:27 â€“ JAXAccelerator başlatıldı.
+2026-02-19 10:35:42.259 | DEBUG    | src.core.jit_accelerator:__init__:383 â€“ [JIT] Accelerator başlatıldı (numba=OK, arrow=OK)
+2026-02-19 10:35:42.372 | INFO     | src.core.jit_accelerator:warmup:402 â€“ [JIT] Warmup tamamlandı (122ms)
+2026-02-19 10:35:42.381 | DEBUG    | src.core.grpc_communicator:__init__:314 â€“ [Comm] Communicator başlatıldı (grpc=devre dışı)
+2026-02-19 10:35:47.517 | WARNING  | src.utils.super_logger:_loguru_showwarning:320 â€“ FutureWarning: Tip: In future versions of Ray, Ray will no longer override accelerator visible devices env var if num_gpus=0 or num_gpus=None (default). To enable this behavior and turn off this error message, set RAY_ACCEL_ENV_VAR_OVERRIDE_ON_ZERO=0 (C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\ray\_private\worker.py:2046)
+2026-02-19 10:35:47.518 | INFO     | src.core.distributed_core:start:263 â€“ [Dist] Ray başlatıldı: CPU=12.0, GPU=0, Memory=4.2GB
+2026-02-19 10:35:47.519 | DEBUG    | src.core.mimic_engine:__init__:276 â€“ [Mimic] Persona: Rahat Tarayıcı (circadian=1.09x)
+2026-02-19 10:35:47.519 | DEBUG    | src.core.quantum_annealer:__init__:269 â€“ [Annealer] Başlatıldı: bankroll=10000.0, max_bets=10, max_risk=0.15
+2026-02-19 10:35:47.520 | DEBUG    | src.utils.human_feedback_loop:__init__:314 â€“ [RLHF] HumanFeedbackLoop başlatıldı.
+2026-02-19 10:35:47.521 | DEBUG    | src.core.auto_healer:__init__:456 â€“ [Healer] SelfHealingEngine başlatıldı (backend=auto)
+2026-02-19 10:35:47.521 | DEBUG    | src.core.telemetry_tracer:__init__:278 â€“ [Telemetry] OpenTelemetry başlatıldı: quant-betting-bot
+2026-02-19 10:35:47.798 | DEBUG    | src.core.blind_strategy:__init__:166 â€“ [Blind] TenSEAL CKKS başlatıldı.
+2026-02-19 10:35:47.798 | DEBUG    | src.utils.war_room:__init__:228 â€“ [WarRoom] Debate sistemi başlatıldı (backend=auto)
+2026-02-19 10:35:47.798 | DEBUG    | src.core.data_validator:__init__:182 â€“ DataValidator başlatıldı.
+2026-02-19 10:35:47.798 | DEBUG    | src.core.portfolio_optimizer:__init__:83 â€“ PortfolioOptimizer başlatıldı: bankroll=₺10,000, max_risk=15%
+2026-02-19 10:35:47.817 | DEBUG    | src.core.job_scheduler:__init__:62 â€“ JobScheduler başlatıldı (APScheduler=✓).
+2026-02-19 10:35:47.817 | DEBUG    | src.core.genetic_optimizer:__init__:117 â€“ GeneticOptimizer: 17 gen, pop=100, mut=0.15
+2026-02-19 10:35:47.818 | DEBUG    | src.core.hedge_calculator:__init__:73 â€“ HedgeCalculator başlatıldı.
+2026-02-19 10:35:47.818 | DEBUG    | src.core.fair_value_engine:__init__:95 â€“ FairValueEngine: min_edge=4%, kelly=25%
+2026-02-19 10:35:47.818 | DEBUG    | src.core.stream_processor:__init__:185 â€“ [Stream] Processor başlatıldı: queue=10000, workers=4
+2026-02-19 10:35:47.820 | DEBUG    | src.core.event_bus:_init_db:109 â€“ [EventStore] Bağlandı: C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\data\events.db
+2026-02-19 10:35:47.821 | DEBUG    | src.core.event_bus:__init__:250 â€“ [EventBus] Başlatıldı.
+2026-02-19 10:35:47.821 | DEBUG    | src.core.event_bus:__init__:351 â€“ [ReplayEngine] Hazır.
+2026-02-19 10:35:47.822 | INFO     | src.core.shadow_manager:_load_state:442 â€“ [Shadow] Durum yüklendi: 0 strateji.
+2026-02-19 10:35:47.823 | DEBUG    | src.core.shadow_manager:__init__:119 â€“ [Shadow] Manager başlatıldı.
+2026-02-19 10:35:47.823 | DEBUG    | src.utils.plot_animator:__init__:128 â€“ [PlotAnimator] Başlatıldı.
+2026-02-19 10:35:47.824 | DEBUG    | src.core.genetic_optimizer:load_config:330 â€“ [GA] config.json bulunamadı – varsayılan parametreler.
+2026-02-19 10:35:47.824 | SUCCESS  | __main__:_boot:630 â€“ Layer 4 hazÄ±r âœ“ (5.57s)
+2026-02-19 10:35:47.825 | INFO     | __main__:_boot:634 â€“ Layer 5 â€“ Ops & Interface baÅŸlatÄ±lÄ±yorâ€¦
+2026-02-19 10:35:47.825 | DEBUG    | src.utils.strategy_health_report:__init__:26 â€“ StrategyHealthReport başlatıldı.
+2026-02-19 10:35:47.825 | DEBUG    | src.utils.devils_advocate:__init__:50 â€“ DevilsAdvocate başlatıldı.
+2026-02-19 10:35:47.826 | DEBUG    | src.utils.threshold_controller:__init__:23 â€“ ThresholdController başlatıldı – EV>0.02, Güven>0.4, MaxStake=0.05
+2026-02-19 10:35:47.826 | DEBUG    | src.utils.auto_doc_generator:__init__:33 â€“ AutoDocGenerator başlatıldı.
+2026-02-19 10:35:47.826 | INFO     | src.core.workflow_orchestrator:__init__:492 â€“ [Orchestrator] Başlatıldı: retries=3, backoff=2.0x, prefect=✓
+2026-02-19 10:35:47.827 | DEBUG    | src.utils.podcast_producer:__init__:24 â€“ PodcastProducer başlatıldı.
+2026-02-19 10:35:47.827 | DEBUG    | src.utils.psycho_profiler:__init__:99 â€“ [Psycho] Profiler başlatıldı.
+2026-02-19 10:35:47.827 | DEBUG    | src.utils.query_assistant:__init__:230 â€“ [Query] Assistant başlatıldı.
+2026-02-19 10:35:47.828 | DEBUG    | src.utils.daily_briefing:__init__:157 â€“ [Briefing] Başlatıldı (backend=auto)
+2026-02-19 10:35:47.828 | DEBUG    | src.utils.decision_flow_gen:__init__:136 â€“ [FlowGen] Başlatıldı (graphviz=OK)
+2026-02-19 10:35:47.828 | DEBUG    | src.utils.agent_poll_system:__init__:138 â€“ [AgentPoll] Sistem başlatıldı: telegram=offline
+2026-02-19 10:35:47.828 | INFO     | __main__:_boot:745 â€“ [Orchestrator] 85 modÃ¼l kaydedildi.
+2026-02-19 10:35:47.828 | SUCCESS  | __main__:_boot:748 â€“ Layer 5 hazÄ±r âœ“ (0.00s)
+2026-02-19 10:35:50.371 | INFO     | src.memory.dvc_manager:snapshot:90 â€“ Snapshot oluşturuldu: boot (33142 dosya)
+2026-02-19 10:35:50.388 | INFO     | __main__:_boot:755 â€“ [Boot] TÃ¼m katmanlar 17.8 saniyede ayaÄŸa kalktÄ±
+2026-02-19 10:35:50.412 | DEBUG    | telegram._bot:__init__:333 â€“ Set Bot API URL: https://api.telegram.org/bot8210169379:AAGh0FPh-UHpsB6rEn62_ibk0vD1EkQF460
+2026-02-19 10:35:50.413 | DEBUG    | telegram._bot:__init__:334 â€“ Set Bot API File URL: https://api.telegram.org/file/bot8210169379:AAGh0FPh-UHpsB6rEn62_ibk0vD1EkQF460
+2026-02-19 10:35:50.791 | INFO     | src.ui.telegram_mini_app:_init_bot:55 â€“ TelegramNotifier hazır.
+2026-02-19 10:35:50.791 | DEBUG    | src.ui.telegram_chart_sender:__init__:69 â€“ TelegramChartSender başlatıldı.
+2026-02-19 10:35:50.792 | DEBUG    | src.ui.human_in_the_loop:__init__:73 â€“ HumanInTheLoop başlatıldı.
+2026-02-19 10:35:50.792 | DEBUG    | src.utils.telegram_live:__init__:62 â€“ TelegramLiveDashboard başlatıldı.
+2026-02-19 10:35:50.792 | DEBUG    | src.ingestion.data_sources:__init__:737 â€“ DataSourceAggregator baÅŸlatÄ±ldÄ± (Ã§ok sporlu).
+2026-02-19 10:35:50.792 | INFO     | __main__:_boot:787 â€“ [PreFetch] Boot sirasinda TUM SPORLAR verisi cekiliyor...
+2026-02-19 10:35:50.795 | INFO     | src.ingestion.metric_exporter:serve:61 â€“ Prometheus metrikleri → http://localhost:9090/metrics
+2026-02-19 10:35:50.795 | INFO     | src.ingestion.async_data_factory:run_live:352 â€“ Canlı veri fabrikası başlatıldı.
+2026-02-19 10:35:50.870 | INFO     | src.ingestion.api_hijacker:listen:114 â€“ [Hijack] Ağ dinleyici başlatılıyor…
+2026-02-19 10:35:50.870 | INFO     | src.ingestion.async_data_factory:run_prematch:333 â€“ Pre-match veri fabrikası başlatıldı.
+2026-02-19 10:35:51.310 | DEBUG    | src.ingestion.async_data_factory:_fetch_odds_api:122 â€“ Odds API key yok – atlanıyor.
+2026-02-19 10:35:51.311 | DEBUG    | src.ingestion.async_data_factory:_fetch_football_data:143 â€“ [FD.org] API key yok – Sofascore fallback'e geçiliyor.
+2026-02-19 10:35:53.894 | INFO     | src.ingestion.async_data_factory:_ensure_browser:113 â€“ Playwright tarayıcısı (yeniden) başlatıldı.
+2026-02-19 10:35:54.645 | DEBUG    | src.ingestion.data_sources:_log_status_once:377 â€“ [Sofascore] 403 https://api.sofascore.com/api/v1/sport/basketball/events/live
+2026-02-19 10:35:54.861 | DEBUG    | src.ingestion.data_sources:_log_status_once:377 â€“ [Sofascore] 403 https://api.sofascore.com/api/v1/sport/ice-hockey/scheduled-events/2026-02-19
+2026-02-19 10:35:55.153 | DEBUG    | src.ingestion.data_sources:_log_status_once:377 â€“ [Sofascore] 403 https://api.sofascore.com/api/v1/sport/handball/scheduled-events/2026-02-19
+2026-02-19 10:35:55.467 | DEBUG    | src.ingestion.data_sources:_log_status_once:377 â€“ [Sofascore] 403 https://api.sofascore.com/api/v1/sport/tennis/scheduled-events/2026-02-19
+2026-02-19 10:35:55.786 | DEBUG    | src.ingestion.data_sources:_log_status_once:377 â€“ [Sofascore] 403 https://api.sofascore.com/api/v1/sport/handball/events/live
+2026-02-19 10:35:56.072 | DEBUG    | src.ingestion.data_sources:_log_status_once:377 â€“ [Sofascore] 403 https://api.sofascore.com/api/v1/sport/basketball/scheduled-events/2026-02-19
+2026-02-19 10:35:56.313 | DEBUG    | src.ingestion.data_sources:_log_status_once:377 â€“ [Sofascore] 403 https://api.sofascore.com/api/v1/sport/football/events/live
+2026-02-19 10:35:56.580 | DEBUG    | src.ingestion.data_sources:_log_status_once:377 â€“ [Sofascore] 403 https://api.sofascore.com/api/v1/sport/football/scheduled-events/2026-02-19
+2026-02-19 10:35:56.844 | DEBUG    | src.ingestion.data_sources:_log_status_once:377 â€“ [Sofascore] 403 https://api.sofascore.com/api/v1/sport/volleyball/events/live
+2026-02-19 10:35:57.095 | DEBUG    | src.ingestion.data_sources:_log_status_once:377 â€“ [Sofascore] 403 https://api.sofascore.com/api/v1/sport/tennis/events/live
+2026-02-19 10:35:57.339 | DEBUG    | src.ingestion.data_sources:_log_status_once:377 â€“ [Sofascore] 403 https://api.sofascore.com/api/v1/sport/volleyball/scheduled-events/2026-02-19
+2026-02-19 10:35:57.639 | DEBUG    | src.ingestion.data_sources:_log_status_once:377 â€“ [Sofascore] 403 https://api.sofascore.com/api/v1/sport/ice-hockey/events/live
+2026-02-19 10:35:57.959 | DEBUG    | src.ingestion.api_hijacker:_on_websocket:251 â€“ [Hijack] WebSocket açıldı: sofascore → wss://ws.sofascore.com:9222/
+2026-02-19 10:35:58.356 | INFO     | src.ingestion.api_hijacker:_discover_endpoint:293 â€“ [Hijack] 🆕 Endpoint keşfedildi: https://www.sofascore.com/api/v1/sport/football/categories/all [other] (sofascore)
+2026-02-19 10:35:58.362 | INFO     | src.ingestion.api_hijacker:_discover_endpoint:293 â€“ [Hijack] 🆕 Endpoint keşfedildi: https://www.sofascore.com/api/v1/sport/football/trending-top-players [other] (sofascore)
+2026-02-19 10:35:58.364 | INFO     | src.ingestion.api_hijacker:_discover_endpoint:293 â€“ [Hijack] 🆕 Endpoint keşfedildi: https://www.sofascore.com/api/v1/event/newly-added-events [match_list] (sofascore)
+2026-02-19 10:35:58.368 | INFO     | src.ingestion.api_hijacker:_discover_endpoint:293 â€“ [Hijack] 🆕 Endpoint keşfedildi: https://www.sofascore.com/api/v1/odds/providers/TR/web [other] (sofascore)
+2026-02-19 10:35:58.383 | INFO     | src.ingestion.api_hijacker:_discover_endpoint:293 â€“ [Hijack] 🆕 Endpoint keşfedildi: https://www.sofascore.com/api/v1/sport/football/scheduled-events/*-02-19 [match_list] (sofascore)
+2026-02-19 10:35:58.425 | INFO     | src.ingestion.api_hijacker:_discover_endpoint:293 â€“ [Hijack] 🆕 Endpoint keşfedildi: https://www.sofascore.com/api/v1/odds/providers/TR/web-odds [other] (sofascore)
+2026-02-19 10:35:58.427 | INFO     | src.ingestion.api_hijacker:_discover_endpoint:293 â€“ [Hijack] 🆕 Endpoint keşfedildi: https://www.sofascore.com/api/v1/odds/*/featured-events/football [other] (sofascore)
+2026-02-19 10:35:58.431 | INFO     | src.ingestion.api_hijacker:_discover_endpoint:293 â€“ [Hijack] 🆕 Endpoint keşfedildi: https://www.sofascore.com/api/v1/odds/*/featured-events-by-popularity/football [other] (sofascore)
+2026-02-19 10:35:58.441 | INFO     | src.ingestion.api_hijacker:_discover_endpoint:293 â€“ [Hijack] 🆕 Endpoint keşfedildi: https://www.sofascore.com/api/v1/sport/football/odds/*/*-02-19 [odds] (sofascore)
+2026-02-19 10:35:58.452 | INFO     | src.ingestion.api_hijacker:_discover_endpoint:293 â€“ [Hijack] 🆕 Endpoint keşfedildi: https://www.sofascore.com/api/v1/odds/providers/TR/web-featured [other] (sofascore)
+2026-02-19 10:35:58.453 | INFO     | src.ingestion.api_hijacker:_discover_endpoint:293 â€“ [Hijack] 🆕 Endpoint keşfedildi: https://www.sofascore.com/api/v1/event/*/odds/*/featured [other] (sofascore)
+2026-02-19 10:35:58.457 | INFO     | src.ingestion.api_hijacker:_discover_endpoint:293 â€“ [Hijack] 🆕 Endpoint keşfedildi: https://www.sofascore.com/api/v1/event/* [other] (sofascore)
+2026-02-19 10:35:58.458 | INFO     | src.ingestion.api_hijacker:_discover_endpoint:293 â€“ [Hijack] 🆕 Endpoint keşfedildi: https://www.sofascore.com/api/v1/event/*/votes [other] (sofascore)
+2026-02-19 10:36:01.906 | INFO     | src.ingestion.async_data_factory:_scrape_flashscore:260 â€“ FlashScore: 23 maç tarandı.
+2026-02-19 10:36:02.104 | INFO     | src.ingestion.async_data_factory:run_live:358 â€“ FlashScore: 23 maç tarandı.
+2026-02-19 10:36:02.110 | DEBUG    | src.ingestion.data_sources:_log_status_once:377 â€“ [Sofascore] 403 https://www.sofascore.com/api/v1/sport/volleyball/events/live
+2026-02-19 10:36:02.358 | DEBUG    | src.ingestion.data_sources:_log_status_once:377 â€“ [Sofascore] 403 https://www.sofascore.com/api/v1/sport/basketball/scheduled-events/2026-02-19
+2026-02-19 10:36:02.544 | DEBUG    | src.ingestion.data_sources:_log_status_once:377 â€“ [Sofascore] 403 https://www.sofascore.com/api/v1/sport/football/events/live
+2026-02-19 10:36:02.707 | DEBUG    | src.ingestion.data_sources:_log_status_once:377 â€“ [Sofascore] 403 https://www.sofascore.com/api/v1/sport/handball/scheduled-events/2026-02-19
+2026-02-19 10:36:02.894 | DEBUG    | src.ingestion.data_sources:_log_status_once:377 â€“ [Sofascore] 403 https://www.sofascore.com/api/v1/sport/handball/events/live
+2026-02-19 10:36:03.071 | DEBUG    | src.ingestion.data_sources:_log_status_once:377 â€“ [Sofascore] 403 https://www.sofascore.com/api/v1/sport/basketball/events/live
+2026-02-19 10:36:03.242 | DEBUG    | src.ingestion.data_sources:_log_status_once:377 â€“ [Sofascore] 403 https://www.sofascore.com/api/v1/sport/football/scheduled-events/2026-02-19
+2026-02-19 10:36:03.436 | DEBUG    | src.ingestion.data_sources:_log_status_once:377 â€“ [Sofascore] 403 https://www.sofascore.com/api/v1/sport/volleyball/scheduled-events/2026-02-19
+2026-02-19 10:36:03.605 | DEBUG    | src.ingestion.data_sources:_log_status_once:377 â€“ [Sofascore] 403 https://www.sofascore.com/api/v1/sport/tennis/scheduled-events/2026-02-19
+2026-02-19 10:36:03.780 | DEBUG    | src.ingestion.data_sources:_log_status_once:377 â€“ [Sofascore] 403 https://www.sofascore.com/api/v1/sport/ice-hockey/events/live
+2026-02-19 10:36:03.972 | DEBUG    | src.ingestion.data_sources:_log_status_once:377 â€“ [Sofascore] 403 https://www.sofascore.com/api/v1/sport/ice-hockey/scheduled-events/2026-02-19
+2026-02-19 10:36:04.162 | DEBUG    | src.ingestion.data_sources:_log_status_once:377 â€“ [Sofascore] 403 https://www.sofascore.com/api/v1/sport/tennis/events/live
+2026-02-19 10:36:05.019 | INFO     | src.ingestion.data_sources:get_all_scheduled:508 â€“ [Sofascore] TÃ¼m sporlar: 0 etkinlik Ã§ekildi.
+2026-02-19 10:36:05.020 | INFO     | src.ingestion.data_sources:fetch_today:818 â€“ [Agg] BugÃ¼n tÃ¼m sporlar: 1 etkinlik (futbol + basketbol + diÄŸer) | providers={'APISportsProvider': 0, 'TheSportsDBProvider': 6, 'OpenLigaDBProvider': 0, 'OpenFootballProvider': 0, 'FootballDataOrgProvider': 0, 'SofascoreScheduled': 0, 'SofascoreLive': 0}
+2026-02-19 10:36:05.044 | SUCCESS  | __main__:_boot:816 â€“ [PreFetch] 1 etkinlik DB'ye eklendi (football=1)
+2026-02-19 10:36:05.045 | DEBUG    | src.ingestion.scraper_agent:__init__:497 â€“ ScraperAgent başlatıldı (Circuit Breaker korumalı).
+2026-02-19 10:36:05.045 | DEBUG    | src.ingestion.lineup_monitor:__init__:95 â€“ LineupMonitor başlatıldı.
+2026-02-19 10:36:05.047 | DEBUG    | src.utils.telegram_admin:__init__:68 â€“ TelegramAdmin başlatıldı (admin_id=8580…)
+2026-02-19 10:36:05.047 | DEBUG    | src.ui.telegram_mini_app:__init__:437 â€“ TelegramApp başlatıldı.
+2026-02-19 10:36:05.048 | DEBUG    | src.ingestion.voice_interrogator:__init__:31 â€“ VoiceInterrogator başlatıldı.
+2026-02-19 10:36:05.215 | INFO     | apscheduler.schedulers.base:add_job:507 â€“ Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2026-02-19 10:36:05.216 | INFO     | src.core.job_scheduler:add_cron:92 â€“ [Scheduler] Cron eklendi: fikstur_cek @ 11:0
+2026-02-19 10:36:05.216 | DEBUG    | tzlocal.win32:_get_localzone_name:55 â€“ Looking up time zone info from registry
+2026-02-19 10:36:05.217 | INFO     | apscheduler.schedulers.base:add_job:507 â€“ Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2026-02-19 10:36:05.217 | INFO     | src.core.job_scheduler:add_interval:122 â€“ [Scheduler] Interval eklendi: oran_kontrol her 600s
+2026-02-19 10:36:05.218 | INFO     | apscheduler.schedulers.base:add_job:507 â€“ Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2026-02-19 10:36:05.219 | INFO     | src.core.job_scheduler:add_cron:92 â€“ [Scheduler] Cron eklendi: gunluk_rapor @ 23:30
+2026-02-19 10:36:05.219 | INFO     | apscheduler.schedulers.base:add_job:507 â€“ Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2026-02-19 10:36:05.219 | INFO     | src.core.job_scheduler:add_cron:92 â€“ [Scheduler] Cron eklendi: lstm_train @ 3:0
+2026-02-19 10:36:05.220 | INFO     | apscheduler.schedulers.base:add_job:507 â€“ Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2026-02-19 10:36:05.220 | INFO     | src.core.job_scheduler:add_cron:92 â€“ [Scheduler] Cron eklendi: veri_topla @ 10:0
+2026-02-19 10:36:05.221 | INFO     | apscheduler.schedulers.base:add_job:507 â€“ Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2026-02-19 10:36:05.222 | INFO     | src.core.job_scheduler:add_cron:92 â€“ [Scheduler] Cron eklendi: prophet_cache_temizle @ 6:0
+2026-02-19 10:36:05.222 | INFO     | apscheduler.schedulers.base:add_job:507 â€“ Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2026-02-19 10:36:05.223 | INFO     | src.core.job_scheduler:add_cron:92 â€“ [Scheduler] Cron eklendi: rl_train @ 4:0
+2026-02-19 10:36:05.223 | INFO     | apscheduler.schedulers.base:add_job:507 â€“ Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2026-02-19 10:36:05.223 | INFO     | src.core.job_scheduler:add_cron:92 â€“ [Scheduler] Cron eklendi: gunluk_brifing @ 9:0
+2026-02-19 10:36:05.224 | INFO     | apscheduler.schedulers.base:add_job:507 â€“ Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2026-02-19 10:36:05.224 | INFO     | src.core.job_scheduler:add_cron:92 â€“ [Scheduler] Cron eklendi: log_rotate @ 2:0
+2026-02-19 10:36:05.224 | INFO     | src.ingestion.scraper_agent:run_all:508 â€“ ScraperAgent – tüm ajanlar başlatılıyor…
+2026-02-19 10:36:05.225 | INFO     | src.ingestion.lineup_monitor:watch:102 â€“ [Lineup] Kadro izleme başladı.
+2026-02-19 10:36:05.615 | DEBUG    | telegram._bot:__init__:333 â€“ Set Bot API URL: https://api.telegram.org/bot8210169379:AAGh0FPh-UHpsB6rEn62_ibk0vD1EkQF460
+2026-02-19 10:36:05.615 | DEBUG    | telegram._bot:__init__:334 â€“ Set Bot API File URL: https://api.telegram.org/file/bot8210169379:AAGh0FPh-UHpsB6rEn62_ibk0vD1EkQF460
+2026-02-19 10:36:05.616 | INFO     | src.ingestion.voice_interrogator:listen:89 â€“ VoiceInterrogator – dinleyici hazır (Telegram entegrasyonu bekliyor).
+2026-02-19 10:36:05.621 | INFO     | src.ui.webapp_server:start_webapp_async:548 â€“ [WebApp] TWA sunucu başlatıldı → http://0.0.0.0:8080
+2026-02-19 10:36:05.621 | INFO     | apscheduler.schedulers.base:_real_add_job:1090 â€“ Added job "fikstur_cek" to job store "default"
+2026-02-19 10:36:05.621 | INFO     | apscheduler.schedulers.base:_real_add_job:1090 â€“ Added job "oran_kontrol" to job store "default"
+2026-02-19 10:36:05.624 | INFO     | apscheduler.schedulers.base:_real_add_job:1090 â€“ Added job "gunluk_rapor" to job store "default"
+2026-02-19 10:36:05.625 | INFO     | apscheduler.schedulers.base:_real_add_job:1090 â€“ Added job "lstm_train" to job store "default"
+2026-02-19 10:36:05.625 | INFO     | apscheduler.schedulers.base:_real_add_job:1090 â€“ Added job "veri_topla" to job store "default"
+2026-02-19 10:36:05.626 | INFO     | apscheduler.schedulers.base:_real_add_job:1090 â€“ Added job "prophet_cache_temizle" to job store "default"
+2026-02-19 10:36:05.626 | INFO     | apscheduler.schedulers.base:_real_add_job:1090 â€“ Added job "rl_train" to job store "default"
+2026-02-19 10:36:05.626 | INFO     | apscheduler.schedulers.base:_real_add_job:1090 â€“ Added job "gunluk_brifing" to job store "default"
+2026-02-19 10:36:05.628 | INFO     | apscheduler.schedulers.base:_real_add_job:1090 â€“ Added job "log_rotate" to job store "default"
+2026-02-19 10:36:05.628 | INFO     | apscheduler.schedulers.base:start:214 â€“ Scheduler started
+2026-02-19 10:36:05.629 | SUCCESS  | src.core.job_scheduler:start:162 â€“ [Scheduler] Başlatıldı – 9 görev.
+2026-02-19 10:36:05.629 | INFO     | __main__:_analysis_loop:1178 â€“ â•â•â• Analiz DÃ¶ngÃ¼sÃ¼ #1 â•â•â•
+2026-02-19 10:36:05.632 | DEBUG    | __main__:_analysis_loop:1244 â€“ DoÄŸrulama: 24 maÃ§ geÃ§erli.
+2026-02-19 10:36:05.633 | INFO     | __main__:_analysis_loop:1250 â€“ [Perf] MaÃ§ seti 12 ile sÄ±nÄ±rlandÄ±rÄ±ldÄ±.
+2026-02-19 10:36:05.633 | DEBUG    | src.memory.feature_cache:get_or_compute:37 â€“ Cache MISS: features – hesaplanıyor…
+2026-02-19 10:36:05.822 | WARNING  | src.utils.super_logger:_loguru_showwarning:320 â€“ UserWarning: std(): degrees of freedom is [= 0. Correction should be strictly less than the reduction factor (input numel divided by output numel). (Triggered internally at C:\actions-runner\_work\pytorch\pytorch\pytorch\aten\src\ATen\native\ReduceOps.cpp:1857.) (C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\kan\MultKAN.py:813)
+2026-02-19 10:36:05.824 | WARNING  | src.utils.super_logger:_loguru_showwarning:320 â€“ UserWarning: std(): degrees of freedom is [= 0. Correction should be strictly less than the reduction factor (input numel divided by output numel). (Triggered internally at C:\actions-runner\_work\pytorch\pytorch\pytorch\aten\src\ATen\native\ReduceOps.cpp:1857.) (C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\kan\MultKAN.py:823)
+2026-02-19 10:36:05.824 | WARNING  | src.utils.super_logger:_loguru_showwarning:320 â€“ UserWarning: std(): degrees of freedom is [= 0. Correction should be strictly less than the reduction factor (input numel divided by output numel). (Triggered internally at C:\actions-runner\_work\pytorch\pytorch\pytorch\aten\src\ATen\native\ReduceOps.cpp:1857.) (C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\kan\MultKAN.py:824)
+2026-02-19 10:36:05.825 | WARNING  | src.utils.super_logger:_loguru_showwarning:320 â€“ UserWarning: std(): degrees of freedom is [= 0. Correction should be strictly less than the reduction factor (input numel divided by output numel). (Triggered internally at C:\actions-runner\_work\pytorch\pytorch\pytorch\aten\src\ATen\native\ReduceOps.cpp:1857.) (C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\kan\MultKAN.py:825)
+2026-02-19 10:36:06.086 | DEBUG    | src.quant.bayesian_hierarchical:_get_or_create_team:96 â€“ Yeni takım prior: Rizespor (lig ortalaması)
+2026-02-19 10:36:06.087 | DEBUG    | src.quant.bayesian_hierarchical:_get_or_create_team:96 â€“ Yeni takım prior: Kocaelispor (lig ortalaması)
+2026-02-19 10:36:06.100 | DEBUG    | __main__:_analysis_loop:1298 â€“ [Bayesian] Rizespor: prior aÄŸÄ±rlÄ±klÄ± (shrinkage=1.00, n=0)
+2026-02-19 10:36:06.100 | DEBUG    | src.quant.bayesian_hierarchical:_get_or_create_team:96 â€“ Yeni takım prior: Eyüpspor (lig ortalaması)
+2026-02-19 10:36:06.101 | DEBUG    | src.quant.bayesian_hierarchical:_get_or_create_team:96 â€“ Yeni takım prior: Gençlerbirliği (lig ortalaması)
+2026-02-19 10:36:06.113 | DEBUG    | __main__:_analysis_loop:1298 â€“ [Bayesian] Eyüpspor: prior aÄŸÄ±rlÄ±klÄ± (shrinkage=1.00, n=0)
+2026-02-19 10:36:06.114 | DEBUG    | src.quant.bayesian_hierarchical:_get_or_create_team:96 â€“ Yeni takım prior: Alanyaspor (lig ortalaması)
+2026-02-19 10:36:06.114 | DEBUG    | src.quant.bayesian_hierarchical:_get_or_create_team:96 â€“ Yeni takım prior: Başakşehir (lig ortalaması)
+2026-02-19 10:36:06.120 | DEBUG    | __main__:_analysis_loop:1298 â€“ [Bayesian] Alanyaspor: prior aÄŸÄ±rlÄ±klÄ± (shrinkage=1.00, n=0)
+2026-02-19 10:36:06.120 | DEBUG    | src.quant.bayesian_hierarchical:_get_or_create_team:96 â€“ Yeni takım prior: Konyaspor (lig ortalaması)
+2026-02-19 10:36:06.120 | DEBUG    | src.quant.bayesian_hierarchical:_get_or_create_team:96 â€“ Yeni takım prior: Galatasaray (lig ortalaması)
+2026-02-19 10:36:06.139 | DEBUG    | __main__:_analysis_loop:1298 â€“ [Bayesian] Konyaspor: prior aÄŸÄ±rlÄ±klÄ± (shrinkage=1.00, n=0)
+2026-02-19 10:36:06.139 | DEBUG    | src.quant.bayesian_hierarchical:_get_or_create_team:96 â€“ Yeni takım prior: Kayserispor (lig ortalaması)
+2026-02-19 10:36:06.140 | DEBUG    | src.quant.bayesian_hierarchical:_get_or_create_team:96 â€“ Yeni takım prior: Antalyaspor (lig ortalaması)
+2026-02-19 10:36:06.152 | DEBUG    | __main__:_analysis_loop:1298 â€“ [Bayesian] Kayserispor: prior aÄŸÄ±rlÄ±klÄ± (shrinkage=1.00, n=0)
+2026-02-19 10:36:06.153 | DEBUG    | src.quant.bayesian_hierarchical:_get_or_create_team:96 â€“ Yeni takım prior: Gaziantep FK (lig ortalaması)
+2026-02-19 10:36:06.153 | DEBUG    | src.quant.bayesian_hierarchical:_get_or_create_team:96 â€“ Yeni takım prior: Trabzonspor (lig ortalaması)
+2026-02-19 10:36:06.165 | DEBUG    | __main__:_analysis_loop:1298 â€“ [Bayesian] Gaziantep FK: prior aÄŸÄ±rlÄ±klÄ± (shrinkage=1.00, n=0)
+2026-02-19 10:36:06.165 | DEBUG    | src.quant.bayesian_hierarchical:_get_or_create_team:96 â€“ Yeni takım prior: Beşiktaş (lig ortalaması)
+2026-02-19 10:36:06.166 | DEBUG    | src.quant.bayesian_hierarchical:_get_or_create_team:96 â€“ Yeni takım prior: Göztepe (lig ortalaması)
+2026-02-19 10:36:06.175 | DEBUG    | __main__:_analysis_loop:1298 â€“ [Bayesian] Beşiktaş: prior aÄŸÄ±rlÄ±klÄ± (shrinkage=1.00, n=0)
+2026-02-19 10:36:06.175 | DEBUG    | src.quant.bayesian_hierarchical:_get_or_create_team:96 â€“ Yeni takım prior: Karagümrük (lig ortalaması)
+2026-02-19 10:36:06.175 | DEBUG    | src.quant.bayesian_hierarchical:_get_or_create_team:96 â€“ Yeni takım prior: Samsunspor (lig ortalaması)
+2026-02-19 10:36:06.191 | DEBUG    | __main__:_analysis_loop:1298 â€“ [Bayesian] Karagümrük: prior aÄŸÄ±rlÄ±klÄ± (shrinkage=1.00, n=0)
+2026-02-19 10:36:06.191 | DEBUG    | src.quant.bayesian_hierarchical:_get_or_create_team:96 â€“ Yeni takım prior: Fenerbahçe (lig ortalaması)
+2026-02-19 10:36:06.191 | DEBUG    | src.quant.bayesian_hierarchical:_get_or_create_team:96 â€“ Yeni takım prior: Kasımpaşa (lig ortalaması)
+2026-02-19 10:36:06.204 | DEBUG    | __main__:_analysis_loop:1298 â€“ [Bayesian] Fenerbahçe: prior aÄŸÄ±rlÄ±klÄ± (shrinkage=1.00, n=0)
+2026-02-19 10:36:06.216 | DEBUG    | __main__:_analysis_loop:1298 â€“ [Bayesian] Başakşehir: prior aÄŸÄ±rlÄ±klÄ± (shrinkage=1.00, n=0)
+2026-02-19 10:36:06.227 | DEBUG    | __main__:_analysis_loop:1298 â€“ [Bayesian] Trabzonspor: prior aÄŸÄ±rlÄ±klÄ± (shrinkage=1.00, n=0)
+2026-02-19 10:36:06.237 | DEBUG    | __main__:_analysis_loop:1298 â€“ [Bayesian] Kasımpaşa: prior aÄŸÄ±rlÄ±klÄ± (shrinkage=1.00, n=0)
+2026-02-19 10:36:06.969 | WARNING  | src.utils.super_logger:_loguru_showwarning:320 â€“ DeprecationWarning: websockets.legacy is deprecated; see https://websockets.readthedocs.io/en/stable/howto/upgrade.html for upgrade instructions (C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\websockets\legacy\__init__.py:6)
+2026-02-19 10:36:06.976 | WARNING  | src.utils.super_logger:_loguru_showwarning:320 â€“ DeprecationWarning: websockets.server.WebSocketServerProtocol is deprecated (C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\uvicorn\protocols\websockets\websockets_impl.py:17)
+2026-02-19 10:36:06.981 | DEBUG    | apscheduler.schedulers.base:_process_jobs:1151 â€“ Looking for jobs to run
+2026-02-19 10:36:06.982 | DEBUG    | apscheduler.schedulers.base:_process_jobs:1258 â€“ Next wakeup is due at 2026-02-19 10:46:05.217685+03:00 (in 598.235205 seconds)
+2026-02-19 10:36:10.350 | DEBUG    | telegram._bot:_do_post:731 â€“ Calling Bot API endpoint `getMe` with parameters `{}`
+2026-02-19 10:36:10.424 | DEBUG    | src.ingestion.scraper_agent:_fetch:88 â€“ [Mackolik] https://www.mackolik.com/canli-sonuclar… → 200
+2026-02-19 10:36:10.424 | DEBUG    | src.ingestion.scraper_agent:_fetch_first_ok:135 â€“ [Mackolik] Çalışan URL: https://www.mackolik.com/canli-sonuclar
+2026-02-19 10:36:10.446 | INFO     | src.ingestion.scraper_agent:scrape_fixtures:181 â€“ [Mackolik] 0 maç çekildi.
+2026-02-19 10:36:10.566 | DEBUG    | telegram._bot:_do_post:740 â€“ Call to Bot API endpoint `getMe` finished with return value `{'id': 8210169379, 'is_bot': True, 'first_name': 'Bahis', 'username': 'Aybahisbot', 'can_join_groups': True, 'can_read_all_group_messages': False, 'supports_inline_queries': False, 'can_connect_to_business': False, 'has_main_web_app': False, 'has_topics_enabled': False, 'allows_users_to_create_topics': False}`
+2026-02-19 10:36:10.567 | DEBUG    | telegram._bot:initialize:844 â€“ This Bot is already initialized.
+2026-02-19 10:36:10.567 | INFO     | apscheduler.schedulers.base:start:214 â€“ Scheduler started
+2026-02-19 10:36:10.568 | DEBUG    | telegram.ext._application:start:628 â€“ JobQueue started
+2026-02-19 10:36:10.568 | INFO     | telegram.ext._application:start:633 â€“ Application started
+2026-02-19 10:36:10.569 | DEBUG    | telegram.ext._updater:_start_polling:324 â€“ Updater started (polling)
+2026-02-19 10:36:10.569 | DEBUG    | telegram.ext._utils.networkloop:network_retry_loop:156 â€“ Network Retry Loop (Bootstrap delete Webhook): Starting
+2026-02-19 10:36:10.570 | DEBUG    | telegram.ext._updater:bootstrap_del_webhook:683 â€“ Deleting webhook
+2026-02-19 10:36:10.571 | DEBUG    | telegram._bot:_do_post:731 â€“ Calling Bot API endpoint `deleteWebhook` with parameters `{}`
+2026-02-19 10:36:10.572 | DEBUG    | apscheduler.schedulers.base:_process_jobs:1151 â€“ Looking for jobs to run
+2026-02-19 10:36:10.572 | DEBUG    | apscheduler.schedulers.base:_process_jobs:1252 â€“ No jobs; waiting until a job is added
+2026-02-19 10:36:10.631 | DEBUG    | telegram._bot:_do_post:740 â€“ Call to Bot API endpoint `deleteWebhook` finished with return value `True`
+2026-02-19 10:36:10.632 | DEBUG    | telegram.ext._utils.networkloop:network_retry_loop:163 â€“ Network Retry Loop (Bootstrap delete Webhook): Action succeeded. Stopping loop.
+2026-02-19 10:36:10.632 | DEBUG    | telegram.ext._updater:_start_polling:336 â€“ Bootstrap done
+2026-02-19 10:36:10.632 | DEBUG    | telegram.ext._updater:start_polling:306 â€“ Waiting for polling to start
+2026-02-19 10:36:10.633 | DEBUG    | telegram.ext._updater:start_polling:308 â€“ Polling updates from Telegram started
+2026-02-19 10:36:10.633 | INFO     | src.ui.telegram_mini_app:start:480 â€“ Telegram bot başlatıldı.
+2026-02-19 10:36:10.634 | DEBUG    | telegram.ext._utils.networkloop:network_retry_loop:156 â€“ Network Retry Loop (Polling Updates): Starting
+2026-02-19 10:36:10.635 | DEBUG    | telegram._bot:_do_post:731 â€“ Calling Bot API endpoint `getUpdates` with parameters `{'timeout': datetime.timedelta(seconds=10), 'offset': 0}`
+2026-02-19 10:36:13.394 | DEBUG    | src.ingestion.news_rag:_fetch_news:173 â€“ [RAG] Rizespor: 5 haber toplandı.
+2026-02-19 10:36:13.669 | DEBUG    | src.ingestion.news_rag:_fetch_news:173 â€“ [RAG] Kocaelispor: 5 haber toplandı.
+2026-02-19 10:36:15.289 | DEBUG    | src.ingestion.scraper_agent:scrape_live:289 â€“ [Sofascore] football API yanıtı: 403
+2026-02-19 10:36:19.591 | DEBUG    | src.ingestion.scraper_agent:_fetch:88 â€“ [Mackolik] https://www.mackolik.com/iddaa… → 200
+2026-02-19 10:36:19.597 | DEBUG    | src.ingestion.scraper_agent:_fetch_first_ok:135 â€“ [Mackolik] Çalışan URL: https://www.mackolik.com/iddaa
+2026-02-19 10:36:19.758 | INFO     | src.ingestion.scraper_agent:scrape_odds:223 â€“ [Mackolik] 0 oran çekildi.
+2026-02-19 10:36:19.779 | DEBUG    | src.ingestion.news_rag:_fetch_news:173 â€“ [RAG] Eyüpspor: 5 haber toplandı.
+2026-02-19 10:36:19.789 | DEBUG    | src.ingestion.news_rag:_fetch_news:173 â€“ [RAG] Gençlerbirliği: 5 haber toplandı.
+2026-02-19 10:36:20.990 | DEBUG    | telegram._bot:_do_post:740 â€“ Call to Bot API endpoint `getUpdates` finished with return value `[]`
+2026-02-19 10:36:20.991 | DEBUG    | telegram._bot:get_updates:4874 â€“ No new updates found.
+2026-02-19 10:36:20.992 | DEBUG    | telegram._bot:_do_post:731 â€“ Calling Bot API endpoint `getUpdates` with parameters `{'timeout': datetime.timedelta(seconds=10), 'offset': 0}`
+2026-02-19 10:36:21.649 | INFO     | src.ingestion.data_sources:get_all_scheduled:508 â€“ [Sofascore] TÃ¼m sporlar: 0 etkinlik Ã§ekildi.
+2026-02-19 10:36:21.650 | INFO     | src.ingestion.data_sources:fetch_today:818 â€“ [Agg] BugÃ¼n tÃ¼m sporlar: 1 etkinlik (futbol + basketbol + diÄŸer) | providers={'APISportsProvider': 0, 'TheSportsDBProvider': 6, 'OpenLigaDBProvider': 0, 'OpenFootballProvider': 0, 'FootballDataOrgProvider': 0, 'SofascoreScheduled': 0, 'SofascoreLive': 0}
+2026-02-19 10:36:21.650 | INFO     | __main__:_multisport_refresh_loop:855 â€“ [MultiSport] 1 etkinlik gÃ¼ncellendi.
+2026-02-19 10:36:22.214 | DEBUG    | src.ingestion.scraper_agent:scrape_live:289 â€“ [Sofascore] basketball API yanıtı: 403
+2026-02-19 10:36:22.305 | DEBUG    | src.ingestion.news_rag:_fetch_news:173 â€“ [RAG] Başakşehir: 5 haber toplandı.
+2026-02-19 10:36:22.536 | DEBUG    | src.ingestion.news_rag:_fetch_news:173 â€“ [RAG] Alanyaspor: 5 haber toplandı.
+2026-02-19 10:36:24.059 | WARNING  | src.ingestion.api_hijacker:listen:162 â€“ [Hijack] ✗ sofascore bağlanamadı: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://www.sofascore.com/football", waiting until "networkidle"
+
+2026-02-19 10:36:24.716 | DEBUG    | src.ingestion.news_rag:_fetch_news:173 â€“ [RAG] Galatasaray: 5 haber toplandı.
+2026-02-19 10:36:24.744 | DEBUG    | src.ingestion.news_rag:_fetch_news:173 â€“ [RAG] Konyaspor: 5 haber toplandı.
+2026-02-19 10:36:26.647 | DEBUG    | src.ingestion.api_hijacker:_on_websocket:251 â€“ [Hijack] WebSocket açıldı: sofascore_basketball → wss://ws.sofascore.com:9222/
+2026-02-19 10:36:26.805 | DEBUG    | src.ingestion.news_rag:_fetch_news:173 â€“ [RAG] Kayserispor: 5 haber toplandı.
+2026-02-19 10:36:26.949 | DEBUG    | src.ingestion.news_rag:_fetch_news:173 â€“ [RAG] Antalyaspor: 5 haber toplandı.
+2026-02-19 10:36:28.153 | DEBUG    | src.ingestion.scraper_agent:scrape_live:289 â€“ [Sofascore] tennis API yanıtı: 403
+2026-02-19 10:36:28.824 | INFO     | src.ingestion.api_hijacker:_discover_endpoint:293 â€“ [Hijack] 🆕 Endpoint keşfedildi: https://www.sofascore.com/api/v1/odds/*/featured-events-by-popularity/basketball [other] (sofascore_basketball)
+2026-02-19 10:36:28.827 | INFO     | src.ingestion.api_hijacker:_discover_endpoint:293 â€“ [Hijack] 🆕 Endpoint keşfedildi: https://www.sofascore.com/api/v1/odds/*/featured-events/basketball [other] (sofascore_basketball)
+2026-02-19 10:36:29.339 | DEBUG    | src.ingestion.news_rag:_fetch_news:173 â€“ [RAG] Trabzonspor: 5 haber toplandı.
+2026-02-19 10:36:29.531 | DEBUG    | src.ingestion.news_rag:_fetch_news:173 â€“ [RAG] Gaziantep FK: 5 haber toplandı.
+2026-02-19 10:36:31.061 | DEBUG    | telegram._bot:_do_post:740 â€“ Call to Bot API endpoint `getUpdates` finished with return value `[]`
+2026-02-19 10:36:31.062 | DEBUG    | telegram._bot:get_updates:4874 â€“ No new updates found.
+2026-02-19 10:36:31.062 | DEBUG    | telegram._bot:_do_post:731 â€“ Calling Bot API endpoint `getUpdates` with parameters `{'timeout': datetime.timedelta(seconds=10), 'offset': 0}`
+2026-02-19 10:36:31.561 | DEBUG    | src.ingestion.news_rag:_fetch_news:173 â€“ [RAG] Beşiktaş: 5 haber toplandı.
+2026-02-19 10:36:31.637 | DEBUG    | src.ingestion.news_rag:_fetch_news:173 â€“ [RAG] Göztepe: 5 haber toplandı.
+2026-02-19 10:36:33.545 | DEBUG    | src.ingestion.scraper_agent:scrape_live:289 â€“ [Sofascore] volleyball API yanıtı: 403
+2026-02-19 10:36:34.015 | DEBUG    | src.ingestion.news_rag:_fetch_news:173 â€“ [RAG] Samsunspor: 5 haber toplandı.
+2026-02-19 10:36:34.274 | DEBUG    | src.ingestion.news_rag:_fetch_news:173 â€“ [RAG] Karagümrük: 5 haber toplandı.
+2026-02-19 10:36:36.270 | DEBUG    | src.ingestion.news_rag:_fetch_news:173 â€“ [RAG] Kasımpaşa: 5 haber toplandı.
+2026-02-19 10:36:36.348 | DEBUG    | src.ingestion.news_rag:_fetch_news:173 â€“ [RAG] Fenerbahçe: 5 haber toplandı.
+2026-02-19 10:36:36.349 | INFO     | __main__:_analysis_loop:1393 â€“ [Prophet] Rizespor vs Kocaelispor: Mevsimsel anomali yok.
+2026-02-19 10:36:36.349 | INFO     | __main__:_analysis_loop:1393 â€“ [Prophet] Eyüpspor vs Gençlerbirliği: Mevsimsel anomali yok.
+2026-02-19 10:36:36.350 | INFO     | __main__:_analysis_loop:1393 â€“ [Prophet] Alanyaspor vs Başakşehir: Mevsimsel anomali yok.
+2026-02-19 10:36:36.350 | INFO     | __main__:_analysis_loop:1393 â€“ [Prophet] Konyaspor vs Galatasaray: Mevsimsel anomali yok.
+2026-02-19 10:36:36.350 | INFO     | __main__:_analysis_loop:1393 â€“ [Prophet] Kayserispor vs Antalyaspor: Mevsimsel anomali yok.
+2026-02-19 10:36:36.351 | INFO     | __main__:_analysis_loop:1393 â€“ [Prophet] Gaziantep FK vs Trabzonspor: Mevsimsel anomali yok.
+2026-02-19 10:36:36.351 | INFO     | __main__:_analysis_loop:1393 â€“ [Prophet] Beşiktaş vs Göztepe: Mevsimsel anomali yok.
+2026-02-19 10:36:36.351 | INFO     | __main__:_analysis_loop:1393 â€“ [Prophet] Karagümrük vs Samsunspor: Mevsimsel anomali yok.
+2026-02-19 10:36:36.353 | INFO     | __main__:_analysis_loop:1393 â€“ [Prophet] Fenerbahçe vs Kasımpaşa: Mevsimsel anomali yok.
+2026-02-19 10:36:36.353 | INFO     | __main__:_analysis_loop:1393 â€“ [Prophet] Başakşehir vs Konyaspor: Mevsimsel anomali yok.
+2026-02-19 10:36:36.353 | INFO     | __main__:_analysis_loop:1393 â€“ [Prophet] Trabzonspor vs Karagümrük: Mevsimsel anomali yok.
+2026-02-19 10:36:36.354 | INFO     | __main__:_analysis_loop:1393 â€“ [Prophet] Kasımpaşa vs Karagümrük: Mevsimsel anomali yok.
+2026-02-19 10:36:36.354 | INFO     | __main__:_analysis_loop:1432 â€“ [Vector] Eyüpspor vs Gençlerbirliği: Tarihsel benzerlik â†’ D (100%), Ãœ2.5: 0%
+2026-02-19 10:36:36.356 | INFO     | __main__:_analysis_loop:1432 â€“ [Vector] Alanyaspor vs Başakşehir: Tarihsel benzerlik â†’ D (100%), Ãœ2.5: 0%
+2026-02-19 10:36:36.356 | INFO     | __main__:_analysis_loop:1432 â€“ [Vector] Konyaspor vs Galatasaray: Tarihsel benzerlik â†’ D (100%), Ãœ2.5: 0%
+2026-02-19 10:36:36.356 | INFO     | __main__:_analysis_loop:1432 â€“ [Vector] Kayserispor vs Antalyaspor: Tarihsel benzerlik â†’ D (100%), Ãœ2.5: 0%
+2026-02-19 10:36:36.356 | INFO     | __main__:_analysis_loop:1432 â€“ [Vector] Gaziantep FK vs Trabzonspor: Tarihsel benzerlik â†’ D (100%), Ãœ2.5: 0%
+2026-02-19 10:36:36.357 | INFO     | __main__:_analysis_loop:1432 â€“ [Vector] Beşiktaş vs Göztepe: Tarihsel benzerlik â†’ D (100%), Ãœ2.5: 0%
+2026-02-19 10:36:36.357 | INFO     | __main__:_analysis_loop:1432 â€“ [Vector] Karagümrük vs Samsunspor: Tarihsel benzerlik â†’ D (100%), Ãœ2.5: 0%
+2026-02-19 10:36:36.357 | INFO     | __main__:_analysis_loop:1432 â€“ [Vector] Fenerbahçe vs Kasımpaşa: Tarihsel benzerlik â†’ D (100%), Ãœ2.5: 0%
+2026-02-19 10:36:36.359 | INFO     | __main__:_analysis_loop:1432 â€“ [Vector] Başakşehir vs Konyaspor: Tarihsel benzerlik â†’ D (100%), Ãœ2.5: 0%
+2026-02-19 10:36:36.359 | INFO     | __main__:_analysis_loop:1432 â€“ [Vector] Trabzonspor vs Karagümrük: Tarihsel benzerlik â†’ D (100%), Ãœ2.5: 0%
+2026-02-19 10:36:36.359 | INFO     | __main__:_analysis_loop:1432 â€“ [Vector] Kasımpaşa vs Karagümrük: Tarihsel benzerlik â†’ D (100%), Ãœ2.5: 0%
+2026-02-19 10:36:39.778 | INFO     | __main__:_analysis_loop:1590 â€“ [Twin] Rizespor vs Kocaelispor: H=16% D=70% A=14% (skor=0-0, Ãœ2.5=0%)
+2026-02-19 10:36:40.166 | INFO     | __main__:_analysis_loop:1590 â€“ [Twin] Eyüpspor vs Gençlerbirliği: H=20% D=68% A=12% (skor=0-0, Ãœ2.5=0%)
+2026-02-19 10:36:40.553 | INFO     | __main__:_analysis_loop:1590 â€“ [Twin] Alanyaspor vs Başakşehir: H=14% D=72% A=14% (skor=0-0, Ãœ2.5=0%)
+2026-02-19 10:36:40.955 | INFO     | __main__:_analysis_loop:1590 â€“ [Twin] Konyaspor vs Galatasaray: H=12% D=74% A=14% (skor=0-0, Ãœ2.5=0%)
+2026-02-19 10:36:41.366 | INFO     | __main__:_analysis_loop:1590 â€“ [Twin] Kayserispor vs Antalyaspor: H=15% D=70% A=15% (skor=0-0, Ãœ2.5=0%)
+2026-02-19 10:36:41.801 | INFO     | __main__:_analysis_loop:1590 â€“ [Twin] Gaziantep FK vs Trabzonspor: H=11% D=74% A=15% (skor=0-0, Ãœ2.5=0%)
+2026-02-19 10:36:42.193 | INFO     | __main__:_analysis_loop:1590 â€“ [Twin] Beşiktaş vs Göztepe: H=16% D=72% A=12% (skor=0-0, Ãœ2.5=1%)
+2026-02-19 10:36:42.591 | INFO     | __main__:_analysis_loop:1590 â€“ [Twin] Karagümrük vs Samsunspor: H=9% D=76% A=15% (skor=0-0, Ãœ2.5=0%)
+2026-02-19 10:36:43.000 | INFO     | __main__:_analysis_loop:1590 â€“ [Twin] Fenerbahçe vs Kasımpaşa: H=7% D=75% A=18% (skor=0-0, Ãœ2.5=0%)
+2026-02-19 10:36:43.446 | INFO     | __main__:_analysis_loop:1590 â€“ [Twin] Başakşehir vs Konyaspor: H=10% D=77% A=12% (skor=0-0, Ãœ2.5=0%)
+2026-02-19 10:36:43.875 | INFO     | __main__:_analysis_loop:1590 â€“ [Twin] Trabzonspor vs Karagümrük: H=18% D=72% A=10% (skor=0-0, Ãœ2.5=1%)
+2026-02-19 10:36:44.269 | INFO     | __main__:_analysis_loop:1590 â€“ [Twin] Kasımpaşa vs Karagümrük: H=14% D=78% A=9% (skor=0-0, Ãœ2.5=0%)
+2026-02-19 10:36:44.463 | INFO     | src.ingestion.api_hijacker:listen:157 â€“ [Hijack] ✓ Dinleniyor: sofascore_basketball (https://www.sofascore.com/basketball)
+2026-02-19 10:36:44.466 | DEBUG    | telegram._bot:_do_post:740 â€“ Call to Bot API endpoint `getUpdates` finished with return value `[]`
+2026-02-19 10:36:44.467 | DEBUG    | telegram._bot:get_updates:4874 â€“ No new updates found.
+2026-02-19 10:36:44.469 | DEBUG    | telegram._bot:_do_post:731 â€“ Calling Bot API endpoint `getUpdates` with parameters `{'timeout': datetime.timedelta(seconds=10), 'offset': 0}`
+2026-02-19 10:36:44.941 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Rizespor: 0.11 (20 haber)
+2026-02-19 10:36:45.188 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Kocaelispor: 0.10 (20 haber)
+2026-02-19 10:36:46.007 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Gençlerbirliği: 0.02 (20 haber)
+2026-02-19 10:36:46.036 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Eyüpspor: 0.04 (20 haber)
+2026-02-19 10:38:32.839 | DEBUG    | telegram._bot:_do_post:740 â€“ Call to Bot API endpoint `getUpdates` finished with return value `[]`
+2026-02-19 10:38:32.840 | DEBUG    | telegram._bot:get_updates:4874 â€“ No new updates found.
+2026-02-19 10:38:32.841 | DEBUG    | src.ingestion.scraper_agent:scrape_live:289 â€“ [Sofascore] handball API yanıtı: 403
+2026-02-19 10:38:32.842 | DEBUG    | telegram._bot:_do_post:731 â€“ Calling Bot API endpoint `getUpdates` with parameters `{'timeout': datetime.timedelta(seconds=10), 'offset': 0}`
+2026-02-19 10:38:32.849 | WARNING  | src.ingestion.api_hijacker:listen:162 â€“ [Hijack] ✗ sofascore_tennis bağlanamadı: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://www.sofascore.com/tennis", waiting until "networkidle"
+
+2026-02-19 10:38:33.389 | DEBUG    | src.ingestion.api_hijacker:_on_websocket:251 â€“ [Hijack] WebSocket açıldı: sofascore_tennis → wss://ws.sofascore.com:9222/
+2026-02-19 10:38:34.019 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Başakşehir: 0.03 (20 haber)
+2026-02-19 10:38:34.091 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Alanyaspor: 0.11 (20 haber)
+2026-02-19 10:38:34.988 | INFO     | src.ingestion.api_hijacker:_discover_endpoint:293 â€“ [Hijack] 🆕 Endpoint keşfedildi: https://www.sofascore.com/api/v1/odds/*/featured-events/tennis [other] (sofascore_tennis)
+2026-02-19 10:38:34.992 | INFO     | src.ingestion.api_hijacker:_discover_endpoint:293 â€“ [Hijack] 🆕 Endpoint keşfedildi: https://www.sofascore.com/api/v1/odds/*/featured-events-by-popularity/tennis [other] (sofascore_tennis)
+2026-02-19 10:38:34.994 | INFO     | src.ingestion.api_hijacker:_discover_endpoint:293 â€“ [Hijack] 🆕 Endpoint keşfedildi: https://www.sofascore.com/api/v1/event/*/odds/*/all [other] (sofascore_tennis)
+2026-02-19 10:38:35.176 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Konyaspor: 0.05 (20 haber)
+2026-02-19 10:38:35.249 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Galatasaray: 0.04 (20 haber)
+2026-02-19 10:38:36.308 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Antalyaspor: 0.06 (20 haber)
+2026-02-19 10:38:36.333 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Kayserispor: 0.03 (20 haber)
+2026-02-19 10:38:37.335 | DEBUG    | src.ingestion.scraper_agent:scrape_live:289 â€“ [Sofascore] ice-hockey API yanıtı: 403
+2026-02-19 10:38:37.536 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Gaziantep FK: 0.05 (20 haber)
+2026-02-19 10:38:37.590 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Trabzonspor: 0.04 (20 haber)
+2026-02-19 10:38:38.155 | DEBUG    | src.ingestion.api_hijacker:_on_websocket:251 â€“ [Hijack] WebSocket açıldı: flashscore → wss://p8tt2.fsdatacentre.com/WebSocketConnection-Secure
+2026-02-19 10:38:38.507 | INFO     | src.ingestion.async_data_factory:_scrape_flashscore:260 â€“ FlashScore: 23 maç tarandı.
+2026-02-19 10:38:38.552 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Beşiktaş: 0.03 (20 haber)
+2026-02-19 10:38:38.752 | INFO     | src.ingestion.async_data_factory:run_live:358 â€“ FlashScore: 23 maç tarandı.
+2026-02-19 10:38:38.762 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Göztepe: 0.04 (20 haber)
+2026-02-19 10:38:39.760 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Karagümrük: 0.10 (20 haber)
+2026-02-19 10:38:39.788 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Samsunspor: 0.04 (20 haber)
+2026-02-19 10:38:40.674 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Kasımpaşa: 0.05 (20 haber)
+2026-02-19 10:38:40.802 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Fenerbahçe: 0.03 (20 haber)
+2026-02-19 10:38:41.299 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Konyaspor: 0.05 (20 haber)
+2026-02-19 10:38:41.309 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Başakşehir: 0.03 (20 haber)
+2026-02-19 10:38:41.786 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Karagümrük: 0.10 (20 haber)
+2026-02-19 10:38:41.798 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Trabzonspor: 0.04 (20 haber)
+2026-02-19 10:38:42.269 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Karagümrük: 0.10 (20 haber)
+2026-02-19 10:38:42.284 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Kasımpaşa: 0.05 (20 haber)
+2026-02-19 10:40:39.113 | INFO     | src.core.black_litterman_optimizer:optimize:70 â€“ BL optimizasyonu tamamlandı – toplam ağırlık: 0.2000
+2026-02-19 10:40:39.114 | INFO     | src.core.constrained_risk_solver:solve:37 â€“ EV eşiğini geçen bahis yok – portföy boş.
+2026-02-19 10:40:39.115 | WARNING  | __main__:_analysis_loop:2512 â€“ [Sanity] GeÃ§ersiz olasÄ±lÄ±k/oran nedeniyle 12 sinyal elendi.
+2026-02-19 10:40:39.115 | INFO     | src.memory.db_manager:save_signals:339 â€“ 1. döngü – sinyaller kaydedildi.
+2026-02-19 10:40:39.116 | SUCCESS  | __main__:_analysis_loop:3034 â€“ DÃ¶ngÃ¼ #1 tamamlandÄ± â€“ 0 sinyal Ã¼retildi.
+2026-02-19 10:40:39.117 | INFO     | __main__:_analysis_loop:3243 â€“ [Perf] DÃ¶ngÃ¼ #1: 273487ms (ort=273487ms, max=273487ms)
+2026-02-19 10:40:39.118 | DEBUG    | src.utils.super_logger:log_library_event:554 â€“ cycle_1
+2026-02-19 10:40:39.119 | INFO     | src.ingestion.api_hijacker:listen:157 â€“ [Hijack] ✓ Dinleniyor: flashscore (https://www.flashscore.com.tr/)
+2026-02-19 10:40:39.131 | DEBUG    | telegram._bot:_do_post:740 â€“ Call to Bot API endpoint `getUpdates` finished with return value `[]`
+2026-02-19 10:40:39.132 | DEBUG    | telegram._bot:get_updates:4874 â€“ No new updates found.
+2026-02-19 10:40:42.055 | DEBUG    | telegram._bot:_do_post:731 â€“ Calling Bot API endpoint `getUpdates` with parameters `{'timeout': datetime.timedelta(seconds=10), 'offset': 0}`
+2026-02-19 10:40:46.226 | INFO     | src.ingestion.api_hijacker:_discover_endpoint:293 â€“ [Hijack] 🆕 Endpoint keşfedildi: https://www.mackolik.com/perform/p0/ajax/components/competition/livescores/json [other] (mackolik)
+2026-02-19 10:40:52.146 | DEBUG    | telegram._bot:_do_post:740 â€“ Call to Bot API endpoint `getUpdates` finished with return value `[]`
+2026-02-19 10:40:52.147 | DEBUG    | telegram._bot:get_updates:4874 â€“ No new updates found.
+2026-02-19 10:40:52.401 | DEBUG    | telegram._bot:_do_post:731 â€“ Calling Bot API endpoint `getUpdates` with parameters `{'timeout': datetime.timedelta(seconds=10), 'offset': 0}`
+2026-02-19 10:40:53.863 | INFO     | src.ingestion.async_data_factory:_scrape_flashscore:260 â€“ FlashScore: 23 maç tarandı.
+2026-02-19 10:40:54.107 | INFO     | src.ingestion.async_data_factory:run_live:358 â€“ FlashScore: 23 maç tarandı.
+2026-02-19 10:40:54.350 | INFO     | src.ingestion.data_sources:get_all_scheduled:508 â€“ [Sofascore] TÃ¼m sporlar: 0 etkinlik Ã§ekildi.
+2026-02-19 10:40:54.351 | INFO     | src.ingestion.data_sources:fetch_today:818 â€“ [Agg] BugÃ¼n tÃ¼m sporlar: 1 etkinlik (futbol + basketbol + diÄŸer) | providers={'APISportsProvider': 0, 'TheSportsDBProvider': 6, 'OpenLigaDBProvider': 0, 'OpenFootballProvider': 0, 'FootballDataOrgProvider': 0, 'SofascoreScheduled': 0, 'SofascoreLive': 0}
+2026-02-19 10:40:54.352 | INFO     | __main__:_multisport_refresh_loop:855 â€“ [MultiSport] 1 etkinlik gÃ¼ncellendi.
+2026-02-19 10:40:57.905 | DEBUG    | src.ingestion.async_data_factory:_fetch_odds_api:122 â€“ Odds API key yok – atlanıyor.
+2026-02-19 10:40:57.906 | DEBUG    | src.ingestion.async_data_factory:_fetch_football_data:143 â€“ [FD.org] API key yok – Sofascore fallback'e geçiliyor.
+2026-02-19 10:41:03.568 | DEBUG    | telegram._bot:_do_post:740 â€“ Call to Bot API endpoint `getUpdates` finished with return value `[]`
+2026-02-19 10:41:03.569 | DEBUG    | telegram._bot:get_updates:4874 â€“ No new updates found.
+2026-02-19 10:41:03.569 | DEBUG    | telegram._bot:_do_post:731 â€“ Calling Bot API endpoint `getUpdates` with parameters `{'timeout': datetime.timedelta(seconds=10), 'offset': 0}`
+2026-02-19 10:41:09.137 | INFO     | __main__:_analysis_loop:1178 â€“ â•â•â• Analiz DÃ¶ngÃ¼sÃ¼ #2 â•â•â•
+2026-02-19 10:41:09.140 | DEBUG    | __main__:_analysis_loop:1244 â€“ DoÄŸrulama: 24 maÃ§ geÃ§erli.
+2026-02-19 10:41:09.141 | INFO     | __main__:_analysis_loop:1250 â€“ [Perf] MaÃ§ seti 12 ile sÄ±nÄ±rlandÄ±rÄ±ldÄ±.
+2026-02-19 10:41:09.141 | DEBUG    | src.memory.feature_cache:get_or_compute:37 â€“ Cache MISS: features – hesaplanıyor…
+2026-02-19 10:41:09.270 | WARNING  | src.utils.super_logger:_loguru_showwarning:320 â€“ UserWarning: std(): degrees of freedom is [= 0. Correction should be strictly less than the reduction factor (input numel divided by output numel). (Triggered internally at C:\actions-runner\_work\pytorch\pytorch\pytorch\aten\src\ATen\native\ReduceOps.cpp:1857.) (C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\kan\MultKAN.py:813)
+2026-02-19 10:41:09.272 | WARNING  | src.utils.super_logger:_loguru_showwarning:320 â€“ UserWarning: std(): degrees of freedom is [= 0. Correction should be strictly less than the reduction factor (input numel divided by output numel). (Triggered internally at C:\actions-runner\_work\pytorch\pytorch\pytorch\aten\src\ATen\native\ReduceOps.cpp:1857.) (C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\kan\MultKAN.py:823)
+2026-02-19 10:41:09.272 | WARNING  | src.utils.super_logger:_loguru_showwarning:320 â€“ UserWarning: std(): degrees of freedom is [= 0. Correction should be strictly less than the reduction factor (input numel divided by output numel). (Triggered internally at C:\actions-runner\_work\pytorch\pytorch\pytorch\aten\src\ATen\native\ReduceOps.cpp:1857.) (C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\kan\MultKAN.py:824)
+2026-02-19 10:41:09.273 | WARNING  | src.utils.super_logger:_loguru_showwarning:320 â€“ UserWarning: std(): degrees of freedom is [= 0. Correction should be strictly less than the reduction factor (input numel divided by output numel). (Triggered internally at C:\actions-runner\_work\pytorch\pytorch\pytorch\aten\src\ATen\native\ReduceOps.cpp:1857.) (C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\kan\MultKAN.py:825)
+2026-02-19 10:41:09.547 | DEBUG    | src.quant.bayesian_hierarchical:_get_or_create_team:96 â€“ Yeni takım prior: Melbourne Victory (lig ortalaması)
+2026-02-19 10:41:09.547 | DEBUG    | src.quant.bayesian_hierarchical:_get_or_create_team:96 â€“ Yeni takım prior: Western Sydney Wanderers FC (lig ortalaması)
+2026-02-19 10:41:09.560 | DEBUG    | __main__:_analysis_loop:1298 â€“ [Bayesian] Melbourne Victory: prior aÄŸÄ±rlÄ±klÄ± (shrinkage=1.00, n=0)
+2026-02-19 10:41:09.572 | DEBUG    | __main__:_analysis_loop:1298 â€“ [Bayesian] Rizespor: prior aÄŸÄ±rlÄ±klÄ± (shrinkage=1.00, n=0)
+2026-02-19 10:41:09.587 | DEBUG    | __main__:_analysis_loop:1298 â€“ [Bayesian] Eyüpspor: prior aÄŸÄ±rlÄ±klÄ± (shrinkage=1.00, n=0)
+2026-02-19 10:41:09.600 | DEBUG    | __main__:_analysis_loop:1298 â€“ [Bayesian] Alanyaspor: prior aÄŸÄ±rlÄ±klÄ± (shrinkage=1.00, n=0)
+2026-02-19 10:41:09.612 | DEBUG    | __main__:_analysis_loop:1298 â€“ [Bayesian] Konyaspor: prior aÄŸÄ±rlÄ±klÄ± (shrinkage=1.00, n=0)
+2026-02-19 10:41:09.626 | DEBUG    | __main__:_analysis_loop:1298 â€“ [Bayesian] Kayserispor: prior aÄŸÄ±rlÄ±klÄ± (shrinkage=1.00, n=0)
+2026-02-19 10:41:09.638 | DEBUG    | __main__:_analysis_loop:1298 â€“ [Bayesian] Gaziantep FK: prior aÄŸÄ±rlÄ±klÄ± (shrinkage=1.00, n=0)
+2026-02-19 10:41:09.652 | DEBUG    | __main__:_analysis_loop:1298 â€“ [Bayesian] Beşiktaş: prior aÄŸÄ±rlÄ±klÄ± (shrinkage=1.00, n=0)
+2026-02-19 10:41:09.665 | DEBUG    | __main__:_analysis_loop:1298 â€“ [Bayesian] Karagümrük: prior aÄŸÄ±rlÄ±klÄ± (shrinkage=1.00, n=0)
+2026-02-19 10:41:09.678 | DEBUG    | __main__:_analysis_loop:1298 â€“ [Bayesian] Fenerbahçe: prior aÄŸÄ±rlÄ±klÄ± (shrinkage=1.00, n=0)
+2026-02-19 10:41:09.690 | DEBUG    | __main__:_analysis_loop:1298 â€“ [Bayesian] Başakşehir: prior aÄŸÄ±rlÄ±klÄ± (shrinkage=1.00, n=0)
+2026-02-19 10:41:09.705 | DEBUG    | __main__:_analysis_loop:1298 â€“ [Bayesian] Trabzonspor: prior aÄŸÄ±rlÄ±klÄ± (shrinkage=1.00, n=0)
+2026-02-19 10:41:12.504 | DEBUG    | src.ingestion.news_rag:_fetch_news:173 â€“ [RAG] Western Sydney Wanderers FC: 5 haber toplandı.
+2026-02-19 10:41:12.664 | WARNING  | src.ingestion.api_hijacker:listen:162 â€“ [Hijack] ✗ mackolik bağlanamadı: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://www.mackolik.com/canli-sonuclar", waiting until "networkidle"
+
+2026-02-19 10:41:13.631 | DEBUG    | telegram._bot:_do_post:740 â€“ Call to Bot API endpoint `getUpdates` finished with return value `[]`
+2026-02-19 10:41:13.632 | DEBUG    | telegram._bot:get_updates:4874 â€“ No new updates found.
+2026-02-19 10:41:13.633 | DEBUG    | telegram._bot:_do_post:731 â€“ Calling Bot API endpoint `getUpdates` with parameters `{'timeout': datetime.timedelta(seconds=10), 'offset': 0}`
+2026-02-19 10:41:13.872 | DEBUG    | src.ingestion.news_rag:_fetch_news:173 â€“ [RAG] Melbourne Victory: 5 haber toplandı.
+2026-02-19 10:41:13.873 | INFO     | __main__:_analysis_loop:1393 â€“ [Prophet] Melbourne Victory vs Western Sydney Wanderers FC: Mevsimsel anomali yok.
+2026-02-19 10:41:13.873 | INFO     | __main__:_analysis_loop:1393 â€“ [Prophet] Rizespor vs Kocaelispor: Mevsimsel anomali yok.
+2026-02-19 10:41:13.874 | INFO     | __main__:_analysis_loop:1393 â€“ [Prophet] Eyüpspor vs Gençlerbirliği: Mevsimsel anomali yok.
+2026-02-19 10:41:13.875 | INFO     | __main__:_analysis_loop:1393 â€“ [Prophet] Alanyaspor vs Başakşehir: Mevsimsel anomali yok.
+2026-02-19 10:41:13.875 | INFO     | __main__:_analysis_loop:1393 â€“ [Prophet] Konyaspor vs Galatasaray: Mevsimsel anomali yok.
+2026-02-19 10:41:13.876 | INFO     | __main__:_analysis_loop:1393 â€“ [Prophet] Kayserispor vs Antalyaspor: Mevsimsel anomali yok.
+2026-02-19 10:41:13.877 | INFO     | __main__:_analysis_loop:1393 â€“ [Prophet] Gaziantep FK vs Trabzonspor: Mevsimsel anomali yok.
+2026-02-19 10:41:13.877 | INFO     | __main__:_analysis_loop:1393 â€“ [Prophet] Beşiktaş vs Göztepe: Mevsimsel anomali yok.
+2026-02-19 10:41:13.878 | INFO     | __main__:_analysis_loop:1393 â€“ [Prophet] Karagümrük vs Samsunspor: Mevsimsel anomali yok.
+2026-02-19 10:41:13.878 | INFO     | __main__:_analysis_loop:1393 â€“ [Prophet] Fenerbahçe vs Kasımpaşa: Mevsimsel anomali yok.
+2026-02-19 10:41:13.878 | INFO     | __main__:_analysis_loop:1393 â€“ [Prophet] Başakşehir vs Konyaspor: Mevsimsel anomali yok.
+2026-02-19 10:41:13.879 | INFO     | __main__:_analysis_loop:1393 â€“ [Prophet] Trabzonspor vs Karagümrük: Mevsimsel anomali yok.
+2026-02-19 10:41:13.880 | INFO     | __main__:_analysis_loop:1432 â€“ [Vector] Melbourne Victory vs Western Sydney Wanderers FC: Tarihsel benzerlik â†’ D (100%), Ãœ2.5: 0%
+2026-02-19 10:41:13.880 | INFO     | __main__:_analysis_loop:1432 â€“ [Vector] Rizespor vs Kocaelispor: Tarihsel benzerlik â†’ D (100%), Ãœ2.5: 0%
+2026-02-19 10:41:13.881 | INFO     | __main__:_analysis_loop:1432 â€“ [Vector] Eyüpspor vs Gençlerbirliği: Tarihsel benzerlik â†’ D (100%), Ãœ2.5: 0%
+2026-02-19 10:41:13.881 | INFO     | __main__:_analysis_loop:1432 â€“ [Vector] Alanyaspor vs Başakşehir: Tarihsel benzerlik â†’ D (100%), Ãœ2.5: 0%
+2026-02-19 10:41:13.882 | INFO     | __main__:_analysis_loop:1432 â€“ [Vector] Konyaspor vs Galatasaray: Tarihsel benzerlik â†’ D (100%), Ãœ2.5: 0%
+2026-02-19 10:41:13.882 | INFO     | __main__:_analysis_loop:1432 â€“ [Vector] Kayserispor vs Antalyaspor: Tarihsel benzerlik â†’ D (100%), Ãœ2.5: 0%
+2026-02-19 10:41:13.883 | INFO     | __main__:_analysis_loop:1432 â€“ [Vector] Gaziantep FK vs Trabzonspor: Tarihsel benzerlik â†’ D (100%), Ãœ2.5: 0%
+2026-02-19 10:41:13.884 | INFO     | __main__:_analysis_loop:1432 â€“ [Vector] Beşiktaş vs Göztepe: Tarihsel benzerlik â†’ D (100%), Ãœ2.5: 0%
+2026-02-19 10:41:13.884 | INFO     | __main__:_analysis_loop:1432 â€“ [Vector] Karagümrük vs Samsunspor: Tarihsel benzerlik â†’ D (100%), Ãœ2.5: 0%
+2026-02-19 10:41:13.885 | INFO     | __main__:_analysis_loop:1432 â€“ [Vector] Fenerbahçe vs Kasımpaşa: Tarihsel benzerlik â†’ D (100%), Ãœ2.5: 0%
+2026-02-19 10:41:13.885 | INFO     | __main__:_analysis_loop:1432 â€“ [Vector] Başakşehir vs Konyaspor: Tarihsel benzerlik â†’ D (100%), Ãœ2.5: 0%
+2026-02-19 10:41:13.886 | INFO     | __main__:_analysis_loop:1432 â€“ [Vector] Trabzonspor vs Karagümrük: Tarihsel benzerlik â†’ D (100%), Ãœ2.5: 0%
+2026-02-19 10:41:16.848 | INFO     | __main__:_analysis_loop:1590 â€“ [Twin] Melbourne Victory vs Western Sydney Wanderers FC: H=13% D=70% A=16% (skor=0-0, Ãœ2.5=1%)
+2026-02-19 10:41:17.431 | INFO     | __main__:_analysis_loop:1590 â€“ [Twin] Rizespor vs Kocaelispor: H=16% D=71% A=12% (skor=0-0, Ãœ2.5=1%)
+2026-02-19 10:41:18.060 | INFO     | __main__:_analysis_loop:1590 â€“ [Twin] Eyüpspor vs Gençlerbirliği: H=15% D=72% A=13% (skor=0-0, Ãœ2.5=0%)
+2026-02-19 10:41:18.596 | INFO     | __main__:_analysis_loop:1590 â€“ [Twin] Alanyaspor vs Başakşehir: H=12% D=64% A=23% (skor=0-0, Ãœ2.5=0%)
+2026-02-19 10:41:19.066 | INFO     | __main__:_analysis_loop:1590 â€“ [Twin] Konyaspor vs Galatasaray: H=15% D=70% A=16% (skor=0-0, Ãœ2.5=0%)
+2026-02-19 10:41:19.633 | INFO     | __main__:_analysis_loop:1590 â€“ [Twin] Kayserispor vs Antalyaspor: H=18% D=66% A=15% (skor=0-0, Ãœ2.5=2%)
+2026-02-19 10:41:20.277 | INFO     | __main__:_analysis_loop:1590 â€“ [Twin] Gaziantep FK vs Trabzonspor: H=12% D=72% A=16% (skor=0-0, Ãœ2.5=2%)
+2026-02-19 10:41:20.817 | INFO     | __main__:_analysis_loop:1590 â€“ [Twin] Beşiktaş vs Göztepe: H=12% D=74% A=14% (skor=0-0, Ãœ2.5=0%)
+2026-02-19 10:41:21.277 | INFO     | __main__:_analysis_loop:1590 â€“ [Twin] Karagümrük vs Samsunspor: H=12% D=67% A=22% (skor=0-0, Ãœ2.5=1%)
+2026-02-19 10:41:21.835 | INFO     | __main__:_analysis_loop:1590 â€“ [Twin] Fenerbahçe vs Kasımpaşa: H=14% D=70% A=17% (skor=0-0, Ãœ2.5=1%)
+2026-02-19 10:41:22.369 | INFO     | __main__:_analysis_loop:1590 â€“ [Twin] Başakşehir vs Konyaspor: H=13% D=73% A=14% (skor=0-0, Ãœ2.5=2%)
+2026-02-19 10:41:23.070 | INFO     | __main__:_analysis_loop:1590 â€“ [Twin] Trabzonspor vs Karagümrük: H=9% D=68% A=24% (skor=0-0, Ãœ2.5=0%)
+2026-02-19 10:41:23.516 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Melbourne Victory: 0.02 (20 haber)
+2026-02-19 10:41:23.575 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Western Sydney Wanderers FC: 0.05 (14 haber)
+2026-02-19 10:41:24.138 | DEBUG    | telegram._bot:_do_post:740 â€“ Call to Bot API endpoint `getUpdates` finished with return value `[]`
+2026-02-19 10:41:24.138 | DEBUG    | telegram._bot:get_updates:4874 â€“ No new updates found.
+2026-02-19 10:41:24.140 | DEBUG    | telegram._bot:_do_post:731 â€“ Calling Bot API endpoint `getUpdates` with parameters `{'timeout': datetime.timedelta(seconds=10), 'offset': 0}`
+2026-02-19 10:41:24.566 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Rizespor: 0.13 (20 haber)
+2026-02-19 10:41:24.573 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Kocaelispor: 0.10 (20 haber)
+2026-02-19 10:41:25.459 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Gençlerbirliği: 0.02 (20 haber)
+2026-02-19 10:41:25.491 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Eyüpspor: 0.04 (20 haber)
+2026-02-19 10:41:26.300 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Başakşehir: 0.03 (20 haber)
+2026-02-19 10:41:26.354 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Alanyaspor: 0.11 (20 haber)
+2026-02-19 10:41:27.163 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Galatasaray: 0.06 (20 haber)
+2026-02-19 10:41:27.172 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Konyaspor: 0.05 (20 haber)
+2026-02-19 10:41:28.015 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Antalyaspor: 0.06 (20 haber)
+2026-02-19 10:41:28.035 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Kayserispor: 0.03 (20 haber)
+2026-02-19 10:41:28.974 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Gaziantep FK: 0.05 (20 haber)
+2026-02-19 10:41:28.982 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Trabzonspor: 0.04 (20 haber)
+2026-02-19 10:41:29.876 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Beşiktaş: 0.03 (20 haber)
+2026-02-19 10:41:29.887 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Göztepe: 0.04 (20 haber)
+2026-02-19 10:41:30.847 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Samsunspor: 0.04 (20 haber)
+2026-02-19 10:41:30.894 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Karagümrük: 0.10 (20 haber)
+2026-02-19 10:41:31.650 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Kasımpaşa: 0.05 (20 haber)
+2026-02-19 10:41:31.668 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Fenerbahçe: 0.04 (20 haber)
+2026-02-19 10:41:32.183 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Başakşehir: 0.03 (20 haber)
+2026-02-19 10:41:32.188 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Konyaspor: 0.05 (20 haber)
+2026-02-19 10:41:32.593 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Karagümrük: 0.10 (20 haber)
+2026-02-19 10:41:32.598 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Trabzonspor: 0.04 (20 haber)
+2026-02-19 10:43:22.297 | INFO     | src.core.black_litterman_optimizer:optimize:70 â€“ BL optimizasyonu tamamlandı – toplam ağırlık: 0.2000
+2026-02-19 10:43:22.298 | INFO     | src.core.constrained_risk_solver:solve:37 â€“ EV eşiğini geçen bahis yok – portföy boş.
+2026-02-19 10:43:22.299 | WARNING  | __main__:_analysis_loop:2512 â€“ [Sanity] GeÃ§ersiz olasÄ±lÄ±k/oran nedeniyle 12 sinyal elendi.
+2026-02-19 10:43:22.299 | INFO     | src.memory.db_manager:save_signals:339 â€“ 2. döngü – sinyaller kaydedildi.
+2026-02-19 10:43:22.300 | SUCCESS  | __main__:_analysis_loop:3034 â€“ DÃ¶ngÃ¼ #2 tamamlandÄ± â€“ 0 sinyal Ã¼retildi.
+2026-02-19 10:43:22.301 | INFO     | __main__:_analysis_loop:3243 â€“ [Perf] DÃ¶ngÃ¼ #2: 133165ms (ort=203326ms, max=273487ms)
+2026-02-19 10:43:22.302 | DEBUG    | src.utils.super_logger:log_library_event:554 â€“ cycle_2
+2026-02-19 10:43:22.313 | DEBUG    | telegram._bot:_do_post:740 â€“ Call to Bot API endpoint `getUpdates` finished with return value `[]`
+2026-02-19 10:43:22.313 | DEBUG    | telegram._bot:get_updates:4874 â€“ No new updates found.
+2026-02-19 10:43:22.314 | DEBUG    | telegram._bot:_do_post:731 â€“ Calling Bot API endpoint `getUpdates` with parameters `{'timeout': datetime.timedelta(seconds=10), 'offset': 0}`
+2026-02-19 10:43:22.954 | INFO     | src.ingestion.api_hijacker:_discover_endpoint:293 â€“ [Hijack] 🆕 Endpoint keşfedildi: https://www.mackolik.com/perform/p0/ajax/components/competition/livescores/json-update [other] (mackolik)
+2026-02-19 10:43:24.573 | DEBUG    | src.ingestion.scraper_agent:_fetch:88 â€“ [Mackolik] https://www.mackolik.com/canli-sonuclar… → 200
+2026-02-19 10:43:24.573 | DEBUG    | src.ingestion.scraper_agent:_fetch_first_ok:135 â€“ [Mackolik] Çalışan URL: https://www.mackolik.com/canli-sonuclar
+2026-02-19 10:43:24.605 | INFO     | src.ingestion.scraper_agent:scrape_fixtures:181 â€“ [Mackolik] 0 maç çekildi.
+2026-02-19 10:43:24.977 | DEBUG    | src.ingestion.scraper_agent:scrape_live:289 â€“ [Sofascore] football API yanıtı: 403
+2026-02-19 10:43:25.863 | INFO     | src.ingestion.async_data_factory:_scrape_flashscore:260 â€“ FlashScore: 23 maç tarandı.
+2026-02-19 10:43:26.077 | INFO     | src.ingestion.async_data_factory:run_live:358 â€“ FlashScore: 23 maç tarandı.
+2026-02-19 10:43:27.204 | DEBUG    | src.ingestion.scraper_agent:_fetch:88 â€“ [Mackolik] https://www.mackolik.com/iddaa… → 200
+2026-02-19 10:43:27.208 | DEBUG    | src.ingestion.scraper_agent:_fetch_first_ok:135 â€“ [Mackolik] Çalışan URL: https://www.mackolik.com/iddaa
+2026-02-19 10:43:27.351 | INFO     | src.ingestion.scraper_agent:scrape_odds:223 â€“ [Mackolik] 0 oran çekildi.
+2026-02-19 10:43:27.375 | DEBUG    | src.ingestion.scraper_agent:scrape_live:289 â€“ [Sofascore] basketball API yanıtı: 403
+2026-02-19 10:43:31.066 | DEBUG    | src.ingestion.scraper_agent:scrape_live:289 â€“ [Sofascore] tennis API yanıtı: 403
+2026-02-19 10:43:32.384 | DEBUG    | telegram._bot:_do_post:740 â€“ Call to Bot API endpoint `getUpdates` finished with return value `[]`
+2026-02-19 10:43:32.385 | DEBUG    | telegram._bot:get_updates:4874 â€“ No new updates found.
+2026-02-19 10:43:32.385 | DEBUG    | telegram._bot:_do_post:731 â€“ Calling Bot API endpoint `getUpdates` with parameters `{'timeout': datetime.timedelta(seconds=10), 'offset': 0}`
+2026-02-19 10:43:33.790 | DEBUG    | src.ingestion.scraper_agent:scrape_live:289 â€“ [Sofascore] volleyball API yanıtı: 403
+2026-02-19 10:43:36.616 | DEBUG    | src.ingestion.scraper_agent:scrape_live:289 â€“ [Sofascore] handball API yanıtı: 403
+2026-02-19 10:43:40.278 | DEBUG    | src.ingestion.scraper_agent:scrape_live:289 â€“ [Sofascore] ice-hockey API yanıtı: 403
+2026-02-19 10:43:42.450 | DEBUG    | telegram._bot:_do_post:740 â€“ Call to Bot API endpoint `getUpdates` finished with return value `[]`
+2026-02-19 10:43:42.451 | DEBUG    | telegram._bot:get_updates:4874 â€“ No new updates found.
+2026-02-19 10:43:42.452 | DEBUG    | telegram._bot:_do_post:731 â€“ Calling Bot API endpoint `getUpdates` with parameters `{'timeout': datetime.timedelta(seconds=10), 'offset': 0}`
+2026-02-19 10:43:52.320 | INFO     | __main__:_analysis_loop:1178 â€“ â•â•â• Analiz DÃ¶ngÃ¼sÃ¼ #3 â•â•â•
+2026-02-19 10:43:52.323 | DEBUG    | __main__:_analysis_loop:1244 â€“ DoÄŸrulama: 24 maÃ§ geÃ§erli.
+2026-02-19 10:43:52.323 | INFO     | __main__:_analysis_loop:1250 â€“ [Perf] MaÃ§ seti 12 ile sÄ±nÄ±rlandÄ±rÄ±ldÄ±.
+2026-02-19 10:43:52.346 | DEBUG    | src.memory.feature_cache:get_or_compute:35 â€“ Cache HIT: features
+2026-02-19 10:43:52.463 | WARNING  | src.utils.super_logger:_loguru_showwarning:320 â€“ UserWarning: std(): degrees of freedom is [= 0. Correction should be strictly less than the reduction factor (input numel divided by output numel). (Triggered internally at C:\actions-runner\_work\pytorch\pytorch\pytorch\aten\src\ATen\native\ReduceOps.cpp:1857.) (C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\kan\MultKAN.py:813)
+2026-02-19 10:43:52.464 | WARNING  | src.utils.super_logger:_loguru_showwarning:320 â€“ UserWarning: std(): degrees of freedom is [= 0. Correction should be strictly less than the reduction factor (input numel divided by output numel). (Triggered internally at C:\actions-runner\_work\pytorch\pytorch\pytorch\aten\src\ATen\native\ReduceOps.cpp:1857.) (C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\kan\MultKAN.py:823)
+2026-02-19 10:43:52.465 | WARNING  | src.utils.super_logger:_loguru_showwarning:320 â€“ UserWarning: std(): degrees of freedom is [= 0. Correction should be strictly less than the reduction factor (input numel divided by output numel). (Triggered internally at C:\actions-runner\_work\pytorch\pytorch\pytorch\aten\src\ATen\native\ReduceOps.cpp:1857.) (C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\kan\MultKAN.py:824)
+2026-02-19 10:43:52.466 | WARNING  | src.utils.super_logger:_loguru_showwarning:320 â€“ UserWarning: std(): degrees of freedom is [= 0. Correction should be strictly less than the reduction factor (input numel divided by output numel). (Triggered internally at C:\actions-runner\_work\pytorch\pytorch\pytorch\aten\src\ATen\native\ReduceOps.cpp:1857.) (C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\kan\MultKAN.py:825)
+2026-02-19 10:43:52.898 | DEBUG    | __main__:_analysis_loop:1298 â€“ [Bayesian] Melbourne Victory: prior aÄŸÄ±rlÄ±klÄ± (shrinkage=1.00, n=0)
+2026-02-19 10:43:52.915 | DEBUG    | __main__:_analysis_loop:1298 â€“ [Bayesian] Rizespor: prior aÄŸÄ±rlÄ±klÄ± (shrinkage=1.00, n=0)
+2026-02-19 10:43:52.930 | DEBUG    | __main__:_analysis_loop:1298 â€“ [Bayesian] Eyüpspor: prior aÄŸÄ±rlÄ±klÄ± (shrinkage=1.00, n=0)
+2026-02-19 10:43:52.946 | DEBUG    | __main__:_analysis_loop:1298 â€“ [Bayesian] Alanyaspor: prior aÄŸÄ±rlÄ±klÄ± (shrinkage=1.00, n=0)
+2026-02-19 10:43:52.962 | DEBUG    | __main__:_analysis_loop:1298 â€“ [Bayesian] Konyaspor: prior aÄŸÄ±rlÄ±klÄ± (shrinkage=1.00, n=0)
+2026-02-19 10:43:52.978 | DEBUG    | __main__:_analysis_loop:1298 â€“ [Bayesian] Kayserispor: prior aÄŸÄ±rlÄ±klÄ± (shrinkage=1.00, n=0)
+2026-02-19 10:43:52.994 | DEBUG    | __main__:_analysis_loop:1298 â€“ [Bayesian] Gaziantep FK: prior aÄŸÄ±rlÄ±klÄ± (shrinkage=1.00, n=0)
+2026-02-19 10:43:53.010 | DEBUG    | __main__:_analysis_loop:1298 â€“ [Bayesian] Beşiktaş: prior aÄŸÄ±rlÄ±klÄ± (shrinkage=1.00, n=0)
+2026-02-19 10:43:53.026 | DEBUG    | __main__:_analysis_loop:1298 â€“ [Bayesian] Karagümrük: prior aÄŸÄ±rlÄ±klÄ± (shrinkage=1.00, n=0)
+2026-02-19 10:43:53.043 | DEBUG    | __main__:_analysis_loop:1298 â€“ [Bayesian] Fenerbahçe: prior aÄŸÄ±rlÄ±klÄ± (shrinkage=1.00, n=0)
+2026-02-19 10:43:53.061 | DEBUG    | __main__:_analysis_loop:1298 â€“ [Bayesian] Başakşehir: prior aÄŸÄ±rlÄ±klÄ± (shrinkage=1.00, n=0)
+2026-02-19 10:43:53.077 | DEBUG    | __main__:_analysis_loop:1298 â€“ [Bayesian] Trabzonspor: prior aÄŸÄ±rlÄ±klÄ± (shrinkage=1.00, n=0)
+2026-02-19 10:43:53.081 | DEBUG    | telegram._bot:_do_post:740 â€“ Call to Bot API endpoint `getUpdates` finished with return value `[]`
+2026-02-19 10:43:53.081 | DEBUG    | telegram._bot:get_updates:4874 â€“ No new updates found.
+2026-02-19 10:43:53.082 | DEBUG    | telegram._bot:_do_post:731 â€“ Calling Bot API endpoint `getUpdates` with parameters `{'timeout': datetime.timedelta(seconds=10), 'offset': 0}`
+2026-02-19 10:43:53.086 | INFO     | __main__:_analysis_loop:1393 â€“ [Prophet] Melbourne Victory vs Western Sydney Wanderers FC: Mevsimsel anomali yok.
+2026-02-19 10:43:53.087 | INFO     | __main__:_analysis_loop:1393 â€“ [Prophet] Rizespor vs Kocaelispor: Mevsimsel anomali yok.
+2026-02-19 10:43:53.087 | INFO     | __main__:_analysis_loop:1393 â€“ [Prophet] Eyüpspor vs Gençlerbirliği: Mevsimsel anomali yok.
+2026-02-19 10:43:53.088 | INFO     | __main__:_analysis_loop:1393 â€“ [Prophet] Alanyaspor vs Başakşehir: Mevsimsel anomali yok.
+2026-02-19 10:43:53.088 | INFO     | __main__:_analysis_loop:1393 â€“ [Prophet] Konyaspor vs Galatasaray: Mevsimsel anomali yok.
+2026-02-19 10:43:53.088 | INFO     | __main__:_analysis_loop:1393 â€“ [Prophet] Kayserispor vs Antalyaspor: Mevsimsel anomali yok.
+2026-02-19 10:43:53.089 | INFO     | __main__:_analysis_loop:1393 â€“ [Prophet] Gaziantep FK vs Trabzonspor: Mevsimsel anomali yok.
+2026-02-19 10:43:53.089 | INFO     | __main__:_analysis_loop:1393 â€“ [Prophet] Beşiktaş vs Göztepe: Mevsimsel anomali yok.
+2026-02-19 10:43:53.089 | INFO     | __main__:_analysis_loop:1393 â€“ [Prophet] Karagümrük vs Samsunspor: Mevsimsel anomali yok.
+2026-02-19 10:43:53.090 | INFO     | __main__:_analysis_loop:1393 â€“ [Prophet] Fenerbahçe vs Kasımpaşa: Mevsimsel anomali yok.
+2026-02-19 10:43:53.090 | INFO     | __main__:_analysis_loop:1393 â€“ [Prophet] Başakşehir vs Konyaspor: Mevsimsel anomali yok.
+2026-02-19 10:43:53.091 | INFO     | __main__:_analysis_loop:1393 â€“ [Prophet] Trabzonspor vs Karagümrük: Mevsimsel anomali yok.
+2026-02-19 10:43:53.092 | INFO     | __main__:_analysis_loop:1432 â€“ [Vector] Melbourne Victory vs Western Sydney Wanderers FC: Tarihsel benzerlik â†’ D (100%), Ãœ2.5: 0%
+2026-02-19 10:43:53.093 | INFO     | __main__:_analysis_loop:1432 â€“ [Vector] Rizespor vs Kocaelispor: Tarihsel benzerlik â†’ D (100%), Ãœ2.5: 0%
+2026-02-19 10:43:53.094 | INFO     | __main__:_analysis_loop:1432 â€“ [Vector] Eyüpspor vs Gençlerbirliği: Tarihsel benzerlik â†’ D (100%), Ãœ2.5: 0%
+2026-02-19 10:43:53.095 | INFO     | __main__:_analysis_loop:1432 â€“ [Vector] Alanyaspor vs Başakşehir: Tarihsel benzerlik â†’ D (100%), Ãœ2.5: 0%
+2026-02-19 10:43:53.096 | INFO     | __main__:_analysis_loop:1432 â€“ [Vector] Konyaspor vs Galatasaray: Tarihsel benzerlik â†’ D (100%), Ãœ2.5: 0%
+2026-02-19 10:43:53.098 | INFO     | __main__:_analysis_loop:1432 â€“ [Vector] Kayserispor vs Antalyaspor: Tarihsel benzerlik â†’ D (100%), Ãœ2.5: 0%
+2026-02-19 10:43:53.099 | INFO     | __main__:_analysis_loop:1432 â€“ [Vector] Gaziantep FK vs Trabzonspor: Tarihsel benzerlik â†’ D (100%), Ãœ2.5: 0%
+2026-02-19 10:43:53.100 | INFO     | __main__:_analysis_loop:1432 â€“ [Vector] Beşiktaş vs Göztepe: Tarihsel benzerlik â†’ D (100%), Ãœ2.5: 0%
+2026-02-19 10:43:53.102 | INFO     | __main__:_analysis_loop:1432 â€“ [Vector] Karagümrük vs Samsunspor: Tarihsel benzerlik â†’ D (100%), Ãœ2.5: 0%
+2026-02-19 10:43:53.103 | INFO     | __main__:_analysis_loop:1432 â€“ [Vector] Fenerbahçe vs Kasımpaşa: Tarihsel benzerlik â†’ D (100%), Ãœ2.5: 0%
+2026-02-19 10:43:53.105 | INFO     | __main__:_analysis_loop:1432 â€“ [Vector] Başakşehir vs Konyaspor: Tarihsel benzerlik â†’ D (100%), Ãœ2.5: 0%
+2026-02-19 10:43:53.107 | INFO     | __main__:_analysis_loop:1432 â€“ [Vector] Trabzonspor vs Karagümrük: Tarihsel benzerlik â†’ D (100%), Ãœ2.5: 0%
+2026-02-19 10:43:56.537 | INFO     | __main__:_analysis_loop:1590 â€“ [Twin] Melbourne Victory vs Western Sydney Wanderers FC: H=14% D=74% A=12% (skor=0-0, Ãœ2.5=0%)
+2026-02-19 10:43:57.012 | INFO     | __main__:_analysis_loop:1590 â€“ [Twin] Rizespor vs Kocaelispor: H=18% D=70% A=12% (skor=0-0, Ãœ2.5=0%)
+2026-02-19 10:43:57.481 | INFO     | __main__:_analysis_loop:1590 â€“ [Twin] Eyüpspor vs Gençlerbirliği: H=15% D=75% A=10% (skor=0-0, Ãœ2.5=0%)
+2026-02-19 10:43:57.946 | INFO     | __main__:_analysis_loop:1590 â€“ [Twin] Alanyaspor vs Başakşehir: H=12% D=68% A=20% (skor=0-0, Ãœ2.5=0%)
+2026-02-19 10:43:58.406 | INFO     | __main__:_analysis_loop:1590 â€“ [Twin] Konyaspor vs Galatasaray: H=14% D=73% A=13% (skor=0-0, Ãœ2.5=0%)
+2026-02-19 10:43:58.871 | INFO     | __main__:_analysis_loop:1590 â€“ [Twin] Kayserispor vs Antalyaspor: H=10% D=78% A=12% (skor=0-0, Ãœ2.5=1%)
+2026-02-19 10:43:59.437 | INFO     | __main__:_analysis_loop:1590 â€“ [Twin] Gaziantep FK vs Trabzonspor: H=16% D=74% A=10% (skor=0-0, Ãœ2.5=0%)
+2026-02-19 10:44:00.000 | INFO     | __main__:_analysis_loop:1590 â€“ [Twin] Beşiktaş vs Göztepe: H=14% D=73% A=14% (skor=0-0, Ãœ2.5=0%)
+2026-02-19 10:44:00.484 | INFO     | __main__:_analysis_loop:1590 â€“ [Twin] Karagümrük vs Samsunspor: H=6% D=73% A=21% (skor=0-0, Ãœ2.5=0%)
+2026-02-19 10:44:00.994 | INFO     | __main__:_analysis_loop:1590 â€“ [Twin] Fenerbahçe vs Kasımpaşa: H=18% D=64% A=18% (skor=0-0, Ãœ2.5=1%)
+2026-02-19 10:44:01.447 | INFO     | __main__:_analysis_loop:1590 â€“ [Twin] Başakşehir vs Konyaspor: H=15% D=74% A=10% (skor=0-0, Ãœ2.5=0%)
+2026-02-19 10:44:01.943 | INFO     | __main__:_analysis_loop:1590 â€“ [Twin] Trabzonspor vs Karagümrük: H=17% D=69% A=14% (skor=0-0, Ãœ2.5=0%)
+2026-02-19 10:44:04.723 | DEBUG    | telegram._bot:_do_post:740 â€“ Call to Bot API endpoint `getUpdates` finished with return value `[]`
+2026-02-19 10:44:04.724 | DEBUG    | telegram._bot:get_updates:4874 â€“ No new updates found.
+2026-02-19 10:44:04.724 | DEBUG    | telegram._bot:_do_post:731 â€“ Calling Bot API endpoint `getUpdates` with parameters `{'timeout': datetime.timedelta(seconds=10), 'offset': 0}`
+2026-02-19 10:44:05.207 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Western Sydney Wanderers FC: 0.05 (14 haber)
+2026-02-19 10:44:05.298 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Melbourne Victory: 0.02 (20 haber)
+2026-02-19 10:44:05.744 | DEBUG    | src.ingestion.data_sources:_log_status_once:377 â€“ [Sofascore] 403 https://api.sofascore.com/api/v1/sport/basketball/events/live
+2026-02-19 10:44:05.956 | DEBUG    | src.ingestion.data_sources:_log_status_once:377 â€“ [Sofascore] 403 https://api.sofascore.com/api/v1/sport/football/events/live
+2026-02-19 10:44:06.150 | DEBUG    | src.ingestion.data_sources:_log_status_once:377 â€“ [Sofascore] 403 https://api.sofascore.com/api/v1/sport/volleyball/events/live
+2026-02-19 10:44:06.340 | DEBUG    | src.ingestion.data_sources:_log_status_once:377 â€“ [Sofascore] 403 https://api.sofascore.com/api/v1/sport/football/scheduled-events/2026-02-19
+2026-02-19 10:44:06.543 | DEBUG    | src.ingestion.data_sources:_log_status_once:377 â€“ [Sofascore] 403 https://api.sofascore.com/api/v1/sport/ice-hockey/events/live
+2026-02-19 10:44:06.784 | DEBUG    | src.ingestion.data_sources:_log_status_once:377 â€“ [Sofascore] 403 https://api.sofascore.com/api/v1/sport/tennis/events/live
+2026-02-19 10:44:07.009 | DEBUG    | src.ingestion.data_sources:_log_status_once:377 â€“ [Sofascore] 403 https://api.sofascore.com/api/v1/sport/volleyball/scheduled-events/2026-02-19
+2026-02-19 10:44:07.206 | DEBUG    | src.ingestion.data_sources:_log_status_once:377 â€“ [Sofascore] 403 https://api.sofascore.com/api/v1/sport/ice-hockey/scheduled-events/2026-02-19
+2026-02-19 10:44:07.394 | DEBUG    | src.ingestion.data_sources:_log_status_once:377 â€“ [Sofascore] 403 https://api.sofascore.com/api/v1/sport/basketball/scheduled-events/2026-02-19
+2026-02-19 10:44:07.588 | DEBUG    | src.ingestion.data_sources:_log_status_once:377 â€“ [Sofascore] 403 https://api.sofascore.com/api/v1/sport/tennis/scheduled-events/2026-02-19
+2026-02-19 10:44:07.782 | DEBUG    | src.ingestion.data_sources:_log_status_once:377 â€“ [Sofascore] 403 https://api.sofascore.com/api/v1/sport/handball/scheduled-events/2026-02-19
+2026-02-19 10:44:07.980 | DEBUG    | src.ingestion.data_sources:_log_status_once:377 â€“ [Sofascore] 403 https://api.sofascore.com/api/v1/sport/handball/events/live
+2026-02-19 10:44:08.217 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Rizespor: 0.11 (20 haber)
+2026-02-19 10:44:08.604 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Kocaelispor: 0.10 (20 haber)
+2026-02-19 10:44:11.768 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Gençlerbirliği: 0.02 (20 haber)
+2026-02-19 10:44:11.774 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Eyüpspor: 0.04 (20 haber)
+2026-02-19 10:44:12.649 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Alanyaspor: 0.11 (20 haber)
+2026-02-19 10:44:12.655 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Başakşehir: 0.03 (20 haber)
+2026-02-19 10:44:13.142 | DEBUG    | src.ingestion.data_sources:_log_status_once:377 â€“ [Sofascore] 403 https://www.sofascore.com/api/v1/sport/tennis/events/live
+2026-02-19 10:44:13.341 | DEBUG    | src.ingestion.data_sources:_log_status_once:377 â€“ [Sofascore] 403 https://www.sofascore.com/api/v1/sport/tennis/scheduled-events/2026-02-19
+2026-02-19 10:44:13.546 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Konyaspor: 0.05 (20 haber)
+2026-02-19 10:44:13.752 | DEBUG    | src.ingestion.data_sources:_log_status_once:377 â€“ [Sofascore] 403 https://www.sofascore.com/api/v1/sport/football/events/live
+2026-02-19 10:44:13.949 | DEBUG    | src.ingestion.data_sources:_log_status_once:377 â€“ [Sofascore] 403 https://www.sofascore.com/api/v1/sport/basketball/scheduled-events/2026-02-19
+2026-02-19 10:44:14.136 | DEBUG    | src.ingestion.data_sources:_log_status_once:377 â€“ [Sofascore] 403 https://www.sofascore.com/api/v1/sport/volleyball/scheduled-events/2026-02-19
+2026-02-19 10:44:14.328 | DEBUG    | src.ingestion.data_sources:_log_status_once:377 â€“ [Sofascore] 403 https://www.sofascore.com/api/v1/sport/basketball/events/live
+2026-02-19 10:44:14.522 | DEBUG    | src.ingestion.data_sources:_log_status_once:377 â€“ [Sofascore] 403 https://www.sofascore.com/api/v1/sport/ice-hockey/scheduled-events/2026-02-19
+2026-02-19 10:44:14.715 | DEBUG    | src.ingestion.data_sources:_log_status_once:377 â€“ [Sofascore] 403 https://www.sofascore.com/api/v1/sport/football/scheduled-events/2026-02-19
+2026-02-19 10:44:14.904 | DEBUG    | src.ingestion.data_sources:_log_status_once:377 â€“ [Sofascore] 403 https://www.sofascore.com/api/v1/sport/volleyball/events/live
+2026-02-19 10:44:15.095 | DEBUG    | src.ingestion.data_sources:_log_status_once:377 â€“ [Sofascore] 403 https://www.sofascore.com/api/v1/sport/handball/events/live
+2026-02-19 10:44:15.358 | DEBUG    | src.ingestion.data_sources:_log_status_once:377 â€“ [Sofascore] 403 https://www.sofascore.com/api/v1/sport/ice-hockey/events/live
+2026-02-19 10:44:15.578 | DEBUG    | src.ingestion.data_sources:_log_status_once:377 â€“ [Sofascore] 403 https://www.sofascore.com/api/v1/sport/handball/scheduled-events/2026-02-19
+2026-02-19 10:44:15.771 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Galatasaray: 0.06 (20 haber)
+2026-02-19 10:44:15.772 | DEBUG    | telegram._bot:_do_post:740 â€“ Call to Bot API endpoint `getUpdates` finished with return value `[]`
+2026-02-19 10:44:15.772 | DEBUG    | telegram._bot:get_updates:4874 â€“ No new updates found.
+2026-02-19 10:44:16.142 | DEBUG    | telegram._bot:_do_post:731 â€“ Calling Bot API endpoint `getUpdates` with parameters `{'timeout': datetime.timedelta(seconds=10), 'offset': 0}`
+2026-02-19 10:44:16.538 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Antalyaspor: 0.06 (20 haber)
+2026-02-19 10:44:16.601 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Kayserispor: 0.03 (20 haber)
+2026-02-19 10:44:16.996 | INFO     | src.ingestion.data_sources:get_all_scheduled:508 â€“ [Sofascore] TÃ¼m sporlar: 0 etkinlik Ã§ekildi.
+2026-02-19 10:44:16.997 | INFO     | src.ingestion.data_sources:fetch_today:818 â€“ [Agg] BugÃ¼n tÃ¼m sporlar: 1 etkinlik (futbol + basketbol + diÄŸer) | providers={'APISportsProvider': 0, 'TheSportsDBProvider': 6, 'OpenLigaDBProvider': 0, 'OpenFootballProvider': 0, 'FootballDataOrgProvider': 0, 'SofascoreScheduled': 0, 'SofascoreLive': 0}
+2026-02-19 10:44:16.997 | INFO     | __main__:_multisport_refresh_loop:855 â€“ [MultiSport] 1 etkinlik gÃ¼ncellendi.
+2026-02-19 10:44:18.031 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Gaziantep FK: 0.05 (20 haber)
+2026-02-19 10:44:18.044 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Trabzonspor: 0.03 (20 haber)
+2026-02-19 10:44:18.836 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Göztepe: 0.04 (20 haber)
+2026-02-19 10:44:18.921 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Beşiktaş: 0.03 (20 haber)
+2026-02-19 10:44:19.793 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Karagümrük: 0.10 (20 haber)
+2026-02-19 10:44:19.810 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Samsunspor: 0.04 (20 haber)
+2026-02-19 10:44:20.646 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Kasımpaşa: 0.05 (20 haber)
+2026-02-19 10:44:20.676 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Fenerbahçe: 0.04 (20 haber)
+2026-02-19 10:44:21.079 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Başakşehir: 0.03 (20 haber)
+2026-02-19 10:44:21.086 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Konyaspor: 0.05 (20 haber)
+2026-02-19 10:44:21.470 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Trabzonspor: 0.03 (20 haber)
+2026-02-19 10:44:21.478 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Karagümrük: 0.10 (20 haber)
+2026-02-19 10:46:12.941 | INFO     | src.core.black_litterman_optimizer:optimize:70 â€“ BL optimizasyonu tamamlandı – toplam ağırlık: 0.2000
+2026-02-19 10:46:12.942 | INFO     | src.core.constrained_risk_solver:solve:37 â€“ EV eşiğini geçen bahis yok – portföy boş.
+2026-02-19 10:46:12.943 | WARNING  | __main__:_analysis_loop:2512 â€“ [Sanity] GeÃ§ersiz olasÄ±lÄ±k/oran nedeniyle 12 sinyal elendi.
+2026-02-19 10:46:12.944 | INFO     | src.memory.db_manager:save_signals:339 â€“ 3. döngü – sinyaller kaydedildi.
+2026-02-19 10:46:12.945 | SUCCESS  | __main__:_analysis_loop:3034 â€“ DÃ¶ngÃ¼ #3 tamamlandÄ± â€“ 0 sinyal Ã¼retildi.
+2026-02-19 10:46:12.947 | INFO     | __main__:_analysis_loop:3243 â€“ [Perf] DÃ¶ngÃ¼ #3: 140627ms (ort=182426ms, max=273487ms)
+2026-02-19 10:46:12.947 | DEBUG    | src.utils.super_logger:log_library_event:554 â€“ cycle_3
+2026-02-19 10:46:12.956 | DEBUG    | apscheduler.schedulers.base:_process_jobs:1151 â€“ Looking for jobs to run
+2026-02-19 10:46:12.957 | DEBUG    | apscheduler.schedulers.base:_process_jobs:1258 â€“ Next wakeup is due at 2026-02-19 10:56:05.217685+03:00 (in 592.259715 seconds)
+2026-02-19 10:46:12.958 | DEBUG    | telegram._bot:_do_post:740 â€“ Call to Bot API endpoint `getUpdates` finished with return value `[]`
+2026-02-19 10:46:12.960 | DEBUG    | telegram._bot:get_updates:4874 â€“ No new updates found.
+2026-02-19 10:46:12.961 | DEBUG    | src.ingestion.async_data_factory:_fetch_odds_api:122 â€“ Odds API key yok – atlanıyor.
+2026-02-19 10:46:12.963 | DEBUG    | src.ingestion.async_data_factory:_fetch_football_data:143 â€“ [FD.org] API key yok – Sofascore fallback'e geçiliyor.
+2026-02-19 10:46:12.964 | WARNING  | apscheduler.executors.base:run_coroutine_job:176 â€“ Run time of job "oran_kontrol (trigger: interval[0:10:00], next run at: 2026-02-19 10:56:05 +03)" was missed by 0:00:07.746699
+2026-02-19 10:46:12.966 | DEBUG    | telegram._bot:_do_post:731 â€“ Calling Bot API endpoint `getUpdates` with parameters `{'timeout': datetime.timedelta(seconds=10), 'offset': 0}`
+2026-02-19 10:46:16.115 | INFO     | src.ingestion.async_data_factory:_scrape_flashscore:260 â€“ FlashScore: 23 maç tarandı.
+2026-02-19 10:46:16.488 | INFO     | src.ingestion.async_data_factory:run_live:358 â€“ FlashScore: 23 maç tarandı.
+2026-02-19 10:46:23.033 | DEBUG    | telegram._bot:_do_post:740 â€“ Call to Bot API endpoint `getUpdates` finished with return value `[]`
+2026-02-19 10:46:23.033 | DEBUG    | telegram._bot:get_updates:4874 â€“ No new updates found.
+2026-02-19 10:46:23.034 | DEBUG    | telegram._bot:_do_post:731 â€“ Calling Bot API endpoint `getUpdates` with parameters `{'timeout': datetime.timedelta(seconds=10), 'offset': 0}`
+2026-02-19 10:46:33.100 | DEBUG    | telegram._bot:_do_post:740 â€“ Call to Bot API endpoint `getUpdates` finished with return value `[]`
+2026-02-19 10:46:33.101 | DEBUG    | telegram._bot:get_updates:4874 â€“ No new updates found.
+2026-02-19 10:46:33.101 | DEBUG    | telegram._bot:_do_post:731 â€“ Calling Bot API endpoint `getUpdates` with parameters `{'timeout': datetime.timedelta(seconds=10), 'offset': 0}`
+2026-02-19 10:46:42.928 | INFO     | __main__:_analysis_loop:1178 â€“ â•â•â• Analiz DÃ¶ngÃ¼sÃ¼ #4 â•â•â•
+2026-02-19 10:46:42.931 | DEBUG    | __main__:_analysis_loop:1244 â€“ DoÄŸrulama: 24 maÃ§ geÃ§erli.
+2026-02-19 10:46:42.932 | INFO     | __main__:_analysis_loop:1250 â€“ [Perf] MaÃ§ seti 12 ile sÄ±nÄ±rlandÄ±rÄ±ldÄ±.
+2026-02-19 10:46:42.932 | DEBUG    | src.memory.feature_cache:get_or_compute:37 â€“ Cache MISS: features – hesaplanıyor…
+2026-02-19 10:46:43.071 | WARNING  | src.utils.super_logger:_loguru_showwarning:320 â€“ UserWarning: std(): degrees of freedom is [= 0. Correction should be strictly less than the reduction factor (input numel divided by output numel). (Triggered internally at C:\actions-runner\_work\pytorch\pytorch\pytorch\aten\src\ATen\native\ReduceOps.cpp:1857.) (C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\kan\MultKAN.py:813)
+2026-02-19 10:46:43.073 | WARNING  | src.utils.super_logger:_loguru_showwarning:320 â€“ UserWarning: std(): degrees of freedom is [= 0. Correction should be strictly less than the reduction factor (input numel divided by output numel). (Triggered internally at C:\actions-runner\_work\pytorch\pytorch\pytorch\aten\src\ATen\native\ReduceOps.cpp:1857.) (C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\kan\MultKAN.py:823)
+2026-02-19 10:46:43.074 | WARNING  | src.utils.super_logger:_loguru_showwarning:320 â€“ UserWarning: std(): degrees of freedom is [= 0. Correction should be strictly less than the reduction factor (input numel divided by output numel). (Triggered internally at C:\actions-runner\_work\pytorch\pytorch\pytorch\aten\src\ATen\native\ReduceOps.cpp:1857.) (C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\kan\MultKAN.py:824)
+2026-02-19 10:46:43.075 | WARNING  | src.utils.super_logger:_loguru_showwarning:320 â€“ UserWarning: std(): degrees of freedom is [= 0. Correction should be strictly less than the reduction factor (input numel divided by output numel). (Triggered internally at C:\actions-runner\_work\pytorch\pytorch\pytorch\aten\src\ATen\native\ReduceOps.cpp:1857.) (C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\.venv\Lib\site-packages\kan\MultKAN.py:825)
+2026-02-19 10:46:43.446 | DEBUG    | __main__:_analysis_loop:1298 â€“ [Bayesian] Melbourne Victory: prior aÄŸÄ±rlÄ±klÄ± (shrinkage=1.00, n=0)
+2026-02-19 10:46:43.459 | DEBUG    | __main__:_analysis_loop:1298 â€“ [Bayesian] Rizespor: prior aÄŸÄ±rlÄ±klÄ± (shrinkage=1.00, n=0)
+2026-02-19 10:46:43.473 | DEBUG    | __main__:_analysis_loop:1298 â€“ [Bayesian] Eyüpspor: prior aÄŸÄ±rlÄ±klÄ± (shrinkage=1.00, n=0)
+2026-02-19 10:46:43.488 | DEBUG    | __main__:_analysis_loop:1298 â€“ [Bayesian] Alanyaspor: prior aÄŸÄ±rlÄ±klÄ± (shrinkage=1.00, n=0)
+2026-02-19 10:46:43.503 | DEBUG    | __main__:_analysis_loop:1298 â€“ [Bayesian] Konyaspor: prior aÄŸÄ±rlÄ±klÄ± (shrinkage=1.00, n=0)
+2026-02-19 10:46:43.519 | DEBUG    | __main__:_analysis_loop:1298 â€“ [Bayesian] Kayserispor: prior aÄŸÄ±rlÄ±klÄ± (shrinkage=1.00, n=0)
+2026-02-19 10:46:43.536 | DEBUG    | __main__:_analysis_loop:1298 â€“ [Bayesian] Gaziantep FK: prior aÄŸÄ±rlÄ±klÄ± (shrinkage=1.00, n=0)
+2026-02-19 10:46:43.551 | DEBUG    | __main__:_analysis_loop:1298 â€“ [Bayesian] Beşiktaş: prior aÄŸÄ±rlÄ±klÄ± (shrinkage=1.00, n=0)
+2026-02-19 10:46:43.568 | DEBUG    | __main__:_analysis_loop:1298 â€“ [Bayesian] Karagümrük: prior aÄŸÄ±rlÄ±klÄ± (shrinkage=1.00, n=0)
+2026-02-19 10:46:43.582 | DEBUG    | __main__:_analysis_loop:1298 â€“ [Bayesian] Fenerbahçe: prior aÄŸÄ±rlÄ±klÄ± (shrinkage=1.00, n=0)
+2026-02-19 10:46:43.598 | DEBUG    | __main__:_analysis_loop:1298 â€“ [Bayesian] Başakşehir: prior aÄŸÄ±rlÄ±klÄ± (shrinkage=1.00, n=0)
+2026-02-19 10:46:43.617 | DEBUG    | __main__:_analysis_loop:1298 â€“ [Bayesian] Trabzonspor: prior aÄŸÄ±rlÄ±klÄ± (shrinkage=1.00, n=0)
+2026-02-19 10:46:43.620 | DEBUG    | telegram._bot:_do_post:740 â€“ Call to Bot API endpoint `getUpdates` finished with return value `[]`
+2026-02-19 10:46:43.621 | DEBUG    | telegram._bot:get_updates:4874 â€“ No new updates found.
+2026-02-19 10:46:43.623 | DEBUG    | telegram._bot:_do_post:731 â€“ Calling Bot API endpoint `getUpdates` with parameters `{'timeout': datetime.timedelta(seconds=10), 'offset': 0}`
+2026-02-19 10:46:43.630 | INFO     | __main__:_analysis_loop:1393 â€“ [Prophet] Melbourne Victory vs Western Sydney Wanderers FC: Mevsimsel anomali yok.
+2026-02-19 10:46:43.631 | INFO     | __main__:_analysis_loop:1393 â€“ [Prophet] Rizespor vs Kocaelispor: Mevsimsel anomali yok.
+2026-02-19 10:46:43.632 | INFO     | __main__:_analysis_loop:1393 â€“ [Prophet] Eyüpspor vs Gençlerbirliği: Mevsimsel anomali yok.
+2026-02-19 10:46:43.633 | INFO     | __main__:_analysis_loop:1393 â€“ [Prophet] Alanyaspor vs Başakşehir: Mevsimsel anomali yok.
+2026-02-19 10:46:43.633 | INFO     | __main__:_analysis_loop:1393 â€“ [Prophet] Konyaspor vs Galatasaray: Mevsimsel anomali yok.
+2026-02-19 10:46:43.633 | INFO     | __main__:_analysis_loop:1393 â€“ [Prophet] Kayserispor vs Antalyaspor: Mevsimsel anomali yok.
+2026-02-19 10:46:43.634 | INFO     | __main__:_analysis_loop:1393 â€“ [Prophet] Gaziantep FK vs Trabzonspor: Mevsimsel anomali yok.
+2026-02-19 10:46:43.634 | INFO     | __main__:_analysis_loop:1393 â€“ [Prophet] Beşiktaş vs Göztepe: Mevsimsel anomali yok.
+2026-02-19 10:46:43.634 | INFO     | __main__:_analysis_loop:1393 â€“ [Prophet] Karagümrük vs Samsunspor: Mevsimsel anomali yok.
+2026-02-19 10:46:43.636 | INFO     | __main__:_analysis_loop:1393 â€“ [Prophet] Fenerbahçe vs Kasımpaşa: Mevsimsel anomali yok.
+2026-02-19 10:46:43.636 | INFO     | __main__:_analysis_loop:1393 â€“ [Prophet] Başakşehir vs Konyaspor: Mevsimsel anomali yok.
+2026-02-19 10:46:43.636 | INFO     | __main__:_analysis_loop:1393 â€“ [Prophet] Trabzonspor vs Karagümrük: Mevsimsel anomali yok.
+2026-02-19 10:46:43.637 | INFO     | __main__:_analysis_loop:1432 â€“ [Vector] Melbourne Victory vs Western Sydney Wanderers FC: Tarihsel benzerlik â†’ D (100%), Ãœ2.5: 0%
+2026-02-19 10:46:43.637 | INFO     | __main__:_analysis_loop:1432 â€“ [Vector] Rizespor vs Kocaelispor: Tarihsel benzerlik â†’ D (100%), Ãœ2.5: 0%
+2026-02-19 10:46:43.639 | INFO     | __main__:_analysis_loop:1432 â€“ [Vector] Eyüpspor vs Gençlerbirliği: Tarihsel benzerlik â†’ D (100%), Ãœ2.5: 0%
+2026-02-19 10:46:43.639 | INFO     | __main__:_analysis_loop:1432 â€“ [Vector] Alanyaspor vs Başakşehir: Tarihsel benzerlik â†’ D (100%), Ãœ2.5: 0%
+2026-02-19 10:46:43.640 | INFO     | __main__:_analysis_loop:1432 â€“ [Vector] Konyaspor vs Galatasaray: Tarihsel benzerlik â†’ D (100%), Ãœ2.5: 0%
+2026-02-19 10:46:43.642 | INFO     | __main__:_analysis_loop:1432 â€“ [Vector] Kayserispor vs Antalyaspor: Tarihsel benzerlik â†’ D (100%), Ãœ2.5: 0%
+2026-02-19 10:46:43.643 | INFO     | __main__:_analysis_loop:1432 â€“ [Vector] Gaziantep FK vs Trabzonspor: Tarihsel benzerlik â†’ D (100%), Ãœ2.5: 0%
+2026-02-19 10:46:43.645 | INFO     | __main__:_analysis_loop:1432 â€“ [Vector] Beşiktaş vs Göztepe: Tarihsel benzerlik â†’ D (100%), Ãœ2.5: 0%
+2026-02-19 10:46:43.646 | INFO     | __main__:_analysis_loop:1432 â€“ [Vector] Karagümrük vs Samsunspor: Tarihsel benzerlik â†’ D (100%), Ãœ2.5: 0%
+2026-02-19 10:46:43.648 | INFO     | __main__:_analysis_loop:1432 â€“ [Vector] Fenerbahçe vs Kasımpaşa: Tarihsel benzerlik â†’ D (100%), Ãœ2.5: 0%
+2026-02-19 10:46:43.650 | INFO     | __main__:_analysis_loop:1432 â€“ [Vector] Başakşehir vs Konyaspor: Tarihsel benzerlik â†’ D (100%), Ãœ2.5: 0%
+2026-02-19 10:46:43.651 | INFO     | __main__:_analysis_loop:1432 â€“ [Vector] Trabzonspor vs Karagümrük: Tarihsel benzerlik â†’ D (100%), Ãœ2.5: 0%
+2026-02-19 10:46:46.647 | INFO     | __main__:_analysis_loop:1590 â€“ [Twin] Melbourne Victory vs Western Sydney Wanderers FC: H=9% D=66% A=26% (skor=0-0, Ãœ2.5=0%)
+2026-02-19 10:46:47.179 | INFO     | __main__:_analysis_loop:1590 â€“ [Twin] Rizespor vs Kocaelispor: H=12% D=75% A=13% (skor=0-0, Ãœ2.5=0%)
+2026-02-19 10:46:47.642 | INFO     | __main__:_analysis_loop:1590 â€“ [Twin] Eyüpspor vs Gençlerbirliği: H=18% D=70% A=12% (skor=0-0, Ãœ2.5=0%)
+2026-02-19 10:46:48.109 | INFO     | __main__:_analysis_loop:1590 â€“ [Twin] Alanyaspor vs Başakşehir: H=12% D=72% A=15% (skor=0-0, Ãœ2.5=0%)
+2026-02-19 10:46:48.554 | INFO     | __main__:_analysis_loop:1590 â€“ [Twin] Konyaspor vs Galatasaray: H=9% D=69% A=22% (skor=0-0, Ãœ2.5=0%)
+2026-02-19 10:46:49.005 | INFO     | __main__:_analysis_loop:1590 â€“ [Twin] Kayserispor vs Antalyaspor: H=12% D=70% A=17% (skor=0-0, Ãœ2.5=2%)
+2026-02-19 10:46:49.448 | INFO     | __main__:_analysis_loop:1590 â€“ [Twin] Gaziantep FK vs Trabzonspor: H=16% D=70% A=13% (skor=0-0, Ãœ2.5=0%)
+2026-02-19 10:46:49.930 | INFO     | __main__:_analysis_loop:1590 â€“ [Twin] Beşiktaş vs Göztepe: H=18% D=64% A=18% (skor=0-0, Ãœ2.5=2%)
+2026-02-19 10:46:50.401 | INFO     | __main__:_analysis_loop:1590 â€“ [Twin] Karagümrük vs Samsunspor: H=11% D=74% A=16% (skor=0-0, Ãœ2.5=0%)
+2026-02-19 10:46:50.866 | INFO     | __main__:_analysis_loop:1590 â€“ [Twin] Fenerbahçe vs Kasımpaşa: H=16% D=72% A=12% (skor=0-0, Ãœ2.5=1%)
+2026-02-19 10:46:51.324 | INFO     | __main__:_analysis_loop:1590 â€“ [Twin] Başakşehir vs Konyaspor: H=24% D=63% A=12% (skor=0-0, Ãœ2.5=0%)
+2026-02-19 10:46:51.793 | INFO     | __main__:_analysis_loop:1590 â€“ [Twin] Trabzonspor vs Karagümrük: H=14% D=74% A=12% (skor=0-0, Ãœ2.5=2%)
+2026-02-19 10:46:51.885 | DEBUG    | src.ingestion.scraper_agent:_fetch:88 â€“ [Mackolik] https://www.mackolik.com/canli-sonuclar… → 200
+2026-02-19 10:46:51.886 | DEBUG    | src.ingestion.scraper_agent:_fetch_first_ok:135 â€“ [Mackolik] Çalışan URL: https://www.mackolik.com/canli-sonuclar
+2026-02-19 10:46:51.915 | INFO     | src.ingestion.scraper_agent:scrape_fixtures:181 â€“ [Mackolik] 0 maç çekildi.
+2026-02-19 10:46:52.034 | DEBUG    | src.ingestion.scraper_agent:scrape_live:289 â€“ [Sofascore] football API yanıtı: 403
+2026-02-19 10:46:52.225 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Melbourne Victory: 0.02 (20 haber)
+2026-02-19 10:46:52.301 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Western Sydney Wanderers FC: 0.05 (14 haber)
+2026-02-19 10:46:53.089 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Rizespor: 0.11 (20 haber)
+2026-02-19 10:46:53.108 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Kocaelispor: 0.10 (20 haber)
+2026-02-19 10:46:53.690 | DEBUG    | telegram._bot:_do_post:740 â€“ Call to Bot API endpoint `getUpdates` finished with return value `[]`
+2026-02-19 10:46:53.691 | DEBUG    | telegram._bot:get_updates:4874 â€“ No new updates found.
+2026-02-19 10:46:53.691 | DEBUG    | telegram._bot:_do_post:731 â€“ Calling Bot API endpoint `getUpdates` with parameters `{'timeout': datetime.timedelta(seconds=10), 'offset': 0}`
+2026-02-19 10:46:53.889 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Gençlerbirliği: 0.02 (20 haber)
+2026-02-19 10:46:53.904 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Eyüpspor: 0.04 (20 haber)
+2026-02-19 10:46:54.681 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Alanyaspor: 0.11 (20 haber)
+2026-02-19 10:46:54.702 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Başakşehir: 0.03 (20 haber)
+2026-02-19 10:46:55.450 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Konyaspor: 0.05 (20 haber)
+2026-02-19 10:46:55.530 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Galatasaray: 0.06 (20 haber)
+2026-02-19 10:46:56.270 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Antalyaspor: 0.06 (20 haber)
+2026-02-19 10:46:56.274 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Kayserispor: 0.03 (20 haber)
+2026-02-19 10:46:56.658 | DEBUG    | src.ingestion.scraper_agent:scrape_live:289 â€“ [Sofascore] basketball API yanıtı: 403
+2026-02-19 10:46:57.078 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Trabzonspor: 0.03 (20 haber)
+2026-02-19 10:46:57.200 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Gaziantep FK: 0.07 (20 haber)
+2026-02-19 10:46:57.979 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Göztepe: 0.04 (20 haber)
+2026-02-19 10:46:57.999 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Beşiktaş: 0.03 (20 haber)
+2026-02-19 10:46:58.924 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Samsunspor: 0.04 (20 haber)
+2026-02-19 10:46:59.025 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Karagümrük: 0.12 (20 haber)
+2026-02-19 10:46:59.790 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Kasımpaşa: 0.05 (20 haber)
+2026-02-19 10:46:59.809 | INFO     | src.quant.sentiment_analyzer:scrape_news_sentiment:156 â€“ [Sentiment] Fenerbahçe: 0.02 (20 haber)

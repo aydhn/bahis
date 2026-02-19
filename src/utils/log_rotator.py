@@ -3,10 +3,11 @@ log_rotator.py – Log Rotasyon & Arşivleme Sistemi.
 
 Son 3 günlük logları aktif tutar, daha eski logları
 logs/archive/ klasörüne taşır ve sıkıştırır.
+Arşivlenen loglar asla silinmez, kalıcı olarak saklanır.
 
 Bu sayede:
   - AI context window'u sadece güncel logları okur
-  - Eski loglar archive/'de saklanır (gitignore'da engelli)
+  - Eski loglar archive/'de kalıcı olarak saklanır (gitignore'da engelli)
   - API kota tüketimi düşer (daha az token)
   - Disk alanı korunur (gz sıkıştırma)
 
@@ -18,7 +19,6 @@ from __future__ import annotations
 
 import gzip
 import shutil
-import time
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -40,13 +40,11 @@ class LogRotator:
 
     def __init__(self, log_dir: str = "logs",
                  archive_days: int = 3,
-                 compress: bool = True,
-                 max_archive_days: int = 30):
+                 compress: bool = True):
         self._log_dir = Path(log_dir)
         self._archive_dir = self._log_dir / "archive"
         self._archive_days = archive_days
         self._compress = compress
-        self._max_archive = max_archive_days
 
         self._log_dir.mkdir(parents=True, exist_ok=True)
         self._archive_dir.mkdir(parents=True, exist_ok=True)
@@ -57,23 +55,23 @@ class LogRotator:
         )
 
     def rotate(self) -> dict:
-        """Eski logları arşivle, çok eski arşivleri sil.
+        """Eski logları arşivle.
 
         Returns:
             dict: Rotasyon raporu
         """
         report = {
             "archived": [],
-            "deleted": [],
             "kept": [],
             "errors": [],
         }
 
         cutoff = datetime.now() - timedelta(days=self._archive_days)
-        archive_cutoff = datetime.now() - timedelta(days=self._max_archive)
 
-        # 1) Aktif logları tara
-        for log_file in self._log_dir.glob("*.log"):
+        # 1) Aktif logları tara (.log ve .jsonl)
+        for log_file in sorted(self._log_dir.glob("*.*")):
+            if log_file.suffix not in (".log", ".jsonl"):
+                continue
             if log_file.is_dir():
                 continue
 
@@ -133,26 +131,9 @@ class LogRotator:
             except (ValueError, Exception) as e:
                 report["errors"].append(f"{log_file.name}: {e}")
 
-        # 2) Çok eski arşivleri sil
-        for archive_file in self._archive_dir.iterdir():
-            if archive_file.is_dir():
-                continue
-            try:
-                file_mtime = datetime.fromtimestamp(archive_file.stat().st_mtime)
-                if file_mtime < archive_cutoff:
-                    archive_file.unlink()
-                    report["deleted"].append(str(archive_file.name))
-                    logger.info(
-                        f"[LogRotator] Silindi (>{self._max_archive}gün): "
-                        f"archive/{archive_file.name}"
-                    )
-            except Exception as e:
-                report["errors"].append(f"archive/{archive_file.name}: {e}")
-
         logger.info(
             f"[LogRotator] Rotasyon tamamlandı: "
             f"{len(report['archived'])} arşivlendi, "
-            f"{len(report['deleted'])} silindi, "
             f"{len(report['kept'])} korundu"
         )
 

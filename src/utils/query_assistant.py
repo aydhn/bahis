@@ -38,8 +38,8 @@ except ImportError:
     LANGCHAIN_SQL_OK = False
 
 try:
-    import google.generativeai as genai
-    GEMINI_OK = True
+    from src.utils.gemini_client import gemini_generate, GEMINI_OK as _GEMINI_OK
+    GEMINI_OK = _GEMINI_OK
 except ImportError:
     GEMINI_OK = False
 
@@ -182,26 +182,23 @@ Veritabanı şeması:
 Sadece SQL sorgusu döndür, açıklama ekleme. Tehlikeli (DROP, DELETE, UPDATE) sorgu yazma."""
 
     def __init__(self):
-        self._model = None
-        if GEMINI_OK:
-            try:
-                self._model = genai.GenerativeModel("gemini-pro")
-            except Exception:
-                pass
+        self._ready = GEMINI_OK
 
     def generate(self, question: str) -> str | None:
-        """Gemini ile SQL üret."""
-        if not self._model:
+        """Gemini ile SQL üret (google-genai SDK)."""
+        if not self._ready:
             return None
 
         try:
-            response = self._model.generate_content(
-                f"{self.SYSTEM_PROMPT}\n\nSoru: {question}",
+            result = gemini_generate(
+                prompt=f"Soru: {question}",
+                system=self.SYSTEM_PROMPT,
+                model="gemini-2.0-flash",
             )
-            sql = response.text.strip()
-            # SQL temizle
+            if not result:
+                return None
+            sql = result.strip()
             sql = sql.replace("```sql", "").replace("```", "").strip()
-            # Güvenlik kontrolü
             if any(kw in sql.upper() for kw in ["DROP", "DELETE", "UPDATE", "INSERT", "ALTER"]):
                 return None
             return sql
@@ -349,6 +346,40 @@ class QueryAssistant:
 
         return text
 
+    def list_tables(self) -> list[str]:
+        """Mevcut tablo isimlerini döndürür."""
+        if not DUCK_OK:
+            return []
+        try:
+            conn = duckdb.connect(self._db_path, read_only=True)
+            result = conn.execute(
+                "SELECT table_name FROM information_schema.tables "
+                "WHERE table_schema = 'main'"
+            ).fetchall()
+            conn.close()
+            return [r[0] for r in result]
+        except Exception:
+            return []
+
     @property
     def history(self) -> list[QueryResult]:
         return list(self._query_history)
+
+    def get_stats(self) -> dict:
+        """Sorgu asistanı istatistikleri."""
+        total = len(self._query_history)
+        successful = sum(1 for q in self._query_history if not q.error)
+        methods = {}
+        for q in self._query_history:
+            methods[q.method] = methods.get(q.method, 0) + 1
+        avg_time = (
+            sum(q.execution_time_ms for q in self._query_history) / max(total, 1)
+        )
+        return {
+            "total_queries": total,
+            "successful": successful,
+            "success_rate": successful / max(total, 1),
+            "avg_time_ms": round(avg_time, 1),
+            "methods": methods,
+            "tables": self.list_tables(),
+        }
