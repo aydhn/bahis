@@ -603,6 +603,20 @@ class ScraperAgent:
         if result:
             logger.debug(f"[CB:sofascore] Başarılı – {result} kayıt (çok sporlu).")
 
+    async def run(self, **kwargs):
+        """Orchestrator/Scheduler uyumlu giriş noktası."""
+        # Eğer shutdown event gelirse run_all çağır, yoksa tek seferlik çalıştır
+        shutdown = kwargs.get("shutdown")
+        if shutdown:
+            await self.run_all(shutdown)
+        else:
+            await self._scrape_mackolik()
+            await self._scrape_sofascore()
+
+    async def fetch_fixtures(self):
+        """Eski kodlarla uyumluluk için alias."""
+        return await self._scrape_mackolik()
+
     def _store_matches(self, matches: list[dict], source: str):
         for m in matches:
             match_id = m.get("match_id", "")

@@ -14,71 +14,74 @@ from loguru import logger
 class CausalInferenceEngine:
     def __init__(self, db: Any = None):
         self.db = db
-        # causal_graph: {node: [causal_parents]}
-        self.graph = {
-            "performance": ["fitness", "tactics", "morale"],
-            "score": ["performance", "luck", "referee"],
-            "win_prob": ["score"]
+        # Causal Directed Acyclic Graph (DAG) - Nedensel Hiyerarşi
+        # Hangi değişken hangisini doğrudan etkiler?
+        self.dag = {
+            "fitness": ["performance"],
+            "weather": ["performance", "tactics"],
+            "tactics": ["performance"],
+            "performance": ["expected_goals"],
+            "expected_goals": ["win_prob"],
+            "luck": ["win_prob"],
+            "referee": ["win_prob"]
+        }
+        # Nedensel Ağırlıklar (Katsayılar)
+        self.causal_weights = {
+            "fitness": 0.4,
+            "tactics": 0.35,
+            "weather": 0.25,
+            "performance": 0.9,
+            "expected_goals": 0.85
         }
 
-    def simulate_counterfactual(self, observed_data: Dict[str, Any], intervention: Dict[str, Any]) -> float:
+    def simulate_do_intervention(self, data: Dict[str, Any], variable: str, value: float) -> float:
         """
-        'Eğer X şöyle olsaydı sonuç ne olurdu?' simülasyonu.
-        intervention: {"tactics": "aggressive"} gibi.
+        Interventional Distribution: P(Y | do(X=x))
+        'Eğer X değişkenine dışarıdan müdahale edersek sonuç ne olur?'
         """
-        sim_data = observed_data.copy()
-        sim_data.update(intervention)
+        # Baseline probability
+        p_y = data.get("confidence", 0.5)
         
-        # Basit bir nedensel ağırlıklandırma (Structural Causal Model - SCM)
-        # Gerçekte bu kısımlar Bayesian Network veya SEM ile çözülür.
-        performance_score = (
-            (1.2 if sim_data.get("fitness", 0.5) > 0.7 else 0.8) *
-            (1.5 if sim_data.get("tactics") == "aggressive" else 1.0)
-        )
-        
-        return performance_score
-
-    async def get_causal_impact(self, match_id: str, variable: str) -> Dict[str, float]:
-        """Bir değişkenin sonuç üzerindeki nedensel etkisini (Ate) hesaplar."""
-        # Baseline
-        base = self.simulate_counterfactual({}, {variable: 0})
-        # Treatment
-        treatment = self.simulate_counterfactual({}, {variable: 1})
-        
-        ite = treatment - base # Individual Treatment Effect
-        return {"causal_lift": float(ite)}
+        # Değişkenin nedensel hiyerarşideki yeri
+        # Eğer müdahale edilen değişken 'performance'ı etkiliyorsa:
+        if variable in ["fitness", "tactics", "weather"]:
+            impact = (value - 0.5) * self.causal_weights.get(variable, 0.1)
+            # Etkiyi hiyerarşi boyunca yay (Performance -> xG -> WinProb)
+            p_y += impact * self.causal_weights["performance"] * self.causal_weights["expected_goals"]
+            
+        return float(np.clip(p_y, 0.01, 0.99))
 
     async def run_batch(self, signals: List[Dict], **kwargs) -> List[Dict]:
-        """Sinyallerin nedensel geçerliliğini kontrol eder."""
+        """Sinyallerin nedensel geçerliliğini kontrol eder (Do-Calculus)."""
         if not signals: return []
         
         enhanced_signals = []
-        logger.info(f"[Causal] {len(signals)} sinyal için nedensel doğrulama yapılıyor...")
+        logger.info(f"[Causal] {len(signals)} sinyal üzerinde Nedensel Analiz (Do-Calculus) başlatıldı.")
         
-        try:
-            # DB'den tarihsel korelasyon/nedensellik matrisini simüle et
-            # (Gelecekte gerçek DAG learning eklenebilir)
-            for sig in signals:
-                match_id = sig.get("match_id", "")
+        for sig in signals:
+            try:
+                # 1. 'Fitness' (Yorgunluk) müdahalesi simülasyonu
+                # Eğer takım %100 fit olsaydı ne olurdu? vs Eğer %50 fit olsaydı?
+                p_do_fit = self.simulate_do_intervention(sig, "fitness", 1.0)
+                p_do_fatigue = self.simulate_do_intervention(sig, "fitness", 0.0)
                 
-                # 'Selection' için nedensel müdahale simülasyonu
-                # Eğer önemli bir faktör (örn. fitness) değişirse olasılık ne kadar değişir?
-                intervention = {"fitness": 0.9} # Pozitif müdahale
-                impact = self.simulate_counterfactual(sig, intervention)
+                # Causal Lift (ATE - Average Treatment Effect tahmini)
+                causal_lift = p_do_fit - p_do_fatigue
+                sig["causal_lift"] = round(causal_lift, 3)
                 
-                # Nedensellik Skoru: Müdahale sonrası artış yüzdesi
-                base_val = 1.0
-                sig["causal_lift"] = round((impact - base_val) / base_val, 3)
-                sig["causal_confidence"] = round(sig.get("confidence", 0.5) * (1 + sig["causal_lift"]), 3)
+                # 2. Causal Filter: Eğer nedensel etki çok düşükse, korelasyon yanıltıcı olabilir.
+                # 'Confidence' değerini nedensel kanıta göre ayarla.
+                # Eğer causal_lift negatifse veya çok küçükse, sinyal 'zayıf nedensellik' taşır.
+                causal_score = sig.get("confidence", 0.5) * (1 + (causal_lift * 0.2))
+                sig["confidence"] = round(float(np.clip(causal_score, 0, 1)), 3)
                 
-                if sig["causal_lift"] > 0.1:
-                    sig["tags"] = sig.get("tags", []) + ["causal_boost"]
+                if causal_lift > 0.15:
+                    sig["tags"] = sig.get("tags", []) + ["high_causality"]
+                    logger.debug(f"[Causal] {sig.get('match_id')} için güçlü nedensel bağ: {causal_lift:.2f}")
                 
                 enhanced_signals.append(sig)
-                
-            logger.success(f"[Causal] {len(enhanced_signals)} sinyal işlendi.")
-        except Exception as e:
-            logger.error(f"[Causal] Batch hatası: {e}")
-            return signals # Hata durumunda orijinalleri döndür
+            except Exception as e:
+                logger.debug(f"[Causal] Sinyal analiz hatası: {e}")
+                enhanced_signals.append(sig)
 
         return enhanced_signals

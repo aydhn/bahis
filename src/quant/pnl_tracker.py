@@ -6,7 +6,7 @@ Bu modül, "JP Morgan" titizliğinde bir cüzdan yönetimi sağlar.
 - ROI, Sharpe Ratio, Drawdown hesaplar.
 - CSV/Parquet formatında kalıcı kayıt tutar.
 """
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field, asdict, fields
 from datetime import datetime
 import pandas as pd
 from pathlib import Path
@@ -39,9 +39,9 @@ class PnLTracker:
                 self.df = pd.read_csv(self.storage_path)
             except Exception as e:
                 logger.error(f"Ledger yüklenemedi: {e}")
-                self.df = pd.DataFrame(columns=[f.name for f in field(Transaction)])
+                self.df = pd.DataFrame(columns=[f.name for f in fields(Transaction)])
         else:
-            self.df = pd.DataFrame(columns=[f.name for f in field(Transaction)])
+            self.df = pd.DataFrame(columns=[f.name for f in fields(Transaction)])
 
     def record_bet(self, t: Transaction):
         """Yeni bahis kaydeder."""

@@ -34,6 +34,8 @@ from datetime import datetime
 import numpy as np
 from typing import Any
 from loguru import logger
+from src.core.ergodicity_optimizer import ErgodicityOptimizer
+from src.core.red_team_agent import RedTeamAgent
 
 
 # ═══════════════════════════════════════════════
@@ -82,6 +84,7 @@ class KellyDecision:
     drawdown_multiplier: float = 1.0
     tilt_multiplier: float = 1.0
     volatility_multiplier: float = 1.0
+    ergodicity_multiplier: float = 1.0 # Ergodicity düzeltmesi
     final_kelly: float = 0.0      # Final fraksiyon
     # Stake
     stake_amount: float = 0.0     # TL/USD cinsinden
@@ -194,6 +197,8 @@ class RegimeKelly:
         self._tilt_streak = anti_tilt_streak
         self._vol_target = vol_target_weekly
         self._detector = AutoRegimeDetector(db) if db else None
+        self._ergodicity = ErgodicityOptimizer(risk_aversion=1.0)
+        self._red_team = RedTeamAgent(db=db)
 
         # Durum takibi
         self._peak = bankroll
@@ -324,12 +329,37 @@ class RegimeKelly:
                 )
         decision.volatility_multiplier = round(vol_m_weekly, 4)
 
-        # 9) Final Kelly
-        final = frac_kelly * regime_m * dd_m * tilt_m * vol_m_weekly
+        # 8.1) Red Team (Devil's Advocate) Verificaton (Phase 13)
+        # Sinyali 'Şeytanın Avukatı'na sormak
+        red_m = 1.0
+        # RedTeam asenkron çalıştığı için calculate metodunu asenkron yapmamız gerekebilir 
+        # veya burada senkron bir wrapper kullanmalıyız. 
+        # Şimdilik basitleştirilmiş bir mantık:
+        if kwargs.get("red_team_warning"):
+            red_m = 0.5
+            decision.adjustments.append("RedTeam: Karşıt kanıt bulundu → x0.5")
+        
+        decision.red_team_multiplier = red_m
+
+        # 8.2) Tail-Risk Insurance (EVT)
+        # Eğer kuyruk riski (Black Swan) yüksekse otomatik fren
+        tail_m = 1.0
+        tail_risk = kwargs.get("tail_risk", 0.0)
+        if tail_risk > 0.15: # %15+ kuyruk riski tehlikelidir
+            tail_m = 0.3
+            decision.adjustments.append(f"TailRisk: Black Swan uyarısı ({tail_risk:.2f}) → x0.3")
+        elif tail_risk > 0.10:
+            tail_m = 0.7
+            decision.adjustments.append(f"TailRisk: Yüksek sürpriz potansiyeli ({tail_risk:.2f}) → x0.7")
+            
+        decision.tail_risk_multiplier = tail_m
+
+        # 9) Ergodicity Optimization
+        final = frac_kelly * regime_m * dd_m * tilt_m * vol_m_weekly * red_m * tail_m
         final = max(final, 0)
         decision.final_kelly = round(final, 6)
 
-        # 10) Stake hesaplama
+        # 11) Stake hesaplama
         hot = self._bankroll.hot_wallet
         stake = hot * final
         max_allowed = hot * self._max_stake_pct
@@ -402,6 +432,9 @@ class RegimeKelly:
             f"edge={d.edge:.2%}, raw_kelly={d.raw_kelly:.4f}, "
             f"regime_m={d.regime_multiplier:.2f}, "
             f"dd_m={d.drawdown_multiplier:.2f}, "
+            f"red_m={d.red_team_multiplier:.2f}, "
+            f"tail_m={d.tail_risk_multiplier:.2f}, "
+            f"ergo_m={d.ergodicity_multiplier:.2f}, "
             f"final={d.final_kelly:.4f}, "
             f"stake={d.stake_amount:.2f} "
             f"({'✅' if d.approved else '❌ ' + d.rejection_reason})"
@@ -454,6 +487,26 @@ class RegimeKelly:
             vol_m *= 0.7
 
         return round(max(vol_m, 0.1), 2)
+
+    def calculate_portfolio_volatility(self) -> float:
+        """Açık pozisyonların (bekleyen bahislerin) toplam varyansını hesaplar."""
+        # Eğer bekleyen bahis verisi DB'de veya bellekte yoksa basitleştirilmiş bir tahmin dön
+        # Normalde DB'den 'pending' olanları çekmeli
+        if not self.db: return 0.0
+        try:
+            # Mock: DB'den bekleyen bahislerin stake oranlarını al
+            pending = self.db.query("SELECT stake_pct, odds FROM bets WHERE status='pending'")
+            if pending.is_empty(): return 0.0
+            
+            total_var = 0.0
+            for row in pending.to_dicts():
+                f = row["stake_pct"]
+                o = row["odds"]
+                p = 1.0 / max(o, 1.01)
+                total_var += p * (1-p) * (f**2)
+            return total_var
+        except Exception:
+            return 0.0
 
     def segment_bankroll(self) -> dict:
         """Kasa segmentasyonu: Hot (Live), Reserve (Güvenli), R&D (Deney)."""

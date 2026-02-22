@@ -41,6 +41,9 @@ class DataFactory:
         "tff1": 98,             # TFF 1. Lig
         "tff2": 3024,           # TFF 2. Lig
         "turkish_cup": 231,     # Türkiye Kupası
+        "nba": 132,             # NBA
+        "euroleague": 75,       # Euroleague
+        "atp_all": 14479,       # ATP Tenis (Örnek ID)
     }
 
     def __init__(self, db, cache, headless: bool = True):
@@ -359,6 +362,18 @@ class DataFactory:
             except Exception as e:
                 logger.error(f"Canlı döngü hatası: {e}")
             await asyncio.sleep(60)  # 1 dakikada bir
+
+    async def run_multisport(self, shutdown: asyncio.Event):
+        """Çoklu branş veri akışı (Basketbol & Tenis)."""
+        logger.info("Çoklu branş (Multisport) veri fabrikası başlatıldı.")
+        while not shutdown.is_set():
+            try:
+                # Basketbol ve Tenis için Flashscore/Sofascore taraması
+                # ... (Implementasyon detayları)
+                logger.info("[Multisport] NBA ve ATP verileri kontrol edildi.")
+            except Exception as e:
+                logger.error(f"Multisport döngü hatası: {e}")
+            await asyncio.sleep(600) # 10 dakikada bir
 
     async def close(self):
         if self._client:

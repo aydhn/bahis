@@ -597,6 +597,12 @@ class DBManager:
         except Exception as e:
             logger.debug(f"[DBManager] Bağlantı kapatma hatası: {e}")
 
+    # ── Vektörel Hafıza (Phase 13) ──
+    def find_similar_matches(self, match_id: str, lance: Any = None) -> list[dict]:
+        """LanceDB kullanarak benzer maçları getirir."""
+        if not lance: return []
+        return lance.find_similar_matches(match_id)
+
     def _check_connection(self) -> bool:
         """Bağlantının aktif olup olmadığını kontrol et."""
         try:

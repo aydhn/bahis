@@ -11,6 +11,72 @@ import warnings
 from pathlib import Path
 
 from loguru import logger
+
+# Quant & Core Imports
+from src.quant.probabilistic_engine import ProbabilisticEngine
+from src.quant.rl_trader import RLTrader
+from src.quant.philosophical_engine import PhilosophicalEngine
+from src.quant.elo_engine import EloEngine
+from src.quant.monte_carlo_engine import MonteCarloEngine
+from src.core.jit_accelerator import JITAccelerator
+from src.quant.dixon_coles_model import DixonColesModel
+from src.quant.spectral_analysis import SpectralAnalysis
+from src.core.genetic_optimizer import GeneticOptimizer
+from src.core.hedge_calculator import HedgeCalculator
+from src.core.fair_value_engine import FairValueEngine
+from src.core.multi_hedge_optimizer import MultiExchangeHedgeOptimizer
+from src.core.shared_hot_layer import SharedHotLayer
+from src.core.auto_refactor_agent import AutoRefactorAgent
+from src.core.regime_kelly import RegimeKelly 
+from src.core.ergodicity_optimizer import ErgodicityOptimizer
+from src.quant.clv_tracker import CLVTracker
+from src.core.auto_healer import SelfHealingEngine
+from src.core.adverse_selection import AdverseSelectionGuard
+from src.quant.causal_engine import CausalInferenceEngine
+from src.quant.evt_longshot import EVTLongshotEngine
+from src.quant.fbm_model import fBMModel
+from src.core.news_aggregator import NewsAggregator
+from src.core.nas_engine import NASEngine
+from src.core.heuristic_evolver import HeuristicEvolver
+from src.core.portfolio_optimizer import PortfolioOptimizer
+from src.core.constrained_risk_solver import ConstrainedRiskSolver
+from src.quant.kalman_filter import KalmanStrengthFilter
+from src.quant.bayesian_elo import BayesianEloEngine
+from src.quant.falsification_guard import FalsificationGuard
+from src.core.evolutionary_runner import EvolutionaryRunner
+from src.core.debate_engine import MultiAgentDebateEngine
+from src.quant.hmm_regime import HMMRegimeSwitcher
+from src.quant.league_graph import LeagueGraphModel
+from src.quant.antifragility_engine import AntifragilityEngine
+from src.core.fast_buffer_bridge import RustFastBuffer
+from src.core.red_team_agent import RedTeamAgent
+from src.quant.drift_detector import DriftDetector
+from src.quant.bayesian_hierarchy import BayesianHierarchicalModel
+from src.core.reflection_agent import ReflectionAgent
+from src.core.parallel_orchestrator import ParallelOrchestrator
+from src.ingestion.live_pulse_scraper import LivePulseScraper
+from src.quant.live_adapter import LiveAdapter
+from src.quant.basketball_engine import BasketballEngine
+from src.quant.tennis_engine import TennisEngine
+from src.ingestion.macro_scraper import MacroScraper
+from src.quant.macro_risk_adapter import MacroRiskAdapter
+from src.ingestion.sentiment_engine import SentimentEngine
+from src.ingestion.social_scraper import SocialScraper
+from src.core.latency_monitor import UltraLatencyMonitor
+from src.quant.gpu_accelerator import GPUAccelerator
+from src.vision.tracker import VisionTracker
+from src.quant.morphological_engine import MorphologicalEngine
+from src.core.consensus_engine import ConsensusEngine
+from src.core.self_reconfigurer import SelfReconfigurer
+from src.core.meta_strategy_manager import MetaStrategyManager
+from src.core.synthetic_hedge import SyntheticHedgingEngine
+from src.quant.pnl_tracker import PnLTracker
+from src.core.kelly_matrix import CorrelatedKellyMatrix
+from src.core.omni_sovereign_logic import OmniSovereignController
+from src.ui.telegram_mini_app import TelegramNotifier, TelegramApp
+from src.core.workflow_orchestrator import WorkflowOrchestrator
+from src.core.job_scheduler import JobScheduler
+from src.core.auto_refactor_agent import AutoRefactorAgent
 # from rich.console import Console # Rich bağımlılığını kaldır
 
 # Proje kök dizini (bu dosya src/core/ içinde olduğundan ../../ ile köke çıkıyoruz)
@@ -125,39 +191,7 @@ class SystemBootstrapper:
 
     async def _boot_layer_quant(self):
         logger.info("Layer 3 – Quantitative Brain...")
-        # Lazy imports to speed up boot if not needed immediately
-        from src.quant.rl_trader import RLTrader
-        from src.quant.probabilistic_engine import ProbabilisticEngine
-        from src.quant.philosophical_engine import PhilosophicalEngine
-        from src.quant.elo_engine import EloEngine
-        from src.quant.monte_carlo_engine import MonteCarloEngine
-        from src.quant.dixon_coles_model import DixonColesModel
-        from src.quant.spectral_analysis import SpectralAnalysis
-        from src.core.genetic_optimizer import GeneticOptimizer
-        from src.core.jit_accelerator import JITAccelerator
-        from src.core.hedge_calculator import HedgeCalculator
-        from src.quant.fair_value_engine import FairValueEngine
-        from src.core.multi_hedge_optimizer import MultiExchangeHedgeOptimizer
-        from src.core.shared_hot_layer import SharedHotLayer
-        from src.core.auto_refactor_agent import AutoRefactorAgent
-        from src.core.meta_strategy_manager import MetaStrategyManager
-        from src.core.synthetic_hedge import SyntheticHedgingEngine
-        from src.quant.adverse_selection import AdverseSelectionGuard  # Fixed path if needed
-        from src.quant.causal_engine import CausalInferenceEngine
-        from src.quant.evt_longshot import EVTLongshotEngine
-        from src.quant.fbm_model import fBMModel
-        from src.core.news_aggregator import NewsAggregator
-        from src.core.nas_engine import NASEngine
-        from src.core.heuristic_evolver import HeuristicEvolver
-        from src.quant.kalman_filter import KalmanStrengthFilter
-        from src.quant.bayesian_elo import BayesianEloEngine
-        from src.quant.falsification_guard import FalsificationGuard
-        from src.core.evolutionary_runner import EvolutionaryRunner
-        from src.core.debate_engine import MultiAgentDebateEngine
-        from src.quant.hmm_regime import HMMRegimeSwitcher
-        from src.quant.league_graph import LeagueGraphModel
-        from src.quant.antifragility_engine import AntifragilityEngine
-        from src.core.rust_bridge import RustFastBuffer
+        # Modüller global olarak import edildi.
         
         # Sadece kritik olanlari baslat, digerleri talep uzerine yuklenebilir
         db = self.modules["db"]
@@ -183,14 +217,21 @@ class SystemBootstrapper:
         # Optimizasyon & Hedge & Kalman
         self.modules["genetic_opt"] = GeneticOptimizer()
         self.modules["hedge_calc"] = HedgeCalculator()
-        self.modules["fair_value"] = FairValueEngine(db_manager=db)
-        self.modules["multi_hedge"] = MultiExchangeHedgeOptimizer(db=db)
+        self.modules["fair_value"] = FairValueEngine()
+        self.modules["multi_hedge"] = MultiExchangeHedgeOptimizer(db_manager=db)
         self.modules["hot_layer"] = SharedHotLayer()
+        # Risk Katmanı Erken Başlatma (Bağımlılıklar için)
+        self.modules["ergodicity"] = ErgodicityOptimizer()
+        self.modules["clv"] = CLVTracker()
+        self.modules["kelly"] = RegimeKelly(bankroll=10000.0, db=db)
+        self.modules["healer"] = SelfHealingEngine(llm_backend="ollama")
+        
         self.modules["meta_strategy"] = MetaStrategyManager(db=db, total_bankroll=self.modules["kelly"]._bankroll.total)
         self.modules["synthetic_hedge"] = SyntheticHedgingEngine(db=db)
         self.modules["news_aggregator"] = NewsAggregator(db=db)
         self.modules["execution_guard"] = AdverseSelectionGuard()
         self.modules["causal_engine"] = CausalInferenceEngine(db=db)
+        self.modules["red_team"] = RedTeamAgent(db=db)
         self.modules["evt_longshot"] = EVTLongshotEngine(db=db)
         self.modules["fbm_model"] = fBMModel(db=db)
         self.modules["nas_engine"] = NASEngine(db=db)
@@ -198,11 +239,23 @@ class SystemBootstrapper:
         self.modules["kalman"] = KalmanStrengthFilter(db=db)
         self.modules["bayesian_elo"] = BayesianEloEngine(db=db)
         self.modules["falsification"] = FalsificationGuard(db=db)
-        self.modules["evolutionary"] = EvolutionaryRunner(db=db, optimizer=self.modules["genetic_opt"])
-        self.modules["debate_engine"] = MultiAgentDebateEngine()
-        self.modules["hmm_optimizer"] = HMMRegimeSwitcher(db=db)
-        self.modules["league_graph"] = LeagueGraphModel(db=db)
-        self.modules["antifragility"] = AntifragilityEngine(db=db)
+        self.modules["bhm"] = BayesianHierarchicalModel()
+        self.modules["reflection"] = ReflectionAgent(db=db)
+        self.modules["parallel"] = ParallelOrchestrator()
+        self.modules["live_scraper"] = LivePulseScraper(headless=True)
+        self.modules["live_adapter"] = LiveAdapter()
+        self.modules["basketball"] = BasketballEngine()
+        self.modules["tennis"] = TennisEngine()
+        self.modules["macro_scraper"] = MacroScraper()
+        self.modules["macro_adapter"] = MacroRiskAdapter(self.modules["macro_scraper"])
+        self.modules["sentiment_engine"] = SentimentEngine()
+        self.modules["social_scraper"] = SocialScraper()
+        self.modules["latency"] = UltraLatencyMonitor()
+        self.modules["gpu"] = GPUAccelerator(use_gpu=True)
+        self.modules["vision"] = VisionTracker()
+        self.modules["morphological"] = MorphologicalEngine()
+        self.modules["consensus"] = ConsensusEngine(db=db)
+        self.modules["reconfigurer"] = SelfReconfigurer()
         self.modules["fast_buffer"] = RustFastBuffer(size=2000)
         
         # Modelleri MetaStrategy'ye kaydet
@@ -212,14 +265,13 @@ class SystemBootstrapper:
             
         logger.success("Layer 3 OK.")
 
-        from src.quant.pnl_tracker import PnLTracker
-        from src.core.kelly_matrix import CorrelatedKellyMatrix
-        
+    async def _boot_layer_risk(self):
+        logger.info("Layer 4 – Risk & Portfolio...")
         db = self.modules["db"]
-        self.modules["kelly"] = RegimeKelly(bankroll=10000.0, db=db)
+        # self.modules["kelly"] = RegimeKelly(bankroll=10000.0, db=db) # Quant katmanında başlatıldı
         self.modules["kelly_matrix"] = CorrelatedKellyMatrix()
         self.modules["risk_solver"] = ConstrainedRiskSolver()
-        self.modules["portfolio_opt"] = PortfolioOptimizer(db=db)
+        self.modules["portfolio_opt"] = PortfolioOptimizer(initial_bankroll=10000.0)
         self.modules["pnl_tracker"] = PnLTracker()
         
         # PnL senkronizasyonu
@@ -233,9 +285,7 @@ class SystemBootstrapper:
 
     async def _boot_layer_ops(self):
         logger.info("Layer 5 – Ops & Interface...")
-        from src.ui.telegram_mini_app import TelegramNotifier, TelegramApp
-        from src.core.workflow_orchestrator import WorkflowOrchestrator
-        from src.core.job_scheduler import JobScheduler
+
         
         db = self.modules["db"]
         
@@ -249,10 +299,11 @@ class SystemBootstrapper:
             chat_id=notifier._chat_id,
             notifier=notifier,
             db=db,
-            pnl_tracker=self.modules.get("pnl_tracker")
+            pnl_tracker=self.modules.get("pnl_tracker"),
+            lance=self.modules.get("lance")
         )
         
-        from src.core.omni_sovereign_logic import OmniSovereignController
+
         
         self.modules["orchestrator"] = WorkflowOrchestrator()
         self.modules["auto_refactor"] = AutoRefactorAgent(orchestrator=self.modules["orchestrator"])
@@ -274,7 +325,7 @@ class SystemBootstrapper:
         # Volatilite/Kriz anında (mult=0.3) -> 90s arayla çalışır.
         async def _run_pipeline_wrapper():
             logger.info("[Scheduler] Adaptive Pipeline Tetiklendi 🚀")
-            await orchestrator.run_pipeline()
+            await orchestrator.run_pipeline(context={"shutdown": self.shutdown_event})
             
         scheduler.add_adaptive_interval(
             name="full_pipeline",

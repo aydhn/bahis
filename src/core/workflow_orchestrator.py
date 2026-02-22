@@ -48,6 +48,7 @@ from __future__ import annotations
 import asyncio
 import functools
 import time
+import inspect
 import traceback
 from collections import defaultdict
 from dataclasses import dataclass, field
@@ -80,6 +81,10 @@ class TaskStage(str, Enum):
     QUANT = "quant"
     RISK = "risk"
     UTILS = "utils"
+    MACRO = "macro"
+    SOCIAL = "social"
+    VISION = "vision"
+    COUNCIL = "council"
 
 
 class TaskStatus(str, Enum):
@@ -367,7 +372,7 @@ QUANT_TASKS = [
     TaskDefinition("fuzzy_reasoning", TaskStage.QUANT,
                    "evaluate", "Fuzzy Logic – bulanık mantık"),
     TaskDefinition("probabilistic_engine", TaskStage.QUANT,
-                   "predict", "PyMC – olasılıksal programlama"),
+                   "run_batch", "PyMC – olasılıksal programlama"),
     TaskDefinition("active_inference", TaskStage.QUANT,
                    "observe", "Active Inference – serbest enerji"),
     # Kuantum & oyun teorisi
@@ -400,10 +405,6 @@ QUANT_TASKS = [
     # Phase 9 Singularity
     TaskDefinition("nas_engine", TaskStage.QUANT,
                    "run_batch", "NAS Engine – evrimsel mimari arama"),
-    TaskDefinition("causal_engine", TaskStage.QUANT,
-                   "run_batch", "Causal Engine – nedensel çıkarım"),
-    TaskDefinition("evt_longshot", TaskStage.QUANT,
-                   "run_batch", "EVT – long-shot değer tespiti"),
     TaskDefinition("fbm_model", TaskStage.QUANT,
                    "run_batch", "fBM – uzun dönem hafıza analizi"),
     TaskDefinition("auto_refactor", TaskStage.QUANT,
@@ -414,12 +415,12 @@ RISK_TASKS = [
     TaskDefinition("kelly", TaskStage.RISK,
                    "run_batch", "RegimeKelly – kasa yönetimi",
                    critical=True),
-    TaskDefinition("fair_value_engine", TaskStage.RISK,
+    TaskDefinition("fair_value", TaskStage.RISK,
                    "calculate", "Fair Value – adil oran hesaplama",
                    critical=True),
     TaskDefinition("portfolio_opt", TaskStage.RISK,
                    "run_batch", "Portfolio Optimizer – çeşitlendirme ve risk dağıtımı"),
-    TaskDefinition("hedge_calculator", TaskStage.RISK,
+    TaskDefinition("hedge_calc", TaskStage.RISK,
                    "run_batch", "Hedge Calculator – arbitraj ve ters bahis fırsatları"),
     # TaskDefinition("portfolio_optimizer", TaskStage.RISK,
     #                "optimize", "Portfolio Optimizer – Markowitz optimizasyon"),
@@ -431,7 +432,7 @@ RISK_TASKS = [
                    "compute", "CoVaR – sistemik risk"),
     TaskDefinition("black_litterman", TaskStage.RISK,
                    "optimize", "Black-Litterman – görüş entegrasyonu"),
-    TaskDefinition("hedge_calculator", TaskStage.RISK,
+    TaskDefinition("multi_hedge", TaskStage.RISK,
                    "calculate", "Hedge Calculator – arbitraj/hedge"),
     TaskDefinition("quantum_annealer", TaskStage.RISK,
                    "optimize", "Simulated Annealing – portföy optimizasyon"),
@@ -447,6 +448,8 @@ RISK_TASKS = [
                    "run_batch", "Adverse Selection – ters seçilim koruması"),
     TaskDefinition("meta_strategy", TaskStage.RISK,
                    "run_batch", "Meta Strategy – sermaye rotasyonu"),
+    TaskDefinition("red_team", TaskStage.RISK,
+                   "run_batch", "Red Team – Devil's Advocate"),
     TaskDefinition("hot_layer", TaskStage.RISK,
                    "run_batch", "Hot Layer – RAM hızlandırma"),
 ]
@@ -472,11 +475,41 @@ UTILS_TASKS = [
                    "generate", "Auto Docs – otomatik dokümantasyon"),
     TaskDefinition("omni_controller", TaskStage.UTILS,
                    "run_audit_cycle", "Omni-Sovereign – denetim ve kapital rotasyon"),
+    TaskDefinition("telegram_app", TaskStage.UTILS,
+                   "start", "Telegram Bot – interaktif arayüz"),
+]
+
+MACRO_TASKS = [
+    TaskDefinition("macro_pulse", TaskStage.MACRO,
+                   "get_macro_risk_score", "Macro – küresel piyasa analizi")
+]
+
+SOCIAL_TASKS = [
+    TaskDefinition("social_sentiment", TaskStage.SOCIAL,
+                   "fetch_reddit_hype", "Social – kitle duyarlılık analizi")
+]
+
+VISION_TASKS = [
+    TaskDefinition("vision_scan", TaskStage.VISION,
+                   "scan_image", "Vision – görsel veri tarama"),
+    TaskDefinition("morphological_analysis", TaskStage.VISION,
+                   "process_odds_movement", "Morphological – dairesel örüntü tanıma")
+]
+
+COUNCIL_TASKS = [
+    TaskDefinition("causal_engine", TaskStage.COUNCIL,
+                   "run_batch", "Causal Engine – nedensel çıkarım"),
+    TaskDefinition("evt_longshot", TaskStage.COUNCIL,
+                   "run_batch", "EVT – long-shot değer tespiti"),
+    TaskDefinition("consensus", TaskStage.COUNCIL,
+                   "resolve_signals", "Council – diplomatik karar birleştirme"),
+    TaskDefinition("reconfigurer", TaskStage.COUNCIL,
+                   "check_and_reconfigure", "Reconfigurer – otonom parametre ayarı")
 ]
 
 ALL_TASK_DEFINITIONS: dict[str, TaskDefinition] = {}
 for _td_list in [INGESTION_TASKS, MEMORY_TASKS, QUANT_TASKS,
-                 RISK_TASKS, UTILS_TASKS]:
+                 RISK_TASKS, UTILS_TASKS, MACRO_TASKS, SOCIAL_TASKS, VISION_TASKS, COUNCIL_TASKS]:
     for _td in _td_list:
         ALL_TASK_DEFINITIONS[_td.name] = _td
 
@@ -516,6 +549,7 @@ class WorkflowOrchestrator:
 
         # Kayıtlı modül örnekleri
         self._modules: dict[str, Any] = {}
+        self._live_running = False
 
         # Task durumları
         self._task_status: dict[str, TaskStatus] = {}
@@ -593,11 +627,23 @@ class WorkflowOrchestrator:
         t0 = time.perf_counter()
 
         try:
+            # Akıllı Argüman Filtreleme (Inspect)
+            task_args = {}
+            if context:
+                sig = inspect.signature(method)
+                params = sig.parameters
+                if any(p.kind == inspect.Parameter.VAR_KEYWORD for p in params.values()):
+                    # Eğer metod **kwargs kabul ediyorsa, tüm context'i geç
+                    task_args = context
+                else:
+                    # Sadece imzada olanları ayıkla
+                    task_args = {k: v for k, v in context.items() if k in params}
+            
+            logger.debug(f"[Orchestrator] {task_def.name} çağrılıyor. Argümanlar: {list(task_args.keys())}")
+
             if asyncio.iscoroutinefunction(method):
                 async def _call():
-                    if context:
-                        return await method(**context)
-                    return await method()
+                    return await method(**task_args)
 
                 result, retries = await _retry_async(
                     _call,
@@ -607,9 +653,7 @@ class WorkflowOrchestrator:
                 )
             else:
                 def _call_sync():
-                    if context:
-                        return method(**context)
-                    return method()
+                    return method(**task_args)
 
                 result, retries = await asyncio.get_event_loop().run_in_executor(
                     None,
@@ -715,14 +759,11 @@ class WorkflowOrchestrator:
     #  ANA PIPELINE (Full Flow)
     # ─────────────────────────────────────────────
     async def run_pipeline(self, context: dict | None = None) -> FlowResult:
-        """Tam pipeline'ı çalıştır (5 aşamalı).
-
-        Stage 1: Ingestion (paralel)
-        Stage 2: Memory (sıralı – DB kritik)
-        Stage 3: Quant (paralel)
-        Stage 4: Risk (sıralı – bağımlı)
-        Stage 5: Utils (paralel)
-        """
+        """Tam pipeline'ı çalıştır (5 aşamalı)."""
+        context = context or {}
+        context.setdefault("signals", [])
+        context.setdefault("live_odds", [])
+        
         flow_result = FlowResult(
             flow_name="quant_betting_pipeline",
             timestamp=datetime.utcnow().isoformat(),
@@ -758,6 +799,7 @@ class WorkflowOrchestrator:
     async def _run_pipeline_fallback(self, context: dict | None,
                                        flow_result: FlowResult) -> FlowResult:
         """asyncio fallback pipeline."""
+        context = context or {}
         all_results: list[TaskResult] = []
 
         # Stage 1: Ingestion (paralel)
@@ -766,6 +808,13 @@ class WorkflowOrchestrator:
             context=context, parallel=True,
         )
         all_results.extend(stage_1)
+        # Context'e ekle: live_odds verisini hazırla
+        for r in stage_1:
+            if r.status == "success" and r.result:
+                if isinstance(r.result, list):
+                    context["live_odds"] = r.result
+                elif isinstance(r.result, dict):
+                    context.update(r.result)
 
         # Stage 2: Memory (sıralı – DB kritik)
         stage_2 = await self._run_stage(
@@ -780,6 +829,15 @@ class WorkflowOrchestrator:
             context=context, parallel=self._parallel_quant,
         )
         all_results.extend(stage_3)
+        # Sinyalleri topla ve context'e 'signals' olarak ekle
+        signals = []
+        for r in stage_3:
+            if r.status == "success" and r.result:
+                if isinstance(r.result, list):
+                    signals.extend(r.result)
+                elif isinstance(r.result, dict):
+                    signals.append(r.result)
+        context["signals"] = signals
 
         # Stage 4: Risk (sıralı)
         stage_4 = await self._run_stage(
@@ -794,6 +852,38 @@ class WorkflowOrchestrator:
             context=context, parallel=True,
         )
         all_results.extend(stage_5)
+
+        # Stage 6: Macro (sıralı)
+        stage_6 = await self._run_stage(
+            TaskStage.MACRO, MACRO_TASKS,
+            context=context, parallel=False,
+        )
+        all_results.extend(stage_6)
+
+        # Stage 7: Social (paralel)
+        stage_7 = await self._run_stage(
+            TaskStage.SOCIAL, SOCIAL_TASKS,
+            context=context, parallel=True,
+        )
+        all_results.extend(stage_7)
+
+        # Stage 8: Vision (paralel)
+        stage_8 = await self._run_stage(
+            TaskStage.VISION, VISION_TASKS,
+            context=context, parallel=True,
+        )
+        all_results.extend(stage_8)
+
+        # Stage 9: Council (sıralı - Final Karar)
+        for td in COUNCIL_TASKS:
+            if td.name not in self._disabled_tasks and td.name in self._modules:
+                res = await self._run_task(td, context)
+                all_results.append(res)
+                # Eğer task sinyal zenginleştiriyorsa (liste dönüyorsa), signals'ı güncelle
+                if res.status == "success" and isinstance(res.result, list):
+                    context["signals"] = res.result
+                if td.critical and res.status == "failed":
+                    break
 
         flow_result.task_results = all_results
         flow_result.total_tasks = len(all_results)
@@ -913,3 +1003,34 @@ class WorkflowOrchestrator:
             f"[Orchestrator] {len(reset_tasks)} circuit breaker sıfırlandı."
         )
         return reset_tasks
+
+    async def run_all(self, shutdown: asyncio.Event):
+        """Tüm süreçleri (Pre-match ve Live) yönetir."""
+        logger.info("[Orchestrator] Merkezi çalışma döngüsü başlatılıyor.")
+        
+        # 1. Pipeline'ı başlat (pre-match veya sürekli)
+        # 2. Canlı takip döngüsünü paralel başlat
+        await self.run_live_pulse_task(shutdown)
+
+    async def run_live_pulse_task(self, shutdown: asyncio.Event):
+        """Canlı maç takibi ve adaptasyon döngüsü."""
+        logger.info("[Orchestrator] In-Play (Canlı) takip döngüsü aktif.")
+        self._live_running = True
+        
+        while not shutdown.is_set():
+            try:
+                scraper = self._modules.get("live_scraper")
+                adapter = self._modules.get("live_adapter")
+                telegram = self._modules.get("telegram")
+                
+                if scraper and adapter:
+                    live_matches = await scraper.fetch_live_scores()
+                    for match in live_matches:
+                        # Canlı sinyal adaptasyonu ve Telegram bildirimi
+                        if telegram:
+                            await telegram.send_live_update(match)
+                            
+                await asyncio.sleep(30)
+            except Exception as e:
+                logger.error(f"[Orchestrator:Live] Hata: {e}")
+                await asyncio.sleep(10)

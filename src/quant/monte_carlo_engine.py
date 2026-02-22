@@ -35,8 +35,11 @@ class MonteCarloEngine:
         self.sims = simulations
         self.horizon = horizon  # Kaç bahis ileriye bakılacak
         self._jit = None 
-        from src.core.rust_bridge import RustMCBridge
-        self._rust = RustMCBridge()
+        try:
+            from src.core.rust_engine import RustEngine
+            self._rust = RustEngine()
+        except (ImportError, ModuleNotFoundError):
+            self._rust = None
 
     def inject_jit(self, jit_accelerator):
         """Hızlandırıcıyı enjekte et."""
@@ -73,9 +76,10 @@ class MonteCarloEngine:
         if bankroll <= 0 or stake_pct <= 0:
             return SimulationResult(1.0, 0, 0, 0, self.sims)
 
-        # Rust Bridge available?
-        if self._rust.enabled:
-            paths = self._rust.simulate_path(bankroll, self.horizon, win_rate, avg_odds, self.sims)
+        # Rust Bridge check (Temporarily bypassed due to API mismatch)
+        if False: 
+            # paths = self._rust.simulate_path(...)
+            pass
         else:
             # Numpy implementation
             rng = np.random.default_rng()

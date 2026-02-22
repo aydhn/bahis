@@ -403,6 +403,10 @@ class ProbabilisticEngine:
     def predict(self, home_team: str, away_team: str,
                   match_id: str = "") -> MatchPrediction:
         """Olasılıksal maç tahmini."""
+        # Parametre kontrolü (None koruması)
+        home_team = home_team or "unknown_home"
+        away_team = away_team or "unknown_away"
+        
         pred = MatchPrediction(
             match_id=match_id,
             home_team=home_team,
@@ -422,6 +426,29 @@ class ProbabilisticEngine:
 
         pred.recommendation = self._advice(pred)
         return pred
+
+    def run_batch(self, features: Any = None, **kwargs) -> list[dict]:
+        """Orchestrator uyumlu batch tahmin metodu.
+        
+        Args:
+            features: Polars DataFrame veya liste.
+            **kwargs: Ek bağlam (context).
+        """
+        # Context içinden veya doğrudan parametreden veri çek
+        data = features if features is not None else kwargs.get("features")
+        
+        if data is None:
+            # Eğer hala yoksa upcoming maçları çekmeyi dene (DB varsa)
+            if self.db:
+                data = self.db.get_upcoming_matches()
+            else:
+                logger.warning("[ProbEngine] Batch için veri sağlanamadı.")
+                return []
+        
+        if data is None or (hasattr(data, "is_empty") and data.is_empty()):
+            return []
+            
+        return self.predict_for_dataframe(data)
 
     def _predict_pymc(self, home: str, away: str,
                         pred: MatchPrediction) -> MatchPrediction:

@@ -34,9 +34,13 @@ def _safe_float(value, default: float = 0.0) -> float:
     if value is None:
         return default
     try:
+        # Polars tipi kontrolü
+        if hasattr(value, "item"): 
+            value = value.item()
+            
         f = float(value)
         return f if math.isfinite(f) else default
-    except (TypeError, ValueError):
+    except (TypeError, ValueError, AttributeError):
         return default
 
 
@@ -72,16 +76,14 @@ class EVTTailScanner:
                 do_ = _safe_float(row.get("draw_odds"), 0.0)
                 ao = _safe_float(row.get("away_odds"), 0.0)
 
-                if ho < 1.01:
-                    ho = 2.5
-                if do_ < 1.01:
-                    do_ = 3.3
-                if ao < 1.01:
-                    ao = 3.0
-
-                implied = np.array([1.0 / ho, 1.0 / do_, 1.0 / ao])
+                # Güvenli implied probability (Sıfıra bölme ve None koruması)
+                ho_safe = max(ho, 1.01) if ho is not None else 2.5
+                do_safe = max(do_, 1.01) if do_ is not None else 3.3
+                ao_safe = max(ao, 1.01) if ao is not None else 3.0
+                
+                implied = np.array([1.0 / ho_safe, 1.0 / do_safe, 1.0 / ao_safe])
                 total = implied.sum()
-                if total <= 0:
+                if total <= 0 or not np.isfinite(total):
                     implied = np.array([0.4, 0.3, 0.3])
                 else:
                     implied /= total

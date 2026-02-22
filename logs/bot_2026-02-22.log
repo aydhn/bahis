@@ -1,0 +1,270 @@
+2026-02-22 21:08:59.195 | INFO     | src.core.bootstrap:boot:33 - --- QUANT BETTING BOT – BOOT (FULL) ---
+2026-02-22 21:08:59.197 | INFO     | src.core.bootstrap:_boot_infrastructure:69 - Layer 0 – Infrastructure...
+2026-02-22 21:08:59.205 | DEBUG    | src.utils.log_rotator:__init__:52 - [LogRotator] Başlatıldı: log_dir=C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\logs, archive_days=3, compress=True
+2026-02-22 21:08:59.374 | INFO     | src.utils.log_rotator:rotate:92 - [LogRotator] Arşivlendi: bot_2026-02-18.log → archive/bot_2026-02-18.log.gz
+2026-02-22 21:08:59.523 | DEBUG    | src.utils.log_rotator:rotate:108 - [LogRotator] Hata: error.log — [WinError 32] Dosya başka bir işlem tarafından kullanıldığından bu işlem dosyaya erişemiyor: 'C:\\Users\\immor\\OneDrive\\Belgeler\\Projelerim\\bahis\\logs\\error.log'
+2026-02-22 21:08:59.550 | INFO     | src.utils.log_rotator:rotate:92 - [LogRotator] Arşivlendi: longrun_harness.log → archive/longrun_harness.log.gz
+2026-02-22 21:08:59.613 | INFO     | src.utils.log_rotator:rotate:134 - [LogRotator] Rotasyon tamamlandı: 3 arşivlendi, 4 korundu
+2026-02-22 21:08:59.613 | INFO     | src.core.exception_guardian:__init__:160 - [Guardian] Başlatıldı: budget=50/h, circuit_thresh=10
+2026-02-22 21:08:59.613 | INFO     | src.core.exception_guardian:install_global_hook:393 - [Guardian] Global exception hook kuruldu
+2026-02-22 21:08:59.613 | DEBUG    | src.memory.smart_cache:__init__:42 - TTLCache başlatıldı: TTL=3600.0s, max=1000
+2026-02-22 21:08:59.614 | DEBUG    | src.memory.smart_cache:__init__:134 - SmartCache başlatıldı (L1+L2+L3).
+2026-02-22 21:11:35.344 | INFO     | src.core.bootstrap:boot:33 - --- QUANT BETTING BOT – BOOT (FULL) ---
+2026-02-22 21:11:35.344 | INFO     | src.core.bootstrap:_boot_infrastructure:69 - Layer 0 – Infrastructure...
+2026-02-22 21:11:35.352 | DEBUG    | src.utils.log_rotator:__init__:52 - [LogRotator] Başlatıldı: log_dir=C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\logs, archive_days=3, compress=True
+2026-02-22 21:11:35.356 | DEBUG    | src.utils.log_rotator:rotate:108 - [LogRotator] Hata: error.log — [WinError 32] Dosya başka bir işlem tarafından kullanıldığından bu işlem dosyaya erişemiyor: 'C:\\Users\\immor\\OneDrive\\Belgeler\\Projelerim\\bahis\\logs\\error.log'
+2026-02-22 21:11:35.357 | INFO     | src.utils.log_rotator:rotate:134 - [LogRotator] Rotasyon tamamlandı: 0 arşivlendi, 3 korundu
+2026-02-22 21:11:35.359 | INFO     | src.core.exception_guardian:__init__:160 - [Guardian] Başlatıldı: budget=50/h, circuit_thresh=10
+2026-02-22 21:11:35.359 | INFO     | src.core.exception_guardian:install_global_hook:393 - [Guardian] Global exception hook kuruldu
+2026-02-22 21:11:35.359 | DEBUG    | src.memory.smart_cache:__init__:42 - TTLCache başlatıldı: TTL=3600.0s, max=1000
+2026-02-22 21:11:35.359 | DEBUG    | src.memory.smart_cache:__init__:134 - SmartCache başlatıldı (L1+L2+L3).
+2026-02-22 21:12:36.823 | INFO     | src.core.bootstrap:boot:33 - --- QUANT BETTING BOT – BOOT (FULL) ---
+2026-02-22 21:12:36.824 | INFO     | src.core.bootstrap:_boot_infrastructure:69 - Layer 0 – Infrastructure...
+2026-02-22 21:12:36.830 | DEBUG    | src.utils.log_rotator:__init__:52 - [LogRotator] Başlatıldı: log_dir=C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\logs, archive_days=3, compress=True
+2026-02-22 21:12:36.834 | DEBUG    | src.utils.log_rotator:rotate:108 - [LogRotator] Hata: error.log — [WinError 32] Dosya başka bir işlem tarafından kullanıldığından bu işlem dosyaya erişemiyor: 'C:\\Users\\immor\\OneDrive\\Belgeler\\Projelerim\\bahis\\logs\\error.log'
+2026-02-22 21:12:36.836 | INFO     | src.utils.log_rotator:rotate:134 - [LogRotator] Rotasyon tamamlandı: 0 arşivlendi, 3 korundu
+2026-02-22 21:12:36.836 | INFO     | src.core.exception_guardian:__init__:160 - [Guardian] Başlatıldı: budget=50/h, circuit_thresh=10
+2026-02-22 21:12:36.836 | INFO     | src.core.exception_guardian:install_global_hook:393 - [Guardian] Global exception hook kuruldu
+2026-02-22 21:12:36.837 | DEBUG    | src.memory.smart_cache:__init__:42 - TTLCache başlatıldı: TTL=3600.0s, max=1000
+2026-02-22 21:12:36.837 | DEBUG    | src.memory.smart_cache:__init__:134 - SmartCache başlatıldı (L1+L2+L3).
+2026-02-22 21:15:45.194 | DEBUG    | src.quant.probabilistic_engine:<module>:48 - pymc/arviz yüklü değil – numpy MCMC fallback.
+2026-02-22 21:16:19.357 | DEBUG    | src.quant.probabilistic_engine:<module>:48 - pymc/arviz yüklü değil – numpy MCMC fallback.
+2026-02-22 21:16:22.845 | INFO     | src.core.bootstrap:boot:90 - --- QUANT BETTING BOT – BOOT (FULL) ---
+2026-02-22 21:16:22.845 | INFO     | src.core.bootstrap:_boot_infrastructure:126 - Layer 0 – Infrastructure...
+2026-02-22 21:16:22.852 | DEBUG    | src.utils.log_rotator:__init__:52 - [LogRotator] Başlatıldı: log_dir=C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\logs, archive_days=3, compress=True
+2026-02-22 21:16:22.861 | DEBUG    | src.utils.log_rotator:rotate:108 - [LogRotator] Hata: error.log — [WinError 32] Dosya başka bir işlem tarafından kullanıldığından bu işlem dosyaya erişemiyor: 'C:\\Users\\immor\\OneDrive\\Belgeler\\Projelerim\\bahis\\logs\\error.log'
+2026-02-22 21:16:22.862 | INFO     | src.utils.log_rotator:rotate:134 - [LogRotator] Rotasyon tamamlandı: 0 arşivlendi, 3 korundu
+2026-02-22 21:16:22.862 | INFO     | src.core.exception_guardian:__init__:160 - [Guardian] Başlatıldı: budget=50/h, circuit_thresh=10
+2026-02-22 21:16:22.862 | INFO     | src.core.exception_guardian:install_global_hook:393 - [Guardian] Global exception hook kuruldu
+2026-02-22 21:16:22.863 | DEBUG    | src.memory.smart_cache:__init__:42 - TTLCache başlatıldı: TTL=3600.0s, max=1000
+2026-02-22 21:16:22.863 | DEBUG    | src.memory.smart_cache:__init__:134 - SmartCache başlatıldı (L1+L2+L3).
+2026-02-22 21:18:03.746 | DEBUG    | src.quant.probabilistic_engine:<module>:48 - pymc/arviz yüklü değil – numpy MCMC fallback.
+2026-02-22 21:18:06.898 | INFO     | src.core.bootstrap:boot:90 - --- QUANT BETTING BOT – BOOT (FULL) ---
+2026-02-22 21:18:06.898 | INFO     | src.core.bootstrap:_boot_infrastructure:126 - Layer 0 – Infrastructure...
+2026-02-22 21:18:06.902 | DEBUG    | src.utils.log_rotator:__init__:52 - [LogRotator] Başlatıldı: log_dir=C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\logs, archive_days=3, compress=True
+2026-02-22 21:18:06.908 | DEBUG    | src.utils.log_rotator:rotate:108 - [LogRotator] Hata: error.log — [WinError 32] Dosya başka bir işlem tarafından kullanıldığından bu işlem dosyaya erişemiyor: 'C:\\Users\\immor\\OneDrive\\Belgeler\\Projelerim\\bahis\\logs\\error.log'
+2026-02-22 21:18:06.908 | INFO     | src.utils.log_rotator:rotate:134 - [LogRotator] Rotasyon tamamlandı: 0 arşivlendi, 3 korundu
+2026-02-22 21:18:06.908 | INFO     | src.core.exception_guardian:__init__:160 - [Guardian] Başlatıldı: budget=50/h, circuit_thresh=10
+2026-02-22 21:18:06.908 | INFO     | src.core.exception_guardian:install_global_hook:393 - [Guardian] Global exception hook kuruldu
+2026-02-22 21:18:06.909 | DEBUG    | src.memory.smart_cache:__init__:42 - TTLCache başlatıldı: TTL=3600.0s, max=1000
+2026-02-22 21:18:06.909 | DEBUG    | src.memory.smart_cache:__init__:134 - SmartCache başlatıldı (L1+L2+L3).
+2026-02-22 21:18:17.148 | DEBUG    | src.quant.probabilistic_engine:<module>:48 - pymc/arviz yüklü değil – numpy MCMC fallback.
+2026-02-22 21:18:20.330 | INFO     | src.core.bootstrap:boot:90 - --- QUANT BETTING BOT – BOOT (FULL) ---
+2026-02-22 21:18:20.330 | INFO     | src.core.bootstrap:_boot_infrastructure:126 - Layer 0 – Infrastructure...
+2026-02-22 21:18:20.335 | DEBUG    | src.utils.log_rotator:__init__:52 - [LogRotator] Başlatıldı: log_dir=C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\logs, archive_days=3, compress=True
+2026-02-22 21:18:20.339 | DEBUG    | src.utils.log_rotator:rotate:108 - [LogRotator] Hata: error.log — [WinError 32] Dosya başka bir işlem tarafından kullanıldığından bu işlem dosyaya erişemiyor: 'C:\\Users\\immor\\OneDrive\\Belgeler\\Projelerim\\bahis\\logs\\error.log'
+2026-02-22 21:18:20.339 | INFO     | src.utils.log_rotator:rotate:134 - [LogRotator] Rotasyon tamamlandı: 0 arşivlendi, 3 korundu
+2026-02-22 21:18:20.340 | INFO     | src.core.exception_guardian:__init__:160 - [Guardian] Başlatıldı: budget=50/h, circuit_thresh=10
+2026-02-22 21:18:20.340 | INFO     | src.core.exception_guardian:install_global_hook:393 - [Guardian] Global exception hook kuruldu
+2026-02-22 21:18:20.340 | DEBUG    | src.memory.smart_cache:__init__:42 - TTLCache başlatıldı: TTL=3600.0s, max=1000
+2026-02-22 21:18:20.340 | DEBUG    | src.memory.smart_cache:__init__:134 - SmartCache başlatıldı (L1+L2+L3).
+2026-02-22 21:18:57.944 | DEBUG    | src.quant.probabilistic_engine:<module>:48 - pymc/arviz yüklü değil – numpy MCMC fallback.
+2026-02-22 21:19:04.370 | INFO     | src.core.bootstrap:boot:90 - --- QUANT BETTING BOT – BOOT (FULL) ---
+2026-02-22 21:19:04.370 | INFO     | src.core.bootstrap:_boot_infrastructure:126 - Layer 0 – Infrastructure...
+2026-02-22 21:19:04.383 | DEBUG    | src.utils.log_rotator:__init__:52 - [LogRotator] Başlatıldı: log_dir=C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\logs, archive_days=3, compress=True
+2026-02-22 21:19:04.397 | DEBUG    | src.utils.log_rotator:rotate:108 - [LogRotator] Hata: error.log — [WinError 32] Dosya başka bir işlem tarafından kullanıldığından bu işlem dosyaya erişemiyor: 'C:\\Users\\immor\\OneDrive\\Belgeler\\Projelerim\\bahis\\logs\\error.log'
+2026-02-22 21:19:04.399 | INFO     | src.utils.log_rotator:rotate:134 - [LogRotator] Rotasyon tamamlandı: 0 arşivlendi, 3 korundu
+2026-02-22 21:19:04.399 | INFO     | src.core.exception_guardian:__init__:160 - [Guardian] Başlatıldı: budget=50/h, circuit_thresh=10
+2026-02-22 21:19:04.401 | INFO     | src.core.exception_guardian:install_global_hook:393 - [Guardian] Global exception hook kuruldu
+2026-02-22 21:19:04.401 | DEBUG    | src.memory.smart_cache:__init__:42 - TTLCache başlatıldı: TTL=3600.0s, max=1000
+2026-02-22 21:19:04.401 | DEBUG    | src.memory.smart_cache:__init__:134 - SmartCache başlatıldı (L1+L2+L3).
+2026-02-22 21:20:02.573 | DEBUG    | src.quant.probabilistic_engine:<module>:48 - pymc/arviz yüklü değil – numpy MCMC fallback.
+2026-02-22 21:20:05.684 | INFO     | src.core.bootstrap:boot:90 - --- QUANT BETTING BOT – BOOT (FULL) ---
+2026-02-22 21:20:05.684 | INFO     | src.core.bootstrap:_boot_infrastructure:126 - Layer 0 – Infrastructure...
+2026-02-22 21:20:05.688 | DEBUG    | src.utils.log_rotator:__init__:52 - [LogRotator] Başlatıldı: log_dir=C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\logs, archive_days=3, compress=True
+2026-02-22 21:20:05.693 | DEBUG    | src.utils.log_rotator:rotate:108 - [LogRotator] Hata: error.log — [WinError 32] Dosya başka bir işlem tarafından kullanıldığından bu işlem dosyaya erişemiyor: 'C:\\Users\\immor\\OneDrive\\Belgeler\\Projelerim\\bahis\\logs\\error.log'
+2026-02-22 21:20:05.694 | INFO     | src.utils.log_rotator:rotate:134 - [LogRotator] Rotasyon tamamlandı: 0 arşivlendi, 3 korundu
+2026-02-22 21:20:05.694 | INFO     | src.core.exception_guardian:__init__:160 - [Guardian] Başlatıldı: budget=50/h, circuit_thresh=10
+2026-02-22 21:20:05.694 | INFO     | src.core.exception_guardian:install_global_hook:393 - [Guardian] Global exception hook kuruldu
+2026-02-22 21:20:05.694 | DEBUG    | src.memory.smart_cache:__init__:42 - TTLCache başlatıldı: TTL=3600.0s, max=1000
+2026-02-22 21:20:05.695 | DEBUG    | src.memory.smart_cache:__init__:134 - SmartCache başlatıldı (L1+L2+L3).
+2026-02-22 21:39:45.950 | DEBUG    | src.quant.probabilistic_engine:<module>:48 - pymc/arviz yüklü değil – numpy MCMC fallback.
+2026-02-22 21:41:08.872 | DEBUG    | src.quant.probabilistic_engine:<module>:48 - pymc/arviz yüklü değil – numpy MCMC fallback.
+2026-02-22 21:41:11.983 | INFO     | src.core.bootstrap:boot:90 - --- QUANT BETTING BOT – BOOT (FULL) ---
+2026-02-22 21:41:11.983 | INFO     | src.core.bootstrap:_boot_infrastructure:126 - Layer 0 – Infrastructure...
+2026-02-22 21:41:11.998 | DEBUG    | src.utils.log_rotator:__init__:52 - [LogRotator] Başlatıldı: log_dir=C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\logs, archive_days=3, compress=True
+2026-02-22 21:41:12.003 | DEBUG    | src.utils.log_rotator:rotate:108 - [LogRotator] Hata: error.log — [WinError 32] Dosya başka bir işlem tarafından kullanıldığından bu işlem dosyaya erişemiyor: 'C:\\Users\\immor\\OneDrive\\Belgeler\\Projelerim\\bahis\\logs\\error.log'
+2026-02-22 21:41:12.004 | INFO     | src.utils.log_rotator:rotate:134 - [LogRotator] Rotasyon tamamlandı: 0 arşivlendi, 3 korundu
+2026-02-22 21:41:12.005 | INFO     | src.core.exception_guardian:__init__:160 - [Guardian] Başlatıldı: budget=50/h, circuit_thresh=10
+2026-02-22 21:41:12.005 | INFO     | src.core.exception_guardian:install_global_hook:393 - [Guardian] Global exception hook kuruldu
+2026-02-22 21:41:12.005 | DEBUG    | src.memory.smart_cache:__init__:42 - TTLCache başlatıldı: TTL=3600.0s, max=1000
+2026-02-22 21:41:12.006 | DEBUG    | src.memory.smart_cache:__init__:134 - SmartCache başlatıldı (L1+L2+L3).
+2026-02-22 21:42:15.433 | DEBUG    | src.quant.probabilistic_engine:<module>:48 - pymc/arviz yüklü değil – numpy MCMC fallback.
+2026-02-22 21:42:18.555 | INFO     | src.core.bootstrap:boot:90 - --- QUANT BETTING BOT – BOOT (FULL) ---
+2026-02-22 21:42:18.555 | INFO     | src.core.bootstrap:_boot_infrastructure:126 - Layer 0 – Infrastructure...
+2026-02-22 21:42:18.558 | DEBUG    | src.utils.log_rotator:__init__:52 - [LogRotator] Başlatıldı: log_dir=C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\logs, archive_days=3, compress=True
+2026-02-22 21:42:18.567 | DEBUG    | src.utils.log_rotator:rotate:108 - [LogRotator] Hata: error.log — [WinError 32] Dosya başka bir işlem tarafından kullanıldığından bu işlem dosyaya erişemiyor: 'C:\\Users\\immor\\OneDrive\\Belgeler\\Projelerim\\bahis\\logs\\error.log'
+2026-02-22 21:42:18.567 | INFO     | src.utils.log_rotator:rotate:134 - [LogRotator] Rotasyon tamamlandı: 0 arşivlendi, 3 korundu
+2026-02-22 21:42:18.568 | INFO     | src.core.exception_guardian:__init__:160 - [Guardian] Başlatıldı: budget=50/h, circuit_thresh=10
+2026-02-22 21:42:18.568 | INFO     | src.core.exception_guardian:install_global_hook:393 - [Guardian] Global exception hook kuruldu
+2026-02-22 21:42:18.568 | DEBUG    | src.memory.smart_cache:__init__:42 - TTLCache başlatıldı: TTL=3600.0s, max=1000
+2026-02-22 21:42:18.569 | DEBUG    | src.memory.smart_cache:__init__:134 - SmartCache başlatıldı (L1+L2+L3).
+2026-02-22 21:42:47.385 | DEBUG    | src.quant.probabilistic_engine:<module>:48 - pymc/arviz yüklü değil – numpy MCMC fallback.
+2026-02-22 21:42:50.624 | INFO     | src.core.bootstrap:boot:90 - --- QUANT BETTING BOT – BOOT (FULL) ---
+2026-02-22 21:42:50.624 | INFO     | src.core.bootstrap:_boot_infrastructure:126 - Layer 0 – Infrastructure...
+2026-02-22 21:42:50.630 | DEBUG    | src.utils.log_rotator:__init__:52 - [LogRotator] Başlatıldı: log_dir=C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\logs, archive_days=3, compress=True
+2026-02-22 21:42:50.638 | DEBUG    | src.utils.log_rotator:rotate:108 - [LogRotator] Hata: error.log — [WinError 32] Dosya başka bir işlem tarafından kullanıldığından bu işlem dosyaya erişemiyor: 'C:\\Users\\immor\\OneDrive\\Belgeler\\Projelerim\\bahis\\logs\\error.log'
+2026-02-22 21:42:50.639 | INFO     | src.utils.log_rotator:rotate:134 - [LogRotator] Rotasyon tamamlandı: 0 arşivlendi, 3 korundu
+2026-02-22 21:42:50.639 | INFO     | src.core.exception_guardian:__init__:160 - [Guardian] Başlatıldı: budget=50/h, circuit_thresh=10
+2026-02-22 21:42:50.639 | INFO     | src.core.exception_guardian:install_global_hook:393 - [Guardian] Global exception hook kuruldu
+2026-02-22 21:42:50.639 | DEBUG    | src.memory.smart_cache:__init__:42 - TTLCache başlatıldı: TTL=3600.0s, max=1000
+2026-02-22 21:42:50.640 | DEBUG    | src.memory.smart_cache:__init__:134 - SmartCache başlatıldı (L1+L2+L3).
+2026-02-22 21:43:37.026 | DEBUG    | src.quant.probabilistic_engine:<module>:48 - pymc/arviz yüklü değil – numpy MCMC fallback.
+2026-02-22 21:43:40.224 | WARNING  | src.ui.voice_notifier:<module>:16 - gTTS kütüphanesi yüklü değil. Sesli bildirimler devre dışı.
+2026-02-22 21:43:40.398 | DEBUG    | src.core.workflow_orchestrator:<module>:70 - prefect yüklü değil – asyncio fallback orkestratör.
+2026-02-22 21:43:40.402 | WARNING  | src.core.job_scheduler:<module>:33 - apscheduler yüklü değil – basit zamanlayıcı kullanılacak.
+2026-02-22 21:43:40.403 | INFO     | src.core.bootstrap:boot:99 - --- QUANT BETTING BOT – BOOT (FULL) ---
+2026-02-22 21:43:40.403 | INFO     | src.core.bootstrap:_boot_infrastructure:135 - Layer 0 – Infrastructure...
+2026-02-22 21:43:40.408 | DEBUG    | src.utils.log_rotator:__init__:52 - [LogRotator] Başlatıldı: log_dir=C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\logs, archive_days=3, compress=True
+2026-02-22 21:43:40.413 | DEBUG    | src.utils.log_rotator:rotate:108 - [LogRotator] Hata: error.log — [WinError 32] Dosya başka bir işlem tarafından kullanıldığından bu işlem dosyaya erişemiyor: 'C:\\Users\\immor\\OneDrive\\Belgeler\\Projelerim\\bahis\\logs\\error.log'
+2026-02-22 21:43:40.413 | INFO     | src.utils.log_rotator:rotate:134 - [LogRotator] Rotasyon tamamlandı: 0 arşivlendi, 3 korundu
+2026-02-22 21:43:40.413 | INFO     | src.core.exception_guardian:__init__:160 - [Guardian] Başlatıldı: budget=50/h, circuit_thresh=10
+2026-02-22 21:43:40.413 | INFO     | src.core.exception_guardian:install_global_hook:393 - [Guardian] Global exception hook kuruldu
+2026-02-22 21:43:40.413 | DEBUG    | src.memory.smart_cache:__init__:42 - TTLCache başlatıldı: TTL=3600.0s, max=1000
+2026-02-22 21:43:40.413 | DEBUG    | src.memory.smart_cache:__init__:134 - SmartCache başlatıldı (L1+L2+L3).
+2026-02-22 21:44:02.426 | DEBUG    | src.quant.probabilistic_engine:<module>:48 - pymc/arviz yüklü değil – numpy MCMC fallback.
+2026-02-22 21:44:05.678 | WARNING  | src.ui.voice_notifier:<module>:16 - gTTS kütüphanesi yüklü değil. Sesli bildirimler devre dışı.
+2026-02-22 21:44:05.695 | DEBUG    | src.core.workflow_orchestrator:<module>:70 - prefect yüklü değil – asyncio fallback orkestratör.
+2026-02-22 21:44:05.698 | WARNING  | src.core.job_scheduler:<module>:33 - apscheduler yüklü değil – basit zamanlayıcı kullanılacak.
+2026-02-22 21:44:05.698 | INFO     | src.core.bootstrap:boot:99 - --- QUANT BETTING BOT – BOOT (FULL) ---
+2026-02-22 21:44:05.698 | INFO     | src.core.bootstrap:_boot_infrastructure:135 - Layer 0 – Infrastructure...
+2026-02-22 21:44:05.705 | DEBUG    | src.utils.log_rotator:__init__:52 - [LogRotator] Başlatıldı: log_dir=C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\logs, archive_days=3, compress=True
+2026-02-22 21:44:05.710 | DEBUG    | src.utils.log_rotator:rotate:108 - [LogRotator] Hata: error.log — [WinError 32] Dosya başka bir işlem tarafından kullanıldığından bu işlem dosyaya erişemiyor: 'C:\\Users\\immor\\OneDrive\\Belgeler\\Projelerim\\bahis\\logs\\error.log'
+2026-02-22 21:44:05.711 | INFO     | src.utils.log_rotator:rotate:134 - [LogRotator] Rotasyon tamamlandı: 0 arşivlendi, 3 korundu
+2026-02-22 21:44:05.711 | INFO     | src.core.exception_guardian:__init__:160 - [Guardian] Başlatıldı: budget=50/h, circuit_thresh=10
+2026-02-22 21:44:05.711 | INFO     | src.core.exception_guardian:install_global_hook:393 - [Guardian] Global exception hook kuruldu
+2026-02-22 21:44:05.711 | DEBUG    | src.memory.smart_cache:__init__:42 - TTLCache başlatıldı: TTL=3600.0s, max=1000
+2026-02-22 21:44:05.713 | DEBUG    | src.memory.smart_cache:__init__:134 - SmartCache başlatıldı (L1+L2+L3).
+2026-02-22 21:46:41.484 | DEBUG    | src.quant.probabilistic_engine:<module>:48 - pymc/arviz yüklü değil – numpy MCMC fallback.
+2026-02-22 21:46:44.671 | WARNING  | src.ui.voice_notifier:<module>:16 - gTTS kütüphanesi yüklü değil. Sesli bildirimler devre dışı.
+2026-02-22 21:46:44.689 | DEBUG    | src.core.workflow_orchestrator:<module>:70 - prefect yüklü değil – asyncio fallback orkestratör.
+2026-02-22 21:46:44.689 | WARNING  | src.core.job_scheduler:<module>:33 - apscheduler yüklü değil – basit zamanlayıcı kullanılacak.
+2026-02-22 21:46:44.693 | INFO     | src.core.bootstrap:boot:99 - --- QUANT BETTING BOT – BOOT (FULL) ---
+2026-02-22 21:46:44.693 | INFO     | src.core.bootstrap:_boot_infrastructure:135 - Layer 0 – Infrastructure...
+2026-02-22 21:46:44.697 | DEBUG    | src.utils.log_rotator:__init__:52 - [LogRotator] Başlatıldı: log_dir=C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\logs, archive_days=3, compress=True
+2026-02-22 21:46:44.698 | DEBUG    | src.utils.log_rotator:rotate:108 - [LogRotator] Hata: error.log — [WinError 32] Dosya başka bir işlem tarafından kullanıldığından bu işlem dosyaya erişemiyor: 'C:\\Users\\immor\\OneDrive\\Belgeler\\Projelerim\\bahis\\logs\\error.log'
+2026-02-22 21:46:44.703 | INFO     | src.utils.log_rotator:rotate:134 - [LogRotator] Rotasyon tamamlandı: 0 arşivlendi, 3 korundu
+2026-02-22 21:46:44.703 | INFO     | src.core.exception_guardian:__init__:160 - [Guardian] Başlatıldı: budget=50/h, circuit_thresh=10
+2026-02-22 21:46:44.703 | INFO     | src.core.exception_guardian:install_global_hook:393 - [Guardian] Global exception hook kuruldu
+2026-02-22 21:46:44.704 | DEBUG    | src.memory.smart_cache:__init__:42 - TTLCache başlatıldı: TTL=3600.0s, max=1000
+2026-02-22 21:46:44.704 | DEBUG    | src.memory.smart_cache:__init__:134 - SmartCache başlatıldı (L1+L2+L3).
+2026-02-22 21:47:28.352 | DEBUG    | src.quant.probabilistic_engine:<module>:48 - pymc/arviz yüklü değil – numpy MCMC fallback.
+2026-02-22 21:47:31.404 | WARNING  | src.ui.voice_notifier:<module>:16 - gTTS kütüphanesi yüklü değil. Sesli bildirimler devre dışı.
+2026-02-22 21:47:31.421 | DEBUG    | src.core.workflow_orchestrator:<module>:70 - prefect yüklü değil – asyncio fallback orkestratör.
+2026-02-22 21:47:31.423 | WARNING  | src.core.job_scheduler:<module>:33 - apscheduler yüklü değil – basit zamanlayıcı kullanılacak.
+2026-02-22 21:47:31.424 | INFO     | src.core.bootstrap:boot:99 - --- QUANT BETTING BOT – BOOT (FULL) ---
+2026-02-22 21:47:31.424 | INFO     | src.core.bootstrap:_boot_infrastructure:135 - Layer 0 – Infrastructure...
+2026-02-22 21:47:31.429 | DEBUG    | src.utils.log_rotator:__init__:52 - [LogRotator] Başlatıldı: log_dir=C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\logs, archive_days=3, compress=True
+2026-02-22 21:47:31.433 | DEBUG    | src.utils.log_rotator:rotate:108 - [LogRotator] Hata: error.log — [WinError 32] Dosya başka bir işlem tarafından kullanıldığından bu işlem dosyaya erişemiyor: 'C:\\Users\\immor\\OneDrive\\Belgeler\\Projelerim\\bahis\\logs\\error.log'
+2026-02-22 21:47:31.434 | INFO     | src.utils.log_rotator:rotate:134 - [LogRotator] Rotasyon tamamlandı: 0 arşivlendi, 3 korundu
+2026-02-22 21:47:31.434 | INFO     | src.core.exception_guardian:__init__:160 - [Guardian] Başlatıldı: budget=50/h, circuit_thresh=10
+2026-02-22 21:47:31.434 | INFO     | src.core.exception_guardian:install_global_hook:393 - [Guardian] Global exception hook kuruldu
+2026-02-22 21:47:31.435 | DEBUG    | src.memory.smart_cache:__init__:42 - TTLCache başlatıldı: TTL=3600.0s, max=1000
+2026-02-22 21:47:31.435 | DEBUG    | src.memory.smart_cache:__init__:134 - SmartCache başlatıldı (L1+L2+L3).
+2026-02-22 21:47:57.934 | DEBUG    | src.quant.probabilistic_engine:<module>:48 - pymc/arviz yüklü değil – numpy MCMC fallback.
+2026-02-22 21:48:00.983 | WARNING  | src.ui.voice_notifier:<module>:16 - gTTS kütüphanesi yüklü değil. Sesli bildirimler devre dışı.
+2026-02-22 21:48:00.998 | DEBUG    | src.core.workflow_orchestrator:<module>:70 - prefect yüklü değil – asyncio fallback orkestratör.
+2026-02-22 21:48:00.998 | WARNING  | src.core.job_scheduler:<module>:33 - apscheduler yüklü değil – basit zamanlayıcı kullanılacak.
+2026-02-22 21:48:01.002 | INFO     | src.core.bootstrap:boot:99 - --- QUANT BETTING BOT – BOOT (FULL) ---
+2026-02-22 21:48:01.002 | INFO     | src.core.bootstrap:_boot_infrastructure:135 - Layer 0 – Infrastructure...
+2026-02-22 21:48:01.007 | DEBUG    | src.utils.log_rotator:__init__:52 - [LogRotator] Başlatıldı: log_dir=C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\logs, archive_days=3, compress=True
+2026-02-22 21:48:01.013 | DEBUG    | src.utils.log_rotator:rotate:108 - [LogRotator] Hata: error.log — [WinError 32] Dosya başka bir işlem tarafından kullanıldığından bu işlem dosyaya erişemiyor: 'C:\\Users\\immor\\OneDrive\\Belgeler\\Projelerim\\bahis\\logs\\error.log'
+2026-02-22 21:48:01.013 | INFO     | src.utils.log_rotator:rotate:134 - [LogRotator] Rotasyon tamamlandı: 0 arşivlendi, 3 korundu
+2026-02-22 21:48:01.013 | INFO     | src.core.exception_guardian:__init__:160 - [Guardian] Başlatıldı: budget=50/h, circuit_thresh=10
+2026-02-22 21:48:01.013 | INFO     | src.core.exception_guardian:install_global_hook:393 - [Guardian] Global exception hook kuruldu
+2026-02-22 21:48:01.013 | DEBUG    | src.memory.smart_cache:__init__:42 - TTLCache başlatıldı: TTL=3600.0s, max=1000
+2026-02-22 21:48:01.013 | DEBUG    | src.memory.smart_cache:__init__:134 - SmartCache başlatıldı (L1+L2+L3).
+2026-02-22 21:48:39.147 | DEBUG    | src.quant.probabilistic_engine:<module>:48 - pymc/arviz yüklü değil – numpy MCMC fallback.
+2026-02-22 21:48:42.308 | WARNING  | src.ui.voice_notifier:<module>:16 - gTTS kütüphanesi yüklü değil. Sesli bildirimler devre dışı.
+2026-02-22 21:48:42.324 | DEBUG    | src.core.workflow_orchestrator:<module>:70 - prefect yüklü değil – asyncio fallback orkestratör.
+2026-02-22 21:48:42.327 | WARNING  | src.core.job_scheduler:<module>:33 - apscheduler yüklü değil – basit zamanlayıcı kullanılacak.
+2026-02-22 21:48:42.328 | INFO     | src.core.bootstrap:boot:99 - --- QUANT BETTING BOT – BOOT (FULL) ---
+2026-02-22 21:48:42.329 | INFO     | src.core.bootstrap:_boot_infrastructure:135 - Layer 0 – Infrastructure...
+2026-02-22 21:48:42.334 | DEBUG    | src.utils.log_rotator:__init__:52 - [LogRotator] Başlatıldı: log_dir=C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\logs, archive_days=3, compress=True
+2026-02-22 21:48:42.338 | DEBUG    | src.utils.log_rotator:rotate:108 - [LogRotator] Hata: error.log — [WinError 32] Dosya başka bir işlem tarafından kullanıldığından bu işlem dosyaya erişemiyor: 'C:\\Users\\immor\\OneDrive\\Belgeler\\Projelerim\\bahis\\logs\\error.log'
+2026-02-22 21:48:42.339 | INFO     | src.utils.log_rotator:rotate:134 - [LogRotator] Rotasyon tamamlandı: 0 arşivlendi, 3 korundu
+2026-02-22 21:48:42.339 | INFO     | src.core.exception_guardian:__init__:160 - [Guardian] Başlatıldı: budget=50/h, circuit_thresh=10
+2026-02-22 21:48:42.339 | INFO     | src.core.exception_guardian:install_global_hook:393 - [Guardian] Global exception hook kuruldu
+2026-02-22 21:48:42.339 | DEBUG    | src.memory.smart_cache:__init__:42 - TTLCache başlatıldı: TTL=3600.0s, max=1000
+2026-02-22 21:48:42.339 | DEBUG    | src.memory.smart_cache:__init__:134 - SmartCache başlatıldı (L1+L2+L3).
+2026-02-22 21:52:40.907 | DEBUG    | src.quant.probabilistic_engine:<module>:48 - pymc/arviz yüklü değil – numpy MCMC fallback.
+2026-02-22 21:52:43.927 | WARNING  | src.ui.voice_notifier:<module>:16 - gTTS kütüphanesi yüklü değil. Sesli bildirimler devre dışı.
+2026-02-22 21:52:43.965 | DEBUG    | src.core.workflow_orchestrator:<module>:70 - prefect yüklü değil – asyncio fallback orkestratör.
+2026-02-22 21:52:43.968 | WARNING  | src.core.job_scheduler:<module>:33 - apscheduler yüklü değil – basit zamanlayıcı kullanılacak.
+2026-02-22 21:52:43.970 | INFO     | src.core.bootstrap:boot:99 - --- QUANT BETTING BOT – BOOT (FULL) ---
+2026-02-22 21:52:43.970 | INFO     | src.core.bootstrap:_boot_infrastructure:135 - Layer 0 – Infrastructure...
+2026-02-22 21:52:43.974 | DEBUG    | src.utils.log_rotator:__init__:52 - [LogRotator] Başlatıldı: log_dir=C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\logs, archive_days=3, compress=True
+2026-02-22 21:52:43.978 | DEBUG    | src.utils.log_rotator:rotate:108 - [LogRotator] Hata: error.log — [WinError 32] Dosya başka bir işlem tarafından kullanıldığından bu işlem dosyaya erişemiyor: 'C:\\Users\\immor\\OneDrive\\Belgeler\\Projelerim\\bahis\\logs\\error.log'
+2026-02-22 21:52:43.979 | INFO     | src.utils.log_rotator:rotate:134 - [LogRotator] Rotasyon tamamlandı: 0 arşivlendi, 3 korundu
+2026-02-22 21:52:43.979 | INFO     | src.core.exception_guardian:__init__:160 - [Guardian] Başlatıldı: budget=50/h, circuit_thresh=10
+2026-02-22 21:52:43.980 | INFO     | src.core.exception_guardian:install_global_hook:393 - [Guardian] Global exception hook kuruldu
+2026-02-22 21:52:43.980 | DEBUG    | src.memory.smart_cache:__init__:42 - TTLCache başlatıldı: TTL=3600.0s, max=1000
+2026-02-22 21:52:43.980 | DEBUG    | src.memory.smart_cache:__init__:134 - SmartCache başlatıldı (L1+L2+L3).
+2026-02-22 21:53:33.790 | DEBUG    | src.quant.probabilistic_engine:<module>:48 - pymc/arviz yüklü değil – numpy MCMC fallback.
+2026-02-22 21:57:27.812 | DEBUG    | src.quant.probabilistic_engine:<module>:48 - pymc/arviz yüklü değil – numpy MCMC fallback.
+2026-02-22 21:57:31.327 | WARNING  | src.ui.voice_notifier:<module>:16 - gTTS kütüphanesi yüklü değil. Sesli bildirimler devre dışı.
+2026-02-22 21:57:31.358 | DEBUG    | src.core.workflow_orchestrator:<module>:70 - prefect yüklü değil – asyncio fallback orkestratör.
+2026-02-22 21:57:31.361 | WARNING  | src.core.job_scheduler:<module>:33 - apscheduler yüklü değil – basit zamanlayıcı kullanılacak.
+2026-02-22 21:57:31.363 | INFO     | src.core.bootstrap:boot:99 - --- QUANT BETTING BOT – BOOT (FULL) ---
+2026-02-22 21:57:31.363 | INFO     | src.core.bootstrap:_boot_infrastructure:135 - Layer 0 – Infrastructure...
+2026-02-22 21:57:31.369 | DEBUG    | src.utils.log_rotator:__init__:52 - [LogRotator] Başlatıldı: log_dir=C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\logs, archive_days=3, compress=True
+2026-02-22 21:57:31.374 | DEBUG    | src.utils.log_rotator:rotate:108 - [LogRotator] Hata: error.log — [WinError 32] Dosya başka bir işlem tarafından kullanıldığından bu işlem dosyaya erişemiyor: 'C:\\Users\\immor\\OneDrive\\Belgeler\\Projelerim\\bahis\\logs\\error.log'
+2026-02-22 21:57:31.376 | INFO     | src.utils.log_rotator:rotate:134 - [LogRotator] Rotasyon tamamlandı: 0 arşivlendi, 3 korundu
+2026-02-22 21:57:31.376 | INFO     | src.core.exception_guardian:__init__:160 - [Guardian] Başlatıldı: budget=50/h, circuit_thresh=10
+2026-02-22 21:57:31.376 | INFO     | src.core.exception_guardian:install_global_hook:393 - [Guardian] Global exception hook kuruldu
+2026-02-22 21:57:31.376 | DEBUG    | src.memory.smart_cache:__init__:42 - TTLCache başlatıldı: TTL=3600.0s, max=1000
+2026-02-22 21:57:31.376 | DEBUG    | src.memory.smart_cache:__init__:134 - SmartCache başlatıldı (L1+L2+L3).
+2026-02-22 22:14:57.631 | DEBUG    | src.quant.probabilistic_engine:<module>:48 - pymc/arviz yüklü değil – numpy MCMC fallback.
+2026-02-22 22:15:00.958 | WARNING  | src.ui.voice_notifier:<module>:16 - gTTS kütüphanesi yüklü değil. Sesli bildirimler devre dışı.
+2026-02-22 22:15:00.979 | DEBUG    | src.core.workflow_orchestrator:<module>:70 - prefect yüklü değil – asyncio fallback orkestratör.
+2026-02-22 22:15:00.980 | WARNING  | src.core.job_scheduler:<module>:33 - apscheduler yüklü değil – basit zamanlayıcı kullanılacak.
+2026-02-22 22:15:00.980 | INFO     | src.core.bootstrap:boot:99 - --- QUANT BETTING BOT – BOOT (FULL) ---
+2026-02-22 22:15:00.980 | INFO     | src.core.bootstrap:_boot_infrastructure:135 - Layer 0 – Infrastructure...
+2026-02-22 22:15:00.985 | DEBUG    | src.utils.log_rotator:__init__:52 - [LogRotator] Başlatıldı: log_dir=C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\logs, archive_days=3, compress=True
+2026-02-22 22:15:00.997 | INFO     | src.utils.log_rotator:rotate:92 - [LogRotator] Arşivlendi: boot.log → archive/boot.log.gz
+2026-02-22 22:15:01.002 | DEBUG    | src.utils.log_rotator:rotate:108 - [LogRotator] Hata: error.log — [WinError 32] Dosya başka bir işlem tarafından kullanıldığından bu işlem dosyaya erişemiyor: 'C:\\Users\\immor\\OneDrive\\Belgeler\\Projelerim\\bahis\\logs\\error.log'
+2026-02-22 22:15:01.002 | INFO     | src.utils.log_rotator:rotate:134 - [LogRotator] Rotasyon tamamlandı: 1 arşivlendi, 2 korundu
+2026-02-22 22:15:01.002 | INFO     | src.core.exception_guardian:__init__:160 - [Guardian] Başlatıldı: budget=50/h, circuit_thresh=10
+2026-02-22 22:15:01.002 | INFO     | src.core.exception_guardian:install_global_hook:393 - [Guardian] Global exception hook kuruldu
+2026-02-22 22:15:01.004 | DEBUG    | src.memory.smart_cache:__init__:42 - TTLCache başlatıldı: TTL=3600.0s, max=1000
+2026-02-22 22:15:01.004 | DEBUG    | src.memory.smart_cache:__init__:134 - SmartCache başlatıldı (L1+L2+L3).
+2026-02-22 22:18:40.393 | DEBUG    | src.quant.probabilistic_engine:<module>:48 - pymc/arviz yüklü değil – numpy MCMC fallback.
+2026-02-22 22:18:43.599 | WARNING  | src.ui.voice_notifier:<module>:16 - gTTS kütüphanesi yüklü değil. Sesli bildirimler devre dışı.
+2026-02-22 22:18:43.625 | DEBUG    | src.core.workflow_orchestrator:<module>:71 - prefect yüklü değil – asyncio fallback orkestratör.
+2026-02-22 22:18:43.627 | WARNING  | src.core.job_scheduler:<module>:33 - apscheduler yüklü değil – basit zamanlayıcı kullanılacak.
+2026-02-22 22:18:43.628 | INFO     | src.core.bootstrap:boot:99 - --- QUANT BETTING BOT – BOOT (FULL) ---
+2026-02-22 22:18:43.628 | INFO     | src.core.bootstrap:_boot_infrastructure:135 - Layer 0 – Infrastructure...
+2026-02-22 22:18:43.633 | DEBUG    | src.utils.log_rotator:__init__:52 - [LogRotator] Başlatıldı: log_dir=C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\logs, archive_days=3, compress=True
+2026-02-22 22:18:43.637 | DEBUG    | src.utils.log_rotator:rotate:108 - [LogRotator] Hata: error.log — [WinError 32] Dosya başka bir işlem tarafından kullanıldığından bu işlem dosyaya erişemiyor: 'C:\\Users\\immor\\OneDrive\\Belgeler\\Projelerim\\bahis\\logs\\error.log'
+2026-02-22 22:18:43.638 | INFO     | src.utils.log_rotator:rotate:134 - [LogRotator] Rotasyon tamamlandı: 0 arşivlendi, 2 korundu
+2026-02-22 22:18:43.638 | INFO     | src.core.exception_guardian:__init__:160 - [Guardian] Başlatıldı: budget=50/h, circuit_thresh=10
+2026-02-22 22:18:43.638 | INFO     | src.core.exception_guardian:install_global_hook:393 - [Guardian] Global exception hook kuruldu
+2026-02-22 22:18:43.638 | DEBUG    | src.memory.smart_cache:__init__:42 - TTLCache başlatıldı: TTL=3600.0s, max=1000
+2026-02-22 22:18:43.639 | DEBUG    | src.memory.smart_cache:__init__:134 - SmartCache başlatıldı (L1+L2+L3).
+2026-02-22 22:20:07.847 | DEBUG    | src.quant.probabilistic_engine:<module>:48 - pymc/arviz yüklü değil – numpy MCMC fallback.
+2026-02-22 22:20:11.455 | WARNING  | src.ui.voice_notifier:<module>:16 - gTTS kütüphanesi yüklü değil. Sesli bildirimler devre dışı.
+2026-02-22 22:20:11.477 | DEBUG    | src.core.workflow_orchestrator:<module>:71 - prefect yüklü değil – asyncio fallback orkestratör.
+2026-02-22 22:20:11.480 | WARNING  | src.core.job_scheduler:<module>:33 - apscheduler yüklü değil – basit zamanlayıcı kullanılacak.
+2026-02-22 22:20:11.481 | INFO     | src.core.bootstrap:boot:99 - --- QUANT BETTING BOT – BOOT (FULL) ---
+2026-02-22 22:20:11.482 | INFO     | src.core.bootstrap:_boot_infrastructure:135 - Layer 0 – Infrastructure...
+2026-02-22 22:20:11.484 | DEBUG    | src.utils.log_rotator:__init__:52 - [LogRotator] Başlatıldı: log_dir=C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\logs, archive_days=3, compress=True
+2026-02-22 22:20:11.491 | DEBUG    | src.utils.log_rotator:rotate:108 - [LogRotator] Hata: error.log — [WinError 32] Dosya başka bir işlem tarafından kullanıldığından bu işlem dosyaya erişemiyor: 'C:\\Users\\immor\\OneDrive\\Belgeler\\Projelerim\\bahis\\logs\\error.log'
+2026-02-22 22:20:11.491 | INFO     | src.utils.log_rotator:rotate:134 - [LogRotator] Rotasyon tamamlandı: 0 arşivlendi, 2 korundu
+2026-02-22 22:20:11.492 | INFO     | src.core.exception_guardian:__init__:160 - [Guardian] Başlatıldı: budget=50/h, circuit_thresh=10
+2026-02-22 22:20:11.492 | INFO     | src.core.exception_guardian:install_global_hook:393 - [Guardian] Global exception hook kuruldu
+2026-02-22 22:20:11.492 | DEBUG    | src.memory.smart_cache:__init__:42 - TTLCache başlatıldı: TTL=3600.0s, max=1000
+2026-02-22 22:20:11.492 | DEBUG    | src.memory.smart_cache:__init__:134 - SmartCache başlatıldı (L1+L2+L3).
+2026-02-22 22:21:29.215 | DEBUG    | src.quant.probabilistic_engine:<module>:48 - pymc/arviz yüklü değil – numpy MCMC fallback.
+2026-02-22 22:21:49.778 | DEBUG    | src.quant.probabilistic_engine:<module>:48 - pymc/arviz yüklü değil – numpy MCMC fallback.
+2026-02-22 22:21:53.075 | WARNING  | src.ui.voice_notifier:<module>:16 - gTTS kütüphanesi yüklü değil. Sesli bildirimler devre dışı.
+2026-02-22 22:21:53.114 | DEBUG    | src.core.workflow_orchestrator:<module>:71 - prefect yüklü değil – asyncio fallback orkestratör.
+2026-02-22 22:21:53.115 | WARNING  | src.core.job_scheduler:<module>:33 - apscheduler yüklü değil – basit zamanlayıcı kullanılacak.
+2026-02-22 22:21:53.118 | INFO     | src.core.bootstrap:boot:99 - --- QUANT BETTING BOT – BOOT (FULL) ---
+2026-02-22 22:21:53.119 | INFO     | src.core.bootstrap:_boot_infrastructure:135 - Layer 0 – Infrastructure...
+2026-02-22 22:21:53.125 | DEBUG    | src.utils.log_rotator:__init__:52 - [LogRotator] Başlatıldı: log_dir=C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\logs, archive_days=3, compress=True
+2026-02-22 22:21:53.133 | DEBUG    | src.utils.log_rotator:rotate:108 - [LogRotator] Hata: error.log — [WinError 32] Dosya başka bir işlem tarafından kullanıldığından bu işlem dosyaya erişemiyor: 'C:\\Users\\immor\\OneDrive\\Belgeler\\Projelerim\\bahis\\logs\\error.log'
+2026-02-22 22:21:53.135 | INFO     | src.utils.log_rotator:rotate:134 - [LogRotator] Rotasyon tamamlandı: 0 arşivlendi, 2 korundu
+2026-02-22 22:21:53.135 | INFO     | src.core.exception_guardian:__init__:160 - [Guardian] Başlatıldı: budget=50/h, circuit_thresh=10
+2026-02-22 22:21:53.135 | INFO     | src.core.exception_guardian:install_global_hook:393 - [Guardian] Global exception hook kuruldu
+2026-02-22 22:21:53.135 | DEBUG    | src.memory.smart_cache:__init__:42 - TTLCache başlatıldı: TTL=3600.0s, max=1000
+2026-02-22 22:21:53.136 | DEBUG    | src.memory.smart_cache:__init__:134 - SmartCache başlatıldı (L1+L2+L3).

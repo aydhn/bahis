@@ -613,6 +613,41 @@ class SelfHealingEngine:
             attempt.rollback = True
             return False
 
+    # ═══════════════════════════════════════════════
+    #  PROACTIVE SELF-REFACTOR (Phase 12+)
+    # ═══════════════════════════════════════════════
+    async def scan_codebase_for_refactor(self, directory: str = "src"):
+        """Kod tabanını karmaşıklık için tara ve gerekirse refaktör öner."""
+        logger.info(f"[Healer:Proactive] {directory} dizini refaktör analizi başlatılıyor...")
+        src_path = ROOT / directory
+        if not src_path.exists(): return
+
+        for py_file in src_path.glob("**/*.py"):
+            try:
+                code = py_file.read_text(encoding="utf-8")
+                lines = code.split("\n")
+                if len(lines) > 300: 
+                    logger.info(f"[Healer:Proactive] {py_file.name} uzunluk uyarısı ({len(lines)} satır).")
+                    await self._attempt_proactive_refactor(py_file, code)
+            except Exception as e:
+                logger.debug(f"[Healer:Scan] {py_file} okuma hatası: {e}")
+
+    async def _attempt_proactive_refactor(self, file_path: Path, code: str):
+        """Dosyayı daha temiz hale getirmek için LLM'e sor."""
+        prompt = f"Senior Python Architect olarak şu kodu refaktör et:\n\n{code[:2000]}"
+        new_code = ""
+        if self._backend in ("ollama", "auto"):
+            resp = await _ask_ollama(prompt, self.OLLAMA_MODEL)
+            new_code = _extract_code_from_response(resp) if resp else ""
+            
+        if new_code and len(new_code) > 100:
+            safe, reason = is_patch_safe(new_code)
+            if safe:
+                backup = BACKUP_DIR / f"refactor_{file_path.stem}_{int(time.time())}.py.bak"
+                shutil.copy2(str(file_path), str(backup))
+                file_path.write_text(new_code, encoding="utf-8")
+                logger.success(f"[Healer:Proactive] {file_path.name} refaktör edildi.")
+
     def rollback_last(self, module_path: str) -> bool:
         """Son yedekten geri dön."""
         stem = Path(module_path).stem

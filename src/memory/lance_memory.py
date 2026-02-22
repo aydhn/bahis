@@ -153,6 +153,17 @@ class LanceMemory:
             logger.warning(f"Lance arama hatası: {e}")
             return []
 
+    def find_similar_matches(self, match_id: str, limit: int = 5) -> list[dict]:
+        """Belirli bir maça benzeyen geçmiş maçları bulur."""
+        # Maçın kendi metin temsilini bul
+        try:
+            res = self._table.search().where(f"id LIKE '%{match_id}%'").limit(1).to_list()
+            if not res:
+                return []
+            return self.search(res[0]["text"], top_k=limit+1)[1:] # Kendisi hariç
+        except Exception:
+            return []
+
     def add_odds_event(self, match_id: str, market: str,
                        odds: Any, source: str):
         """Oran olayını semantik hafızaya kaydet."""
