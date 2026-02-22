@@ -141,8 +141,8 @@ class RegimeKelly:
     ]
 
     def __init__(self, bankroll: float = 10000.0,
-                 base_fraction: float = 0.25,
-                 min_edge: float = 0.03,
+                 base_fraction: float = 0.35,  # AGRESİF MOD: 0.25 -> 0.35
+                 min_edge: float = 0.02,       # AGRESİF MOD: 0.03 -> 0.02
                  max_stake_pct: float = 0.05,
                  max_daily_exposure: float = 0.15,
                  anti_tilt_streak: int = 5,

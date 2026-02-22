@@ -258,15 +258,15 @@ class SofascoreScraper(BaseScraper):
         try:
             _ss_headers = {
                 "User-Agent": random_ua(),
-                "Accept": "application/json, text/plain, */*",
-                "Accept-Language": "tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7",
+                "Accept": "*/*",
+                "Accept-Language": "en-US,en;q=0.9",
                 "Accept-Encoding": "gzip, deflate, br",
                 "Origin": "https://www.sofascore.com",
                 "Referer": "https://www.sofascore.com/",
                 "Sec-Fetch-Dest": "empty",
                 "Sec-Fetch-Mode": "cors",
                 "Sec-Fetch-Site": "same-site",
-                "Sec-Ch-Ua": '"Chromium";v="131", "Not_A Brand";v="24"',
+                "Sec-Ch-Ua": '"Chromium";v="122", "Not(A:Brand";v="24", "Google Chrome";v="122"',
                 "Sec-Ch-Ua-Mobile": "?0",
                 "Sec-Ch-Ua-Platform": '"Windows"',
                 "Cache-Control": "no-cache",

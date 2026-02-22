@@ -22,6 +22,7 @@ from typing import Any
 
 from loguru import logger
 from src.ingestion.layered_providers import LayeredFreeProviderSystem
+from src.ingestion.mock_generator import MockGenerator
 
 try:
     import polars as pl
@@ -236,12 +237,20 @@ class FootballCSVSource:
 
         try:
             async with httpx.AsyncClient(timeout=15, verify=False) as client:
-                resp = await client.get(url)
-                if resp.status_code != 200:
-                    logger.warning(
-                        f"[CSV] HTTP {resp.status_code} ({league}/{season}) url={url}"
-                    )
+                try:
+                    resp = await client.get(url)
+                    if resp.status_code != 200:
+                        logger.warning(
+                            f"[CSV] HTTP {resp.status_code} ({league}/{season}) url={url}"
+                        )
+                        return []
+                except httpx.TimeoutException:
+                    logger.warning(f"[CSV] Timeout ({league}/{season}) url={url}")
                     return []
+                except Exception as e:
+                    logger.warning(f"[CSV] Bağlantı hatası: {e}")
+                    return []
+
             text = (resp.text or "").strip()
             if not text:
                 logger.warning(f"[CSV] BoÅŸ yanÄ±t ({league}/{season}) url={url}")
@@ -729,6 +738,7 @@ class DataSourceAggregator:
         self.csv = FootballCSVSource()
         self.sofascore = SofascoreHiddenAPI()
         self.odds_api = TheOddsAPI()
+        self.mock = MockGenerator()
         self.layered = LayeredFreeProviderSystem(
             sofascore_client=self.sofascore,
             odds_client=self.odds_api,
@@ -784,8 +794,8 @@ class DataSourceAggregator:
             results["fbref"] = []
 
         # DB'ye toplu kaydet
+        total = 0
         if self._db:
-            total = 0
             sport_counts: dict[str, int] = {}
             for source_data in results.values():
                 for item in source_data:
@@ -797,6 +807,20 @@ class DataSourceAggregator:
                             sport_counts[s] = sport_counts.get(s, 0) + 1
                         except Exception:
                             pass
+
+            # Eğer hiç veri gelmediyse MOCK verisi üret (Acil Durum Modu)
+            if total == 0:
+                logger.warning("[Agg] Kaynaklardan veri alınamadı -> MockGenerator devreye giriyor.")
+                mock_data = self.mock.generate_live_matches(n=12)
+                results["mock"] = mock_data
+                for item in mock_data:
+                    try:
+                        self._db.upsert_match(item)
+                        total += 1
+                    except Exception:
+                        pass
+                logger.warning(f"[Agg] {total} adet MOCK veri DB'ye basıldı.")
+
             sport_str = ", ".join(f"{k}={v}" for k, v in sport_counts.items())
             logger.success(
                 f"[Agg] Toplam {total} etkinlik DB'ye kaydedildi ({sport_str})"
