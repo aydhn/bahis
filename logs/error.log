@@ -3958,3 +3958,9 @@ Traceback (most recent call last):
           └ <class 'httpx.ConnectTimeout'>
 
 httpx.ConnectTimeout
+2026-02-19 19:53:11.989 | ERROR    | src.core.circuit_breaker:_on_failure:199 â€“ [CB:scraper:mackolik] Hata (1/3): AsyncClient.__init__() got an unexpected keyword argument 'proxies'
+2026-02-19 19:56:12.680 | ERROR    | src.core.circuit_breaker:_on_failure:199 â€“ [CB:scraper:mackolik] Hata (2/3): AsyncClient.__init__() got an unexpected keyword argument 'proxies'
+2026-02-19 19:59:12.729 | ERROR    | src.core.circuit_breaker:_on_failure:199 â€“ [CB:scraper:mackolik] Hata (3/3): AsyncClient.__init__() got an unexpected keyword argument 'proxies'
+2026-02-19 19:59:12.733 | CRITICAL | src.core.circuit_breaker:_on_failure:219 â€“ [CB:scraper:mackolik] CLOSED → OPEN (eşik aşıldı, bekleme: 60 dk)
+2026-02-19 20:59:22.884 | ERROR    | src.core.circuit_breaker:_on_failure:199 â€“ [CB:scraper:mackolik] Hata (4/3): AsyncClient.__init__() got an unexpected keyword argument 'proxies'
+2026-02-19 20:59:22.888 | CRITICAL | src.core.circuit_breaker:_on_failure:211 â€“ [CB:scraper:mackolik] HALF_OPEN → OPEN (test başarısız, yeni bekleme: 90 dk)

@@ -33,6 +33,7 @@ from collections import deque
 from dataclasses import dataclass, field
 
 import numpy as np
+from typing import Any
 from loguru import logger
 
 
@@ -84,8 +85,9 @@ class PhilosophicalEngine:
             skip_bet()
     """
 
-    def __init__(self, calibration_window: int = 200,
+    def __init__(self, db: Any = None, calibration_window: int = 200,
                  min_epistemic_score: float = 0.45):
+        self.db = db
         self._cal_window = calibration_window
         self._min_score = min_epistemic_score
         self._predictions: deque = deque(maxlen=500)
@@ -96,6 +98,86 @@ class PhilosophicalEngine:
             f"[PhiloEngine] Başlatıldı: cal_win={calibration_window}, "
             f"min_score={min_epistemic_score}"
         )
+
+    async def run_batch(self, **kwargs):
+        """Pipeline toplu işleme: Kalibrasyon ve performans analizi."""
+        if not self.db: return
+        
+        logger.info("[Philosopher] Diyalektik analiz ve kalibrasyon güncelleniyor...")
+        try:
+            # Gerçekleşen bahis sonuçlarını ve tahminleri çek
+            query = """
+            SELECT pnl, odds, confidence, result 
+            FROM bets 
+            WHERE result != 'PENDING' 
+            ORDER BY timestamp DESC LIMIT 500
+            """
+            df = self.db.query(query)
+            if df.is_empty():
+                logger.debug("[Philosopher] Kalibrasyon için yetersiz veri.")
+                return
+
+            # Tahmin edilen olasılıklar (odds -> prob)
+            pnls = df["pnl"].to_numpy()
+            self._results.clear()
+            self._predictions.clear()
+            
+            for row in df.to_dicts():
+                prob = 1.0 / row["odds"] if row["odds"] > 0 else 0.5
+                actual = 1 if row["result"] == "WON" else 0
+                self._predictions.append(prob)
+                self._results.append(actual)
+            
+            logger.success(f"[Philosopher] {len(df)} bahis üzerinden kalibrasyon güncellendi.")
+        except Exception as e:
+            logger.error(f"[Philosopher] Batch hatası: {e}")
+
+    async def run_debate(self, match_id: str, context: dict | None = None) -> str:
+        """İki persona arasında tartışma (Debate Mode).
+        
+        Persona A: Risk Averse (Temkinli)
+        Persona B: Degen (Risk Seven)
+        """
+        logger.info(f"[Philosopher] {match_id} için tartışma başlatılıyor...")
+        
+        home = context.get("home_team", "Ev Sahibi") if context else "Ev Sahibi"
+        away = context.get("away_team", "Deplasman") if context else "Deplasman"
+        
+        # Basit şablon tabanlı tartışma (LLM entegrasyonu yoksa)
+        debate_script = (
+            f"🎭 <b>FELSEFİ TARTIŞMA: {home} vs {away}</b>\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+            f"👴 <b>Stoacı (Risk Averse):</b> \"Bu maçta belirsizlik çok yüksek. {home} son haftalarda istikrarsız. "
+            f"Sermayeyi korumak en büyük erdemdir. Alt bitme olasılığına odaklanmalıyız.\"\n\n"
+            f"🦁 <b>Nietzscheci (Degen):</b> \"Korkaklık! {away} savunması dökülüyor. Kaos bir merdivendir. "
+            f"Üst oynamayan risk almamış sayılır mı? Güç istenci golleri çağırıyor!\"\n\n"
+            f"🤖 <b>Sentez (AI Hakem):</b> \"İki tarafın da haklılık payı var. Ancak veri Stoacı'yı destekliyor. "
+            f"Düşük stake ile Üst denemesi yapılabilir ama ana tercih Pas olmalı.\""
+        )
+        return debate_script
+        # Son sinyalleri çek
+        signals_df = self.db.get_signals()
+        if signals_df.is_empty():
+            logger.info("PhilosophicalEngine: Analiz edilecek sinyal yok.")
+            return []
+
+        signals = signals_df.to_dicts()
+        reports = []
+        
+        for sig in signals:
+            # Sadece yeni/işlenmemiş sinyallere bakılabilir (opsiyonel)
+            prob = sig.get("odds", 2.0)
+            if prob > 0: prob = 1.0 / prob # Odds -> Prob conversion approx
+            
+            report = self.evaluate(
+                probability=prob, # Yaklaşık
+                confidence=sig.get("confidence", 0.5),
+                sample_size=100, # Mock
+                match_id=sig.get("match_id", "unknown")
+            )
+            reports.append(report)
+            
+        return reports
 
     def evaluate(self, probability: float, confidence: float = 0.7,
                    sample_size: int = 100,
@@ -206,10 +288,59 @@ class PhilosophicalEngine:
                 f"Tüm felsefi filtreler geçildi."
             )
 
+        if report.epistemic_approved:
+            self.generate_commentary(report)
+        
         self._log_report(report)
         return report
 
-    def record_prediction(self, predicted_prob: float, actual: int) -> None:
+    def generate_commentary(self, r: EpistemicReport) -> str:
+        """
+        Diyalektik Yorum Üretimi (Tez-Antitez-Sentez).
+        Model, tek bir filozof gibi değil, bir konsey gibi tartışır.
+        """
+        import random
+        
+        # 1. TEZ (Risk İştahı / Nietzsche)
+        thesis = ""
+        if r.model_probability > 0.6:
+            thesis = random.choice([
+                "Güç istenci bu bahsi işaret ediyor.",
+                "Uçurumun kenarında dans edenler kazanır.",
+                "Sürüden ayrıl ve kaderini çiz."
+            ])
+        else:
+            thesis = random.choice([
+                "Henüz saldırı zamanı değil.",
+                "Kaos yeterince olgunlaşmadı.",
+                "Beklemek de bir güç gösterisidir."
+            ])
+            
+        # 2. ANTİTEZ (İhtiyat / Seneca-Taleb)
+        antithesis = ""
+        if r.black_swan_risk > 0.4 or r.dunning_kruger_score < 0.5:
+            antithesis = random.choice([
+                "Ancak kargaşa pusuya yatmış bekliyor.",
+                "Kırılganlık en zayıf anını kollar.",
+                "Bilmediğimizi bilmemek en büyük risktir."
+            ])
+        else:
+            antithesis = random.choice([
+                "Temeller sağlam, rüzgar sakin.",
+                "Hazırlık talihi yendi.",
+                "Dayanıklı bir yapı kurulmuş."
+            ])
+            
+        # 3. SENTEZ (Karar)
+        synthesis = ""
+        if r.epistemic_approved:
+            synthesis = f"Karar: 🦁 OYNA (Skor: {r.epistemic_score:.2f})"
+        else:
+            synthesis = f"Karar: 🛑 BEKLE (Skor: {r.epistemic_score:.2f})"
+            
+        comment = f"💭 [Diyalektik]: {thesis} | {antithesis} => {synthesis}"
+        r.reflections.append(comment)
+        return comment
         """Tahmin-sonuç kaydı (kalibrasyon için)."""
         self._predictions.append(predicted_prob)
         self._results.append(actual)

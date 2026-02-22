@@ -365,29 +365,46 @@ class NewsRAGAnalyzer:
         positive_words = {
             "galibiyet", "kazandı", "zafer", "muhteşem", "form", "motivasyon",
             "şampiyonluk", "transfer", "güçlendi", "başarı", "gol", "rekor",
-            "imza", "anlaşma", "takviye", "dönüş", "iyileşti",
+            "imza", "anlaşma", "takviye", "dönüş", "iyileşti", "win", "won", "victory"
         }
         negative_words = {
             "yenilgi", "kaybetti", "sakatlık", "ceza", "kriz", "kovuldu",
             "kırmızı", "ban", "sakatlandı", "kadro dışı", "kavga", "istifa",
-            "mağlubiyet", "düşüş", "hayal kırıklığı", "başarısız",
+            "mağlubiyet", "düşüş", "hayal kırıklığı", "başarısız", "loss", "defeat", "injury"
         }
 
         pos_count = neg_count = 0
         topics = set()
 
+        logger.debug(f"[RAG] Rule-Based Analiz Başlıyor: {len(news)} haber")
+
         for n in news:
             text_lower = (n.title + " " + n.snippet).lower()
+            # Basit normalizasyon
+            text_lower = text_lower.replace("İ", "i").replace("I", "ı").replace("ı", "i") 
+            
+            p_hit = False
+            n_hit = False
+            
             for w in positive_words:
                 if w in text_lower:
                     pos_count += 1
                     topics.add(w)
+                    p_hit = True
             for w in negative_words:
                 if w in text_lower:
                     neg_count += 1
                     topics.add(w)
+                    n_hit = True
+            
+            if p_hit or n_hit:
+                logger.debug(f"[RAG] Match Found in '{n.title}': Pos={p_hit} Neg={n_hit}")
+            else:
+                logger.debug(f"[RAG] No Match in '{n.title}'")
 
         total = pos_count + neg_count
+        logger.debug(f"[RAG] Total: {total} (Pos: {pos_count}, Neg: {neg_count})")
+        
         if total > 0:
             sentiment = 0.5 + (pos_count - neg_count) / (2 * total)
         else:
@@ -396,7 +413,7 @@ class NewsRAGAnalyzer:
         return RAGResult(
             team=team,
             sentiment_score=float(max(0, min(1, sentiment))),
-            summary=f"{len(news)} haber analiz edildi (kural tabanlı).",
+            summary=f"{len(news)} haber analiz edildi (kural tabanlı, skor={sentiment:.2f}).",
             key_topics=list(topics)[:5],
             confidence=0.3,
             n_sources=len(news),

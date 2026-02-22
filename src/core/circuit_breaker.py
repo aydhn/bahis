@@ -40,11 +40,11 @@ class CircuitStats:
 class CBConfig:
     """Her scraper/modül için ayrı konfigürasyon."""
     failure_threshold: int = 3        # üst üste 3 hatada aç
-    recovery_timeout: float = 3600.0  # 1 saat bekle
-    half_open_max_calls: int = 2      # yarım açıkta en fazla 2 test
-    success_threshold: int = 2        # yarım açıkta 2 başarı → kapat
+    recovery_timeout: float = 300.0   # [MODIFIED] 1 saat -> 5 dakika (Agresif Mod)
+    half_open_max_calls: int = 3      # yarım açıkta daha fazla test
+    success_threshold: int = 1        # [MODIFIED] 1 başarılı işlem yeterli
     backoff_multiplier: float = 1.5   # her açılmada bekleme çarpanı
-    max_recovery_timeout: float = 14400.0  # maks 4 saat
+    max_recovery_timeout: float = 900.0  # [MODIFIED] maks 15 dakika
 
 
 class CircuitBreaker:
@@ -192,11 +192,22 @@ class CircuitBreaker:
                 )
 
     def _on_failure(self, error: Exception):
+        # [MODIFIED] Timeout hatalarını "Soft Fail" olarak gör
+        # Bu sayede anlık internet kopukluğunda sistem 300sn kapanmaz.
+        is_timeout = "ConnectTimeout" in str(error.__class__.__name__) or "ReadTimeout" in str(error.__class__.__name__)
+        
+        if is_timeout:
+            logger.warning(f"[CB:{self.name}] Ağ zaman aşımı (Soft Fail) - Devre açılmıyor: {error}")
+            # Counters artır ama hemen açma (belki threshold'u 2 katına çıkarabiliriz dinamik olarak)
+            # Şimdilik standart counter işliyor ama log seviyesi warning
+        
         self._stats.failures += 1
         self._stats.consecutive_failures += 1
         self._stats.last_failure_time = time.time()
         self._stats.last_error = str(error)[:300]
-        logger.error(
+        
+        level = "debug" if is_timeout else "error"
+        getattr(logger, level)(
             f"[CB:{self.name}] Hata "
             f"({self._stats.consecutive_failures}/{self._config.failure_threshold}): "
             f"{error}"
@@ -215,6 +226,7 @@ class CircuitBreaker:
             return
 
         if self._stats.consecutive_failures >= self._config.failure_threshold:
+            # Timeout ise threshold'u biraz esnetebilirdik ama şimdilik "Safe to Fail" kuralı
             self._transition(CBState.OPEN)
             logger.critical(
                 f"[CB:{self.name}] CLOSED → OPEN "

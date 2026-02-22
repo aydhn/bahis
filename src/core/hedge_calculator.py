@@ -72,6 +72,16 @@ class HedgeCalculator:
         self._opportunities: list[HedgeOpportunity] = []
         logger.debug("HedgeCalculator başlatıldı.")
 
+    def run_batch(self, **kwargs):
+        """Pipeline toplu işleme (Arbitrage Scan)."""
+        logger.info("[HedgeCalculator] Aktif bahisler taranıyor...")
+        # Mock tarama
+        # Gerçekte: active_bets = self.db.get_active_bets()
+        # live_odds = self.db.get_live_odds()
+        # self.scan_active_bets(active_bets, live_odds)
+        pass
+
+
     # ═══════════════════════════════════════════
     #  SUREBET (ARBİTRAJ) KONTROLÜ
     # ═══════════════════════════════════════════

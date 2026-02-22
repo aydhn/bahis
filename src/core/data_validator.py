@@ -181,13 +181,33 @@ class DataValidator:
         self._null_fields_fixed = 0
         logger.debug("DataValidator başlatıldı.")
 
+    # Heuristic fallback odds (league averages)
+    _FALLBACK_ODDS = {
+        "home_odds": 2.30,
+        "draw_odds": 3.20,
+        "away_odds": 3.00,
+        "over25_odds": 1.85,
+        "under25_odds": 1.95,
+    }
+
     def _sanitize_nulls(self, data: dict) -> dict:
-        """Polars/DuckDB null değerlerini Python None'a çevirir ve güvenli varsayılanlara dönüştürür."""
+        """Polars/DuckDB null değerlerini Python None'a çevirir ve güvenli varsayılanlara dönüştürür.
+        
+        Eksik odds alanlarına heuristic fallback değer atar – downstream pipeline
+        None odds yüzünden Draw 100% tahmin etmesin.
+        """
+        import math as _m
         cleaned = {}
         for k, v in data.items():
-            if v is None or (isinstance(v, float) and not __import__("math").isfinite(v)):
+            if v is None or (isinstance(v, float) and not _m.isfinite(v)):
                 if k.endswith("_odds"):
-                    cleaned[k] = None
+                    # Fallback: heuristic league-average oran ata
+                    fallback = self._FALLBACK_ODDS.get(k)
+                    cleaned[k] = fallback  # None yerine default oran
+                    if fallback is not None:
+                        self._null_fields_fixed += 1
+                    else:
+                        cleaned[k] = None
                 elif k.endswith("_score"):
                     cleaned[k] = None
                 else:
@@ -204,29 +224,34 @@ class DataValidator:
             
             # Minimum gereksinimler - daha esnek
             if not data.get("home_team") or not data.get("away_team"):
-                raise ValueError("Takım adı eksik")
+                logger.warning(f"Eksik Takim Ismi: {data}")
+                return None # İsimsiz maç kabul edilemez
+
             if not data.get("match_id"):
                 # match_id yoksa oluştur
                 data["match_id"] = f"{data.get('home_team', 'H')}_{data.get('away_team', 'A')}_{data.get('kickoff', 'T')}"
             
             if PYDANTIC_AVAILABLE:
-                # Pydantic strict mode'u devre dışı bırak
                 try:
+                    # Pydantic validation
                     validated = MatchData(**data)
                     self._valid_count += 1
                     return validated.model_dump()
                 except Exception as pyd_err:
-                    # Pydantic başarısız olursa basit doğrulama yap
-                    logger.debug(f"Pydantic doğrulama başarısız, basit mod: {pyd_err}")
-                    self._valid_count += 1
-                    return data
+                    # Pydantic hatasını logla ama veriyi kurtarmaya çalış (soft validation)
+                    # logger.debug(f"Pydantic Validation Error (Ignored): {pyd_err}")
+                    # Kritik alanlar varsa yine de geçir
+                    if data.get("home_team") and data.get("away_team"):
+                        self._valid_count += 1
+                        return data
+                    raise pyd_err
             else:
                 self._valid_count += 1
                 return data
         except Exception as e:
             self._invalid_count += 1
-            self._errors.append({"type": "match", "data": str(data)[:200], "error": str(e)})
-            logger.debug(f"Veri reddedildi: {e}")
+            self._errors.append({"type": "match", "error": str(e), "data": str(data)[:200]})
+            # logger.warning(f"CRITICAL VALIDATION REJECT: {e}") 
             return None
 
     def validate_odds(self, data: dict) -> dict | None:

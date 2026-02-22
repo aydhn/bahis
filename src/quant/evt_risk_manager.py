@@ -480,4 +480,26 @@ class EVTRiskManager:
                     f"ξ={report.shape_xi:.2f})"
                 )
 
-        return bets
+    async def run_batch(self, signals: list[dict] = None, **kwargs):
+        """Pipeline entegrasyonu: Kuyruk riski analizi ve Kelly ayarı."""
+        if not self._fitted:
+            # Son 1000 bahisin PnL verilerini çekip fit et
+            query = "SELECT pnl FROM bets WHERE result != 'PENDING' ORDER BY timestamp DESC LIMIT 1000"
+            if hasattr(kwargs.get("db"), "query"):
+                df = kwargs["db"].query(query)
+                if not df.is_empty():
+                    # Sadece kayıpları/surprise faktörlerini modelle (abs pnl for losses)
+                    losses = np.abs(df["pnl"].to_numpy())
+                    self.add_observations(losses)
+                    self.fit()
+
+        if signals:
+            logger.info(f"[EVT] {len(signals)} sinyal için kuyruk riski denetimi yapılıyor...")
+            adjusted = self.adjust_kelly_stakes(signals)
+            
+            # Portföy VaR raporla
+            p_var = self.portfolio_var([s for s in adjusted if s.get("selection") != "skip"])
+            logger.info(f"[EVT] Portföy Riski: {p_var.recommendation}")
+            return adjusted
+        
+        return signals

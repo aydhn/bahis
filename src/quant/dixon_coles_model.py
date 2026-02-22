@@ -16,6 +16,7 @@ from scipy.optimize import minimize
 from dataclasses import dataclass
 from loguru import logger
 import polars as pl
+from typing import Any
 
 
 @dataclass
@@ -38,13 +39,52 @@ class DixonColesModel:
     - Exponential time decay ile eski maçları unutur.
     """
 
-    def __init__(self, rho: float = -0.13, decay_rate: float = 0.005):
+    def __init__(self, db: Any = None, rho: float = -0.13, decay_rate: float = 0.005):
+        self.db = db
         self._rho = rho
         self._decay_rate = decay_rate      # Exponential time decay λ
         self._params: DCParams | None = None
         self._teams: set[str] = set()
         self._fitted = False
         logger.debug(f"DixonColesModel başlatıldı (ρ={rho}, decay={decay_rate}).")
+
+    def run_batch(self, days: int = 365, **kwargs):
+        """Batch modu: DB'den geçmiş maçları çekip modeli eğitir, sonra gelecek maçları tahmin eder."""
+        if self.db is None:
+            logger.warning("DixonColes: DB bağlantısı yok.")
+            return
+
+        # 1. Eğitim verisi çek (Son N gün)
+        # finished_matches, son 1 yılın maçlarını DB'den çekmeli
+        query = f"""
+        SELECT home_team as home, away_team as away, home_score as home_goals, away_score as away_goals, 
+               date_diff('day', CAST(match_date AS TIMESTAMP), CURRENT_TIMESTAMP) as days_ago
+        FROM matches 
+        WHERE status = 'finished' AND match_date >= CURRENT_DATE - INTERVAL '{days}' DAY
+        """
+        try:
+            results_df = self.db.query(query)
+            if results_df.is_empty():
+                logger.warning("DixonColes: Eğitim için yeterli maç bulunamadı.")
+                return
+                
+            finished_matches = results_df.to_dicts()
+            logger.info(f"DixonColes: {len(finished_matches)} maç ile eğitiliyor...")
+            self.fit(finished_matches)
+            
+            # 2. Gelecek maçları tahmin et
+            upcoming_query = """
+            SELECT match_id, home_team, away_team 
+            FROM matches 
+            WHERE status = 'scheduled' AND match_date >= CURRENT_DATE
+            """
+            upcoming_df = self.db.query(upcoming_query)
+            if not upcoming_df.is_empty():
+                preds_df = self.predict_for_dataframe(upcoming_df)
+                logger.info(f"DixonColes: {len(preds_df)} gelecek maç tahmin edildi.")
+                # self.db.save_predictions(preds_df, model_name="dixon_coles")
+        except Exception as e:
+            logger.error(f"DixonColes batch hatası: {e}")
 
     # ═══════════════════════════════════════════
     #  τ (tau) düzeltme fonksiyonu – modelin kalbi
@@ -265,23 +305,43 @@ class DixonColesModel:
             results.append(pred)
         return pl.DataFrame(results) if results else pl.DataFrame()
 
-    def compare_with_standard_poisson(self, home_xg: float, away_xg: float) -> dict:
-        """Dixon-Coles vs standart Poisson karşılaştırması."""
-        dc = self._compute_probs(home_xg, away_xg, "home", "away")
-        mat_std = np.outer(
-            poisson.pmf(range(9), home_xg),
-            poisson.pmf(range(9), away_xg),
-        )
-        std_draw = sum(mat_std[i][i] for i in range(9))
-        std_home = sum(mat_std[i][j] for i in range(9) for j in range(9) if i > j)
-
+    def calculate_value(self, home: str, away: str,
+                       market_odds: dict[str, float],
+                       home_xg: float = 1.4, away_xg: float = 1.1) -> dict:
+        """Gerçek Değer (Value) Analizi - Bill Benter Stili Alpha Üretimi."""
+        probs = self.predict(home, away, home_xg, away_xg)
+        
+        # Model oranları (Fair Odds) = 1 / Probability
+        fair_home = 1.0 / probs["prob_home"] if probs["prob_home"] > 0 else 999.0
+        fair_draw = 1.0 / probs["prob_draw"] if probs["prob_draw"] > 0 else 999.0
+        fair_away = 1.0 / probs["prob_away"] if probs["prob_away"] > 0 else 999.0
+        
+        # Market oranları
+        m_home = market_odds.get("home", 0.0)
+        m_draw = market_odds.get("draw", 0.0)
+        m_away = market_odds.get("away", 0.0)
+        
+        # EV Hesaplama: (Olasılık * Oran) - 1
+        ev_home = (probs["prob_home"] * m_home) - 1.0
+        ev_draw = (probs["prob_draw"] * m_draw) - 1.0
+        ev_away = (probs["prob_away"] * m_away) - 1.0
+        
+        # En iyi seçimi bul
+        selections = [
+            {"sel": "1", "ev": ev_home, "prob": probs["prob_home"], "odds": m_home, "fair": fair_home},
+            {"sel": "X", "ev": ev_draw, "prob": probs["prob_draw"], "odds": m_draw, "fair": fair_draw},
+            {"sel": "2", "ev": ev_away, "prob": probs["prob_away"], "odds": m_away, "fair": fair_away},
+        ]
+        best = max(selections, key=lambda x: x["ev"])
+        
         return {
-            "dc_home": dc["prob_home"],
-            "dc_draw": dc["prob_draw"],
-            "dc_away": dc["prob_away"],
-            "std_home": float(std_home),
-            "std_draw": float(std_draw),
-            "std_away": float(1 - std_home - std_draw),
-            "draw_correction": dc["prob_draw"] - std_draw,
-            "note": "Pozitif draw_correction = DC beraberliği daha yüksek tahmin ediyor (doğru).",
+            "match": f"{home} vs {away}",
+            "model_probs": probs,
+            "fair_odds": {"1": fair_home, "X": fair_draw, "2": fair_away},
+            "market_odds": market_odds,
+            "best_selection": best["sel"],
+            "best_ev": best["ev"],
+            "best_prob": best["prob"],
+            "is_value": best["ev"] > 0.05  # %5 marj
         }
+

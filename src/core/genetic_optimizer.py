@@ -119,6 +119,27 @@ class GeneticOptimizer:
             f"pop={population_size}, mut={mutation_rate}"
         )
 
+    async def run_batch(self, db: Any = None, **kwargs):
+        """Pipeline toplu işleme (Optimization Mode)."""
+        logger.info("[GeneticOptimizer] Genetik evrim tetikleniyor...")
+        
+        if db:
+            from src.core.evolutionary_runner import EvolutionaryRunner
+            runner = EvolutionaryRunner(db=db, optimizer=self)
+            await runner.run_optimization_cycle()
+        else:
+            # Mock fallback
+            def mock_backtest(params):
+                return {
+                    "roi": random.uniform(-0.1, 0.2), 
+                    "max_drawdown": random.uniform(0.0, 0.3),
+                    "sharpe": random.uniform(0.5, 2.0),
+                    "total_bets": random.randint(50, 200)
+                }
+            self.evolve(mock_backtest, generations=2)
+            self.save_config()
+
+
     # ═══════════════════════════════════════════
     #  EVRİM
     # ═══════════════════════════════════════════

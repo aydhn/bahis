@@ -243,6 +243,8 @@ INGESTION_TASKS = [
                    "aggregate", "Data Sources – veri kaynağı birleştirme"),
     TaskDefinition("metric_exporter", TaskStage.INGESTION,
                    "export", "Metric Exporter – Prometheus metrikleri"),
+    TaskDefinition("news_aggregator", TaskStage.INGESTION,
+                   "run_batch", "News Aggregator – Haber ve duygu analizi"),
 ]
 
 MEMORY_TASKS = [
@@ -265,10 +267,15 @@ MEMORY_TASKS = [
 
 QUANT_TASKS = [
     # Temel modeller
+    TaskDefinition("dixon_coles", TaskStage.QUANT,
+                   "run_batch", "Dixon-Coles – istatistiksel gol tahmini"),
+    TaskDefinition("spectral_analysis", TaskStage.QUANT,
+                   "run_batch", "Spectral Analysis – döngü ve form analizi (FFT)"),
+    TaskDefinition("genetic_optimizer", TaskStage.QUANT,
+                   "run_batch", "Genetic Optimizer – strateji evrimi ve parametre ayarı"),
     TaskDefinition("poisson_model", TaskStage.QUANT,
                    "predict", "Poisson Model – gol tahmini"),
-    TaskDefinition("dixon_coles", TaskStage.QUANT,
-                   "predict", "Dixon-Coles – düzeltilmiş Poisson"),
+
     TaskDefinition("gradient_boosting", TaskStage.QUANT,
                    "predict", "LightGBM/XGBoost – gradient boosting"),
     TaskDefinition("glm_model", TaskStage.QUANT,
@@ -279,7 +286,7 @@ QUANT_TASKS = [
     TaskDefinition("lstm_trend", TaskStage.QUANT,
                    "predict", "LSTM – momentum tahmini"),
     TaskDefinition("rl_trader", TaskStage.QUANT,
-                   "decide", "RL Trader – pekiştirmeli öğrenme"),
+                   "run_batch", "RL Trader – pekiştirmeli öğrenme"),
     TaskDefinition("rl_betting_agent", TaskStage.QUANT,
                    "act", "RL Betting Agent – bahis ajanı"),
     # Ensemble
@@ -381,16 +388,41 @@ QUANT_TASKS = [
                    "transfer", "Transfer Learning – bilgi aktarımı"),
     TaskDefinition("federated_trainer", TaskStage.QUANT,
                    "aggregate", "Federated Learning – sürü eğitimi"),
-    TaskDefinition("elo_glicko", TaskStage.QUANT,
-                   "update", "Elo/Glicko – takım güç sıralaması"),
+    TaskDefinition("elo", TaskStage.QUANT,
+                   "run_batch", "Elo/Glicko – takım güç sıralaması"),
+    TaskDefinition("monte_carlo", TaskStage.QUANT,
+                   "run_batch", "Monte Carlo – iflas riski simülasyonu"),
+    TaskDefinition("dixon_coles", TaskStage.QUANT,
+                   "run_batch", "Dixon-Coles – istatistiksel gol tahmini"),
+    # Felsefi motor
+    TaskDefinition("philosophical", TaskStage.QUANT,
+                   "run_batch", "Philosopher – epistemik analiz"),
+    # Phase 9 Singularity
+    TaskDefinition("nas_engine", TaskStage.QUANT,
+                   "run_batch", "NAS Engine – evrimsel mimari arama"),
+    TaskDefinition("causal_engine", TaskStage.QUANT,
+                   "run_batch", "Causal Engine – nedensel çıkarım"),
+    TaskDefinition("evt_longshot", TaskStage.QUANT,
+                   "run_batch", "EVT – long-shot değer tespiti"),
+    TaskDefinition("fbm_model", TaskStage.QUANT,
+                   "run_batch", "fBM – uzun dönem hafıza analizi"),
+    TaskDefinition("auto_refactor", TaskStage.QUANT,
+                   "run_batch", "Auto Refactor – otonom performans"),
 ]
 
 RISK_TASKS = [
+    TaskDefinition("kelly", TaskStage.RISK,
+                   "run_batch", "RegimeKelly – kasa yönetimi",
+                   critical=True),
     TaskDefinition("fair_value_engine", TaskStage.RISK,
                    "calculate", "Fair Value – adil oran hesaplama",
                    critical=True),
-    TaskDefinition("portfolio_optimizer", TaskStage.RISK,
-                   "optimize", "Portfolio Optimizer – Markowitz optimizasyon"),
+    TaskDefinition("portfolio_opt", TaskStage.RISK,
+                   "run_batch", "Portfolio Optimizer – çeşitlendirme ve risk dağıtımı"),
+    TaskDefinition("hedge_calculator", TaskStage.RISK,
+                   "run_batch", "Hedge Calculator – arbitraj ve ters bahis fırsatları"),
+    # TaskDefinition("portfolio_optimizer", TaskStage.RISK,
+    #                "optimize", "Portfolio Optimizer – Markowitz optimizasyon"),
     TaskDefinition("pnl_stabilizer", TaskStage.RISK,
                    "stabilize", "PID Controller – kasa dengeleme"),
     TaskDefinition("constrained_risk_solver", TaskStage.RISK,
@@ -411,6 +443,12 @@ RISK_TASKS = [
                    "evaluate", "Shadow Testing – gölge mod değerlendirme"),
     TaskDefinition("blind_strategy", TaskStage.RISK,
                    "encrypt", "Homomorphic Encryption – şifreli hesaplama"),
+    TaskDefinition("execution_guard", TaskStage.RISK,
+                   "run_batch", "Adverse Selection – ters seçilim koruması"),
+    TaskDefinition("meta_strategy", TaskStage.RISK,
+                   "run_batch", "Meta Strategy – sermaye rotasyonu"),
+    TaskDefinition("hot_layer", TaskStage.RISK,
+                   "run_batch", "Hot Layer – RAM hızlandırma"),
 ]
 
 UTILS_TASKS = [
@@ -432,8 +470,8 @@ UTILS_TASKS = [
                    "report", "Health Report – strateji sağlık raporu"),
     TaskDefinition("auto_doc_gen", TaskStage.UTILS,
                    "generate", "Auto Docs – otomatik dokümantasyon"),
-    TaskDefinition("telemetry_tracer", TaskStage.UTILS,
-                   "flush", "Telemetry – dağıtık izleme flush"),
+    TaskDefinition("omni_controller", TaskStage.UTILS,
+                   "run_audit_cycle", "Omni-Sovereign – denetim ve kapital rotasyon"),
 ]
 
 ALL_TASK_DEFINITIONS: dict[str, TaskDefinition] = {}
@@ -612,6 +650,13 @@ class WorkflowOrchestrator:
                 f"[Orchestrator] {task_def.name} başarısız "
                 f"({task_def.max_retries} retry sonrası): {tr.error}"
             )
+
+        # Otonom Refaktör Raporlaması (Phase 11)
+        if "auto_refactor" in self._modules:
+            try:
+                self._modules["auto_refactor"].report_latency(task_def.name, tr.elapsed_sec)
+            except Exception:
+                pass
 
         return tr
 

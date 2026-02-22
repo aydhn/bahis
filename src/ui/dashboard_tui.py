@@ -56,38 +56,68 @@ class DashboardTUI:
 
     def _render_header(self) -> Panel:
         now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        title = Text()
-        title.append(" QUANT BETTING BOT ", style="bold white on blue")
-        title.append(f"  {now}  ", style="dim")
-        title.append(f"  Döngü: #{self._data['cycle']}  ", style="cyan")
-        title.append(f"  Durum: {self._data['status']}  ",
-                      style="green" if self._data["status"] == "Çalışıyor" else "yellow")
-        return Panel(title, style="blue")
+        
+        # Ana Başlık tablosu
+        grid = Table.grid(expand=True)
+        grid.add_column(justify="left", ratio=1)
+        grid.add_column(justify="center", ratio=2)
+        grid.add_column(justify="right", ratio=1)
+        
+        # Sol: Sistem Durumu
+        status_style = "bold green" if self._data["status"] == "Çalışıyor" else "bold yellow blink"
+        grid.add_row(
+            f"⚡ DURUM: [{status_style}]{self._data['status']}[/]",
+            f"[bold white on blue] QUANT BETTING BOT v3.0 (JP MORGAN ED.) [/]",
+            f"🕒 {now}"
+        )
+        
+        # Alt Satır: Felsefi Ticker
+        quote = self._data.get("last_commentary", "Sistem başlatılıyor...")
+        # Ticker efekti için text'i kaydırabiliriz ama şimdilik statik
+        ticker = f"[italic cyan]💭 {quote}[/]"
+        
+        layout = Layout()
+        layout.split_column(
+            Layout(Panel(grid, style="blue", box=None), size=3),
+            Layout(Panel(ticker, style="dim white", box=None), size=3)
+        )
+        
+        return Panel(grid, style="blue", title="System Control", subtitle=ticker)
 
     def _render_signals(self) -> Panel:
-        table = Table(title="Son Sinyaller", show_lines=True, expand=True)
-        table.add_column("Maç", style="cyan", ratio=3)
-        table.add_column("Pazar", ratio=1)
-        table.add_column("Seçim", ratio=1)
-        table.add_column("Oran", justify="right", ratio=1)
-        table.add_column("Stake", justify="right", ratio=1)
+        table = Table(title="💎 Canlı Sinyal Akışı (Alpha Stream)", show_lines=False, expand=True, header_style="bold magenta")
+        table.add_column("Maç", style="white", ratio=3)
+        table.add_column("Seçim", ratio=1, justify="center")
+        table.add_column("Oran", justify="right", ratio=1, style="yellow")
         table.add_column("EV", justify="right", ratio=1)
         table.add_column("Güven", justify="right", ratio=1)
+        table.add_column("Kelly", justify="right", ratio=1, style="bold green")
+        table.add_column("Filozof", justify="center", ratio=1)
 
-        for sig in self._data.get("signals", [])[:15]:
+        for sig in self._data.get("signals", [])[:12]:
             ev = sig.get("ev", 0)
-            ev_style = "green" if ev > 0 else "red"
+            ev_style = "bold green" if ev > 0.05 else "green" if ev > 0 else "red"
+            
             conf = sig.get("confidence", 0)
-            conf_style = "green" if conf > 0.6 else "yellow" if conf > 0.4 else "red"
+            conf_bar = "█" * int(conf * 5)
+            conf_style = "cyan" if conf > 0.7 else "blue"
+            
+            # Kelly Stake
+            kelly = sig.get("kelly_stake", 0)
+            kelly_str = f"₺{kelly:.0f}" if kelly > 0 else "-"
+            
+            # Filozof Onayı (✅/❌)
+            philo = sig.get("phylosopher_approved", None)
+            philo_icon = "🧠" if philo is True else "🤔" if philo is False else "-"
 
             table.add_row(
                 sig.get("match_id", "")[:25],
-                sig.get("market", "1X2"),
-                sig.get("selection", "-"),
+                f"[bold]{sig.get('selection', '-')}[/]",
                 f"{sig.get('odds', 0):.2f}",
-                f"{sig.get('stake_pct', 0):.3%}",
-                f"[{ev_style}]{ev:.3f}[/]",
-                f"[{conf_style}]{conf:.1%}[/]",
+                f"[{ev_style}]{ev:+.1%}[/]",
+                f"[{conf_style}]{conf:.0%} {conf_bar}[/]",
+                kelly_str,
+                philo_icon
             )
 
         return Panel(table, title="Sinyaller", border_style="cyan")

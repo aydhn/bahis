@@ -123,6 +123,73 @@ class JobScheduler:
         return self
 
     # ═══════════════════════════════════════════
+    #  ADAPTIVE – Volatilite bazlı dinamik zamanlama
+    # ═══════════════════════════════════════════
+    def add_adaptive_interval(self, name: str, func: Callable, *,
+                              base_seconds: int,
+                              volatility_provider: Callable[[], float] | None = None,
+                              min_seconds: int = 30,
+                              max_seconds: int = 3600,
+                              **kwargs):
+        """Volatiliteye göre kendini ayarlayan dinamik görev.
+        
+        Mantık:
+          - Yüksek volatilite (kriz) -> Sık çalış (min_seconds)
+          - Düşük volatilite (sakin) -> Seyrek çalış (max_seconds)
+          - Volatilite çarpanı (0.0-1.0) ters orantılıdır:
+            Wait = base_seconds / max(vol_multiplier, 0.1)
+        """
+        async def _adaptive_wrapper():
+            # 1. Görevi çalıştır
+            try:
+                if asyncio.iscoroutinefunction(func):
+                    await func()
+                else:
+                    func()
+            except Exception as e:
+                logger.error(f"[Scheduler:adaptive] {name} hatası: {e}")
+
+            # 2. Yeni bekleme süresi hesapla
+            wait_time = base_seconds
+            if volatility_provider:
+                try:
+                    # Volatilite çarpanı (1.0 = normal, 0.5 = yüksek risk -> daha sık?)
+                    # Hayır, genelde:
+                    # Yüksek volatilite -> Fırsat çok -> Daha sık çalış
+                    # RegimeKelly'de: 1.0 (Calm), 0.65 (Elevated), 0.3 (Storm)
+                    # Buradaki mantık: Provider 0..1 arası "hareketlilik" skoru dönerse:
+                    # score yüksek -> süre kısa.
+                    # Kelly çarpanı ise tam tersi (güven indeksi).
+                    # Biz Kelly çarpanını kullanacaksak: Low multiplier = High Risk = High Volatility?
+                    # Kelly multiplier (0.3) -> High Volatility -> Frequent Checks?
+                    # Diyelim ki provider 'Kelly Multiplier' dönüyor (0.3 = Kriz).
+                    # Kriz anında bot çok sık (min_sec) çalışmalı mı yoksa durmalı mı?
+                    # Kullanıcı "Volatility-Based Adaptive Scheduling" istiyor.
+                    # Genelde: High Volatility -> High Frequency Trading -> Short Interval.
+                    
+                    vol_mult = volatility_provider() # Örn: 0.3 (Kriz) veya 1.0 (Sakin)
+                    
+                    # Ters orantı: Multiplier düşükse (kriz), interval KISALIR (daha aktif defans/trade)
+                    # Wait = Base * Multiplier
+                    # 1.0 * 60s = 60s
+                    # 0.3 * 60s = 18s
+                    wait_time = base_seconds * vol_mult
+                except Exception as e:
+                    logger.warning(f"[Scheduler] Volatilite okuma hatası: {e}")
+            
+            # Sınırla
+            wait_time = max(min_seconds, min(wait_time, max_seconds))
+            
+            # 3. Kendini yeniden planla
+            next_run = datetime.now() + timedelta(seconds=wait_time)
+            self.add_date(name, _adaptive_wrapper, run_date=next_run)
+            logger.debug(f"[Scheduler] {name} sonraki çalışma: {next_run.strftime('%H:%M:%S')} (wait={wait_time:.1f}s)")
+
+        # İlk çalıştırma
+        self.add_date(name, _adaptive_wrapper, run_date=datetime.now() + timedelta(seconds=1))
+        return self
+
+    # ═══════════════════════════════════════════
     #  DATE – Tek seferlik belirli tarihte çalış
     # ═══════════════════════════════════════════
     def add_date(self, name: str, func: Callable, *,

@@ -637,6 +637,30 @@ class SelfHealingEngine:
             logger.error(f"[Healer] Rollback hatası: {e}")
             return False
 
-    def get_report(self, days: int = 30) -> HealingReport:
-        """İyileştirme raporu."""
-        return self._log.get_report(days)
+    async def scan_logs_for_errors(self, log_path: str = "run_log.txt") -> int:
+        """Log dosyasını tarayıp hataları yakalamayı tetikler (Watchdog modu)."""
+        if not Path(log_path).exists():
+            return 0
+            
+        # Basit implementasyon: Son satırları oku, "Error" varsa ve daha önce işlenmediyse tetikle
+        # (Bu kısım geliştirilebilir)
+        return 0
+
+
+class Watchdog:
+    """Log dosyası bekçisi (Proactive Healer)."""
+    
+    def __init__(self, log_file: str = "run_log.txt", healer: SelfHealingEngine = None):
+        self.log_file = log_file
+        self.healer = healer or SelfHealingEngine()
+        self._running = False
+        
+    async def start(self):
+        """Log izlemeyi başlatır."""
+        self._running = True
+        logger.info(f"[Watchdog] {self.log_file} izleniyor...")
+        # (Tam watch logic burada olacak - şimdilik placeholder)
+        
+    async def stop(self):
+        self._running = False
+        logger.info("[Watchdog] Durduruldu.")

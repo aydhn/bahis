@@ -1,0 +1,105 @@
+2026-02-20 09:09:25.131 | INFO     | src.core.bootstrap:boot:33 - --- QUANT BETTING BOT – BOOT (FULL) ---
+2026-02-20 09:09:25.131 | INFO     | src.core.bootstrap:_boot_infrastructure:69 - Layer 0 – Infrastructure...
+2026-02-20 09:09:25.146 | DEBUG    | src.utils.log_rotator:__init__:52 - [LogRotator] Başlatıldı: log_dir=C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\logs, archive_days=3, compress=True
+2026-02-20 09:09:25.186 | INFO     | src.utils.log_rotator:rotate:92 - [LogRotator] Arşivlendi: bot_err.log → archive/bot_err.log.gz
+2026-02-20 09:09:25.260 | INFO     | src.utils.log_rotator:rotate:134 - [LogRotator] Rotasyon tamamlandı: 2 arşivlendi, 7 korundu
+2026-02-20 09:09:25.260 | INFO     | src.core.exception_guardian:__init__:160 - [Guardian] Başlatıldı: budget=50/h, circuit_thresh=10
+2026-02-20 09:09:25.260 | INFO     | src.core.exception_guardian:install_global_hook:393 - [Guardian] Global exception hook kuruldu
+2026-02-20 09:09:25.260 | DEBUG    | src.memory.smart_cache:__init__:42 - TTLCache başlatıldı: TTL=3600.0s, max=1000
+2026-02-20 09:09:25.260 | DEBUG    | src.memory.smart_cache:__init__:134 - SmartCache başlatıldı (L1+L2+L3).
+2026-02-20 09:20:37.104 | INFO     | src.core.bootstrap:boot:33 - --- QUANT BETTING BOT – BOOT (FULL) ---
+2026-02-20 09:20:37.104 | INFO     | src.core.bootstrap:_boot_infrastructure:69 - Layer 0 – Infrastructure...
+2026-02-20 09:20:37.111 | DEBUG    | src.utils.log_rotator:__init__:52 - [LogRotator] Başlatıldı: log_dir=C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\logs, archive_days=3, compress=True
+2026-02-20 09:20:37.116 | INFO     | src.utils.log_rotator:rotate:134 - [LogRotator] Rotasyon tamamlandı: 0 arşivlendi, 6 korundu
+2026-02-20 09:20:37.118 | INFO     | src.core.exception_guardian:__init__:160 - [Guardian] Başlatıldı: budget=50/h, circuit_thresh=10
+2026-02-20 09:20:37.118 | INFO     | src.core.exception_guardian:install_global_hook:393 - [Guardian] Global exception hook kuruldu
+2026-02-20 09:20:37.118 | DEBUG    | src.memory.smart_cache:__init__:42 - TTLCache başlatıldı: TTL=3600.0s, max=1000
+2026-02-20 09:20:37.118 | DEBUG    | src.memory.smart_cache:__init__:134 - SmartCache başlatıldı (L1+L2+L3).
+2026-02-20 09:21:30.871 | INFO     | src.core.bootstrap:boot:33 - --- QUANT BETTING BOT – BOOT (FULL) ---
+2026-02-20 09:21:30.872 | INFO     | src.core.bootstrap:_boot_infrastructure:69 - Layer 0 – Infrastructure...
+2026-02-20 09:21:30.883 | DEBUG    | src.utils.log_rotator:__init__:52 - [LogRotator] Başlatıldı: log_dir=C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\logs, archive_days=3, compress=True
+2026-02-20 09:21:30.886 | INFO     | src.utils.log_rotator:rotate:134 - [LogRotator] Rotasyon tamamlandı: 0 arşivlendi, 6 korundu
+2026-02-20 09:21:30.887 | INFO     | src.core.exception_guardian:__init__:160 - [Guardian] Başlatıldı: budget=50/h, circuit_thresh=10
+2026-02-20 09:21:30.887 | INFO     | src.core.exception_guardian:install_global_hook:393 - [Guardian] Global exception hook kuruldu
+2026-02-20 09:21:30.888 | DEBUG    | src.memory.smart_cache:__init__:42 - TTLCache başlatıldı: TTL=3600.0s, max=1000
+2026-02-20 09:21:30.888 | DEBUG    | src.memory.smart_cache:__init__:134 - SmartCache başlatıldı (L1+L2+L3).
+2026-02-20 09:25:36.579 | INFO     | src.core.bootstrap:boot:33 - --- QUANT BETTING BOT – BOOT (FULL) ---
+2026-02-20 09:25:36.579 | INFO     | src.core.bootstrap:_boot_infrastructure:69 - Layer 0 – Infrastructure...
+2026-02-20 09:25:36.590 | DEBUG    | src.utils.log_rotator:__init__:52 - [LogRotator] Başlatıldı: log_dir=C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\logs, archive_days=3, compress=True
+2026-02-20 09:25:36.594 | INFO     | src.utils.log_rotator:rotate:134 - [LogRotator] Rotasyon tamamlandı: 0 arşivlendi, 6 korundu
+2026-02-20 09:25:36.595 | INFO     | src.core.exception_guardian:__init__:160 - [Guardian] Başlatıldı: budget=50/h, circuit_thresh=10
+2026-02-20 09:25:36.595 | INFO     | src.core.exception_guardian:install_global_hook:393 - [Guardian] Global exception hook kuruldu
+2026-02-20 09:25:36.595 | DEBUG    | src.memory.smart_cache:__init__:42 - TTLCache başlatıldı: TTL=3600.0s, max=1000
+2026-02-20 09:25:36.595 | DEBUG    | src.memory.smart_cache:__init__:134 - SmartCache başlatıldı (L1+L2+L3).
+2026-02-20 09:32:58.924 | INFO     | src.core.bootstrap:boot:33 - --- QUANT BETTING BOT – BOOT (FULL) ---
+2026-02-20 09:32:58.925 | INFO     | src.core.bootstrap:_boot_infrastructure:69 - Layer 0 – Infrastructure...
+2026-02-20 09:32:58.937 | DEBUG    | src.utils.log_rotator:__init__:52 - [LogRotator] Başlatıldı: log_dir=C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\logs, archive_days=3, compress=True
+2026-02-20 09:32:58.939 | INFO     | src.utils.log_rotator:rotate:134 - [LogRotator] Rotasyon tamamlandı: 0 arşivlendi, 6 korundu
+2026-02-20 09:32:58.940 | INFO     | src.core.exception_guardian:__init__:160 - [Guardian] Başlatıldı: budget=50/h, circuit_thresh=10
+2026-02-20 09:32:58.940 | INFO     | src.core.exception_guardian:install_global_hook:393 - [Guardian] Global exception hook kuruldu
+2026-02-20 09:32:58.940 | DEBUG    | src.memory.smart_cache:__init__:42 - TTLCache başlatıldı: TTL=3600.0s, max=1000
+2026-02-20 09:32:58.940 | DEBUG    | src.memory.smart_cache:__init__:134 - SmartCache başlatıldı (L1+L2+L3).
+2026-02-20 09:33:35.314 | INFO     | src.core.bootstrap:boot:33 - --- QUANT BETTING BOT – BOOT (FULL) ---
+2026-02-20 09:33:35.314 | INFO     | src.core.bootstrap:_boot_infrastructure:69 - Layer 0 – Infrastructure...
+2026-02-20 09:33:35.329 | DEBUG    | src.utils.log_rotator:__init__:52 - [LogRotator] Başlatıldı: log_dir=C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\logs, archive_days=3, compress=True
+2026-02-20 09:33:35.333 | INFO     | src.utils.log_rotator:rotate:134 - [LogRotator] Rotasyon tamamlandı: 0 arşivlendi, 6 korundu
+2026-02-20 09:33:35.333 | INFO     | src.core.exception_guardian:__init__:160 - [Guardian] Başlatıldı: budget=50/h, circuit_thresh=10
+2026-02-20 09:33:35.334 | INFO     | src.core.exception_guardian:install_global_hook:393 - [Guardian] Global exception hook kuruldu
+2026-02-20 09:33:35.334 | DEBUG    | src.memory.smart_cache:__init__:42 - TTLCache başlatıldı: TTL=3600.0s, max=1000
+2026-02-20 09:33:35.334 | DEBUG    | src.memory.smart_cache:__init__:134 - SmartCache başlatıldı (L1+L2+L3).
+2026-02-20 09:35:22.300 | INFO     | src.core.bootstrap:boot:33 - --- QUANT BETTING BOT – BOOT (FULL) ---
+2026-02-20 09:35:22.301 | INFO     | src.core.bootstrap:_boot_infrastructure:69 - Layer 0 – Infrastructure...
+2026-02-20 09:35:22.311 | DEBUG    | src.utils.log_rotator:__init__:52 - [LogRotator] Başlatıldı: log_dir=C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\logs, archive_days=3, compress=True
+2026-02-20 09:35:22.314 | INFO     | src.utils.log_rotator:rotate:134 - [LogRotator] Rotasyon tamamlandı: 0 arşivlendi, 6 korundu
+2026-02-20 09:35:22.314 | INFO     | src.core.exception_guardian:__init__:160 - [Guardian] Başlatıldı: budget=50/h, circuit_thresh=10
+2026-02-20 09:35:22.314 | INFO     | src.core.exception_guardian:install_global_hook:393 - [Guardian] Global exception hook kuruldu
+2026-02-20 09:35:22.315 | DEBUG    | src.memory.smart_cache:__init__:42 - TTLCache başlatıldı: TTL=3600.0s, max=1000
+2026-02-20 09:35:22.315 | DEBUG    | src.memory.smart_cache:__init__:134 - SmartCache başlatıldı (L1+L2+L3).
+2026-02-20 09:58:50.007 | INFO     | src.core.bootstrap:boot:33 - --- QUANT BETTING BOT – BOOT (FULL) ---
+2026-02-20 09:58:50.008 | INFO     | src.core.bootstrap:_boot_infrastructure:69 - Layer 0 – Infrastructure...
+2026-02-20 09:58:50.020 | DEBUG    | src.utils.log_rotator:__init__:52 - [LogRotator] Başlatıldı: log_dir=C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\logs, archive_days=3, compress=True
+2026-02-20 09:58:50.023 | INFO     | src.utils.log_rotator:rotate:134 - [LogRotator] Rotasyon tamamlandı: 0 arşivlendi, 6 korundu
+2026-02-20 09:58:50.023 | INFO     | src.core.exception_guardian:__init__:160 - [Guardian] Başlatıldı: budget=50/h, circuit_thresh=10
+2026-02-20 09:58:50.023 | INFO     | src.core.exception_guardian:install_global_hook:393 - [Guardian] Global exception hook kuruldu
+2026-02-20 09:58:50.023 | DEBUG    | src.memory.smart_cache:__init__:42 - TTLCache başlatıldı: TTL=3600.0s, max=1000
+2026-02-20 09:58:50.023 | DEBUG    | src.memory.smart_cache:__init__:134 - SmartCache başlatıldı (L1+L2+L3).
+2026-02-20 10:14:49.418 | INFO     | src.core.bootstrap:boot:33 - --- QUANT BETTING BOT – BOOT (FULL) ---
+2026-02-20 10:14:49.418 | INFO     | src.core.bootstrap:_boot_infrastructure:69 - Layer 0 – Infrastructure...
+2026-02-20 10:14:49.430 | DEBUG    | src.utils.log_rotator:__init__:52 - [LogRotator] Başlatıldı: log_dir=C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\logs, archive_days=3, compress=True
+2026-02-20 10:14:49.432 | INFO     | src.utils.log_rotator:rotate:134 - [LogRotator] Rotasyon tamamlandı: 0 arşivlendi, 6 korundu
+2026-02-20 10:14:49.432 | INFO     | src.core.exception_guardian:__init__:160 - [Guardian] Başlatıldı: budget=50/h, circuit_thresh=10
+2026-02-20 10:14:49.432 | INFO     | src.core.exception_guardian:install_global_hook:393 - [Guardian] Global exception hook kuruldu
+2026-02-20 10:14:49.433 | DEBUG    | src.memory.smart_cache:__init__:42 - TTLCache başlatıldı: TTL=3600.0s, max=1000
+2026-02-20 10:14:49.433 | DEBUG    | src.memory.smart_cache:__init__:134 - SmartCache başlatıldı (L1+L2+L3).
+2026-02-20 10:15:52.167 | INFO     | src.core.bootstrap:boot:33 - --- QUANT BETTING BOT – BOOT (FULL) ---
+2026-02-20 10:15:52.168 | INFO     | src.core.bootstrap:_boot_infrastructure:69 - Layer 0 – Infrastructure...
+2026-02-20 10:15:52.177 | DEBUG    | src.utils.log_rotator:__init__:52 - [LogRotator] Başlatıldı: log_dir=C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\logs, archive_days=3, compress=True
+2026-02-20 10:15:52.179 | INFO     | src.utils.log_rotator:rotate:134 - [LogRotator] Rotasyon tamamlandı: 0 arşivlendi, 6 korundu
+2026-02-20 10:15:52.180 | INFO     | src.core.exception_guardian:__init__:160 - [Guardian] Başlatıldı: budget=50/h, circuit_thresh=10
+2026-02-20 10:15:52.180 | INFO     | src.core.exception_guardian:install_global_hook:393 - [Guardian] Global exception hook kuruldu
+2026-02-20 10:15:52.180 | DEBUG    | src.memory.smart_cache:__init__:42 - TTLCache başlatıldı: TTL=3600.0s, max=1000
+2026-02-20 10:15:52.180 | DEBUG    | src.memory.smart_cache:__init__:134 - SmartCache başlatıldı (L1+L2+L3).
+2026-02-20 10:19:05.802 | INFO     | src.core.bootstrap:boot:33 - --- QUANT BETTING BOT – BOOT (FULL) ---
+2026-02-20 10:19:05.803 | INFO     | src.core.bootstrap:_boot_infrastructure:69 - Layer 0 – Infrastructure...
+2026-02-20 10:19:05.815 | DEBUG    | src.utils.log_rotator:__init__:52 - [LogRotator] Başlatıldı: log_dir=C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\logs, archive_days=3, compress=True
+2026-02-20 10:19:05.819 | INFO     | src.utils.log_rotator:rotate:134 - [LogRotator] Rotasyon tamamlandı: 0 arşivlendi, 6 korundu
+2026-02-20 10:19:05.819 | INFO     | src.core.exception_guardian:__init__:160 - [Guardian] Başlatıldı: budget=50/h, circuit_thresh=10
+2026-02-20 10:19:05.819 | INFO     | src.core.exception_guardian:install_global_hook:393 - [Guardian] Global exception hook kuruldu
+2026-02-20 10:19:05.819 | DEBUG    | src.memory.smart_cache:__init__:42 - TTLCache başlatıldı: TTL=3600.0s, max=1000
+2026-02-20 10:19:05.819 | DEBUG    | src.memory.smart_cache:__init__:134 - SmartCache başlatıldı (L1+L2+L3).
+2026-02-20 10:25:35.380 | INFO     | src.core.bootstrap:boot:33 - --- QUANT BETTING BOT – BOOT (FULL) ---
+2026-02-20 10:25:35.380 | INFO     | src.core.bootstrap:_boot_infrastructure:69 - Layer 0 – Infrastructure...
+2026-02-20 10:25:35.396 | DEBUG    | src.utils.log_rotator:__init__:52 - [LogRotator] Başlatıldı: log_dir=C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\logs, archive_days=3, compress=True
+2026-02-20 10:25:35.400 | INFO     | src.utils.log_rotator:rotate:134 - [LogRotator] Rotasyon tamamlandı: 0 arşivlendi, 6 korundu
+2026-02-20 10:25:35.400 | INFO     | src.core.exception_guardian:__init__:160 - [Guardian] Başlatıldı: budget=50/h, circuit_thresh=10
+2026-02-20 10:25:35.400 | INFO     | src.core.exception_guardian:install_global_hook:393 - [Guardian] Global exception hook kuruldu
+2026-02-20 10:25:35.401 | DEBUG    | src.memory.smart_cache:__init__:42 - TTLCache başlatıldı: TTL=3600.0s, max=1000
+2026-02-20 10:25:35.401 | DEBUG    | src.memory.smart_cache:__init__:134 - SmartCache başlatıldı (L1+L2+L3).
+2026-02-20 10:30:36.928 | INFO     | src.core.bootstrap:boot:33 - --- QUANT BETTING BOT – BOOT (FULL) ---
+2026-02-20 10:30:36.928 | INFO     | src.core.bootstrap:_boot_infrastructure:69 - Layer 0 – Infrastructure...
+2026-02-20 10:30:36.938 | DEBUG    | src.utils.log_rotator:__init__:52 - [LogRotator] Başlatıldı: log_dir=C:\Users\immor\OneDrive\Belgeler\Projelerim\bahis\logs, archive_days=3, compress=True
+2026-02-20 10:30:36.941 | INFO     | src.utils.log_rotator:rotate:134 - [LogRotator] Rotasyon tamamlandı: 0 arşivlendi, 6 korundu
+2026-02-20 10:30:36.941 | INFO     | src.core.exception_guardian:__init__:160 - [Guardian] Başlatıldı: budget=50/h, circuit_thresh=10
+2026-02-20 10:30:36.941 | INFO     | src.core.exception_guardian:install_global_hook:393 - [Guardian] Global exception hook kuruldu
+2026-02-20 10:30:36.942 | DEBUG    | src.memory.smart_cache:__init__:42 - TTLCache başlatıldı: TTL=3600.0s, max=1000
+2026-02-20 10:30:36.942 | DEBUG    | src.memory.smart_cache:__init__:134 - SmartCache başlatıldı (L1+L2+L3).

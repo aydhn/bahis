@@ -139,9 +139,21 @@ class DBManager:
                 self._con.execute("PRAGMA threads=4")
         except Exception:
             pass
+        self._reconnect_if_needed()
+        self._backup_db()
         self._init_schema()
-        backend = "duckdb" if self._is_duckdb else "sqlite"
-        logger.info(f"[DBManager] Başlatıldı ({backend}) → {self._path}")
+        logger.info(f"[DBManager] Başlatıldı → {self._path}")
+
+    def _backup_db(self):
+        """DuckDB dosyasını yedekler."""
+        import shutil
+        backup_path = self._path.with_suffix(".duckdb.backup")
+        try:
+            if self._path.exists():
+                shutil.copy2(self._path, backup_path)
+                logger.debug(f"[DBManager] Yedek oluşturuldu: {backup_path.name}")
+        except Exception as e:
+            logger.warning(f"[DBManager] Yedekleme başarısız: {e}")
 
     def _query_pl(self, sql: str, params: list | None = None) -> pl.DataFrame:
         params = params or []
@@ -238,6 +250,22 @@ class DBManager:
                 selection    VARCHAR,
                 odds         DOUBLE,
                 timestamp    TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        self._con.execute("""
+            CREATE TABLE IF NOT EXISTS bets (
+                match_id     VARCHAR PRIMARY KEY,
+                selection     VARCHAR,
+                odds          DOUBLE,
+                stake         DOUBLE,
+                payout        DOUBLE DEFAULT 0.0,
+                pnl           DOUBLE DEFAULT 0.0,
+                result        VARCHAR DEFAULT 'PENDING',
+                model_name    VARCHAR DEFAULT 'MANUAL',
+                timestamp     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                strategy      VARCHAR,
+                confidence    DOUBLE,
+                ev            DOUBLE
             )
         """)
         if self._is_duckdb:

@@ -137,13 +137,26 @@ class CLVTracker:
         else:
             return "Negatif CLV – piyasanın arkasındasın, strateji revizyonu gerekli."
 
-    def get_clv_series(self) -> list[float]:
-        """Kümülatif CLV serisi (grafik için)."""
-        records = [r for r in self._records if r.closing_odds > 1.0]
-        if not records:
-            return []
-        cumulative = np.cumsum([r.clv for r in records])
-        return cumulative.tolist()
+    def check_retraining_trigger(self, window: int = 50, threshold: float = -0.02) -> bool:
+        """
+        CLV drift kontrolü: Son N bahisteki ortalama CLV, threshold'un altına düştüyse
+        strateji/model bozulmuş demektir (Negatif Drift).
+        Bu durumda 'True' döner ve retraining tetiklenebilir.
+        """
+        records_with_clv = [r for r in self._records if r.closing_odds > 1.0]
+        if len(records_with_clv) < window:
+            return False
+            
+        recent_clvs = [r.clv for r in records_with_clv[-window:]]
+        avg_recent = np.mean(recent_clvs)
+        
+        if avg_recent < threshold:
+            logger.warning(
+                f"🚨 ADAPTIVE RETRAINING TETİKLENDİ! "
+                f"Son {window} bahis CLV: {avg_recent:+.3f} < {threshold:+.3f}"
+            )
+            return True
+        return False
 
 
 class CorrelationMatrix:

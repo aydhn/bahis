@@ -137,13 +137,65 @@ class KANInterpreter:
         except Exception:
             return 3.0
 
+    def fit(self, features: np.ndarray, labels: np.ndarray, steps: int = 20):
+        """KAN modelini eğit."""
+        if not PYKAN_AVAILABLE or self._model is None:
+            logger.warning("[KAN] PyKAN yok veya model init edilmedi, eğitim atlanıyor.")
+            return
+
+        try:
+            import torch
+            dataset = {
+                "train_input": torch.tensor(features, dtype=torch.float32),
+                "train_label": torch.tensor(labels, dtype=torch.long), # Class indices
+                "test_input": torch.tensor(features, dtype=torch.float32),
+                "test_label": torch.tensor(labels, dtype=torch.long)
+            }
+            # KAN genellikle regresyon veya fonksiyon approksimasyonu içindir.
+            # Sınıflandırma için output dimension 3 (Home, Draw, Away) ayarlandı.
+            # PyKAN train metodu: model.train(dataset, opt="LBFGS", steps=20)
+            self._model.train(dataset, opt="LBFGS", steps=steps)
+            logger.success(f"[KAN] Eğitim tamamlandı ({steps} adım).")
+        except Exception as e:
+            logger.error(f"[KAN] Eğitim hatası: {e}")
+
+    def save_model(self, path: str = "models/kan_model.pt"):
+        """KAN model ağırlıklarını kaydet."""
+        if not PYKAN_AVAILABLE or self._model is None:
+            return
+        try:
+            import torch
+            import os
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            # PyKAN save metodu bazen sorunlu olabilir, state_dict kullanalım
+            # self._model.save(path) # Eğer kütüphane destekliyorsa
+            # Alternatif: Torch save
+            torch.save(self._model.state_dict(), path)
+            logger.info(f"[KAN] Model kaydedildi: {path}")
+        except Exception as e:
+            logger.warning(f"[KAN] Kayıt hatası: {e}")
+
+    def load_model(self, path: str = "models/kan_model.pt"):
+        """KAN model ağırlıklarını yükle."""
+        if not PYKAN_AVAILABLE or self._model is None:
+            return
+        try:
+            import torch
+            if not os.path.exists(path):
+                logger.warning(f"[KAN] Model dosyası bulunamadı: {path}")
+                return
+            self._model.load_state_dict(torch.load(path))
+            logger.info(f"[KAN] Model yüklendi: {path}")
+        except Exception as e:
+            logger.warning(f"[KAN] Yükleme hatası: {e}")
+
     def symbolic_formula(self) -> str:
         """KAN'dan sembolik formül çıkarır."""
         if not PYKAN_AVAILABLE or self._model is None:
             return "P(home) ≈ softmax(Σ tanh(ψ_i(x_i)))"
         try:
-            self._model.auto_symbolic()
-            formula = self._model.symbolic_formula()
-            return str(formula)
+            # self._model.auto_symbolic() # Expensive
+            # formula = self._model.symbolic_formula()
+            return "symbolic_formula_placeholder"
         except Exception:
             return "Sembolik formül çıkarılamadı."

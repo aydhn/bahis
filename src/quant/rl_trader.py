@@ -80,23 +80,30 @@ class BettingEnv(gym.Env if GYM_AVAILABLE else object):
         ], dtype=np.float32)
 
     def _simulate_outcome(self, bet_type: int, stake: float) -> float:
+        """Outcome simülasyonunu maça özel olasılıklarla yapar."""
         if bet_type == 0 or stake <= 0:
             return 0.0
 
         if self._current_match is None:
             return -stake * 0.1
 
+        # Maça özel olasılıkları al (Yoksa bias'lı default)
         probs = [
-            self._current_match.get("prob_home", 0.4),
-            self._current_match.get("prob_draw", 0.3),
-            self._current_match.get("prob_away", 0.3),
+            self._current_match.get("prob_home", 0.45),
+            self._current_match.get("prob_draw", 0.25),
+            self._current_match.get("prob_away", 0.30),
         ]
+        
+        # Pazar (odds) verisi varsa ondan da olasılık türetilebilir
+        # Şimdilik match object'ten gelen prob'ları kullanıyoruz.
         outcome = np.random.choice([1, 2, 3], p=probs)
-        odds_map = {
-            1: 1.0 / max(probs[0], 0.05),
-            2: 1.0 / max(probs[1], 0.05),
-            3: 1.0 / max(probs[2], 0.05),
-        }
+        
+        # Ortalama market oranları (Kasa büyümesi için kritik)
+        odds_h = self._current_match.get("home_odds", 2.0)
+        odds_d = self._current_match.get("draw_odds", 3.2)
+        odds_a = self._current_match.get("away_odds", 3.0)
+        
+        odds_map = {1: odds_h, 2: odds_d, 3: odds_a}
 
         if outcome == bet_type:
             return stake * (odds_map[bet_type] - 1)
@@ -110,7 +117,8 @@ class BettingEnv(gym.Env if GYM_AVAILABLE else object):
 class RLTrader:
     """RL tabanlı otonom bahis karar verici."""
 
-    def __init__(self, model_path: str | None = None):
+    def __init__(self, db: Any = None, model_path: str | None = None):
+        self.db = db
         self._model = None
         self._env = None
 
@@ -124,6 +132,47 @@ class RLTrader:
                     logger.warning(f"RL model yükleme hatası: {e}")
 
         logger.debug("RLTrader başlatıldı.")
+
+    def run_batch(self, **kwargs) -> list[dict]:
+        """Batch modu: DB'den maçları çekip tahmin üretir."""
+        if self.db is None:
+            logger.warning("RLTrader: DB bağlantısı yok, batch çalıştırılamadı.")
+            return []
+
+        # 1. Bekleyen tahminler veya yaklaşan maçları çek
+        # Şimdilik "upcoming" olan tüm maçlara bakıyoruz
+        matches_df = self.db.get_upcoming_matches(hours_ahead=48)
+        if matches_df.is_empty():
+            logger.info("RLTrader: İşlenecek maç yok.")
+            return []
+
+        matches = matches_df.to_dicts()
+        decisions = []
+        
+        # 2. Her maç için karar üret
+        for match in matches:
+            # Eksik verileri tamamla (mock/basit heuristic için)
+            # Normalde burada feature_store'dan zengin veri çekilmeli
+            match["prob_home"] = match.get("prob_home", 1.0 / match.get("home_odds", 2.0))
+            match["prob_draw"] = match.get("prob_draw", 1.0 / match.get("draw_odds", 3.0))
+            match["prob_away"] = match.get("prob_away", 1.0 / match.get("away_odds", 4.0))
+            
+            # EV hesabı (basit)
+            match["ev_home"] = match["prob_home"] * match.get("home_odds", 0) - 1
+            match["ev_draw"] = match["prob_draw"] * match.get("draw_odds", 0) - 1
+            match["ev_away"] = match["prob_away"] * match.get("away_odds", 0) - 1
+            match["confidence"] = 0.5 # Default confidence
+            
+            decision = self._rl_decide(match) if (self._model and self._env) else self._heuristic_decide(match)
+            if decision and decision.get("selection") != "skip":
+                decisions.append(decision)
+
+        # 3. Sonuçları kaydet
+        if decisions:
+            self.db.save_signals(decisions, cycle=int(time.time()))
+            logger.info(f"RLTrader: {len(decisions)} yeni sinyal üretildi.")
+            
+        return decisions
 
     def decide(self, ensemble: list[dict]) -> list[dict]:
         """Ensemble sinyallerinden bahis kararları üretir."""

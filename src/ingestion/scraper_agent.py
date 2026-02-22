@@ -13,6 +13,7 @@ from datetime import datetime
 from typing import Any
 
 from loguru import logger
+from src.ingestion.proxy_manager import ProxyManager
 
 try:
     from bs4 import BeautifulSoup
@@ -55,13 +56,23 @@ async def _async_jitter(min_s: float = 1.0, max_s: float = 4.0):
 class BaseScraper:
     """Tüm scraper'ların temel sınıfı."""
 
-    def __init__(self, name: str):
+    def __init__(self, name: str, proxy_mgr: ProxyManager = None):
         self.name = name
         self._client: httpx.AsyncClient | None = None
         self._session_count = 0
+        self._proxy_mgr = proxy_mgr
+        self._current_proxy = None
 
     async def _ensure_client(self):
         if self._client is None or self._client.is_closed:
+            proxies = None
+            if self._proxy_mgr:
+                p = self._proxy_mgr.get_proxy()
+                if p:
+                    self._current_proxy = p
+                    proxies = {"http://": p, "https://": p}
+                    logger.info(f"[{self.name}] Using Proxy: {p}")
+
             self._client = httpx.AsyncClient(
                 timeout=30,
                 headers={
@@ -70,7 +81,24 @@ class BaseScraper:
                     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
                 },
                 follow_redirects=True,
+                proxies=proxies,
+                verify=False, # Often needed for free proxies
             )
+
+    async def rotate_session(self):
+        """Force session rotation (close old, clear proxy, re-init)."""
+        logger.warning(f"[{self.name}] Rotating Session & Proxy...")
+        if self._client:
+            await self._client.aclose()
+        
+        # Mark current proxy as bad if it failed specifically (e.g. 403)
+        if self._proxy_mgr and self._current_proxy:
+            self._proxy_mgr.mark_bad(self._current_proxy)
+            self._current_proxy = None
+            
+        self._client = None
+        # Next call to _ensure_client will pick a new proxy
+
 
     async def _fetch(self, url: str) -> str | None:
         """URL'den HTML çeker, jitter ile."""
@@ -112,17 +140,16 @@ class MackolikScraper(BaseScraper):
     BASE_URL = "https://www.mackolik.com"
     FIXTURE_URLS = [
         "/canli-sonuclar",
-        "/maclar",
-        "/bugunun-maclari",
+        "/futbol/canli-sonuclar",
+        "/iddaa/program",
     ]
     ODDS_URLS = [
-        "/iddaa",
-        "/iddaa/bugunku-maclar",
-        "/iddaa/maclar",
+        "/iddaa/bulten",
+        "/iddaa/program",
     ]
 
-    def __init__(self):
-        super().__init__("Mackolik")
+    def __init__(self, proxy_mgr: ProxyManager = None):
+        super().__init__("Mackolik", proxy_mgr)
 
     async def _fetch_first_ok(self, url_paths: list[str]) -> str | None:
         """URL listesini sırayla dene, ilk 200 yanıtı dön."""
@@ -247,79 +274,82 @@ class SofascoreScraper(BaseScraper):
     API_BASE = "https://api.sofascore.com/api/v1"
     SPORTS = ["football", "basketball", "tennis", "volleyball", "handball", "ice-hockey"]
 
-    def __init__(self):
-        super().__init__("Sofascore")
+    def __init__(self, proxy_mgr: ProxyManager = None):
+        super().__init__("Sofascore", proxy_mgr)
 
     async def scrape_live(self, sport: str = "football") -> list[dict]:
-        """Belirli sporun canlı maçlarını API'den çeker."""
+        """Belirli sporun canlı maçlarını API'den çeker – 403 retry ile."""
         await self._ensure_client()
-        await _async_jitter(1.0, 3.0)
+        await _async_jitter(0.5, 2.0)
 
-        try:
-            _ss_headers = {
-                "User-Agent": random_ua(),
-                "Accept": "application/json, text/plain, */*",
-                "Accept-Language": "tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7",
-                "Accept-Encoding": "gzip, deflate, br",
-                "Origin": "https://www.sofascore.com",
-                "Referer": "https://www.sofascore.com/",
-                "Sec-Fetch-Dest": "empty",
-                "Sec-Fetch-Mode": "cors",
-                "Sec-Fetch-Site": "same-site",
-                "Sec-Ch-Ua": '"Chromium";v="131", "Not_A Brand";v="24"',
-                "Sec-Ch-Ua-Mobile": "?0",
-                "Sec-Ch-Ua-Platform": '"Windows"',
-                "Cache-Control": "no-cache",
-                "Pragma": "no-cache",
-            }
-            # Canlı endpoint dene; 403 alırsa scheduled dene
-            resp = await self._client.get(
-                f"{self.API_BASE}/sport/{sport}/events/live",
-                headers=_ss_headers,
-            )
-            if resp.status_code == 403:
-                # 403 → scheduled endpoint dene
-                from datetime import datetime as _dt
-                today = _dt.now().strftime("%Y-%m-%d")
-                resp = await self._client.get(
-                    f"{self.API_BASE}/sport/{sport}/scheduled-events/{today}",
-                    headers=_ss_headers,
-                )
-            if resp.status_code != 200:
-                logger.debug(f"[Sofascore] {sport} API yanıtı: {resp.status_code}")
-                return []
+        _ss_headers = {
+            "User-Agent": random_ua(),
+            "Accept": "application/json, text/plain, */*",
+            "Accept-Language": "tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7",
+            "Accept-Encoding": "gzip, deflate, br, zstd",
+            "Origin": "https://www.sofascore.com",
+            "Referer": "https://www.sofascore.com/",
+            "Sec-Fetch-Dest": "empty",
+            "Sec-Fetch-Mode": "cors",
+            "Sec-Fetch-Site": "same-site",
+            "Cache-Control": "max-age=0",
+            "Connection": "keep-alive",
+            "Priority": "u=1, i",
+        }
 
-            data = resp.json()
-            events = data.get("events", [])
-            matches = []
-            for ev in events[:100]:
-                home = ev.get("homeTeam", {}).get("name", "")
-                away = ev.get("awayTeam", {}).get("name", "")
-                tournament = ev.get("tournament", {})
-                tournament_name = tournament.get("name", "")
-                country = tournament.get("category", {}).get("name", "")
+        endpoints = [
+            f"{self.API_BASE}/sport/{sport}/events/live",
+        ]
+        from datetime import datetime as _dt
+        today = _dt.now().strftime("%Y-%m-%d")
+        endpoints.append(f"{self.API_BASE}/sport/{sport}/scheduled-events/{today}")
 
-                home_score = ev.get("homeScore", {}).get("current", 0)
-                away_score = ev.get("awayScore", {}).get("current", 0)
+        for attempt, url in enumerate(endpoints):
+            try:
+                _ss_headers["User-Agent"] = random_ua()  # Rotate UA per attempt
+                resp = await self._client.get(url, headers=_ss_headers)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    events = data.get("events", [])
+                    matches = []
+                    for ev in events[:100]:
+                        home = ev.get("homeTeam", {}).get("name", "")
+                        away = ev.get("awayTeam", {}).get("name", "")
+                        tournament = ev.get("tournament", {})
+                        tournament_name = tournament.get("name", "")
+                        country = tournament.get("category", {}).get("name", "")
+                        home_score = ev.get("homeScore", {}).get("current", 0)
+                        away_score = ev.get("awayScore", {}).get("current", 0)
+                        matches.append({
+                            "match_id": f"sofa_{ev.get('id', '')}",
+                            "home_team": home,
+                            "away_team": away,
+                            "league": tournament_name,
+                            "country": country,
+                            "sport": sport,
+                            "home_score": home_score,
+                            "away_score": away_score,
+                            "status": "live",
+                            "source": "sofascore",
+                        })
+                    logger.info(f"[Sofascore] {sport}: {len(matches)} maç çekildi.")
+                    return matches
+                elif resp.status_code in (403, 429):
+                    logger.warning(f"[{self.name}] {sport} API yanıtı: {resp.status_code} -> Rotating Proxy...")
+                    await self.rotate_session()     
+                    await self._ensure_client() # Re-init immediately
+                    await _async_jitter(1.0, 3.0)  # Backoff before next attempt
+                    # Retry logic handles next iteration if designed (the loop continues to next endpoint usually)
+                    # Ideally we want to retry THE SAME endpoint with new proxy.
+                    # But for now let's just rotate and let next endpoint attempt utilize new proxy.
+                    continue
+                else:
+                    logger.debug(f"[Sofascore] {sport} API yanıtı: {resp.status_code}")
+            except Exception as e:
+                logger.warning(f"[Sofascore] {sport} API hatası: {e}")
 
-                matches.append({
-                    "match_id": f"sofa_{ev.get('id', '')}",
-                    "home_team": home,
-                    "away_team": away,
-                    "league": tournament_name,
-                    "country": country,
-                    "sport": sport,
-                    "home_score": home_score,
-                    "away_score": away_score,
-                    "status": "live",
-                    "source": "sofascore",
-                })
-
-            logger.info(f"[Sofascore] {sport}: {len(matches)} canlı maç çekildi.")
-            return matches
-        except Exception as e:
-            logger.warning(f"[Sofascore] {sport} API hatası: {e}")
-            return []
+        logger.debug(f"[Sofascore] {sport}: tüm endpoint'ler başarısız.")
+        return []
 
     async def scrape_all_live(self) -> list[dict]:
         """TÜM sporlardan canlı maçları çek."""
@@ -378,8 +408,8 @@ class TransfermarktScraper(BaseScraper):
 
     BASE_URL = "https://www.transfermarkt.com.tr"
 
-    def __init__(self):
-        super().__init__("Transfermarkt")
+    def __init__(self, proxy_mgr: ProxyManager = None):
+        super().__init__("Transfermarkt", proxy_mgr)
 
     async def scrape_squad_value(self, team_slug: str) -> dict:
         """Takım kadro piyasa değerini çeker."""
@@ -469,9 +499,17 @@ class ScraperAgent:
     def __init__(self, db, notifier=None, cb_registry=None):
         self._db = db
         self._notifier = notifier
-        self._mackolik = MackolikScraper()
-        self._sofascore = SofascoreScraper()
-        self._transfermarkt = TransfermarktScraper()
+        
+        # Initialize Proxy Manager
+        self._proxy_mgr = ProxyManager() # Uses FREE_LIST by default
+        
+        self._mackolik = MackolikScraper(self._proxy_mgr)
+        self._sofascore = SofascoreScraper(self._proxy_mgr)
+        self._transfermarkt = TransfermarktScraper(self._proxy_mgr)
+
+        # Self-Healing Engine (Otopoyetik Kurtarma)
+        from src.core.auto_healer import SelfHealingEngine
+        self._healer = SelfHealingEngine(llm_backend="auto")
 
         # Her scraper'a ayrı circuit breaker
         from src.core.circuit_breaker import CircuitBreakerRegistry, CBConfig
@@ -494,7 +532,7 @@ class ScraperAgent:
             self._cb_sofascore.on_open(self._notify_open)
             self._cb_transfermarkt.on_open(self._notify_open)
 
-        logger.debug("ScraperAgent başlatıldı (Circuit Breaker korumalı).")
+        logger.debug("ScraperAgent başlatıldı (Self-Healing + CB aktif).")
 
     def _notify_open(self, name: str, error: str):
         """Circuit breaker açıldığında bildirim kuyruğuna ekle."""
@@ -534,11 +572,17 @@ class ScraperAgent:
 
     async def _scrape_mackolik(self):
         async def _do():
-            fixtures = await self._mackolik.scrape_fixtures()
-            odds = await self._mackolik.scrape_odds()
-            self._store_matches(fixtures, "mackolik")
-            self._store_odds(odds)
-            return len(fixtures) + len(odds)
+            try:
+                fixtures = await self._mackolik.scrape_fixtures()
+                odds = await self._mackolik.scrape_odds()
+                self._store_matches(fixtures, "mackolik")
+                self._store_odds(odds)
+                return len(fixtures) + len(odds)
+            except Exception as e:
+                # KRİTİK: Hata durumunda kendini iyileştirme motorunu tetikle
+                logger.error(f"[ScraperAgent] Mackolik hatası: {e}. İyileştirme tetikleniyor...")
+                await self._healer.attempt_heal(e, module_path="src/ingestion/scraper_agent.py")
+                raise e
 
         result = await self._cb_mackolik.call_async(_do)
         if result:
@@ -546,9 +590,14 @@ class ScraperAgent:
 
     async def _scrape_sofascore(self):
         async def _do():
-            all_matches = await self._sofascore.scrape_all_live()
-            self._store_matches(all_matches, "sofascore")
-            return len(all_matches)
+            try:
+                all_matches = await self._sofascore.scrape_all_live()
+                self._store_matches(all_matches, "sofascore")
+                return len(all_matches)
+            except Exception as e:
+                logger.error(f"[ScraperAgent] Sofascore hatası: {e}. İyileştirme tetikleniyor...")
+                await self._healer.attempt_heal(e, module_path="src/ingestion/scraper_agent.py")
+                raise e
 
         result = await self._cb_sofascore.call_async(_do)
         if result:

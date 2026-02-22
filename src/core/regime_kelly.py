@@ -32,6 +32,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 
 import numpy as np
+from typing import Any
 from loguru import logger
 
 
@@ -94,25 +95,61 @@ class KellyDecision:
     adjustments: list[str] = field(default_factory=list)
 
 
+class AutoRegimeDetector:
+    """DB verilerini kullanarak piyasa rejimini otomatik tespit eder."""
+    def __init__(self, db: Any):
+        self.db = db
+
+    def detect(self) -> RegimeState:
+        """Volatility ve Brier skoru üzerinden rejim tespiti."""
+        if self.db is None:
+            return RegimeState()
+
+        try:
+            # 1. Son 50 maçın Brier skorunu ve PnL volatilitesini çek
+            query = """
+            SELECT pnl, ABS(probability - result) as brier
+            FROM bets
+            ORDER BY timestamp DESC
+            LIMIT 50
+            """
+            df = self.db.query(query)
+            if df.is_empty():
+                return RegimeState()
+
+            pnls = df["pnl"].to_numpy()
+            brier_scores = df["brier"].to_numpy()
+            
+            vol = np.std(pnls) if len(pnls) > 5 else 0.0
+            avg_brier = np.mean(brier_scores) if len(brier_scores) > 5 else 0.25
+
+            # Rejim Sınıflandırma (Basit Thresholds)
+            vol_reg = "calm"
+            if vol > 200: vol_reg = "crisis"
+            elif vol > 100: vol_reg = "storm"
+            elif vol > 50: vol_reg = "elevated"
+
+            hmm_reg = "balanced"
+            if avg_brier < 0.15: hmm_reg = "dominant"
+            elif avg_brier > 0.35: hmm_reg = "passive"
+
+            risk_skor = (vol / 250) * 0.7 + (avg_brier / 0.5) * 0.3
+            
+            return RegimeState(
+                volatility_regime=vol_reg,
+                hmm_regime=hmm_reg,
+                composite_risk=float(np.clip(risk_skor, 0, 1))
+            )
+
+        except Exception as e:
+            logger.warning(f"RegimeDetection hatası: {e}")
+            return RegimeState()
+
 # ═══════════════════════════════════════════════
 #  REGIME KELLY (Ana Sınıf)
 # ═══════════════════════════════════════════════
 class RegimeKelly:
-    """Rejim-farkında Kelly Criterion v2.
-
-    Kullanım:
-        rk = RegimeKelly(bankroll=10000, base_fraction=0.25)
-
-        decision = rk.calculate(
-            probability=0.55,
-            odds=2.10,
-            match_id="gs_fb",
-            regime=RegimeState(volatility_regime="elevated"),
-        )
-
-        if decision.approved:
-            place_bet(decision.stake_amount)
-    """
+    """Rejim-farkında Kelly Criterion v2."""
 
     # Rejim → Kelly çarpanı
     VOLATILITY_MULTIPLIER = {
@@ -140,13 +177,14 @@ class RegimeKelly:
         (-0.25, 0.0, "KRİTİK drawdown — bahisler donduruldu"),
     ]
 
-    def __init__(self, bankroll: float = 10000.0,
+    def __init__(self, db: Any = None, bankroll: float = 10000.0,
                  base_fraction: float = 0.25,
                  min_edge: float = 0.03,
                  max_stake_pct: float = 0.05,
                  max_daily_exposure: float = 0.15,
                  anti_tilt_streak: int = 5,
                  vol_target_weekly: float = 0.08):
+        self.db = db
         self._bankroll = BankrollSegment(total=bankroll)
         self._bankroll.recalculate()
         self._base_fraction = base_fraction
@@ -155,6 +193,7 @@ class RegimeKelly:
         self._max_daily = max_daily_exposure
         self._tilt_streak = anti_tilt_streak
         self._vol_target = vol_target_weekly
+        self._detector = AutoRegimeDetector(db) if db else None
 
         # Durum takibi
         self._peak = bankroll
@@ -169,16 +208,52 @@ class RegimeKelly:
             f"fraction={base_fraction}, min_edge={min_edge:.0%}"
         )
 
+    def run_batch(self, **kwargs) -> list[KellyDecision]:
+        """Batch modu: DB'den sinyalleri değerlendirir."""
+        if self.db is None:
+            logger.warning("RegimeKelly: DB bağlantısı yok.")
+            return []
+
+        # Sinyalleri çek (henüz işlenmemişleri filtrelemek lazım normalde)
+        signals_df = self.db.get_signals()
+        if signals_df.is_empty():
+            logger.info("RegimeKelly: Değerlendirilecek sinyal yok.")
+            return []
+
+        signals = signals_df.to_dicts()
+        decisions = []
+        
+        for sig in signals:
+            # Rejim bilgisini çek (Mock)
+            # Gerçekte: self.db.get_current_regime() vs.
+            regime = RegimeState(volatility_regime="calm") 
+            
+            decision = self.calculate(
+                probability=1.0 / sig.get("odds", 2.0), # Approx
+                odds=sig.get("odds", 2.0),
+                match_id=sig.get("match_id", ""),
+                regime=regime
+            )
+            decisions.append(decision)
+            
+        return decisions
+
     def calculate(self, probability: float, odds: float,
                     match_id: str = "",
-                    regime: RegimeState | None = None) -> KellyDecision:
+                    regime: RegimeState | None = None,
+                    **kwargs) -> KellyDecision:
         """Rejim-farkında Kelly hesaplama."""
+        # Eğer rejim verilmemişse ve dedektör varsa otomatik tespit et
+        current_regime = regime
+        if current_regime is None and self._detector:
+            current_regime = self._detector.detect()
+            
         decision = KellyDecision(
             match_id=match_id,
             timestamp=datetime.utcnow().isoformat(),
             probability=probability,
             odds=odds,
-            regime=regime or RegimeState(),
+            regime=current_regime or RegimeState(),
         )
 
         # 1) Edge hesapla
@@ -351,4 +426,39 @@ class RegimeKelly:
             "consecutive_losses": self._consecutive_losses,
             "daily_exposure": self._daily_exposure,
             "decisions_count": len(self._decisions),
+            "volatility_multiplier": self.get_volatility_multiplier(),
+        }
+
+    def get_volatility_multiplier(self) -> float:
+        """Scheduler için mevcut volatilite çarpanını döndürür.
+        1.0 = Calm (Normal Interval)
+        <1.0 = Volatile (Faster Interval)
+        """
+        # 1. Haftalık PnL volatilitesi
+        vol_m = 1.0
+        if len(self._weekly_returns) >= 5:
+            realized_vol = float(np.std(list(self._weekly_returns)))
+            if realized_vol > self._vol_target:
+                # Volatilite hedefi aşıldıysa çarpan düşer (0.2'ye kadar)
+                vol_m = self._vol_target / max(realized_vol, 1e-6)
+                vol_m = max(vol_m, 0.2)
+        
+        # 2. Drawdown etkisi (Drawdown varsa daha temkinli/sık kontrol?)
+        # Drawdown varsa çarpan düşer -> Daha sık kontrol (High Alert)
+        dd = self._current_drawdown()
+        if dd < -0.10:
+            vol_m *= 0.8
+            
+        # 3. Tilt durumu
+        if self._consecutive_losses >= 3:
+            vol_m *= 0.7
+
+        return round(max(vol_m, 0.1), 2)
+
+    def segment_bankroll(self) -> dict:
+        """Kasa segmentasyonu: Hot (Live), Reserve (Güvenli), R&D (Deney)."""
+        return {
+            "hot": self._bankroll.total * 0.6,
+            "reserve": self._bankroll.total * 0.3,
+            "rnd": self._bankroll.total * 0.1
         }

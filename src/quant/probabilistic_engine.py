@@ -757,3 +757,18 @@ class ProbabilisticEngine:
             f"Ü2.5: {p.p_over25:.0%}, KG: {p.p_btts:.0%}. "
             f"En olası skor: {top_score[0]}-{top_score[1]} ({top_score[2]:.0%})."
         )
+
+    def bayesian_update(self, team: str, actual_score: int, expected_score: float):
+        """Maç sonrası takım gücünü Bayesian yöntemiyle günceller."""
+        # Prior: Mevcut güç (Mock: 1.0)
+        # Gerçekte posterior_summary'den çekilmeli
+        prior_strength = 1.0 
+        
+        # Likelihood: Poisson(actual | expected)
+        # Basit bir gradient update (Bayesian approximation)
+        alpha = 0.05 # Learning rate
+        innovation = actual_score - expected_score
+        posterior_strength = prior_strength + alpha * innovation
+        
+        logger.info(f"Bayesian Update: {team} | New Strength: {posterior_strength:.3f}")
+        return posterior_strength
