@@ -1,9 +1,12 @@
 from typing import Dict, Any, List
+from pathlib import Path
 from loguru import logger
 import polars as pl
+
 from src.pipeline.core import PipelineStage
 from src.system.container import container
 from src.core.regime_kelly import RegimeKelly, RegimeState
+from src.system.config import settings
 
 class RiskStage(PipelineStage):
     """Calculates risk-adjusted stakes using Regime Kelly and EVT."""
@@ -11,6 +14,11 @@ class RiskStage(PipelineStage):
     def __init__(self):
         super().__init__("risk")
         self.kelly = container.get("regime_kelly")
+
+        # Load Bankroll State
+        self.state_file = settings.DATA_DIR / "bankroll_state.json"
+        if self.kelly:
+            self.kelly.load_state(self.state_file)
 
         # Optional Imports
         try:
@@ -26,52 +34,71 @@ class RiskStage(PipelineStage):
             self.evt = None
 
     async def execute(self, context: Dict[str, Any]) -> Dict[str, Any]:
-        preds = context.get("ensemble", [])
+        ensemble_decisions = context.get("ensemble_results", [])
         matches = context.get("matches", pl.DataFrame())
 
-        if not preds or matches.is_empty():
+        if not ensemble_decisions or matches.is_empty():
             return {"final_bets": []}
 
-        bets = []
-        for i, pred in enumerate(preds):
-            # Assuming pred is a dict with prob_home, prob_draw, prob_away
-            row = matches.row(i, named=True)
-            home, away = row["home_team"], row["away_team"]
+        # Create Odds Map
+        # match_id -> odds (assuming match_id = home_away)
+        odds_map = {}
+        for row in matches.iter_rows(named=True):
+            mid = f"{row.get('home_team')}_{row.get('away_team')}"
+            odds_map[mid] = row.get("home_odds", 0.0)
 
-            # Simple logic: check highest edge
-            # For demonstration, only checking home win
-            prob_home = pred.get("prob_home", 0.0)
-            odds_home = row.get("home_odds", 0.0)
+        bets = []
+        for decision in ensemble_decisions:
+            match_id = decision.get("match_id")
+            prob_home = decision.get("prob_home", 0.0)
+
+            # Get Odds
+            odds_home = odds_map.get(match_id, 0.0)
+
+            if odds_home <= 1.0:
+                continue
 
             # Regime Detection (Mock or from previous stage)
-            regime = RegimeState(volatility_regime="calm") # Should come from VolatilityAnalyzer
+            # Ideal: VolatilityAnalyzer output from InferenceStage
+            regime = RegimeState(volatility_regime="calm")
 
-            decision = self.kelly.calculate(
+            kelly_decision = self.kelly.calculate(
                 probability=prob_home,
                 odds=odds_home,
-                match_id=f"{home}_{away}",
+                match_id=match_id,
                 regime=regime
             )
 
-            if decision.approved:
+            if kelly_decision.approved:
                 bets.append({
-                    "match_id": decision.match_id,
+                    "match_id": match_id,
                     "selection": "HOME",
-                    "stake": decision.stake_amount,
+                    "stake": kelly_decision.stake_amount,
                     "confidence": prob_home,
                     "odds": odds_home,
-                    "reason": "Regime Kelly Approved"
+                    "reason": f"Kelly Approved (Edge: {kelly_decision.edge:.2%})",
+                    "regime": regime.volatility_regime,
+                    "news_summary": decision.get("news_summary", "")
                 })
 
         # Copula Filtering
         if self.copula and len(bets) > 1:
-            report = self.copula.analyze_coupon(bets)
-            if report.dangerous_pairs:
-                logger.warning(f"Copula detected risk: {report.dangerous_pairs}")
-                # Filter logic would go here
+            try:
+                report = self.copula.analyze_coupon(bets)
+                if report.dangerous_pairs:
+                    logger.warning(f"Copula detected risk: {report.dangerous_pairs}")
+            except Exception as e:
+                logger.error(f"Copula error: {e}")
 
         # EVT Adjustment
         if self.evt and bets:
-            bets = self.evt.adjust_kelly_stakes(bets)
+            try:
+                bets = self.evt.adjust_kelly_stakes(bets)
+            except Exception as e:
+                logger.error(f"EVT error: {e}")
+
+        # Save State
+        if self.kelly:
+            self.kelly.save_state(self.state_file)
 
         return {"final_bets": bets}

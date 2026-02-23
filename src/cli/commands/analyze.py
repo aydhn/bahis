@@ -1,12 +1,7 @@
 import typer
 import asyncio
 from loguru import logger
-from src.pipeline.core import PipelineEngine
-from src.pipeline.stages.ingestion import IngestionStage
-from src.pipeline.stages.features import FeatureStage
-from src.pipeline.stages.inference import InferenceStage
-from src.pipeline.stages.risk import RiskStage
-from src.pipeline.stages.execution import ExecutionStage
+from src.pipeline.core import create_default_pipeline
 from src.system.container import container
 from src.system.lifecycle import lifecycle
 
@@ -26,16 +21,10 @@ async def main_async(mode: str, headless: bool):
         container.get("smart_cache")
     except Exception as e:
         logger.error(f"Core service init failed: {e}")
-        # Proceeding might fail, but let pipeline try or exit?
         pass
 
-    # Build Pipeline
-    engine = PipelineEngine()
-    engine.add_stage(IngestionStage())
-    engine.add_stage(FeatureStage())
-    engine.add_stage(InferenceStage())
-    engine.add_stage(RiskStage())
-    engine.add_stage(ExecutionStage())
+    # Build Pipeline (Enhanced with Ensemble & Reporting)
+    engine = create_default_pipeline()
 
     # Run
     await engine.run()
