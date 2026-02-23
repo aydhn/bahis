@@ -5,49 +5,27 @@ import polars as pl
 
 from src.pipeline.core import PipelineStage
 from src.system.container import container
+from src.core.model_registry import ModelRegistry
 from src.ingestion.news_rag import NewsRAGAnalyzer
 
 class InferenceStage(PipelineStage):
     """
     Quant Modelleri ve AI Analiz Motoru.
-
-    Görevleri:
-    1. İstatistiksel Modelleri Çalıştır (Poisson, Elo, Glicko)
-    2. Deep Learning Modellerini Çalıştır (LSTM, Transformer)
-    3. Haber/Sentiment Analizi (RAG)
-    4. Tüm sinyalleri ham haliyle Ensemble katmanına ilet.
+    Dinamik model yükleme (ModelRegistry) ile çalışır.
     """
 
     def __init__(self):
         super().__init__("inference")
-        self.prob_engine = container.get("prob_engine")
 
-        # RAG Analizcisi (Token varsa çalışır)
+        # Modelleri Kaydet
+        ModelRegistry.load_defaults()
+        self.models = ModelRegistry.get_all_models()
+
+        # RAG Analizcisi (Opsiyonel)
         try:
             self.rag = NewsRAGAnalyzer()
-        except Exception as e:
-            logger.warning(f"NewsRAG başlatılamadı: {e}")
+        except Exception:
             self.rag = None
-
-        # Diğer modeller (Lazy loading)
-        self.models = {}
-        self._load_models()
-
-    def _load_models(self):
-        """Quant modellerini yükle."""
-        try:
-            from src.quant.lstm_trend import LSTMTrendAnalyzer
-            self.models["lstm"] = LSTMTrendAnalyzer(hidden_size=32, num_layers=2)
-            # self.models["lstm"].load_model() # Eğer kayıtlı model varsa
-        except ImportError:
-            pass
-
-        try:
-            from src.quant.benter_model import BenterModel
-            self.benter_model = BenterModel()
-        except ImportError:
-            self.benter_model = None
-            logger.warning("BenterModel yüklenemedi.")
 
     async def execute(self, context: Dict[str, Any]) -> Dict[str, Any]:
         """Tüm maçlar için paralel analiz yap."""
@@ -56,91 +34,83 @@ class InferenceStage(PipelineStage):
 
         if matches.is_empty():
             logger.info("Analiz edilecek maç yok.")
-            return {"match_predictions": {}}
+            return {"ensemble_results": []}
 
-        match_predictions = {}
         tasks = []
+        # Her maç için feature satırını bul ve analiz et
+        # Optimize: features DataFrame'ini hash map'e çevir (match_id -> row)
+        feat_map = {row["match_id"]: row for row in features.iter_rows(named=True)}
 
-        # Her maç için bir analiz görevi oluştur
         for row in matches.iter_rows(named=True):
-            tasks.append(self._analyze_single_match(row, features))
+            match_feat = feat_map.get(row["match_id"], {})
+            # Match ve Feature verilerini birleştir
+            full_context = {**row, **match_feat}
+            tasks.append(self._analyze_single_match(full_context))
 
-        # Paralel çalıştır
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
+        valid_results = []
         for res in results:
-            if isinstance(res, dict) and "match_id" in res:
-                match_predictions[res["match_id"]] = res
+            if isinstance(res, dict):
+                valid_results.append(res)
             elif isinstance(res, Exception):
                 logger.error(f"Maç analizi hatası: {res}")
 
-        return {"match_predictions": match_predictions}
+        return {"ensemble_results": valid_results}
 
-    async def _analyze_single_match(self, match: Dict[str, Any], features: pl.DataFrame) -> Dict[str, Any]:
-        """Tek bir maçı tüm boyutlarıyla analiz et."""
-        home = match.get("home_team")
-        away = match.get("away_team")
-        match_id = f"{home}_{away}"
+    async def _analyze_single_match(self, context: Dict[str, Any]) -> Dict[str, Any]:
+        """Tek bir maçı tüm modellerle analiz et."""
+        match_id = context.get("match_id", "Unknown")
 
-        signals = {
+        predictions = {
             "match_id": match_id,
-            "home_team": home,
-            "away_team": away,
-            "prob_engine": 0.0,
-            "lstm": 0.0,
-            "news_sentiment": 0.5,
-            "news_summary": ""
+            "home_team": context.get("home_team"),
+            "away_team": context.get("away_team"),
+            "prob_home": 0.0,
+            "details": {}
         }
 
-        # 1. Probabilistic Engine (Bill Benter Logic)
-        if hasattr(self, "benter_model") and self.benter_model:
-            try:
-                # Feature'lardan xG çekmeye çalış, yoksa default 1.35
-                # İleride: features.filter(pl.col("match_id") == match_id)
-                home_xg = 1.35
-                away_xg = 1.10
+        # 1. Quant Modellerini Çalıştır (Parallel execution in thread pool)
+        # CPU-bound işlemleri thread'e atıyoruz
+        model_tasks = [
+            asyncio.to_thread(model.predict, context)
+            for model in self.models
+        ]
 
-                # Context (Hava, Sakatlık) - Gelecekte feature'dan gelecek
-                ctx = {"rain": False}
+        model_results = await asyncio.gather(*model_tasks, return_exceptions=True)
 
-                probs = self.benter_model.calculate_benter_probabilities(home_xg, away_xg, ctx)
-                signals["prob_engine"] = probs["prob_home"]
-                signals["benter_probs"] = probs # Detaylı veri
-            except Exception as e:
-                logger.warning(f"BenterModel hatası {match_id}: {e}")
-        elif self.prob_engine:
-            # Fallback
+        total_prob = 0.0
+        count = 0
+
+        for res in model_results:
+            if isinstance(res, dict) and "prob_home" in res:
+                model_name = res.get("model", "unknown")
+                predictions["details"][model_name] = res
+
+                # Basit ortalama (Ensemble logic buraya daha sonra eklenebilir)
+                prob = res.get("prob_home", 0.5)
+                conf = res.get("confidence", 0.5)
+
+                # Ağırlıklı ortalama
+                weight = conf if conf > 0 else 0.5
+                total_prob += prob * weight
+                count += weight
+
+        if count > 0:
+            predictions["prob_home"] = total_prob / count
+        else:
+            predictions["prob_home"] = 0.5  # Fallback
+
+        # 2. News RAG (I/O Bound)
+        if self.rag:
             try:
-                signals["prob_engine"] = 0.55
+                rag_res = await self.rag.analyze_match(
+                    context.get("home_team"),
+                    context.get("away_team")
+                )
+                predictions["news_summary"] = rag_res.get("summary", "")
+                predictions["news_sentiment"] = rag_res.get("sentiment_score", 0.0)
             except Exception:
                 pass
 
-        # 2. LSTM / Deep Learning (CPU/GPU Bound)
-        if "lstm" in self.models:
-            # await asyncio.to_thread(self.models["lstm"].predict, ...)
-            signals["lstm"] = 0.60 # Mock
-
-        # 3. News RAG (I/O Bound - API Call)
-        if self.rag:
-            try:
-                # Takımların son durumunu analiz et
-                # API kotasını korumak için sadece önemli maçlarda çalıştırılabilir
-                # Şimdilik her maçta deneyelim (async olduğu için hızlı)
-                rag_res = await self.rag.analyze_match(home, away)
-                signals["news_sentiment"] = rag_res.get("sentiment_diff", 0.0) + 0.5 # -1..1 -> 0..1 scale (kabaca)
-                # Düzeltme: sentiment_diff zaten fark.
-                # ensemble logic: <0.4 negatif, >0.6 pozitif.
-                # Eğer home sentiment 0.8, away 0.4 ise diff +0.4.
-                # Bunu 0.5 merkezli bir skora çevirelim: 0.5 + (diff / 2)
-                # Max diff 1.0 -> 1.0 score. Min diff -1.0 -> 0.0 score.
-                diff = rag_res.get("sentiment_diff", 0.0)
-                signals["news_sentiment"] = 0.5 + (diff / 2)
-
-                signals["news_summary"] = (
-                    f"Home: {rag_res.get('home_summary')[:50]}... | "
-                    f"Away: {rag_res.get('away_summary')[:50]}..."
-                )
-            except Exception as e:
-                logger.warning(f"RAG hatası {match_id}: {e}")
-
-        return signals
+        return predictions
