@@ -54,7 +54,9 @@ class Neo4jFootballGraph:
                  password: str = ""):
         self._uri = uri or os.getenv("NEO4J_URI", "bolt://localhost:7687")
         self._user = user or os.getenv("NEO4J_USER", "neo4j")
-        self._password = password or os.getenv("NEO4J_PASSWORD", "bahis_graph_2026")
+        self._password = password or os.getenv("NEO4J_PASSWORD", "")
+        if not self._password:
+            logger.warning("Neo4j şifresi belirtilmedi! .env dosyasında NEO4J_PASSWORD ayarlanmalı.")
         self._driver = None
         self._connected = False
         logger.debug(f"Neo4jFootballGraph başlatıldı (uri={self._uri}).")
