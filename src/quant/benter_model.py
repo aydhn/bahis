@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import numpy as np
 from loguru import logger
-from src.quant.poisson_model import PoissonModel
+from src.quant.models.poisson_model import PoissonModel
 
 class BenterModel(PoissonModel):
     """

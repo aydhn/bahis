@@ -1,11 +1,13 @@
 from typing import Dict, Any, List
 from loguru import logger
 import asyncio
+import json
 from src.pipeline.core import PipelineStage
 from src.system.container import container
+from src.system.config import settings
 
 class ExecutionStage(PipelineStage):
-    """Executes final bets and sends notifications."""
+    """Executes final bets (Live or Paper) and sends notifications."""
 
     def __init__(self):
         super().__init__("execution")
@@ -25,27 +27,52 @@ class ExecutionStage(PipelineStage):
             logger.info("No bets to place this cycle.")
             return {}
 
-        logger.info(f"Placing {len(bets)} bets...")
+        logger.info(f"Processing {len(bets)} bets...")
 
         for bet in bets:
-            # 1. Simulate Execution
             match_id = bet.get("match_id", "?")
             selection = bet.get("selection", "?")
             stake = bet.get("stake", 0.0)
+            odds = bet.get("odds", 0.0)
 
-            logger.success(f"BET PLACED: {match_id} -> {selection} @ {bet.get('odds')} (Stake: {stake:.2f})")
+            # Check for Paper Trading
+            is_paper = bet.get("is_paper", False) or bet.get("trading_mode") == "PAPER"
 
-            # 2. Notify
+            if is_paper:
+                logger.info(f"PAPER TRADE: {match_id} -> {selection} (Stake: {stake:.2f})")
+                try:
+                    # Append to paper trades log
+                    log_file = settings.DATA_DIR / "paper_trades.jsonl"
+                    log_file.parent.mkdir(parents=True, exist_ok=True)
+                    with open(log_file, "a") as f:
+                        f.write(json.dumps(bet) + "\n")
+                except Exception as e:
+                    logger.error(f"Failed to save paper trade: {e}")
+
+                # Notify as Paper Trade
+                if self.notifier:
+                    await self.notifier.send(
+                        f"📝 **PAPER TRADE**\n"
+                        f"⚽ {match_id}\n"
+                        f"🎯 {selection} @ {odds}\n"
+                        f"💰 {stake:.2f} TL (Virtual)"
+                    )
+                continue
+
+            # --- LIVE EXECUTION ---
+            logger.success(f"BET PLACED: {match_id} -> {selection} @ {odds} (Stake: {stake:.2f})")
+
+            # Notify Live Bet
             if self.notifier:
                 await self.notifier.send(
                     f"🎰 **BAHİS ALINDI**\n"
                     f"⚽ {match_id}\n"
                     f"🎯 Seçim: {selection}\n"
                     f"💰 Stake: {stake:.2f} TL\n"
-                    f"📈 Oran: {bet.get('odds')}"
+                    f"📈 Oran: {odds}"
                 )
 
-            # 3. Metrics
+            # Metrics
             if self.metrics:
                 self.metrics.inc_counter("bets_placed_total")
                 self.metrics.observe("bet_stake_amount", stake)
