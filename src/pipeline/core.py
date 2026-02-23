@@ -43,6 +43,16 @@ class PipelineEngine:
             cycle_context = self.context.copy()
             cycle_context["cycle"] = cycle
 
+            # Initialize BettingContext (Enterprise Grade State)
+            try:
+                from src.pipeline.context import BettingContext
+                # Create fresh context for this cycle
+                ctx = BettingContext(cycle_id=cycle)
+                # Inject persistent data if any (e.g. from self.context)
+                cycle_context["ctx"] = ctx
+            except ImportError as e:
+                logger.warning(f"Could not initialize BettingContext: {e}")
+
             try:
                 for stage in self.stages:
                     if lifecycle.shutdown_event.is_set():
@@ -73,6 +83,15 @@ class PipelineEngine:
     async def run_once(self):
         """Run a single pass of the pipeline (for CLI/Testing)."""
         cycle_context = self.context.copy()
+
+        # Initialize BettingContext
+        try:
+            from src.pipeline.context import BettingContext
+            ctx = BettingContext(cycle_id=1)
+            cycle_context["ctx"] = ctx
+        except ImportError:
+            pass
+
         for stage in self.stages:
             logger.info(f"Running stage: {stage.name}")
             res = await stage.execute(cycle_context)

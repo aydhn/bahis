@@ -26,6 +26,11 @@ try:
 except ImportError:
     VoiceInterrogator = None
 
+try:
+    from src.pipeline.context import BettingContext
+except ImportError:
+    BettingContext = None
+
 from src.system.config import settings
 
 class TelegramBot:
@@ -40,9 +45,14 @@ class TelegramBot:
         self._task = None
         self.voice_handler = VoiceInterrogator() if VoiceInterrogator else None
         self.bet_history = []  # Son bahisleri sakla (Explain için)
+        self.context: Optional[BettingContext] = None # Live Context
 
         if not self.enabled:
             logger.warning("TelegramBot devre dışı: Token veya httpx eksik.")
+
+    def set_context(self, ctx: BettingContext):
+        """Pipeline'dan gelen güncel context'i al."""
+        self.context = ctx
 
     async def start(self):
         """Botu başlat (Arka planda dinlemeye başla)."""
@@ -104,10 +114,11 @@ class TelegramBot:
         args = parts[1:] if len(parts) > 1 else []
 
         if command == "/start":
-            await self.send_message(chat_id, "🤖 *Otonom Quant Bot Devrede.*\nKomutlar: /status, /pnl, /risk, /explain")
+            await self.send_message(chat_id, "🤖 *Otonom Quant Bot Devrede.*\nKomutlar: /status, /pnl, /risk, /explain, /analyze <match_id>")
 
         elif command == "/status":
-            await self.send_message(chat_id, "✅ *Sistem Çalışıyor*\nMod: Otonom\nVeri Akışı: Aktif")
+            cycle = self.context.cycle_id if self.context else 0
+            await self.send_message(chat_id, f"✅ *Sistem Çalışıyor*\nMod: Otonom\nCycle: #{cycle}\nVeri Akışı: Aktif")
 
         elif command == "/pnl":
             stats = self._read_bankroll_state()
@@ -122,6 +133,9 @@ class TelegramBot:
 
         elif command == "/explain":
             await self._handle_explain(chat_id, args)
+
+        elif command == "/analyze":
+            await self._handle_analyze(chat_id, args)
 
     async def _handle_voice(self, msg: Dict[str, Any], chat_id: int):
         """Sesli mesajı işle ve komuta çevir."""
@@ -154,33 +168,65 @@ class TelegramBot:
                     await self.send_message(chat_id, f"🤔 Anlaşılamadı: *{result.get('raw')}*")
 
     async def _handle_explain(self, chat_id: int, args: list):
-        """Son bahsin felsefi gerekçesini açıkla."""
+        """Son bahsin detaylı yatırım notunu (Investment Memo) getir."""
         if not self.bet_history:
             await self.send_message(chat_id, "📭 Henüz açıklanacak bir bahis yok.")
             return
 
-        # Varsa argüman olarak match_id, yoksa son bahis
         target_bet = self.bet_history[-1]
+        match_id = target_bet.get("match_id")
 
-        philo = target_bet.get("philosophical_report")
-        if not philo:
-            await self.send_message(chat_id, "Bu bahis için felsefi rapor bulunamadı.")
+        # Önce Context'ten Narrative'i bulmaya çalış
+        if self.context and match_id in self.context.narratives:
+            narrative = self.context.narratives[match_id]
+            await self.send_message(chat_id, narrative, parse_mode="Markdown")
             return
 
-        # Raporu formatla
-        report_msg = (
-            f"🧠 <b>FELSEFİ ANALİZ RAPORU</b>\n\n"
-            f"⚽ {target_bet.get('match_id')}\n"
-            f"🎓 <b>Epistemik Skor:</b> {philo.epistemic_score:.2f} / 1.0\n\n"
-            f"📉 <b>Black Swan Riski:</b> {philo.black_swan_risk:.2f}\n"
-            f"💪 <b>Antifragility:</b> {philo.antifragility:.2f}\n"
-            f"📚 <b>Lindy Skoru:</b> {philo.lindy_score:.2f}\n\n"
-            f"💭 <b>Düşünceler:</b>\n"
-        )
-        for ref in philo.reflections:
-            report_msg += f"- {ref}\n"
+        # Yoksa eski usul bet objesinden al
+        if "narrative" in target_bet and target_bet["narrative"]:
+            await self.send_message(chat_id, target_bet["narrative"], parse_mode="Markdown")
+            return
 
-        await self.send_message(chat_id, report_msg, parse_mode="HTML")
+        # O da yoksa felsefi raporu göster (Legacy fallback)
+        philo = target_bet.get("philosophical_report")
+        if philo:
+            report_msg = f"🧠 *Felsefi Analiz*\nSkor: {philo.epistemic_score:.2f}\n"
+            for ref in philo.reflections:
+                report_msg += f"- {ref}\n"
+            await self.send_message(chat_id, report_msg)
+        else:
+            await self.send_message(chat_id, "Detaylı rapor bulunamadı.")
+
+    async def _handle_analyze(self, chat_id: int, args: list):
+        """Belirli bir maçın analizini getir."""
+        if not args:
+            await self.send_message(chat_id, "⚠️ Kullanım: `/analyze <match_id>`")
+            return
+
+        match_id = args[0]
+
+        if not self.context:
+            await self.send_message(chat_id, "⚠️ Sistem verisi henüz hazır değil.")
+            return
+
+        # 1. Narrative var mı?
+        if match_id in self.context.narratives:
+            await self.send_message(chat_id, self.context.narratives[match_id], parse_mode="Markdown")
+            return
+
+        # 2. Volatilite Raporu var mı?
+        if match_id in self.context.volatility_reports:
+            vol = self.context.volatility_reports[match_id]
+            msg = (
+                f"📊 *Volatilite Analizi: {match_id}*\n"
+                f"Rejim: {vol.regime}\n"
+                f"GARCH Sigma: {vol.current_volatility:.4f}\n"
+                f"Tavsiye: {vol.recommendation}"
+            )
+            await self.send_message(chat_id, msg)
+            return
+
+        await self.send_message(chat_id, f"❌ `{match_id}` için güncel analiz bulunamadı.")
 
     async def send_message(self, chat_id: int, text: str, parse_mode: str = "Markdown"):
         """Mesaj gönder."""

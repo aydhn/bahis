@@ -18,6 +18,11 @@ class ReportingStage(PipelineStage):
             asyncio.create_task(self.bot.start())
 
     async def execute(self, context: Dict[str, Any]) -> Dict[str, Any]:
+        # 0. Context'i Bot'a aktar (Shared Memory)
+        ctx = context.get("ctx")
+        if ctx:
+            self.bot.set_context(ctx)
+
         bets = context.get("final_bets", [])
 
         # 1. Bahis Sinyalleri
