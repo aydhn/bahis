@@ -1,0 +1,97 @@
+from typing import Optional, Any
+from loguru import logger
+from src.system.config import settings
+
+# Placeholder imports for core services to avoid circular deps during init
+# In a real DI framework, we'd bind these dynamically.
+# For now, we use a simple singleton pattern.
+
+class DependencyContainer:
+    """Simple Dependency Injection Container."""
+
+    _instance = None
+
+    def __init__(self):
+        self._services: dict[str, Any] = {}
+
+    @classmethod
+    def get_instance(cls):
+        if cls._instance is None:
+            cls._instance = DependencyContainer()
+        return cls._instance
+
+    def get(self, service_name: str) -> Any:
+        """Get a service by name, initializing it if necessary."""
+        if service_name not in self._services:
+            self._initialize_service(service_name)
+        return self._services.get(service_name)
+
+    def register(self, service_name: str, instance: Any):
+        """Register a service instance manually."""
+        self._services[service_name] = instance
+
+    def _initialize_service(self, name: str):
+        """Lazy initialization of services."""
+        logger.debug(f"Initializing service: {name}")
+
+        try:
+            if name == "db":
+                from src.memory.db_manager import DBManager
+                self._services["db"] = DBManager()
+
+            elif name == "cache":
+                from src.memory.feature_cache import FeatureCache
+                self._services["cache"] = FeatureCache()
+
+            elif name == "smart_cache":
+                from src.memory.smart_cache import SmartCache
+                self._services["smart_cache"] = SmartCache(ttl_l2=3600.0)
+
+            elif name == "graph_rag":
+                from src.memory.graph_rag import GraphRAG
+                self._services["graph_rag"] = GraphRAG(
+                    neo4j_uri=settings.NEO4J_URI,
+                    neo4j_user=settings.NEO4J_USER,
+                    neo4j_password=settings.NEO4J_PASSWORD,
+                    llm_backend=settings.LLM_BACKEND
+                )
+
+            elif name == "notifier":
+                # Mock or Real Telegram Notifier
+                try:
+                    from src.ui.telegram_mini_app import TelegramNotifier
+                    self._services["notifier"] = TelegramNotifier()
+                except ImportError:
+                    logger.warning("TelegramNotifier not found, using Mock.")
+                    class MockNotifier:
+                        async def send(self, msg): logger.info(f"[MockTelegram] {msg}")
+                        async def send_anomaly_alert(self, alert): logger.info(f"[MockAnomaly] {alert}")
+                    self._services["notifier"] = MockNotifier()
+
+            elif name == "event_bus":
+                 from src.core.event_bus import EventBus, EventStore
+                 self._services["event_bus"] = EventBus(store=EventStore())
+
+            # --- Quant Engines ---
+            elif name == "prob_engine":
+                from src.quant.probabilistic_engine import ProbabilisticEngine
+                self._services["prob_engine"] = ProbabilisticEngine()
+
+            elif name == "regime_kelly":
+                from src.core.regime_kelly import RegimeKelly
+                self._services["regime_kelly"] = RegimeKelly()
+
+            elif name == "portfolio_opt":
+                 from src.core.portfolio_optimizer import PortfolioOptimizer
+                 self._services["portfolio_opt"] = PortfolioOptimizer()
+
+            # Add more services as needed...
+
+            else:
+                raise ValueError(f"Unknown service: {name}")
+
+        except Exception as e:
+            logger.error(f"Failed to initialize {name}: {e}")
+            raise
+
+container = DependencyContainer.get_instance()
