@@ -7,6 +7,7 @@ import hashlib
 from src.pipeline.core import PipelineStage
 from src.system.container import container
 from src.core.regime_kelly import RegimeKelly, RegimeState
+from src.core.portfolio_optimizer import PortfolioOptimizer, PortfolioBet
 from src.system.config import settings
 
 # Enterprise Modules
@@ -16,7 +17,7 @@ except ImportError:
     PhilosophicalEngine = None
 
 try:
-    from src.quant.volatility_analyzer import VolatilityAnalyzer, VolatilityReport
+    from src.quant.risk import VolatilityAnalyzer, VolatilityReport
 except ImportError:
     VolatilityAnalyzer = None
 
@@ -33,12 +34,14 @@ except ImportError:
 class RiskStage(PipelineStage):
     """
     Advanced Risk Stage (Level 41).
-    Integrates Volatility (GARCH), Philosophy (Epistemic), and Narrative (Voice).
+    Integrates Volatility (GARCH), Philosophy (Epistemic), Narrative (Voice),
+    and Markowitz Portfolio Optimization.
     """
 
     def __init__(self):
         super().__init__("risk")
         self.kelly = container.get("regime_kelly")
+        self.portfolio_opt = container.get("portfolio_opt") or PortfolioOptimizer()
 
         # Load Bankroll State
         self.state_file = settings.DATA_DIR / "bankroll_state.json"
@@ -52,13 +55,13 @@ class RiskStage(PipelineStage):
 
         # Optional Legacy Engines
         try:
-            from src.quant.copula_risk import CopulaRiskAnalyzer
+            from src.quant.risk import CopulaRiskAnalyzer
             self.copula = CopulaRiskAnalyzer()
         except ImportError:
             self.copula = None
 
         try:
-            from src.quant.evt_risk_manager import EVTRiskManager
+            from src.quant.risk import EVTRiskManager
             self.evt = EVTRiskManager()
         except ImportError:
             self.evt = None
@@ -85,7 +88,10 @@ class RiskStage(PipelineStage):
             mid = f"{row.get('home_team')}_{row.get('away_team')}"
             odds_map[mid] = row.get("home_odds", 0.0)
 
-        bets = []
+        # Candidate Bets for Portfolio Optimization
+        candidates: List[PortfolioBet] = []
+        # Temporary storage to link back candidates to full bet info
+        bet_metadata = {}
 
         for decision in ensemble_decisions:
             match_id = decision.get("match_id")
@@ -101,17 +107,11 @@ class RiskStage(PipelineStage):
             regime = RegimeState(volatility_regime="calm") # Default
 
             if self.vol_analyzer:
-                # Simulate returns for GARCH since we lack historical DB here
-                # In production, this would query `db_manager`
                 sim_returns = self._simulate_returns(match_id)
                 vol_report = self.vol_analyzer.analyze(
                     sim_returns, match_id=match_id, market="odds"
                 )
-
-                # Update RegimeState based on report
                 regime.volatility_regime = vol_report.regime
-
-                # Store in Context
                 if ctx:
                     ctx.volatility_reports[match_id] = vol_report
 
@@ -120,19 +120,15 @@ class RiskStage(PipelineStage):
             epistemic_score = 1.0
 
             if self.philosopher:
-                # Calculate real spread if available
                 spread = self._calculate_spread(matches, match_id)
-
                 philo_report = self.philosopher.evaluate(
                     probability=prob_home,
                     confidence=confidence,
-                    sample_size=200, # Assuming sufficient data for now
+                    sample_size=200,
                     match_id=match_id,
                     market_odds_spread=spread
                 )
-
                 epistemic_score = philo_report.epistemic_score if philo_report.epistemic_approved else 0.0
-
                 if ctx:
                     ctx.philosophical_reports[match_id] = philo_report
 
@@ -145,60 +141,83 @@ class RiskStage(PipelineStage):
                 epistemic_multiplier=epistemic_score
             )
 
-            # --- D. Decision & Narrative (The Voice) ---
+            # --- D. Portfolio Candidates ---
             if kelly_decision.approved:
+                # Create PortfolioBet candidate
+                pb = PortfolioBet(
+                    match_id=match_id,
+                    selection="HOME",
+                    odds=odds_home,
+                    prob_model=prob_home,
+                    ev=kelly_decision.edge,
+                    stake_pct=kelly_decision.stake_pct,
+                    league="Unknown", # Could be fetched from matches DF
+                    correlation_group="Standard"
+                )
+                candidates.append(pb)
 
-                # Generate Narrative
-                narrative = ""
-                if self.narrator:
-                    narrative = self.narrator.generate_memo(
-                        match_id=match_id,
-                        selection="HOME",
-                        odds=odds_home,
-                        stake=kelly_decision.stake_amount,
-                        confidence=confidence,
-                        edge=kelly_decision.edge,
-                        philo_report=philo_report,
-                        vol_report=vol_report,
-                        news_summary=decision.get("news_summary", "")
-                    )
-
-                    if ctx:
-                        ctx.narratives[match_id] = narrative
-
-                bet_record = {
-                    "match_id": match_id,
-                    "selection": "HOME",
-                    "stake": kelly_decision.stake_amount,
-                    "confidence": prob_home,
-                    "odds": odds_home,
-                    "reason": f"Kelly Approved (Edge: {kelly_decision.edge:.2%}, Epistemic: {epistemic_score:.2f})",
-                    "regime": regime.volatility_regime,
+                # Store metadata for narrative generation later
+                bet_metadata[match_id] = {
+                    "confidence": confidence,
+                    "philo_report": philo_report,
+                    "vol_report": vol_report,
                     "news_summary": decision.get("news_summary", ""),
-                    "philosophical_report": philo_report, # For legacy compat
-                    "narrative": narrative,
-                    "timestamp": kelly_decision.timestamp
+                    "kelly_decision": kelly_decision
                 }
-                bets.append(bet_record)
             else:
                 logger.debug(f"Bet rejected for {match_id}: {kelly_decision.rejection_reason}")
 
-        # --- E. Portfolio Level Checks ---
-        # Copula Filtering
-        if self.copula and len(bets) > 1:
+        # --- E. Portfolio Optimization (The Finance) ---
+        optimized_results = self.portfolio_opt.optimize(candidates)
+
+        final_bets = []
+        for res in optimized_results:
+            match_id = res["match_id"]
+            meta = bet_metadata.get(match_id, {})
+
+            # Generate Narrative with finalized stake
+            narrative = ""
+            if self.narrator:
+                narrative = self.narrator.generate_memo(
+                    match_id=match_id,
+                    selection=res["selection"],
+                    odds=res["odds"],
+                    stake=res["stake_amount"],
+                    confidence=meta.get("confidence", 0.0),
+                    edge=res["ev"],
+                    philo_report=meta.get("philo_report"),
+                    vol_report=meta.get("vol_report"),
+                    news_summary=meta.get("news_summary", "")
+                )
+                if ctx:
+                    ctx.narratives[match_id] = narrative
+
+            bet_record = {
+                "match_id": match_id,
+                "selection": res["selection"],
+                "stake": res["stake_amount"],
+                "confidence": meta.get("confidence", 0.0),
+                "odds": res["odds"],
+                "reason": f"Markowitz Optimized (Kelly: {res['raw_stake_pct']:.2%} -> Adj: {res['adjusted_stake_pct']:.2%})",
+                "regime": meta.get("vol_report").regime if meta.get("vol_report") else "unknown",
+                "news_summary": meta.get("news_summary", ""),
+                "narrative": narrative,
+                "timestamp": meta.get("kelly_decision").timestamp if meta.get("kelly_decision") else "",
+                "trading_mode": res.get("trading_mode", "LIVE"),
+                "is_paper": res.get("is_paper", False)
+            }
+            final_bets.append(bet_record)
+
+        # --- F. Legacy Checks (Copula/EVT) ---
+        # These operate on final list. Note: PortfolioOptimizer already handles correlation,
+        # so Copula might be redundant but kept for safety.
+        if self.copula and len(final_bets) > 1:
             try:
-                report = self.copula.analyze_coupon(bets)
+                report = self.copula.analyze_coupon(final_bets)
                 if report.dangerous_pairs:
                     logger.warning(f"Copula detected risk: {report.dangerous_pairs}")
             except Exception as e:
                 logger.error(f"Copula error: {e}")
-
-        # EVT Adjustment
-        if self.evt and bets:
-            try:
-                bets = self.evt.adjust_kelly_stakes(bets)
-            except Exception as e:
-                logger.error(f"EVT error: {e}")
 
         # Save State
         if self.kelly:
@@ -206,9 +225,9 @@ class RiskStage(PipelineStage):
 
         # Update Context
         if ctx:
-            ctx.final_bets = bets
+            ctx.final_bets = final_bets
 
-        return {"final_bets": bets, "ctx": ctx}
+        return {"final_bets": final_bets, "ctx": ctx}
 
     def _simulate_returns(self, match_id: str) -> np.ndarray:
         """
@@ -217,44 +236,28 @@ class RiskStage(PipelineStage):
         """
         seed = int(hashlib.md5(match_id.encode()).hexdigest(), 16) % 2**32
         np.random.seed(seed)
-        # Generate random returns (normal distribution)
-        # Volatility clustering effect simulation:
-        # returns = sigma * z, where sigma follows GARCH process
-        # For simplicity here: standard normal with random volatility bursts
-
         n = 100
         returns = np.random.normal(0, 0.01, n)
-
-        # Add a "shock" based on hash to simulate high volatility for some matches
         if seed % 3 == 0:
             returns[-10:] *= 3 # Recent volatility spike
         elif seed % 5 == 0:
             returns[-20:-10] *= 2 # Past volatility spike
-
         return returns
 
     def _calculate_spread(self, matches: pl.DataFrame, match_id: str) -> float:
         """Calculates market spread from odds."""
         try:
-            # Match_id format assumes "Home_Away"
-            # We need to find the row in dataframe
-            # This is inefficient for large DFs, but robust for this demo
-            # Ideally we used a dictionary lookup created earlier
             parts = match_id.split("_")
             if len(parts) >= 2:
                 home = parts[0]
                 away = parts[1]
-
-                # Filter (assuming columns exist)
                 row = matches.filter(
                     (pl.col("home_team") == home) & (pl.col("away_team") == away)
                 ).head(1)
-
                 if not row.is_empty():
                     h = row["home_odds"][0]
                     d = row["draw_odds"][0]
                     a = row["away_odds"][0]
-
                     if h > 0 and d > 0 and a > 0:
                         implied_prob = (1/h) + (1/d) + (1/a)
                         spread = implied_prob - 1.0

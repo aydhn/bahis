@@ -32,6 +32,7 @@ except ImportError:
     BettingContext = None
 
 from src.system.config import settings
+from src.reporting.visualizer import Visualizer
 
 class TelegramBot:
     """Async Polling tabanlı Telegram Botu."""
@@ -161,6 +162,17 @@ class TelegramBot:
             dd = stats.get("drawdown", 0.0)
             await self.send_message(chat_id, f"🛡️ *Risk Seviyesi*\nDrawdown: %{dd*100:.2f}")
 
+        elif command == "/chart":
+            await self.send_message(chat_id, "📊 *Grafik Hazırlanıyor...*")
+            # In production, read real PnL history. For now, dummy.
+            stats = self._read_bankroll_state()
+            # If stats has history, use it. Else dummy.
+            chart_buf = Visualizer.generate_dummy_chart()
+            if chart_buf:
+                await self.send_photo(chat_id, chart_buf, caption="📈 Bankroll PnL")
+            else:
+                await self.send_message(chat_id, "❌ Grafik oluşturulamadı.")
+
         elif command == "/explain":
             await self._handle_explain(chat_id, args)
 
@@ -273,6 +285,19 @@ class TelegramBot:
                 await client.post(f"{self.base_url}/sendMessage", json=payload)
         except Exception as e:
             logger.error(f"Mesaj gönderilemedi: {e}")
+
+    async def send_photo(self, chat_id: int, photo: Any, caption: str = ""):
+        """Fotoğraf gönder (BytesIO veya path)."""
+        if not self.enabled: return
+
+        try:
+            async with httpx.AsyncClient() as client:
+                # Telegram API expects 'photo' as multipart file
+                files = {'photo': ('chart.png', photo, 'image/png')}
+                data = {'chat_id': str(chat_id), 'caption': caption}
+                await client.post(f"{self.base_url}/sendPhoto", data=data, files=files)
+        except Exception as e:
+            logger.error(f"Fotoğraf gönderilemedi: {e}")
 
     async def send_bet_signal(self, bet: Dict[str, Any]):
         """Bahis sinyali formatlayıp gönder (CEO Vision)."""

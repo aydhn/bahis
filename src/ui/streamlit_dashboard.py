@@ -41,7 +41,7 @@ if STREAMLIT_AVAILABLE:
 
     @st.cache_resource
     def get_poisson():
-        from src.quant.poisson_model import PoissonModel
+        from src.quant.models.poisson_model import PoissonModel
         return PoissonModel()
 
     @st.cache_resource
@@ -51,7 +51,7 @@ if STREAMLIT_AVAILABLE:
 
     @st.cache_resource
     def get_elo():
-        from src.quant.elo_glicko_rating import EloGlickoSystem
+        from src.quant.models.elo_glicko_rating import EloGlickoSystem
         return EloGlickoSystem()
 
     @st.cache_resource
