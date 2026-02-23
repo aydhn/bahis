@@ -46,9 +46,14 @@ class TelegramBot:
         self.voice_handler = VoiceInterrogator() if VoiceInterrogator else None
         self.bet_history = []  # Son bahisleri sakla (Explain için)
         self.context: Optional[BettingContext] = None # Live Context
+        self.sentinel: Any = None # Sentinel (Orchestrator) referansı
 
         if not self.enabled:
             logger.warning("TelegramBot devre dışı: Token veya httpx eksik.")
+
+    def set_sentinel(self, sentinel: Any):
+        """Sentinel (Orchestrator) bağlantısı."""
+        self.sentinel = sentinel
 
     def set_context(self, ctx: BettingContext):
         """Pipeline'dan gelen güncel context'i al."""
@@ -114,7 +119,32 @@ class TelegramBot:
         args = parts[1:] if len(parts) > 1 else []
 
         if command == "/start":
-            await self.send_message(chat_id, "🤖 *Otonom Quant Bot Devrede.*\nKomutlar: /status, /pnl, /risk, /explain, /analyze <match_id>")
+            await self.send_message(chat_id, "🤖 *Otonom Quant Bot Devrede.*\nKomutlar: /status, /pnl, /risk, /explain, /analyze, /set_risk, /force, /shutdown")
+
+        elif command == "/set_risk":
+            if not self.sentinel:
+                await self.send_message(chat_id, "❌ Sentinel bağlantısı yok.")
+                return
+            mode = args[0] if args else "normal"
+            resp = self.sentinel.set_risk_mode(mode)
+            await self.send_message(chat_id, f"⚙️ {resp}")
+
+        elif command == "/force":
+            if not self.sentinel:
+                await self.send_message(chat_id, "❌ Sentinel bağlantısı yok.")
+                return
+            if len(args) < 2:
+                await self.send_message(chat_id, "⚠️ Kullanım: `/force <match_id> <selection>`")
+                return
+            resp = await self.sentinel.force_bet(args[0], args[1])
+            await self.send_message(chat_id, f"🚀 {resp}")
+
+        elif command == "/shutdown":
+            await self.send_message(chat_id, "🛑 Sistem kapatılıyor...")
+            if self.sentinel:
+                self.sentinel.shutdown()
+            else:
+                self.running = False
 
         elif command == "/status":
             cycle = self.context.cycle_id if self.context else 0

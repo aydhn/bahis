@@ -1,4 +1,4 @@
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 import asyncio
 from src.pipeline.core import PipelineStage
 from src.reporting.telegram_bot import TelegramBot
@@ -9,12 +9,14 @@ class ReportingStage(PipelineStage):
     İnteraktif Telegram Botu üzerinden sinyal ve risk raporlaması.
     """
 
-    def __init__(self):
+    def __init__(self, bot_instance: Optional[TelegramBot] = None):
         super().__init__("reporting")
-        self.bot = TelegramBot()
+        self.bot = bot_instance or TelegramBot()
 
         # Botu başlat (Arka planda polling)
-        if self.bot.enabled:
+        # Eğer dışarıdan geldiyse (Sentinel), lifecycle dışarıda yönetilir.
+        # Eğer içeride yaratıldıysa (Legacy/Test), burada başlat.
+        if bot_instance is None and self.bot.enabled:
             asyncio.create_task(self.bot.start())
 
     async def execute(self, context: Dict[str, Any]) -> Dict[str, Any]:

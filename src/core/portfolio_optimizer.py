@@ -208,33 +208,87 @@ class PortfolioOptimizer:
     def _adjust_for_correlation(self, stakes: np.ndarray,
                                  corr: np.ndarray,
                                  mask: np.ndarray) -> np.ndarray:
-        """Korelasyon bazlı stake düzeltmesi.
+        """Korelasyon bazlı stake düzeltmesi (Markowitz Mean-Variance).
 
         Yüksek korelasyonlu bahislerde portföy varyansı artar.
-        Bunu telafi etmek için stake'leri düşür.
+        Scipy minimize ile optimal ağırlıkları bulur.
+        Objective: Maximize (Expected Return - Risk Penalty * Variance)
         """
+        try:
+            from scipy.optimize import minimize
+        except ImportError:
+            logger.warning("Scipy yüklü değil, heuristic metoda dönülüyor.")
+            return self._heuristic_adjust(stakes, corr, mask)
+
+        n = len(stakes)
+        indices = np.where(mask)[0]
+        k = len(indices)
+
+        if k == 0:
+            return np.zeros(n)
+
+        # Sadece aktif bahisler için alt matrisler
+        sub_stakes = stakes[indices] # Bunlar Kelly üst sınırları olacak
+        sub_corr = corr[np.ix_(indices, indices)]
+
+        # Expected Return vector (Basitçe Kelly stake ile orantılı varsayıyoruz)
+        # Çünkü Kelly ~ Edge / Odds. Edge arttıkça Kelly artar.
+        expected_returns = sub_stakes
+
+        # Risk Aversion (Agresiflik ayarı)
+        risk_aversion = 2.0
+
+        # Objective Function: Minimize (-Utility)
+        # Utility = w.T * mu - (lambda/2) * w.T * Sigma * w
+        def objective(weights):
+            port_return = np.dot(weights, expected_returns)
+            port_var = np.dot(weights.T, np.dot(sub_corr, weights))
+            utility = port_return - (risk_aversion / 2) * port_var
+            return -utility # Minimize negative utility
+
+        # Constraints & Bounds
+        # 1. Weights <= Kelly suggestion (Kelly üst sınırdır)
+        # 2. Weights >= 0
+        bounds = [(0, s) for s in sub_stakes]
+
+        # Initial guess: Kelly'nin yarısı (Fractional Kelly)
+        x0 = sub_stakes * 0.5
+
+        try:
+            # SLSQP allows bounds and constraints
+            res = minimize(objective, x0, method='SLSQP', bounds=bounds, tol=1e-4)
+            if res.success:
+                optimized_sub = res.x
+            else:
+                logger.warning(f"Optimizasyon yakınsamadı: {res.message}")
+                optimized_sub = sub_stakes * 0.5 # Fallback
+        except Exception as e:
+            logger.error(f"Optimizasyon hatası: {e}")
+            optimized_sub = sub_stakes * 0.5
+
+        # Sonuçları ana vektöre yerleştir
+        adjusted = np.zeros(n)
+        adjusted[indices] = optimized_sub
+
+        return adjusted
+
+    def _heuristic_adjust(self, stakes: np.ndarray, corr: np.ndarray, mask: np.ndarray) -> np.ndarray:
         adjusted = stakes.copy()
         n = len(stakes)
-
         for i in range(n):
             if not mask[i]:
                 adjusted[i] = 0
                 continue
-
-            # Bu bahisin diğerleriyle ortalama korelasyonu
             avg_corr = 0.0
             count = 0
             for j in range(n):
                 if i != j and mask[j]:
                     avg_corr += abs(corr[i][j])
                     count += 1
-
             if count > 0:
                 avg_corr /= count
-                # Korelasyon cezası: yüksek korelasyon → düşük stake
                 penalty = 1.0 - (avg_corr * 0.5)
                 adjusted[i] *= max(penalty, 0.3)
-
         return adjusted
 
     # ═══════════════════════════════════════════
