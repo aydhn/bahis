@@ -42,6 +42,13 @@ class InferenceStage(PipelineStage):
         except ImportError:
             pass
 
+        try:
+            from src.quant.benter_model import BenterModel
+            self.benter_model = BenterModel()
+        except ImportError:
+            self.benter_model = None
+            logger.warning("BenterModel yüklenemedi.")
+
     async def execute(self, context: Dict[str, Any]) -> Dict[str, Any]:
         """Tüm maçlar için paralel analiz yap."""
         matches = context.get("matches", pl.DataFrame())
@@ -85,15 +92,28 @@ class InferenceStage(PipelineStage):
             "news_summary": ""
         }
 
-        # 1. Probabilistic Engine (CPU Bound - Basit istatistik)
-        if self.prob_engine:
-            # Gerçek implementasyonda features'dan bu maça ait satırı çekmeliyiz
-            # Şimdilik mock veya basit lookup
+        # 1. Probabilistic Engine (Bill Benter Logic)
+        if hasattr(self, "benter_model") and self.benter_model:
             try:
-                # Mock output
-                signals["prob_engine"] = 0.55 # Ev sahibi avantajı varsayımı
+                # Feature'lardan xG çekmeye çalış, yoksa default 1.35
+                # İleride: features.filter(pl.col("match_id") == match_id)
+                home_xg = 1.35
+                away_xg = 1.10
+
+                # Context (Hava, Sakatlık) - Gelecekte feature'dan gelecek
+                ctx = {"rain": False}
+
+                probs = self.benter_model.calculate_benter_probabilities(home_xg, away_xg, ctx)
+                signals["prob_engine"] = probs["prob_home"]
+                signals["benter_probs"] = probs # Detaylı veri
             except Exception as e:
-                logger.warning(f"ProbEngine hatası {match_id}: {e}")
+                logger.warning(f"BenterModel hatası {match_id}: {e}")
+        elif self.prob_engine:
+            # Fallback
+            try:
+                signals["prob_engine"] = 0.55
+            except Exception:
+                pass
 
         # 2. LSTM / Deep Learning (CPU/GPU Bound)
         if "lstm" in self.models:
