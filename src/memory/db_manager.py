@@ -484,108 +484,173 @@ class DBManager:
     def build_feature_matrix(self, matches: pl.DataFrame) -> pl.DataFrame:
         """Maç + tarihsel istatistik + oran geçmişini birleştirerek feature matrisi oluşturur.
 
-        Batch SQL sorguları ile N+1 problem çözüldü. Tüm None/null güvenli varsayılanlara dönüştürülür.
+        ⚡ Optimized with Polars joins and vectorization (Bolt).
+        Replaces O(N) python loop with native dataframe operations.
         """
-        import math as _math
-
         if matches.is_empty():
             return matches
 
-        def _sf(val, default=0.0):
-            if val is None:
-                return default
-            try:
-                f = float(val)
-                return f if _math.isfinite(f) else default
-            except (TypeError, ValueError):
-                return default
+        # 1. Unique Teams & Match IDs
+        try:
+            teams = pl.concat([
+                matches.select(pl.col("home_team").alias("team")),
+                matches.select(pl.col("away_team").alias("team"))
+            ]).unique().drop_nulls()
+            all_teams = teams["team"].to_list()
+        except Exception:
+            all_teams = []
 
-        # Tüm takımları ve match_id'leri topla – tek sorguda çek
-        all_teams = set()
-        all_mids = set()
-        for row in matches.iter_rows(named=True):
-            all_teams.add(row.get("home_team", ""))
-            all_teams.add(row.get("away_team", ""))
-            all_mids.add(row.get("match_id", ""))
-        all_teams.discard("")
-        all_mids.discard("")
+        try:
+            all_mids = matches["match_id"].unique().to_list()
+        except Exception:
+            all_mids = []
 
-        # Batch: Tüm takım istatistiklerini tek sorguda çek
-        stats_map: dict[str, dict] = {}
+        # 2. Fetch Stats (Batch)
+        stats_df = pl.DataFrame()
         if all_teams:
             try:
                 placeholders = ", ".join(["?"] * len(all_teams))
-                all_stats = self._query_pl(
+                stats_df = self._query_pl(
                     f"SELECT * FROM historical_stats WHERE team IN ({placeholders})",
                     list(all_teams),
                 )
-                for sr in all_stats.iter_rows(named=True):
-                    stats_map[sr.get("team", "")] = sr
             except Exception as e:
                 logger.debug(f"[DBManager] Batch stats hatası: {e}")
 
-        # Batch: Tüm oran volatilitelerini tek sorguda hesapla
-        vol_map: dict[str, float] = {}
+        # 3. Fetch Volatility (Batch)
+        vol_df = pl.DataFrame()
+        vol_fetched = False
+
         if all_mids:
-            try:
-                placeholders = ", ".join(["?"] * len(all_mids))
-                vol_df = self._query_pl(
-                    f"""SELECT match_id, STDDEV(odds) as vol
-                        FROM odds_history
-                        WHERE match_id IN ({placeholders})
-                        GROUP BY match_id
-                        HAVING COUNT(*) > 1""",
-                    list(all_mids),
+            # Optimization: Use temporary table join for DuckDB to avoid large IN clause
+            if self._is_duckdb and len(all_mids) > 50:
+                try:
+                    # Create a tiny DF for joining
+                    mids_pl = pl.DataFrame({"match_id": all_mids})
+                    self._con.register("_tmp_vol_ids", mids_pl)
+                    vol_df = self._query_pl("""
+                        SELECT h.match_id, STDDEV(h.odds) as odds_volatility
+                        FROM odds_history h
+                        JOIN _tmp_vol_ids t ON h.match_id = t.match_id
+                        GROUP BY h.match_id
+                        HAVING COUNT(*) > 1
+                    """)
+                    self._con.unregister("_tmp_vol_ids")
+                    vol_fetched = True
+                except Exception as e:
+                    logger.debug(f"[DBManager] Optimized vol fetch failed: {e}")
+                    # Fallback to standard IN clause
+
+            if not vol_fetched and vol_df.is_empty():
+                try:
+                    placeholders = ", ".join(["?"] * len(all_mids))
+                    vol_df = self._query_pl(
+                        f"""SELECT match_id, STDDEV(odds) as odds_volatility
+                            FROM odds_history
+                            WHERE match_id IN ({placeholders})
+                            GROUP BY match_id
+                            HAVING COUNT(*) > 1""",
+                        list(all_mids),
+                    )
+                except Exception as e:
+                    logger.debug(f"[DBManager] Batch volatility hatası: {e}")
+
+        # 4. Join Operations
+        # Deduplicate stats just in case
+        if not stats_df.is_empty():
+            stats_df = stats_df.unique(subset=["team"])
+        else:
+            # Fallback schema if empty
+            stats_df = pl.DataFrame(
+                schema={
+                    "team": pl.String,
+                    "matches_played": pl.Int64,
+                    "wins": pl.Int64,
+                    "xg_for": pl.Float64,
+                    "xg_against": pl.Float64,
+                    "possession_avg": pl.Float64
+                }
+            )
+
+        if vol_df.is_empty():
+            vol_df = pl.DataFrame(schema={"match_id": pl.String, "odds_volatility": pl.Float64})
+
+        # Start with matches clone
+        df = matches.clone()
+
+        # Join Home Stats
+        df = df.join(
+            stats_df.select([
+                pl.col("team"),
+                pl.col("matches_played").alias("h_mp"),
+                pl.col("wins").alias("h_wins"),
+                pl.col("xg_for").alias("home_xg"),
+                pl.col("xg_against").alias("home_xga"),
+                pl.col("possession_avg").alias("home_possession")
+            ]),
+            left_on="home_team", right_on="team", how="left"
+        )
+
+        # Join Away Stats
+        df = df.join(
+            stats_df.select([
+                pl.col("team"),
+                pl.col("matches_played").alias("a_mp"),
+                pl.col("wins").alias("a_wins"),
+                pl.col("xg_for").alias("away_xg"),
+                pl.col("xg_against").alias("away_xga"),
+                pl.col("possession_avg").alias("away_possession")
+            ]),
+            left_on="away_team", right_on="team", how="left"
+        )
+
+        # Join Volatility
+        df = df.join(vol_df, on="match_id", how="left")
+
+        # 5. Handle Odds Columns (Ensure existence and Float64 type)
+        odds_cols = ["home_odds", "draw_odds", "away_odds", "over25_odds", "under25_odds"]
+        for col in odds_cols:
+            if col not in df.columns:
+                df = df.with_columns(pl.lit(0.0).alias(col))
+            else:
+                # Cast to float, replace NaN/Null with 0.0, handle Inf
+                expr = pl.col(col).cast(pl.Float64, strict=False).fill_nan(0.0).fill_null(0.0)
+                df = df.with_columns(
+                    pl.when(expr.is_infinite()).then(0.0).otherwise(expr).alias(col)
                 )
-                for vr in vol_df.iter_rows(named=True):
-                    vol_map[vr.get("match_id", "")] = _sf(vr.get("vol"), 0.0)
-            except Exception as e:
-                logger.debug(f"[DBManager] Batch volatility hatası: {e}")
 
-        # Feature matrisini oluştur (artık N+1 sorgu yok)
-        features_rows = []
-        for row in matches.iter_rows(named=True):
-            mid = row.get("match_id", "")
-            home = row.get("home_team", "")
-            away = row.get("away_team", "")
+        # 6. Fill Nulls & Calculate Derived Features
+        # Helper for safe float conversion
+        def _safe_float(c, default):
+            e = pl.col(c).fill_nan(default).fill_null(default)
+            return pl.when(e.is_infinite()).then(default).otherwise(e).alias(c)
 
-            feat = {
-                "match_id": mid,
-                "home_team": home,
-                "away_team": away,
-                "home_odds": _sf(row.get("home_odds"), 0.0),
-                "draw_odds": _sf(row.get("draw_odds"), 0.0),
-                "away_odds": _sf(row.get("away_odds"), 0.0),
-                "over25_odds": _sf(row.get("over25_odds"), 0.0),
-                "under25_odds": _sf(row.get("under25_odds"), 0.0),
-            }
+        df = df.with_columns([
+            _safe_float("home_xg", 0.0),
+            _safe_float("home_xga", 0.0),
+            _safe_float("home_possession", 50.0),
+            _safe_float("away_xg", 0.0),
+            _safe_float("away_xga", 0.0),
+            _safe_float("away_possession", 50.0),
+            _safe_float("odds_volatility", 0.0),
 
-            hs = stats_map.get(home)
-            if hs:
-                mp = max(_sf(hs.get("matches_played"), 1), 1)
-                feat["home_xg"] = _sf(hs.get("xg_for"), 0.0)
-                feat["home_xga"] = _sf(hs.get("xg_against"), 0.0)
-                feat["home_win_rate"] = _sf(hs.get("wins"), 0) / mp
-                feat["home_possession"] = _sf(hs.get("possession_avg"), 50.0)
-            else:
-                feat.update({"home_xg": 0.0, "home_xga": 0.0,
-                             "home_win_rate": 0.0, "home_possession": 50.0})
+            # Win Rate = wins / max(matches_played, 1)
+            (pl.col("h_wins").fill_null(0) / pl.max_horizontal([pl.col("h_mp").fill_null(1), pl.lit(1)])).alias("home_win_rate"),
+            (pl.col("a_wins").fill_null(0) / pl.max_horizontal([pl.col("a_mp").fill_null(1), pl.lit(1)])).alias("away_win_rate"),
+        ])
 
-            aws = stats_map.get(away)
-            if aws:
-                mp = max(_sf(aws.get("matches_played"), 1), 1)
-                feat["away_xg"] = _sf(aws.get("xg_for"), 0.0)
-                feat["away_xga"] = _sf(aws.get("xg_against"), 0.0)
-                feat["away_win_rate"] = _sf(aws.get("wins"), 0) / mp
-                feat["away_possession"] = _sf(aws.get("possession_avg"), 50.0)
-            else:
-                feat.update({"away_xg": 0.0, "away_xga": 0.0,
-                             "away_win_rate": 0.0, "away_possession": 50.0})
+        # 7. Select Final Columns
+        desired_cols = [
+            "match_id", "home_team", "away_team",
+            "home_odds", "draw_odds", "away_odds", "over25_odds", "under25_odds",
+            "home_xg", "home_xga", "home_win_rate", "home_possession",
+            "away_xg", "away_xga", "away_win_rate", "away_possession",
+            "odds_volatility"
+        ]
 
-            feat["odds_volatility"] = vol_map.get(mid, 0.0)
-            features_rows.append(feat)
-
-        return pl.DataFrame(features_rows)
+        # Only select columns that exist to be safe
+        final_cols = [c for c in desired_cols if c in df.columns]
+        return df.select(final_cols)
 
     # ── SQL sorgulama ──
     def query(self, sql: str, params: list | None = None) -> pl.DataFrame:
