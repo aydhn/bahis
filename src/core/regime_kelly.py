@@ -83,6 +83,7 @@ class KellyDecision:
     drawdown_multiplier: float = 1.0
     tilt_multiplier: float = 1.0
     volatility_multiplier: float = 1.0
+    epistemic_multiplier: float = 1.0 # Felsefi/Epistemik çarpan
     final_kelly: float = 0.0      # Final fraksiyon
     # Stake
     stake_amount: float = 0.0     # TL/USD cinsinden
@@ -178,7 +179,8 @@ class RegimeKelly:
 
     def calculate(self, probability: float, odds: float,
                     match_id: str = "",
-                    regime: RegimeState | None = None) -> KellyDecision:
+                    regime: RegimeState | None = None,
+                    epistemic_multiplier: float = 1.0) -> KellyDecision:
         """Rejim-farkında Kelly hesaplama."""
         decision = KellyDecision(
             match_id=match_id,
@@ -186,6 +188,7 @@ class RegimeKelly:
             probability=probability,
             odds=odds,
             regime=regime or RegimeState(),
+            epistemic_multiplier=epistemic_multiplier,
         )
 
         # 0) Circuit Breaker (JP Morgan Risk Control)
@@ -264,7 +267,11 @@ class RegimeKelly:
         decision.volatility_multiplier = round(vol_m_weekly, 4)
 
         # 9) Final Kelly
-        final = frac_kelly * regime_m * dd_m * tilt_m * vol_m_weekly
+        # Felsefi/Epistemik çarpanı da ekle
+        if epistemic_multiplier < 1.0:
+            decision.adjustments.append(f"Epistemic: x{epistemic_multiplier:.2f}")
+
+        final = frac_kelly * regime_m * dd_m * tilt_m * vol_m_weekly * epistemic_multiplier
         final = max(final, 0)
         decision.final_kelly = round(final, 6)
 
@@ -358,6 +365,7 @@ class RegimeKelly:
             f"edge={d.edge:.2%}, raw_kelly={d.raw_kelly:.4f}, "
             f"regime_m={d.regime_multiplier:.2f}, "
             f"dd_m={d.drawdown_multiplier:.2f}, "
+            f"epi_m={d.epistemic_multiplier:.2f}, "
             f"final={d.final_kelly:.4f}, "
             f"stake={d.stake_amount:.2f} "
             f"({'✅' if d.approved else '❌ ' + d.rejection_reason})"
