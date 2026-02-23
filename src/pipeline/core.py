@@ -99,7 +99,7 @@ class PipelineEngine:
                 cycle_context.update(res)
         return cycle_context
 
-def create_default_pipeline() -> PipelineEngine:
+def create_default_pipeline(bot_instance: Any = None) -> PipelineEngine:
     """Create a pipeline with standard stages."""
     # Lazy imports to avoid circular dependencies
     from src.pipeline.stages.ingestion import IngestionStage
@@ -117,6 +117,6 @@ def create_default_pipeline() -> PipelineEngine:
     engine.add_stage(EnsembleStage())
     engine.add_stage(RiskStage())
     engine.add_stage(ExecutionStage())
-    engine.add_stage(ReportingStage())
+    engine.add_stage(ReportingStage(bot_instance=bot_instance))
 
     return engine
