@@ -24,7 +24,13 @@ class ReportingStage(PipelineStage):
         for alert in risk_alerts:
             await self.reporter.send_risk_alert(alert.get("type"), alert.get("msg"))
 
-        # 3. Günlük Rapor (Cycle sonunda mı? Şimdilik her cycle sonunda özet geçmeyelim, çok spam olur)
-        # Sadece önemli olayları bildir.
+        # 3. Executive Summary (CEO Raporu)
+        # Sadece talep edildiğinde veya cycle sonunda
+        if context.get("send_summary", False):
+             from src.system.container import container
+             kelly = container.get("regime_kelly")
+             if kelly:
+                 stats = kelly.get_executive_summary_stats()
+                 await self.reporter.send_executive_summary(stats)
 
         return {}

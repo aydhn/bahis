@@ -148,7 +148,8 @@ class RegimeKelly:
                  max_stake_pct: float = 0.05,
                  max_daily_exposure: float = 0.15,
                  anti_tilt_streak: int = 5,
-                 vol_target_weekly: float = 0.08):
+                 vol_target_weekly: float = 0.08,
+                 max_daily_loss_pct: float = 0.05):
         self._bankroll = BankrollSegment(total=bankroll)
         self._bankroll.recalculate()
         self._base_fraction = base_fraction
@@ -157,18 +158,22 @@ class RegimeKelly:
         self._max_daily = max_daily_exposure
         self._tilt_streak = anti_tilt_streak
         self._vol_target = vol_target_weekly
+        self._max_daily_loss_pct = max_daily_loss_pct
 
         # Durum takibi
         self._peak = bankroll
         self._results: deque = deque(maxlen=200)
         self._daily_exposure: float = 0.0
+        self._daily_pnl: float = 0.0
         self._consecutive_losses: int = 0
         self._weekly_returns: deque = deque(maxlen=50)
         self._decisions: list[KellyDecision] = []
+        self._circuit_breaker_tripped: bool = False
 
         logger.info(
             f"[RegimeKelly] Başlatıldı: bankroll={bankroll:.0f}, "
-            f"fraction={base_fraction}, min_edge={min_edge:.0%}"
+            f"fraction={base_fraction}, min_edge={min_edge:.0%}, "
+            f"max_daily_loss={max_daily_loss_pct:.0%}"
         )
 
     def calculate(self, probability: float, odds: float,
@@ -182,6 +187,13 @@ class RegimeKelly:
             odds=odds,
             regime=regime or RegimeState(),
         )
+
+        # 0) Circuit Breaker (JP Morgan Risk Control)
+        if self._circuit_breaker_tripped:
+            decision.approved = False
+            decision.rejection_reason = "CIRCUIT BREAKER: Günlük zarar limiti aşıldı."
+            self._log_decision(decision)
+            return decision
 
         # 1) Edge hesapla
         edge = probability * odds - 1
@@ -295,6 +307,7 @@ class RegimeKelly:
         self._results.append({"won": won, "pnl": pnl, "ts": time.time()})
         self._bankroll.total += pnl
         self._bankroll.recalculate()
+        self._daily_pnl += pnl
 
         if self._bankroll.total > self._peak:
             self._peak = self._bankroll.total
@@ -307,15 +320,31 @@ class RegimeKelly:
         self._weekly_returns.append(pnl / max(self._bankroll.total, 1))
         self._daily_exposure = max(self._daily_exposure + abs(pnl), 0)
 
+        # Check Circuit Breaker
+        self._check_circuit_breaker()
+
         logger.debug(
             f"[RegimeKelly] Sonuç: {'W' if won else 'L'} "
             f"PnL={pnl:+.2f}, Bankroll={self._bankroll.total:.2f}, "
             f"DD={self._current_drawdown():.1%}"
         )
 
+    def _check_circuit_breaker(self):
+        """JP Morgan stili stop-loss kontrolü."""
+        start_day_bankroll = self._bankroll.total - self._daily_pnl
+        loss_pct = -self._daily_pnl / max(start_day_bankroll, 1)
+
+        if loss_pct >= self._max_daily_loss_pct:
+            if not self._circuit_breaker_tripped:
+                logger.critical(f"🚨 CIRCUIT BREAKER TRIPPED! Günlük kayıp: {loss_pct:.2%}")
+                self._circuit_breaker_tripped = True
+
     def reset_daily(self) -> None:
         """Günlük exposure sıfırla."""
         self._daily_exposure = 0.0
+        self._daily_pnl = 0.0
+        self._circuit_breaker_tripped = False
+        logger.info("Günlük limitler ve PnL sıfırlandı.")
 
     def _current_drawdown(self) -> float:
         if self._peak <= 0:
@@ -354,6 +383,27 @@ class RegimeKelly:
             "daily_exposure": self._daily_exposure,
             "decisions_count": len(self._decisions),
         }
+
+    def get_executive_summary_stats(self) -> dict:
+        """CEO Raporu için özet istatistikler."""
+        stats = self.get_stats()
+
+        # Ekstra metrikler
+        roi = 0.0
+        if stats["total_bets"] > 0:
+            total_staked = sum(d.stake_amount for d in self._decisions if d.approved)
+            if total_staked > 0:
+                total_pnl = self._bankroll.total - 10000.0 # Varsayılan başlangıç, düzeltilebilir
+                roi = total_pnl / total_staked
+
+        stats.update({
+            "daily_pnl": self._daily_pnl,
+            "circuit_breaker": self._circuit_breaker_tripped,
+            "roi": roi,
+            "hot_wallet": self._bankroll.hot_wallet,
+            "reserve": self._bankroll.reserve
+        })
+        return stats
 
     def save_state(self, filepath: str | Path) -> None:
         """Bankroll durumunu diske kaydet."""
@@ -398,7 +448,9 @@ class RegimeKelly:
 
             self._peak = state.get("peak", self._bankroll.total)
             self._daily_exposure = state.get("daily_exposure", 0.0)
+            self._daily_pnl = state.get("daily_pnl", 0.0)
             self._consecutive_losses = state.get("consecutive_losses", 0)
+            self._circuit_breaker_tripped = state.get("circuit_breaker_tripped", False)
 
             if "results" in state:
                 self._results = deque(state["results"], maxlen=200)

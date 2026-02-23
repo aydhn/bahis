@@ -130,3 +130,46 @@ class TelegramReporter:
             f"<i>Yarına hazırız.</i>"
         )
         return await self.send_message(msg)
+
+    async def send_executive_summary(self, stats: Dict[str, Any]) -> bool:
+        """CEO için detaylı günlük özet (Executive Summary)."""
+        if not self.enabled:
+            return False
+
+        # Veri Hazırlığı
+        bankroll = stats.get("bankroll", 0.0)
+        daily_pnl = stats.get("daily_pnl", 0.0)
+        roi = stats.get("roi", 0.0)
+        drawdown = stats.get("drawdown", 0.0)
+        win_rate = stats.get("win_rate", 0.0)
+        total_bets = stats.get("total_bets", 0)
+
+        # Trend Emojisi
+        trend = "🚀" if daily_pnl > 0 else "🔻"
+        if daily_pnl == 0: trend = "➖"
+
+        # Risk Durumu
+        risk_status = "GÜVENLİ"
+        if drawdown < -0.10: risk_status = "DİKKAT"
+        if drawdown < -0.20: risk_status = "KRİTİK"
+        if stats.get("circuit_breaker", False): risk_status = "STOP-LOSS (KİLİTLİ)"
+
+        msg = (
+            f"<b>{trend} GÜNLÜK YÖNETİCİ ÖZETİ</b>\n"
+            f"━━━━━━━━━━━━━━━━━━━━\n\n"
+            f"<b>💰 FİNANSAL DURUM</b>\n"
+            f"• <b>Kasa:</b> {bankroll:,.2f} TL\n"
+            f"• <b>Günlük PnL:</b> {daily_pnl:+,.2f} TL\n"
+            f"• <b>ROI:</b> %{roi*100:.2f}\n\n"
+
+            f"<b>🛡️ RİSK METRİKLERİ</b>\n"
+            f"• <b>Drawdown:</b> %{drawdown*100:.2f}\n"
+            f"• <b>Risk Statüsü:</b> {risk_status}\n\n"
+
+            f"<b>📊 PERFORMANS</b>\n"
+            f"• <b>Win Rate:</b> %{win_rate*100:.1f}\n"
+            f"• <b>İşlem Hacmi:</b> {total_bets} Bahis\n\n"
+
+            f"<i>\"Risk yönetimi, kârın temelidir.\" - JP Morgan</i>"
+        )
+        return await self.send_message(msg)
