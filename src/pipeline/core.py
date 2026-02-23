@@ -79,3 +79,25 @@ class PipelineEngine:
             if res:
                 cycle_context.update(res)
         return cycle_context
+
+def create_default_pipeline() -> PipelineEngine:
+    """Create a pipeline with standard stages."""
+    # Lazy imports to avoid circular dependencies
+    from src.pipeline.stages.ingestion import IngestionStage
+    from src.pipeline.stages.features import FeatureStage
+    from src.pipeline.stages.inference import InferenceStage
+    from src.pipeline.stages.ensemble import EnsembleStage
+    from src.pipeline.stages.risk import RiskStage
+    from src.pipeline.stages.execution import ExecutionStage
+    from src.pipeline.stages.reporting import ReportingStage
+
+    engine = PipelineEngine()
+    engine.add_stage(IngestionStage())
+    engine.add_stage(FeatureStage())
+    engine.add_stage(InferenceStage())
+    engine.add_stage(EnsembleStage())
+    engine.add_stage(RiskStage())
+    engine.add_stage(ExecutionStage())
+    engine.add_stage(ReportingStage())
+
+    return engine

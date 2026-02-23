@@ -26,10 +26,12 @@ Akış:
 """
 from __future__ import annotations
 
+import json
 import time
 from collections import deque
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, asdict
 from datetime import datetime
+from pathlib import Path
 
 import numpy as np
 from loguru import logger
@@ -352,3 +354,60 @@ class RegimeKelly:
             "daily_exposure": self._daily_exposure,
             "decisions_count": len(self._decisions),
         }
+
+    def save_state(self, filepath: str | Path) -> None:
+        """Bankroll durumunu diske kaydet."""
+        state = {
+            "bankroll": asdict(self._bankroll),
+            "peak": self._peak,
+            "daily_exposure": self._daily_exposure,
+            "consecutive_losses": self._consecutive_losses,
+            "results": list(self._results),
+            "weekly_returns": list(self._weekly_returns),
+            "timestamp": time.time()
+        }
+        try:
+            path = Path(filepath)
+            path.parent.mkdir(parents=True, exist_ok=True)
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(state, f, indent=2)
+            logger.info(f"[RegimeKelly] Durum kaydedildi: {path}")
+        except Exception as e:
+            logger.error(f"[RegimeKelly] Kayıt hatası: {e}")
+
+    def load_state(self, filepath: str | Path) -> bool:
+        """Bankroll durumunu diskten yükle."""
+        path = Path(filepath)
+        if not path.exists():
+            return False
+
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                state = json.load(f)
+
+            # Bankroll
+            if "bankroll" in state:
+                b = state["bankroll"]
+                self._bankroll = BankrollSegment(
+                    total=b.get("total", 10000.0),
+                    hot_wallet_pct=b.get("hot_wallet_pct", 0.60),
+                    reserve_pct=b.get("reserve_pct", 0.30),
+                    rd_pct=b.get("rd_pct", 0.10)
+                )
+                self._bankroll.recalculate()
+
+            self._peak = state.get("peak", self._bankroll.total)
+            self._daily_exposure = state.get("daily_exposure", 0.0)
+            self._consecutive_losses = state.get("consecutive_losses", 0)
+
+            if "results" in state:
+                self._results = deque(state["results"], maxlen=200)
+
+            if "weekly_returns" in state:
+                self._weekly_returns = deque(state["weekly_returns"], maxlen=50)
+
+            logger.info(f"[RegimeKelly] Durum yüklendi: {self._bankroll.total:.2f} TL")
+            return True
+        except Exception as e:
+            logger.error(f"[RegimeKelly] Yükleme hatası: {e}")
+            return False
