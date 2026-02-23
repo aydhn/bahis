@@ -33,6 +33,12 @@ class RiskStage(PipelineStage):
         except ImportError:
             self.evt = None
 
+        try:
+            from src.quant.philosophical_engine import PhilosophicalEngine
+            self.philosopher = PhilosophicalEngine()
+        except ImportError:
+            self.philosopher = None
+
     async def execute(self, context: Dict[str, Any]) -> Dict[str, Any]:
         ensemble_decisions = context.get("ensemble_results", [])
         matches = context.get("matches", pl.DataFrame())
@@ -62,11 +68,30 @@ class RiskStage(PipelineStage):
             # Ideal: VolatilityAnalyzer output from InferenceStage
             regime = RegimeState(volatility_regime="calm")
 
+            # Felsefi/Epistemik Analiz
+            epistemic_score = 1.0
+            philo_report = None
+
+            if self.philosopher:
+                # Mock sample size & age for now
+                philo_report = self.philosopher.evaluate(
+                    probability=prob_home,
+                    confidence=decision.get("confidence", 0.8),
+                    sample_size=200, # Varsayılan yeterli örneklem
+                    match_id=match_id,
+                    market_odds_spread=0.05 # Varsayılan spread
+                )
+                if philo_report.epistemic_approved:
+                    epistemic_score = philo_report.epistemic_score
+                else:
+                    epistemic_score = 0.0 # Reddedildi
+
             kelly_decision = self.kelly.calculate(
                 probability=prob_home,
                 odds=odds_home,
                 match_id=match_id,
-                regime=regime
+                regime=regime,
+                epistemic_multiplier=epistemic_score
             )
 
             if kelly_decision.approved:
@@ -76,9 +101,10 @@ class RiskStage(PipelineStage):
                     "stake": kelly_decision.stake_amount,
                     "confidence": prob_home,
                     "odds": odds_home,
-                    "reason": f"Kelly Approved (Edge: {kelly_decision.edge:.2%})",
+                    "reason": f"Kelly Approved (Edge: {kelly_decision.edge:.2%}, Epistemic: {epistemic_score:.2f})",
                     "regime": regime.volatility_regime,
-                    "news_summary": decision.get("news_summary", "")
+                    "news_summary": decision.get("news_summary", ""),
+                    "philosophical_report": philo_report
                 })
 
         # Copula Filtering
