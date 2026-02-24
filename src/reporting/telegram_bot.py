@@ -296,14 +296,32 @@ class TelegramBot:
 
         elif command == "/chart":
             await self.send_message(chat_id, "📊 *Grafik Hazırlanıyor...*")
-            # In production, read real PnL history. For now, dummy.
-            stats = self._read_bankroll_state()
-            # If stats has history, use it. Else dummy.
-            chart_buf = Visualizer.generate_dummy_chart()
-            if chart_buf:
-                await self.send_photo(chat_id, chart_buf, caption="📈 Bankroll PnL")
+
+            if args:
+                # Match specific chart
+                match_id = args[0]
+                # Try to get data from context
+                # For demo, we use dummy data if context is missing
+                # In real flow, we would look up match_id in self.context
+
+                # Mock Data for demo visualization
+                buf = Visualizer.generate_value_chart(
+                    home_team="Home", away_team="Away",
+                    model_probs=[0.60, 0.25, 0.15],
+                    market_probs=[0.55, 0.25, 0.20]
+                )
+                if buf:
+                    await self.send_photo(chat_id, buf, caption=f"📊 Value Analysis: {match_id}")
+                else:
+                    await self.send_message(chat_id, "❌ Grafik oluşturulamadı.")
             else:
-                await self.send_message(chat_id, "❌ Grafik oluşturulamadı.")
+                # Bankroll Chart
+                stats = self._read_bankroll_state()
+                chart_buf = Visualizer.generate_dummy_chart()
+                if chart_buf:
+                    await self.send_photo(chat_id, chart_buf, caption="📈 Bankroll PnL")
+                else:
+                    await self.send_message(chat_id, "❌ Grafik oluşturulamadı.")
 
         elif command == "/explain":
             await self._handle_explain(chat_id, args)

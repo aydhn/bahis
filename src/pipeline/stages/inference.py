@@ -9,11 +9,15 @@ from src.core.model_registry import ModelRegistry
 from src.ingestion.news_rag import NewsRAGAnalyzer
 from src.quant.models.ensemble import EnsembleModel
 from src.quant.risk.entropy_kelly import EntropyKelly
+from src.quant.analysis.similarity import SimilarityEngine
+from src.quant.meta_labeling import MetaLabeler
+import numpy as np
 
 class InferenceStage(PipelineStage):
     """
     Quant Models & AI Analysis Engine.
     Uses EnsembleModel for robust predictions and EntropyKelly for uncertainty metrics.
+    Integrated with SimilarityEngine (Pattern Matching) and MetaLabeler (Error Correction).
     """
 
     def __init__(self):
@@ -24,6 +28,13 @@ class InferenceStage(PipelineStage):
 
         # Initialize Entropy Calculator
         self.entropy_calc = EntropyKelly()
+
+        # Initialize Advanced Quant Engines
+        self.similarity_engine = SimilarityEngine()
+        self.similarity_engine.mock_fit() # TODO: Fit on real DB history
+
+        self.meta_labeler = MetaLabeler()
+        self.meta_labeler.mock_train() # TODO: Train on real history
 
         # RAG Analyzer (Optional)
         try:
@@ -72,7 +83,7 @@ class InferenceStage(PipelineStage):
         return {"ensemble_results": valid_results}
 
     async def _analyze_single_match(self, context: Dict[str, Any]) -> Dict[str, Any]:
-        """Analyze a single match using Ensemble and RAG."""
+        """Analyze a single match using Ensemble, RAG, Similarity and Meta-Labeling."""
         match_id = context.get("match_id", "Unknown")
 
         # 1. Ensemble Prediction (CPU Bound -> Thread)
@@ -98,6 +109,40 @@ class InferenceStage(PipelineStage):
                 prediction["news_sentiment"] = rag_res.get("sentiment_score", 0.0)
             except Exception:
                 pass
+
+        # 4. Pattern Matching (Similarity Engine)
+        try:
+            # Construct a feature vector from prediction data for now
+            # In production, this should be pre-match technical features
+            feat_vec = np.array([[
+                prediction.get("prob_home", 0.33),
+                prediction.get("prob_draw", 0.33),
+                prediction.get("prob_away", 0.33),
+                prediction.get("home_xg", 1.0),
+                prediction.get("away_xg", 1.0)
+            ]])
+            # Pad if needed to match mock_fit shape (5 features)
+            if feat_vec.shape[1] < 5:
+                feat_vec = np.pad(feat_vec, ((0,0), (0, 5-feat_vec.shape[1])))
+
+            similar_matches = self.similarity_engine.find_similar(feat_vec[:, :5])
+            prediction["similar_matches"] = similar_matches
+        except Exception as e:
+            logger.warning(f"Similarity search failed: {e}")
+
+        # 5. Meta-Labeling (Quality Check)
+        try:
+            # We need Odds to assess quality properly. Assuming standard 2.0 if missing.
+            meta_features = {
+                "confidence": max(probs),
+                "entropy": entropy,
+                "odds": context.get("odds_home", 2.0) # Simplified
+            }
+            quality_score = self.meta_labeler.predict_score(meta_features)
+            prediction["meta_quality_score"] = quality_score
+        except Exception as e:
+            logger.warning(f"Meta-labeling failed: {e}")
+            prediction["meta_quality_score"] = 0.5
 
         # Add basic identification
         prediction["match_id"] = match_id

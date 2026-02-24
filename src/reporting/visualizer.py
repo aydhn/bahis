@@ -1,58 +1,93 @@
-import io
-from typing import Optional, List, Dict, Any
-from loguru import logger
-import polars as pl
+import matplotlib
+matplotlib.use('Agg')  # Non-interactive backend
+import matplotlib.pyplot as plt
+import seaborn as sns
 import numpy as np
-
-try:
-    import matplotlib.pyplot as plt
-    import matplotlib
-    matplotlib.use('Agg') # Server-side rendering
-    HAS_MATPLOTLIB = True
-except ImportError:
-    HAS_MATPLOTLIB = False
-    logger.warning("Matplotlib not installed. Visualization disabled.")
+import io
+from typing import Optional, List
+from loguru import logger
 
 class Visualizer:
     """
-    Generates charts for Telegram reporting.
-    (CEO Dashboard Vision)
+    Generates Visual Intelligence for the 'War Room'.
+    Creates PNG charts from data distributions.
     """
 
     @staticmethod
-    def generate_pnl_chart(pnl_history: List[float], labels: List[str] = None) -> Optional[io.BytesIO]:
-        """Generates a cumulative PnL chart."""
-        if not HAS_MATPLOTLIB or not pnl_history:
-            return None
-
+    def generate_value_chart(
+        home_team: str,
+        away_team: str,
+        model_probs: List[float],
+        market_probs: List[float]
+    ) -> Optional[io.BytesIO]:
+        """
+        Generates a bar chart comparing Model vs Market probabilities.
+        Returns a BytesIO buffer containing the PNG image.
+        """
         try:
-            plt.figure(figsize=(10, 5))
-            cumulative = np.cumsum(pnl_history)
+            plt.figure(figsize=(10, 6))
+            sns.set_theme(style="whitegrid")
 
-            # Style
-            plt.style.use('bmh') # Clean style
-            plt.plot(cumulative, label='Cumulative PnL', color='#2ecc71', linewidth=2)
-            plt.fill_between(range(len(cumulative)), cumulative, alpha=0.1, color='#2ecc71')
+            labels = ['Home', 'Draw', 'Away']
+            x = np.arange(len(labels))
+            width = 0.35
 
-            plt.title("Bankroll Growth (PnL)", fontsize=14, fontweight='bold')
-            plt.xlabel("Trades")
-            plt.ylabel("PnL (TL)")
-            plt.grid(True, linestyle='--', alpha=0.5)
-            plt.legend()
-            plt.tight_layout()
+            fig, ax = plt.subplots()
+            rects1 = ax.bar(x - width/2, model_probs, width, label='Model (AI)', color='#2ecc71')
+            rects2 = ax.bar(x + width/2, market_probs, width, label='Market (Bookie)', color='#e74c3c')
 
-            # Save to buffer
+            ax.set_ylabel('Probability')
+            ax.set_title(f'Value Analysis: {home_team} vs {away_team}')
+            ax.set_xticks(x)
+            ax.set_xticklabels(labels)
+            ax.legend()
+
+            # Add value tags
+            def autolabel(rects):
+                for rect in rects:
+                    height = rect.get_height()
+                    ax.annotate(f'{height:.2f}',
+                                xy=(rect.get_x() + rect.get_width() / 2, height),
+                                xytext=(0, 3),  # 3 points vertical offset
+                                textcoords="offset points",
+                                ha='center', va='bottom')
+
+            autolabel(rects1)
+            autolabel(rects2)
+
+            fig.tight_layout()
+
             buf = io.BytesIO()
             plt.savefig(buf, format='png', dpi=100)
             buf.seek(0)
-            plt.close()
+            plt.close('all')
             return buf
+
         except Exception as e:
             logger.error(f"Chart generation failed: {e}")
             return None
 
     @staticmethod
     def generate_dummy_chart() -> Optional[io.BytesIO]:
-        """Generates a dummy chart for testing."""
-        data = np.random.normal(0, 1, 100).cumsum()
-        return Visualizer.generate_pnl_chart(list(data))
+        """Generates a dummy chart for testing integration."""
+        try:
+            # Create dummy data
+            x = np.linspace(0, 10, 100)
+            y = np.sin(x)
+
+            plt.figure(figsize=(8, 4))
+            plt.plot(x, y, label='PnL Simulation', color='blue')
+            plt.title('Bankroll Simulation (Dummy)')
+            plt.xlabel('Time')
+            plt.ylabel('PnL')
+            plt.legend()
+            plt.grid(True)
+
+            buf = io.BytesIO()
+            plt.savefig(buf, format='png')
+            buf.seek(0)
+            plt.close('all')
+            return buf
+        except Exception as e:
+            logger.error(f"Dummy chart generation failed: {e}")
+            return None
