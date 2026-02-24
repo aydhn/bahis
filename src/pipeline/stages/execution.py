@@ -12,6 +12,7 @@ class ExecutionStage(PipelineStage):
     def __init__(self):
         super().__init__("execution")
         self.notifier = container.get("notifier")
+        self.db = container.get("db")
 
         # Optional Imports
         try:
@@ -37,11 +38,20 @@ class ExecutionStage(PipelineStage):
 
             # Check for Paper Trading
             is_paper = bet.get("is_paper", False) or bet.get("trading_mode") == "PAPER"
+            bet["is_paper"] = is_paper
 
+            # 1. Save to DB (Central Source of Truth)
+            if self.db:
+                try:
+                    self.db.insert_bet(bet)
+                except Exception as e:
+                    logger.error(f"Failed to insert bet to DB: {e}")
+
+            # 2. Process Execution
             if is_paper:
                 logger.info(f"PAPER TRADE: {match_id} -> {selection} (Stake: {stake:.2f})")
                 try:
-                    # Append to paper trades log
+                    # Append to paper trades log (Legacy/Backup)
                     log_file = settings.DATA_DIR / "paper_trades.jsonl"
                     log_file.parent.mkdir(parents=True, exist_ok=True)
                     with open(log_file, "a") as f:

@@ -52,9 +52,29 @@ class TelegramBot:
         self.bet_history = []  # Son bahisleri sakla (Explain için)
         self.context: Optional[BettingContext] = None # Live Context
         self.sentinel: Any = None # Sentinel (Orchestrator) referansı
+        self.performance_report: Dict[str, Any] = {}
 
         if not self.enabled:
             logger.warning("TelegramBot devre dışı: Token veya httpx eksik.")
+
+    def set_performance_report(self, report: Dict[str, Any]):
+        """Performans raporunu güncelle."""
+        self.performance_report = report
+
+    def _get_stoic_quote(self, sentiment: str) -> str:
+        """Ruh haline göre stoik alıntı seçer."""
+        import random
+        if sentiment == "negative":
+            quotes = [
+                "“The obstacle is the way.” — Marcus Aurelius",
+                "“We suffer more often in imagination than in reality.” — Seneca",
+                "“You have power over your mind - not outside events. Realize this, and you will find strength.” — Marcus Aurelius",
+                "“Difficulties strengthen the mind, as labor does the body.” — Seneca"
+            ]
+            return random.choice(quotes)
+        elif sentiment == "positive":
+            return "“Don’t let your reflection on the whole sweep of life crush you.” — Marcus Aurelius"
+        return ""
 
     def set_sentinel(self, sentinel: Any):
         """Sentinel (Orchestrator) bağlantısı."""
@@ -258,6 +278,16 @@ class TelegramBot:
                  kelly_msg = f"\nKelly History: {k_hist} bets"
 
             await self.send_message(chat_id, f"{emoji} *PnL:* {pnl:.2f} TL{kelly_msg}")
+
+        elif command == "/performance":
+            if self.performance_report:
+                roi = self.performance_report.get("roi", 0.0)
+                wr = self.performance_report.get("win_rate", 0.0)
+                tpnl = self.performance_report.get("total_pnl", 0.0)
+                emoji = "🚀" if roi > 0 else "📉"
+                await self.send_message(chat_id, f"{emoji} *Canlı Performans*\nROI: %{roi*100:.2f}\nWin Rate: %{wr*100:.2f}\nRealized PnL: {tpnl:.2f} TL")
+            else:
+                await self.send_message(chat_id, "⚠️ Henüz performans verisi oluşmadı.")
 
         elif command == "/risk":
             stats = self._read_bankroll_state()
@@ -470,9 +500,11 @@ class TelegramBot:
         chat_id = os.getenv("TELEGRAM_CHAT_ID")
         if not chat_id: return
 
+        quote = self._get_stoic_quote("negative")
         msg = (
             f"<b>🚨 RİSK UYARISI: {alert_type.upper()}</b>\n\n"
             f"{details}\n\n"
+            f"<i>{quote}</i>\n"
             f"<i>Sistem koruma protokolleri devrede.</i>"
         )
         await self.send_message(chat_id, msg, parse_mode="HTML")

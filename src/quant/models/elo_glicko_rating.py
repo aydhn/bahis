@@ -6,8 +6,10 @@ Elo + Glicko-2: güçlü takımı yenen zayıf takım daha çok puan kazanır.
 from __future__ import annotations
 
 import math
+import pickle
 from dataclasses import dataclass, field
 from datetime import datetime
+from pathlib import Path
 
 import numpy as np
 import polars as pl
@@ -246,6 +248,7 @@ class EloGlickoSystem:
     def __init__(self):
         self.elo = EloRating()
         self.glicko = Glicko2Rating()
+        self.processed_matches: set[str] = set()
         logger.debug("EloGlickoSystem başlatıldı.")
 
     def predict(self, home: str, away: str) -> dict:
@@ -279,6 +282,37 @@ class EloGlickoSystem:
             result = 0.0
         self.glicko.update(home, away, result)
 
+    def process_batch(self, matches_df: pl.DataFrame):
+        """Toplu veri ile sistemi eğitir."""
+        if matches_df.is_empty():
+            return
+
+        # Tarihe göre sırala
+        if "kickoff" in matches_df.columns:
+            sorted_df = matches_df.sort("kickoff")
+        else:
+            sorted_df = matches_df
+
+        count = 0
+        for row in sorted_df.iter_rows(named=True):
+            mid = row.get("match_id")
+            if mid and mid in self.processed_matches:
+                continue
+
+            home = row.get("home_team")
+            away = row.get("away_team")
+            h_score = row.get("home_score")
+            a_score = row.get("away_score")
+
+            if home and away and h_score is not None and a_score is not None:
+                self.update(home, away, int(h_score), int(a_score))
+                if mid:
+                    self.processed_matches.add(mid)
+                count += 1
+
+        if count > 0:
+            logger.info(f"EloGlickoSystem: {count} yeni maç ile güncellendi.")
+
     def predict_for_dataframe(self, features: pl.DataFrame) -> pl.DataFrame:
         results = []
         for row in features.iter_rows(named=True):
@@ -286,3 +320,35 @@ class EloGlickoSystem:
             pred["match_id"] = row.get("match_id", "")
             results.append(pred)
         return pl.DataFrame(results) if results else pl.DataFrame()
+
+    def save_state(self, filepath: str | Path):
+        """Durumu diske kaydeder."""
+        try:
+            path = Path(filepath)
+            path.parent.mkdir(parents=True, exist_ok=True)
+            with open(path, "wb") as f:
+                pickle.dump({
+                    "elo": self.elo,
+                    "glicko": self.glicko,
+                    "processed": self.processed_matches
+                }, f)
+            logger.debug(f"Elo state saved to {path}")
+        except Exception as e:
+            logger.error(f"Failed to save Elo state: {e}")
+
+    def load_state(self, filepath: str | Path) -> bool:
+        """Durumu diskten yükler."""
+        path = Path(filepath)
+        if not path.exists():
+            return False
+        try:
+            with open(path, "rb") as f:
+                state = pickle.load(f)
+                self.elo = state["elo"]
+                self.glicko = state["glicko"]
+                self.processed_matches = state.get("processed", set())
+            logger.info(f"Elo state loaded from {path} (Matches: {len(self.processed_matches)})")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to load Elo state: {e}")
+            return False

@@ -96,6 +96,21 @@ class DBManager:
             CREATE SEQUENCE IF NOT EXISTS odds_seq START 1
         """)
 
+        self._con.execute("""
+            CREATE TABLE IF NOT EXISTS bets (
+                bet_id       VARCHAR PRIMARY KEY,
+                match_id     VARCHAR,
+                selection    VARCHAR,
+                odds         DOUBLE,
+                stake        DOUBLE,
+                is_paper     BOOLEAN,
+                status       VARCHAR DEFAULT 'pending', -- pending, won, lost, void
+                pnl          DOUBLE DEFAULT 0.0,
+                placed_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                settled_at   TIMESTAMP
+            )
+        """)
+
     # ── Veri ekleme ──
     def upsert_match(self, data: dict):
         cols = ", ".join(data.keys())
@@ -144,6 +159,33 @@ class DBManager:
             )
         logger.info(f"{cycle}. döngü – sinyaller kaydedildi.")
 
+    def insert_bet(self, bet: dict):
+        """Bahsi veritabanına kaydeder."""
+        import uuid
+        bet_id = bet.get("bet_id", str(uuid.uuid4())[:12])
+        self._con.execute(
+            """INSERT INTO bets (bet_id, match_id, selection, odds, stake, is_paper, status, placed_at)
+               VALUES (?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)
+               ON CONFLICT (bet_id) DO NOTHING""",
+            [
+                bet_id,
+                bet.get("match_id", ""),
+                bet.get("selection", ""),
+                bet.get("odds", 1.0),
+                bet.get("stake", 0.0),
+                bet.get("is_paper", True),
+            ]
+        )
+
+    def update_bet_result(self, bet_id: str, pnl: float, status: str):
+        """Bahis sonucunu günceller."""
+        self._con.execute(
+            """UPDATE bets
+               SET pnl = ?, status = ?, settled_at = CURRENT_TIMESTAMP
+               WHERE bet_id = ?""",
+            [pnl, status, bet_id]
+        )
+
     # ── Sorgulamalar ──
     def get_upcoming_matches(self, hours_ahead: int = 48) -> pl.DataFrame:
         cutoff = (datetime.utcnow() + timedelta(hours=hours_ahead)).isoformat()
@@ -162,6 +204,30 @@ class DBManager:
     def get_odds_history(self, match_id: str) -> pl.DataFrame:
         return self._con.execute(
             "SELECT * FROM odds_history WHERE match_id = ? ORDER BY timestamp", [match_id]
+        ).pl()
+
+    def get_finished_matches(self, limit: int = 1000) -> pl.DataFrame:
+        """Sonuçlanmış maçları getirir (Elo eğitimi için)."""
+        return self._con.execute(
+            """SELECT * FROM matches
+               WHERE status IN ('finished', 'FT', 'AET', 'PEN')
+                 AND home_score IS NOT NULL
+                 AND away_score IS NOT NULL
+               ORDER BY kickoff DESC LIMIT ?""",
+            [limit]
+        ).pl()
+
+    def get_pending_bets(self) -> pl.DataFrame:
+        """Henüz sonuçlanmamış bahisleri getirir."""
+        return self._con.execute(
+            "SELECT * FROM bets WHERE status = 'pending'"
+        ).pl()
+
+    def get_settled_bets(self, limit: int = 100) -> pl.DataFrame:
+        """Sonuçlanmış bahisleri getirir (PnL analizi için)."""
+        return self._con.execute(
+            "SELECT * FROM bets WHERE status != 'pending' ORDER BY settled_at DESC LIMIT ?",
+            [limit]
         ).pl()
 
     def get_signals(self, cycle: int | None = None) -> pl.DataFrame:

@@ -1,5 +1,6 @@
 from typing import Dict, Any, Optional
 import asyncio
+from loguru import logger
 from src.pipeline.core import PipelineStage
 from src.reporting.telegram_bot import TelegramBot
 
@@ -19,11 +20,32 @@ class ReportingStage(PipelineStage):
         if bot_instance is None and self.bot.enabled:
             asyncio.create_task(self.bot.start())
 
+        # Autonomous Performance Monitor
+        try:
+            from src.quant.analysis.performance_monitor import PerformanceMonitor
+            self.monitor = PerformanceMonitor()
+        except ImportError:
+            self.monitor = None
+            logger.warning("PerformanceMonitor not found.")
+
     async def execute(self, context: Dict[str, Any]) -> Dict[str, Any]:
         # 0. Context'i Bot'a aktar (Shared Memory)
         ctx = context.get("ctx")
         if ctx:
             self.bot.set_context(ctx)
+
+        # 0.5 Run Performance Monitor (Autonomous Feedback Loop)
+        if self.monitor:
+            try:
+                perf_report = await self.monitor.update_results()
+                if perf_report:
+                    context["performance_report"] = perf_report
+                    self.bot.set_performance_report(perf_report)
+                    # Alerts are handled via EventBus in monitor, but let's log ROI
+                    roi = perf_report.get("roi", 0.0)
+                    logger.info(f"Performance Monitor ROI: {roi:.2%}")
+            except Exception as e:
+                logger.error(f"Performance Monitor failed: {e}")
 
         bets = context.get("final_bets", [])
 
@@ -31,7 +53,7 @@ class ReportingStage(PipelineStage):
         for bet in bets:
             await self.bot.send_bet_signal(bet)
 
-        # 2. Risk Uyarıları
+        # 2. Risk Uyarıları (Pipeline generated)
         risk_alerts = context.get("risk_alerts", [])
         for alert in risk_alerts:
             await self.bot.send_risk_alert(alert.get("type"), alert.get("msg"))

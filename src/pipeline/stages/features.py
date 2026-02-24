@@ -1,6 +1,7 @@
 from typing import Dict, Any
 from loguru import logger
 import polars as pl
+from pathlib import Path
 from src.pipeline.core import PipelineStage
 from src.system.container import container
 
@@ -32,6 +33,21 @@ class FeatureStage(PipelineStage):
         except ImportError:
             self.jax_acc = None
 
+        # Elo System Integration
+        try:
+            from src.quant.models.elo_glicko_rating import EloGlickoSystem
+            self.elo = EloGlickoSystem()
+            self.elo_path = Path("data/elo_state.pkl")
+            # Try load on init
+            if not self.elo.load_state(self.elo_path):
+                self.elo_loaded = False
+                logger.info("Elo state not found. Will train from scratch.")
+            else:
+                self.elo_loaded = True
+        except ImportError:
+            self.elo = None
+            logger.warning("EloGlickoSystem not found.")
+
     async def execute(self, context: Dict[str, Any]) -> Dict[str, Any]:
         matches = context.get("matches", pl.DataFrame())
         if matches.is_empty():
@@ -51,6 +67,33 @@ class FeatureStage(PipelineStage):
             lambda: self.cache.get_or_compute("features", compute_fn),
             persist=False,
         )
+
+        # 1.5 Elo Features Integration (Bill Benter Logic)
+        if self.elo:
+            try:
+                # If not loaded (fresh start), fetch large history. Else just recent.
+                limit = 100 if self.elo_loaded else 5000
+                finished = self.db.get_finished_matches(limit=limit)
+
+                if not finished.is_empty():
+                    self.elo.process_batch(finished)
+                    self.elo_loaded = True
+                    self.elo.save_state(self.elo_path)
+
+                # Predict/Score for current matches
+                elo_feats = self.elo.predict_for_dataframe(matches)
+
+                if not elo_feats.is_empty():
+                    # Select only relevant columns to avoid collision if any
+                    # We want probability and rating diffs
+                    cols_to_join = [c for c in elo_feats.columns if c not in ["home_team", "away_team"]]
+                    elo_subset = elo_feats.select(cols_to_join)
+
+                    features = features.join(elo_subset, on="match_id", how="left")
+                    logger.debug(f"Elo features attached. Shape: {features.shape}")
+
+            except Exception as e:
+                logger.error(f"Elo integration failed: {e}")
 
         # 2. Time Decay
         if self.time_decay:
