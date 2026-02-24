@@ -9,6 +9,8 @@ from src.system.container import container
 from src.core.regime_kelly import RegimeKelly, RegimeState
 from src.core.portfolio_optimizer import PortfolioOptimizer, PortfolioBet
 from src.system.config import settings
+from src.quant.risk.volatility_modulator import VolatilityModulator
+from src.core.cognitive_guardian import CognitiveGuardian
 
 # Enterprise Modules
 try:
@@ -52,6 +54,10 @@ class RiskStage(PipelineStage):
         self.philosopher = PhilosophicalEngine() if PhilosophicalEngine else None
         self.vol_analyzer = VolatilityAnalyzer() if VolatilityAnalyzer else None
         self.narrator = NarrativeEngine() if NarrativeEngine else None
+
+        # New Advanced Engines
+        self.vol_modulator = VolatilityModulator()
+        self.guardian = CognitiveGuardian()
 
         # Optional Legacy Engines
         try:
@@ -140,6 +146,24 @@ class RiskStage(PipelineStage):
                 regime=regime,
                 epistemic_multiplier=epistemic_score
             )
+
+            # --- C2. Advanced Modulators (The Titan Upgrade) ---
+            if kelly_decision.approved:
+                # 1. Meta-Labeling Check
+                meta_score = decision.get("meta_quality_score", 0.5)
+                if meta_score < 0.3:
+                    kelly_decision.approved = False
+                    kelly_decision.rejection_reason = f"Meta-Labeler Rejected (Score: {meta_score:.2f})"
+
+                # 2. Volatility Scaling
+                vol_mult = self.vol_modulator.get_stake_multiplier()
+                kelly_decision.stake_pct *= vol_mult
+
+                # 3. Cognitive Check
+                bet_req = {"stake": kelly_decision.stake_pct, "team": decision.get("home_team")}
+                if not self.guardian.check_bet(bet_req):
+                    kelly_decision.approved = False
+                    kelly_decision.rejection_reason = "Cognitive Guardian Blocked (Tilt/Chase)"
 
             # --- D. Portfolio Candidates ---
             if kelly_decision.approved:
