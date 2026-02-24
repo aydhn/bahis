@@ -88,7 +88,7 @@ if RAY_OK:
     def _ray_run_digital_twin(home_players: list, away_players: list,
                                match_id: str, n_sims: int) -> dict:
         """Digital Twin simülasyonu – Ray remote worker."""
-        from src.quant.digital_twin_sim import (
+        from src.quant.analysis.digital_twin_sim import (
             DigitalTwinSimulator, PlayerAttributes,
         )
         sim = DigitalTwinSimulator()
@@ -125,7 +125,7 @@ if RAY_OK:
     def _ray_run_nash(model_probs: dict, market_odds: dict,
                        match_id: str) -> dict:
         """Nash Dengesi – Ray remote."""
-        from src.quant.nash_solver import NashGameSolver
+        from src.quant.risk.nash_solver import NashGameSolver
         solver = NashGameSolver()
         analysis = solver.analyze_match(model_probs, market_odds, match_id)
         return {
@@ -140,7 +140,7 @@ if RAY_OK:
     def _ray_run_entropy(model_probs: dict, market_odds: dict,
                           match_id: str) -> dict:
         """Entropi analizi – Ray remote."""
-        from src.quant.entropy_meter import EntropyMeter
+        from src.quant.physics.entropy_meter import EntropyMeter
         meter = EntropyMeter()
         report = meter.analyze_match(
             match_id=match_id,
@@ -180,7 +180,7 @@ if RAY_OK:
 def _local_run_digital_twin(home_players: list, away_players: list,
                              match_id: str, n_sims: int) -> dict:
     """Digital Twin – lokal process."""
-    from src.quant.digital_twin_sim import (
+    from src.quant.analysis.digital_twin_sim import (
         DigitalTwinSimulator, PlayerAttributes,
     )
     sim = DigitalTwinSimulator()

@@ -15,13 +15,13 @@ class FeatureStage(PipelineStage):
 
         # Optional Imports
         try:
-            from src.quant.time_decay import ExponentialTimeDecay
+            from src.quant.analysis.time_decay import ExponentialTimeDecay
             self.time_decay = ExponentialTimeDecay(preset="moderate")
         except ImportError:
             self.time_decay = None
 
         try:
-            from src.quant.bayesian_hierarchical import NPxGFilter
+            from src.quant.analysis.bayesian_hierarchical import NPxGFilter
             self.npxg_filter = NPxGFilter()
         except ImportError:
             self.npxg_filter = None

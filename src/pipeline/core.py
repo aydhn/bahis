@@ -33,7 +33,20 @@ class PipelineEngine:
         self.running = True
         cycle = 0
 
+        # Heartbeat setup
+        from pathlib import Path
+        import time
+        heartbeat_file = Path("data/heartbeat.txt")
+        if not heartbeat_file.parent.exists():
+            heartbeat_file.parent.mkdir(parents=True, exist_ok=True)
+
         while not lifecycle.shutdown_event.is_set():
+            # Update Heartbeat
+            try:
+                heartbeat_file.write_text(str(time.time()))
+            except Exception as e:
+                logger.error(f"Heartbeat update failed: {e}")
+
             cycle += 1
             logger.info(f"═══ Pipeline Cycle #{cycle} ═══")
 

@@ -10,8 +10,8 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Dict, Optional
 
-from src.quant.philosophical_engine import EpistemicReport
-from src.quant.volatility_analyzer import VolatilityReport
+from src.quant.analysis.philosophical_engine import EpistemicReport
+from src.quant.risk.volatility_analyzer import VolatilityReport
 
 
 class NarrativeEngine:

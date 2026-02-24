@@ -12,17 +12,17 @@ from src.system.config import settings
 
 # Enterprise Modules
 try:
-    from src.quant.philosophical_engine import PhilosophicalEngine, EpistemicReport
+    from src.quant.analysis.philosophical_engine import PhilosophicalEngine, EpistemicReport
 except ImportError:
     PhilosophicalEngine = None
 
 try:
-    from src.quant.risk import VolatilityAnalyzer, VolatilityReport
+    from src.quant.risk.volatility_analyzer import VolatilityAnalyzer, VolatilityReport
 except ImportError:
     VolatilityAnalyzer = None
 
 try:
-    from src.quant.narrative_engine import NarrativeEngine
+    from src.quant.analysis.narrative_engine import NarrativeEngine
 except ImportError:
     NarrativeEngine = None
 
@@ -55,13 +55,13 @@ class RiskStage(PipelineStage):
 
         # Optional Legacy Engines
         try:
-            from src.quant.risk import CopulaRiskAnalyzer
+            from src.quant.risk.copula_risk import CopulaRiskAnalyzer
             self.copula = CopulaRiskAnalyzer()
         except ImportError:
             self.copula = None
 
         try:
-            from src.quant.risk import EVTRiskManager
+            from src.quant.risk.evt_risk_manager import EVTRiskManager
             self.evt = EVTRiskManager()
         except ImportError:
             self.evt = None

@@ -22,7 +22,7 @@ from src.system.lifecycle import lifecycle
 from src.core.regime_kelly import RegimeKelly, RegimeState
 from src.system.container import container
 from src.core.event_bus import EventBus
-from src.quant.portfolio_manager import PortfolioManager
+from src.quant.risk.portfolio_manager import PortfolioManager
 
 class Sentinel:
     """

@@ -48,7 +48,7 @@ if STREAMLIT_AVAILABLE:
 
     @st.cache_resource
     def get_monte_carlo():
-        from src.quant.monte_carlo_engine import MonteCarloEngine
+        from src.quant.analysis.monte_carlo_engine import MonteCarloEngine
 
         return MonteCarloEngine()
 
@@ -60,7 +60,7 @@ if STREAMLIT_AVAILABLE:
 
     @st.cache_resource
     def get_anomaly():
-        from src.quant.anomaly_detector import AnomalyDetector
+        from src.quant.analysis.anomaly_detector import AnomalyDetector
 
         return AnomalyDetector()
 

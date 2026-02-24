@@ -4,8 +4,8 @@ adapters.py – Mevcut quant modellerini sisteme uyarlayan adapter katmanı.
 from typing import Any, Dict, Optional
 from loguru import logger
 from src.core.interfaces import QuantModel
-from src.quant.benter_model import BenterModel
-from src.quant.lstm_trend import LSTMTrendAnalyzer
+from src.quant.models.benter_model import BenterModel
+from src.quant.models.lstm_trend import LSTMTrendAnalyzer
 
 class BenterAdapter(QuantModel):
     """
