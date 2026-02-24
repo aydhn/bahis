@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     # Environment
     ENV: str = "production"
     DEBUG: bool = False
+    TELEGRAM_ALLOWED_USERS: str = ""
 
     # Database
     DB_PATH: str = "data/football.duckdb"
