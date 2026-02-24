@@ -2,6 +2,7 @@ from typing import Any, Dict, List
 import asyncio
 from loguru import logger
 import polars as pl
+import numpy as np
 
 from src.pipeline.core import PipelineStage
 from src.system.container import container
@@ -10,14 +11,17 @@ from src.ingestion.news_rag import NewsRAGAnalyzer
 from src.quant.models.ensemble import EnsembleModel
 from src.quant.risk.entropy_kelly import EntropyKelly
 from src.quant.analysis.similarity import SimilarityEngine
+from src.quant.analysis.market_sentiment import MarketSentiment
+from src.quant.risk.volatility_modulator import VolatilityModulator
 from src.quant.meta_labeling import MetaLabeler
-import numpy as np
+
 
 class InferenceStage(PipelineStage):
     """
     Quant Models & AI Analysis Engine.
     Uses EnsembleModel for robust predictions and EntropyKelly for uncertainty metrics.
-    Integrated with SimilarityEngine (Pattern Matching) and MetaLabeler (Error Correction).
+    Integrated with SimilarityEngine (Pattern Matching), MarketSentiment (Odds Analysis),
+    and MetaLabeler (Error Correction).
     """
 
     def __init__(self):
@@ -31,10 +35,17 @@ class InferenceStage(PipelineStage):
 
         # Initialize Advanced Quant Engines
         self.similarity_engine = SimilarityEngine()
-        self.similarity_engine.mock_fit() # TODO: Fit on real DB history
+        logger.info("Loading history for Similarity Engine...")
+        self.similarity_engine.load_history()
+
+        self.market_sentiment = MarketSentiment()
 
         self.meta_labeler = MetaLabeler()
-        self.meta_labeler.mock_train() # TODO: Train on real history
+        logger.info("Training Meta-Labeler on DB...")
+        self.meta_labeler.train_on_db()
+
+        # Risk / Regime Context
+        self.volatility_modulator = VolatilityModulator()
 
         # RAG Analyzer (Optional)
         try:
@@ -46,6 +57,12 @@ class InferenceStage(PipelineStage):
         """Parallel analysis for all matches."""
         matches = context.get("matches", pl.DataFrame())
 
+        # Get Global Market Regime once per cycle
+        regime_status = self.volatility_modulator.get_status()
+        kelly_fraction = self.volatility_modulator.get_kelly_fraction()
+
+        logger.info(f"Inference Cycle Start. Regime: {regime_status}")
+
         # Merge mocked features if available (Autonomous Mode)
         features = context.get("features", pl.DataFrame())
         mock_features = context.get("mock_features")
@@ -55,7 +72,6 @@ class InferenceStage(PipelineStage):
                 features = mock_features
                 logger.info("Using Mock Features for Inference.")
             else:
-                # Append? Or override? usually Mock is fallback.
                 pass
 
         if matches.is_empty():
@@ -69,6 +85,11 @@ class InferenceStage(PipelineStage):
         for row in matches.iter_rows(named=True):
             match_feat = feat_map.get(row["match_id"], {})
             full_context = {**row, **match_feat}
+
+            # Inject global regime info
+            full_context["_regime_status"] = regime_status
+            full_context["_kelly_fraction"] = kelly_fraction
+
             tasks.append(self._analyze_single_match(full_context))
 
         results = await asyncio.gather(*tasks, return_exceptions=True)
@@ -98,51 +119,51 @@ class InferenceStage(PipelineStage):
         entropy = self.entropy_calc.calculate_entropy(probs)
         prediction["entropy"] = entropy
 
-        # 3. News RAG (I/O Bound)
-        if self.rag:
-            try:
-                rag_res = await self.rag.analyze_match(
-                    context.get("home_team"),
-                    context.get("away_team")
-                )
-                prediction["news_summary"] = rag_res.get("summary", "")
-                prediction["news_sentiment"] = rag_res.get("sentiment_score", 0.0)
-            except Exception:
-                pass
+        # 3. Market Sentiment (Odds Movement)
+        try:
+            sentiment = self.market_sentiment.analyze_sentiment(match_id)
+            prediction["market_sentiment"] = sentiment
+        except Exception:
+            prediction["market_sentiment"] = {}
 
         # 4. Pattern Matching (Similarity Engine)
         try:
-            # Construct a feature vector from prediction data for now
-            # In production, this should be pre-match technical features
-            feat_vec = np.array([[
-                prediction.get("prob_home", 0.33),
-                prediction.get("prob_draw", 0.33),
-                prediction.get("prob_away", 0.33),
-                prediction.get("home_xg", 1.0),
-                prediction.get("away_xg", 1.0)
-            ]])
-            # Pad if needed to match mock_fit shape (5 features)
-            if feat_vec.shape[1] < 5:
-                feat_vec = np.pad(feat_vec, ((0,0), (0, 5-feat_vec.shape[1])))
+            # Construct feature vector based on ODDS (Market View)
+            # [home_odds, draw_odds, away_odds]
+            h_odd = context.get("home_odds", 2.0)
+            d_odd = context.get("draw_odds", 3.0)
+            a_odd = context.get("away_odds", 3.5)
 
-            similar_matches = self.similarity_engine.find_similar(feat_vec[:, :5])
-            prediction["similar_matches"] = similar_matches
+            feat_vec = np.array([[h_odd, d_odd, a_odd]])
+
+            similar_res = self.similarity_engine.find_similar(feat_vec)
+            prediction["similar_matches"] = similar_res
+
+            # Smart Adjustment: If history says 80% Home Win, but model says 40%, flag it.
+            hist_prob = similar_res.get("historical_probs", {}).get("prob_home", 0.0)
+            prediction["historical_prob_home"] = hist_prob
+
         except Exception as e:
             logger.warning(f"Similarity search failed: {e}")
 
         # 5. Meta-Labeling (Quality Check)
         try:
-            # We need Odds to assess quality properly. Assuming standard 2.0 if missing.
+            # We need Odds to assess quality properly.
             meta_features = {
                 "confidence": max(probs),
                 "entropy": entropy,
-                "odds": context.get("odds_home", 2.0) # Simplified
+                "odds": context.get("home_odds", 2.0), # Assuming Home bet for score calculation, simplified
+                "ev": (max(probs) * context.get("home_odds", 2.0)) - 1.0
             }
             quality_score = self.meta_labeler.predict_score(meta_features)
             prediction["meta_quality_score"] = quality_score
         except Exception as e:
             logger.warning(f"Meta-labeling failed: {e}")
             prediction["meta_quality_score"] = 0.5
+
+        # 6. Inject Risk Context
+        prediction["regime_status"] = context.get("_regime_status", "NORMAL")
+        prediction["kelly_fraction"] = context.get("_kelly_fraction", 1.0)
 
         # Add basic identification
         prediction["match_id"] = match_id
