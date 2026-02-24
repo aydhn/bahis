@@ -35,6 +35,7 @@ from pathlib import Path
 
 import numpy as np
 from loguru import logger
+from src.core.event_bus import Event
 
 
 # ═══════════════════════════════════════════════
@@ -170,12 +171,41 @@ class RegimeKelly:
         self._weekly_returns: deque = deque(maxlen=50)
         self._decisions: list[KellyDecision] = []
         self._circuit_breaker_tripped: bool = False
+        self.current_regime: RegimeState = RegimeState()
 
         logger.info(
             f"[RegimeKelly] Başlatıldı: bankroll={bankroll:.0f}, "
             f"fraction={base_fraction}, min_edge={min_edge:.0%}, "
             f"max_daily_loss={max_daily_loss_pct:.0%}"
         )
+
+    def update_regime(self, event: Event):
+        """Event Bus üzerinden gelen rejim değişikliğini uygula."""
+        data = event.data
+
+        # Volatilite bazlı rejim güncelleme
+        if "volatility" in data:
+            vol = float(data["volatility"])
+            if vol > 0.05:
+                self.current_regime.volatility_regime = "crisis"
+            elif vol > 0.03:
+                self.current_regime.volatility_regime = "storm"
+            elif vol > 0.015:
+                self.current_regime.volatility_regime = "elevated"
+            else:
+                self.current_regime.volatility_regime = "calm"
+
+        # Chaos level bazlı güncelleme
+        if "chaos_level" in data:
+            chaos = float(data["chaos_level"])
+            if chaos > 0.8:
+                self.current_regime.chaos_regime = "chaotic"
+            elif chaos > 0.5:
+                self.current_regime.chaos_regime = "edge_of_chaos"
+            else:
+                self.current_regime.chaos_regime = "stable"
+
+        logger.info(f"[RegimeKelly] Rejim güncellendi: {self.current_regime}")
 
     def calculate(self, probability: float, odds: float,
                     match_id: str = "",
@@ -187,7 +217,7 @@ class RegimeKelly:
             timestamp=datetime.utcnow().isoformat(),
             probability=probability,
             odds=odds,
-            regime=regime or RegimeState(),
+            regime=regime or self.current_regime,
             epistemic_multiplier=epistemic_multiplier,
         )
 

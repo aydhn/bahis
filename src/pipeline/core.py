@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 from typing import Any, Dict
 from loguru import logger
 from src.system.lifecycle import lifecycle
+from src.core.event_bus import EventBus, Event
 
 class PipelineStage(ABC):
     """Abstract base class for pipeline stages."""
@@ -18,10 +19,11 @@ class PipelineStage(ABC):
 class PipelineEngine:
     """Orchestrates the execution of pipeline stages."""
 
-    def __init__(self):
+    def __init__(self, bus: EventBus = None):
         self.stages: list[PipelineStage] = []
         self.context: Dict[str, Any] = {}
         self.running = False
+        self.bus = bus
 
     def add_stage(self, stage: PipelineStage):
         self.stages.append(stage)
@@ -40,8 +42,12 @@ class PipelineEngine:
             # Usually pipelines share state. Let's keep persistent objects in self.context
             # and ephemeral data in a local dict.
 
+            if self.bus:
+                await self.bus.emit(Event(event_type="pipeline_cycle_start", cycle=cycle))
+
             cycle_context = self.context.copy()
             cycle_context["cycle"] = cycle
+            cycle_context["bus"] = self.bus  # Inject EventBus into context
 
             # Initialize BettingContext (Enterprise Grade State)
             try:
@@ -71,8 +77,13 @@ class PipelineEngine:
                         # For now, log and continue to next stage (or next cycle?)
                         # Ideally, use a circuit breaker here.
 
+                if self.bus:
+                    await self.bus.emit(Event(event_type="pipeline_cycle_end", cycle=cycle))
+
             except Exception as e:
                 logger.critical(f"Pipeline crashed: {e}")
+                if self.bus:
+                    await self.bus.emit(Event(event_type="pipeline_crash", data={"error": str(e)}))
                 await asyncio.sleep(5) # Backoff
 
             # Wait for next cycle (e.g. cron schedule or simple sleep)
@@ -83,6 +94,7 @@ class PipelineEngine:
     async def run_once(self):
         """Run a single pass of the pipeline (for CLI/Testing)."""
         cycle_context = self.context.copy()
+        cycle_context["bus"] = self.bus
 
         # Initialize BettingContext
         try:
@@ -99,7 +111,7 @@ class PipelineEngine:
                 cycle_context.update(res)
         return cycle_context
 
-def create_default_pipeline(bot_instance: Any = None) -> PipelineEngine:
+def create_default_pipeline(bot_instance: Any = None, bus: EventBus = None) -> PipelineEngine:
     """Create a pipeline with standard stages."""
     # Lazy imports to avoid circular dependencies
     from src.pipeline.stages.ingestion import IngestionStage
@@ -110,7 +122,7 @@ def create_default_pipeline(bot_instance: Any = None) -> PipelineEngine:
     from src.pipeline.stages.execution import ExecutionStage
     from src.pipeline.stages.reporting import ReportingStage
 
-    engine = PipelineEngine()
+    engine = PipelineEngine(bus=bus)
     engine.add_stage(IngestionStage())
     engine.add_stage(FeatureStage())
     engine.add_stage(InferenceStage())

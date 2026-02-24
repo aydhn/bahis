@@ -33,6 +33,7 @@ except ImportError:
 
 from src.system.config import settings
 from src.reporting.visualizer import Visualizer
+from src.core.event_bus import Event
 
 class TelegramBot:
     """Async Polling tabanlı Telegram Botu."""
@@ -55,6 +56,29 @@ class TelegramBot:
     def set_sentinel(self, sentinel: Any):
         """Sentinel (Orchestrator) bağlantısı."""
         self.sentinel = sentinel
+        if self.sentinel and hasattr(self.sentinel, "bus"):
+            # Olay dinleyicilerini kaydet
+            self.sentinel.bus.subscribe("bet_placed", self.handle_event)
+            self.sentinel.bus.subscribe("risk_alert", self.handle_event)
+            self.sentinel.bus.subscribe("pipeline_crash", self.handle_event)
+
+    async def handle_event(self, event: Event):
+        """Event Bus üzerinden gelen kritik olayları raporla."""
+        if not self.enabled: return
+
+        # Chat ID bul
+        chat_id = os.getenv("TELEGRAM_CHAT_ID")
+        if not chat_id: return
+
+        etype = event.event_type
+        data = event.data
+
+        if etype == "bet_placed":
+            await self.send_bet_signal(data)
+        elif etype == "risk_alert":
+            await self.send_risk_alert("Risk Alert", str(data))
+        elif etype == "pipeline_crash":
+            await self.send_message(chat_id, f"🚨 *Sistem Çökmesi*\n{data.get('error')}")
 
     def set_context(self, ctx: BettingContext):
         """Pipeline'dan gelen güncel context'i al."""
@@ -196,6 +220,19 @@ class TelegramBot:
 
         elif command == "/analyze":
             await self._handle_analyze(chat_id, args)
+
+        elif command == "/portfolio":
+            count = 0
+            if self.sentinel and hasattr(self.sentinel, 'portfolio_manager'):
+                count = len(self.sentinel.portfolio_manager.current_opportunities)
+            await self.send_message(chat_id, f"📊 *Portföy Durumu*\nBekleyen Fırsat: {count}")
+
+        elif command == "/optimize":
+            if self.sentinel and hasattr(self.sentinel, "bus"):
+                await self.sentinel.bus.emit(Event(event_type="pipeline_cycle_end"))
+                await self.send_message(chat_id, "⚙️ Optimizasyon tetiklendi.")
+            else:
+                await self.send_message(chat_id, "❌ Sentinel yok.")
 
     async def _handle_voice(self, msg: Dict[str, Any], chat_id: int):
         """Sesli mesajı işle ve komuta çevir."""
