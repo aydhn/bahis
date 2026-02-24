@@ -3,6 +3,7 @@ streamlit_dashboard.py – Streamlit tabanlı web dashboard.
 Canlı Radar, Value Finder ve Kasa Eğrisi görselleştirmesi.
 Çalıştırma: streamlit run src/ui/streamlit_dashboard.py
 """
+
 from __future__ import annotations
 
 import sys
@@ -18,13 +19,12 @@ import numpy as np
 try:
     import streamlit as st
     import plotly.graph_objects as go
-    import plotly.express as px
+
     STREAMLIT_AVAILABLE = True
 except ImportError:
     STREAMLIT_AVAILABLE = False
 
 if STREAMLIT_AVAILABLE:
-
     # ── Sayfa Ayarları ──
     st.set_page_config(
         page_title="Quant Betting Bot",
@@ -37,30 +37,36 @@ if STREAMLIT_AVAILABLE:
     @st.cache_resource
     def get_db():
         from src.memory.db_manager import DBManager
+
         return DBManager()
 
     @st.cache_resource
     def get_poisson():
         from src.quant.models.poisson_model import PoissonModel
+
         return PoissonModel()
 
     @st.cache_resource
     def get_monte_carlo():
         from src.quant.monte_carlo_engine import MonteCarloEngine
+
         return MonteCarloEngine()
 
     @st.cache_resource
     def get_elo():
         from src.quant.models.elo_glicko_rating import EloGlickoSystem
+
         return EloGlickoSystem()
 
     @st.cache_resource
     def get_anomaly():
         from src.quant.anomaly_detector import AnomalyDetector
+
         return AnomalyDetector()
 
     # ── CSS ──
-    st.markdown("""
+    st.markdown(
+        """
     <style>
     .main {background-color: #0e1117;}
     .metric-card {
@@ -72,13 +78,22 @@ if STREAMLIT_AVAILABLE:
     .value-negative {color: #ff4444; font-weight: bold; font-size: 1.2em;}
     .stMetric {background: #1a1a2e; border-radius: 8px; padding: 10px;}
     </style>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
 
     # ── Sidebar ──
     st.sidebar.title("🏟️ Quant Betting Bot")
     page = st.sidebar.radio(
         "Modül Seçin",
-        ["Dashboard", "Value Finder", "Maç Analizi", "Kasa Eğrisi", "Canlı Radar", "Anomali Tespiti"],
+        [
+            "Dashboard",
+            "Value Finder",
+            "Maç Analizi",
+            "Kasa Eğrisi",
+            "Canlı Radar",
+            "Anomali Tespiti",
+        ],
     )
 
     # ═══════════════════════════════════════════════════
@@ -106,7 +121,17 @@ if STREAMLIT_AVAILABLE:
 
         if not signals.is_empty():
             st.dataframe(
-                signals.select(["match_id", "market", "selection", "odds", "stake_pct", "confidence", "ev"]),
+                signals.select(
+                    [
+                        "match_id",
+                        "market",
+                        "selection",
+                        "odds",
+                        "stake_pct",
+                        "confidence",
+                        "ev",
+                    ]
+                ),
                 use_container_width=True,
                 hide_index=True,
             )
@@ -149,29 +174,39 @@ if STREAMLIT_AVAILABLE:
                 ev_draw = probs["prob_draw"] * do_ - 1
                 ev_away = probs["prob_away"] * ao - 1
 
-                rows.append({
-                    "Maç": f"{home} vs {away}",
-                    "İddaa 1": ho,
-                    "Model 1": round(fair_home, 2),
-                    "EV 1": round(ev_home, 3),
-                    "İddaa X": do_,
-                    "Model X": round(fair_draw, 2),
-                    "EV X": round(ev_draw, 3),
-                    "İddaa 2": ao,
-                    "Model 2": round(fair_away, 2),
-                    "EV 2": round(ev_away, 3),
-                    "En İyi": max(["1", "X", "2"], key=lambda x: {"1": ev_home, "X": ev_draw, "2": ev_away}[x]),
-                    "Value?": "✅" if max(ev_home, ev_draw, ev_away) > 0.02 else "❌",
-                })
+                rows.append(
+                    {
+                        "Maç": f"{home} vs {away}",
+                        "İddaa 1": ho,
+                        "Model 1": round(fair_home, 2),
+                        "EV 1": round(ev_home, 3),
+                        "İddaa X": do_,
+                        "Model X": round(fair_draw, 2),
+                        "EV X": round(ev_draw, 3),
+                        "İddaa 2": ao,
+                        "Model 2": round(fair_away, 2),
+                        "EV 2": round(ev_away, 3),
+                        "En İyi": max(
+                            ["1", "X", "2"],
+                            key=lambda x: {"1": ev_home, "X": ev_draw, "2": ev_away}[x],
+                        ),
+                        "Value?": "✅"
+                        if max(ev_home, ev_draw, ev_away) > 0.02
+                        else "❌",
+                    }
+                )
 
             import pandas as pd
+
             df = pd.DataFrame(rows)
 
             # Renklendirme
             def color_ev(val):
                 if isinstance(val, (int, float)):
                     if val > 0.05:
-                        return "background-color: #00ff88; color: black; font-weight: bold"
+                        return (
+                            "background-color: #00ff88; color: black; font-weight: bold"
+                        )
                     elif val > 0:
                         return "background-color: #88ff88; color: black"
                     else:
@@ -198,9 +233,23 @@ if STREAMLIT_AVAILABLE:
 
         col1, col2 = st.columns(2)
         with col1:
-            home_xg = st.slider("Ev Sahibi xG", 0.5, 3.5, 1.4, 0.1)
+            home_xg = st.slider(
+                "Ev Sahibi xG",
+                0.5,
+                3.5,
+                1.4,
+                0.1,
+                help="Beklenen Gol (Expected Goals): Takımın girdiği gol pozisyonlarının kalitesi ve sayısı.",
+            )
         with col2:
-            away_xg = st.slider("Deplasman xG", 0.5, 3.5, 1.1, 0.1)
+            away_xg = st.slider(
+                "Deplasman xG",
+                0.5,
+                3.5,
+                1.1,
+                0.1,
+                help="Beklenen Gol (Expected Goals): Takımın girdiği gol pozisyonlarının kalitesi ve sayısı.",
+            )
 
         poisson = get_poisson()
         mc = get_monte_carlo()
@@ -209,42 +258,62 @@ if STREAMLIT_AVAILABLE:
         st.subheader("📊 Skor Olasılık Matrisi (Poisson)")
         mat = poisson.score_matrix(home_xg, away_xg)
 
-        fig_heatmap = go.Figure(data=go.Heatmap(
-            z=mat[:6, :6] * 100,
-            x=[f"Dep {i}" for i in range(6)],
-            y=[f"Ev {i}" for i in range(6)],
-            colorscale="YlOrRd",
-            text=np.round(mat[:6, :6] * 100, 1),
-            texttemplate="%{text}%",
-            textfont={"size": 12},
-        ))
+        fig_heatmap = go.Figure(
+            data=go.Heatmap(
+                z=mat[:6, :6] * 100,
+                x=[f"Dep {i}" for i in range(6)],
+                y=[f"Ev {i}" for i in range(6)],
+                colorscale="YlOrRd",
+                text=np.round(mat[:6, :6] * 100, 1),
+                texttemplate="%{text}%",
+                textfont={"size": 12},
+            )
+        )
         fig_heatmap.update_layout(title="Skor Olasılıkları (%)", height=400)
         st.plotly_chart(fig_heatmap, use_container_width=True)
 
         # Monte Carlo
-        st.subheader(f"🎲 Monte Carlo Simülasyonu (10,000 maç)")
+        st.subheader("🎲 Monte Carlo Simülasyonu (10,000 maç)")
         sim = mc.simulate_match(home_xg, away_xg)
 
         col1, col2, col3 = st.columns(3)
         with col1:
-            st.metric("Ev Kazanır", f"{sim['prob_home']:.1%}", f"{sim['home_win_count']:,}")
+            st.metric(
+                "Ev Kazanır", f"{sim['prob_home']:.1%}", f"{sim['home_win_count']:,}"
+            )
         with col2:
             st.metric("Beraberlik", f"{sim['prob_draw']:.1%}", f"{sim['draw_count']:,}")
         with col3:
-            st.metric("Dep Kazanır", f"{sim['prob_away']:.1%}", f"{sim['away_win_count']:,}")
+            st.metric(
+                "Dep Kazanır", f"{sim['prob_away']:.1%}", f"{sim['away_win_count']:,}"
+            )
 
         # Top 10 skor
         st.subheader("🏆 En Olası Skorlar")
         top = sim["top_scores"]
-        fig_bar = go.Figure(data=go.Bar(
-            x=[s["score"] for s in top],
-            y=[s["pct"] * 100 for s in top],
-            marker_color=["#00d4ff" if s["pct"] == max(t["pct"] for t in top) else "#4a9eff" for s in top],
-            text=[f"{s['pct']:.1%}" for s in top],
-            textposition="auto",
-        ))
+        fig_bar = go.Figure(
+            data=go.Bar(
+                x=[s["score"] for s in top],
+                y=[s["pct"] * 100 for s in top],
+                marker_color=[
+                    "#00d4ff" if s["pct"] == max(t["pct"] for t in top) else "#4a9eff"
+                    for s in top
+                ],
+                text=[f"{s['pct']:.1%}" for s in top],
+                textposition="auto",
+            )
+        )
         fig_bar.update_layout(title="En Olası Skorlar (%)", yaxis_title="%", height=350)
         st.plotly_chart(fig_bar, use_container_width=True)
+
+        with st.expander("📊 Bu simülasyon ne anlatıyor?"):
+            st.markdown("""
+            Bu simülasyon iki farklı yaklaşımı birleştirir:
+            1.  **Poisson Dağılımı:** Takımların gol atma potansiyellerine göre saf olasılıkları hesaplar.
+            2.  **Monte Carlo:** Maçı sanal ortamda 10,000 kez oynatarak şans faktörünü simüle eder.
+
+            **Sonuç:** Poisson size "teorik" ihtimali, Monte Carlo ise "pratik" dağılımı gösterir. İkisi birbirini destekliyorsa güven artar.
+            """)
 
     # ═══════════════════════════════════════════════════
     # KASA EĞRİSİ
@@ -259,6 +328,7 @@ if STREAMLIT_AVAILABLE:
         bankroll = 10000 * np.cumprod(1 + daily_returns)
 
         import pandas as pd
+
         dates = pd.date_range("2025-08-01", periods=n_days, freq="D")
         df_equity = pd.DataFrame({"Tarih": dates, "Kasa": bankroll})
 
@@ -267,17 +337,26 @@ if STREAMLIT_AVAILABLE:
 
         # Equity curve
         fig_equity = go.Figure()
-        fig_equity.add_trace(go.Scatter(
-            x=dates, y=bankroll,
-            mode="lines", name="Kasa",
-            line=dict(color="#00d4ff", width=2),
-            fill="tozeroy", fillcolor="rgba(0,212,255,0.1)",
-        ))
-        fig_equity.add_trace(go.Scatter(
-            x=dates, y=peak,
-            mode="lines", name="Peak",
-            line=dict(color="#ffffff", width=1, dash="dot"),
-        ))
+        fig_equity.add_trace(
+            go.Scatter(
+                x=dates,
+                y=bankroll,
+                mode="lines",
+                name="Kasa",
+                line=dict(color="#00d4ff", width=2),
+                fill="tozeroy",
+                fillcolor="rgba(0,212,255,0.1)",
+            )
+        )
+        fig_equity.add_trace(
+            go.Scatter(
+                x=dates,
+                y=peak,
+                mode="lines",
+                name="Peak",
+                line=dict(color="#ffffff", width=1, dash="dot"),
+            )
+        )
         fig_equity.update_layout(
             title="Kasa Eğrisi",
             yaxis_title="₺",
@@ -288,12 +367,17 @@ if STREAMLIT_AVAILABLE:
 
         # Drawdown
         fig_dd = go.Figure()
-        fig_dd.add_trace(go.Scatter(
-            x=dates, y=drawdown * 100,
-            mode="lines", name="Drawdown",
-            line=dict(color="#ff4444", width=2),
-            fill="tozeroy", fillcolor="rgba(255,68,68,0.2)",
-        ))
+        fig_dd.add_trace(
+            go.Scatter(
+                x=dates,
+                y=drawdown * 100,
+                mode="lines",
+                name="Drawdown",
+                line=dict(color="#ff4444", width=2),
+                fill="tozeroy",
+                fillcolor="rgba(255,68,68,0.2)",
+            )
+        )
         fig_dd.update_layout(
             title="Drawdown (%)",
             yaxis_title="%",
@@ -310,7 +394,9 @@ if STREAMLIT_AVAILABLE:
         with col2:
             st.metric("Max Drawdown", f"{drawdown.min():.1%}")
         with col3:
-            sharpe = np.mean(daily_returns) / (np.std(daily_returns) + 1e-10) * np.sqrt(252)
+            sharpe = (
+                np.mean(daily_returns) / (np.std(daily_returns) + 1e-10) * np.sqrt(252)
+            )
             st.metric("Sharpe Ratio", f"{sharpe:.2f}")
         with col4:
             st.metric("Final Kasa", f"₺{bankroll[-1]:,.0f}")
@@ -323,28 +409,39 @@ if STREAMLIT_AVAILABLE:
         st.caption("O an oynanan maçtaki baskı düzeyi (Momentum)")
 
         # Demo radar chart
-        categories = ["Baskı", "Şut", "Korner", "Toplam Pas", "Pas İsabeti", "Hücum Etkinliği"]
+        categories = [
+            "Baskı",
+            "Şut",
+            "Korner",
+            "Toplam Pas",
+            "Pas İsabeti",
+            "Hücum Etkinliği",
+        ]
 
         home_vals = [72, 8, 5, 450, 85, 65]
         away_vals = [28, 4, 3, 310, 78, 42]
 
         fig_radar = go.Figure()
-        fig_radar.add_trace(go.Scatterpolar(
-            r=home_vals + [home_vals[0]],
-            theta=categories + [categories[0]],
-            fill="toself",
-            name="Ev Sahibi",
-            fillcolor="rgba(0, 212, 255, 0.3)",
-            line=dict(color="#00d4ff", width=2),
-        ))
-        fig_radar.add_trace(go.Scatterpolar(
-            r=away_vals + [away_vals[0]],
-            theta=categories + [categories[0]],
-            fill="toself",
-            name="Deplasman",
-            fillcolor="rgba(255, 99, 71, 0.3)",
-            line=dict(color="#ff6347", width=2),
-        ))
+        fig_radar.add_trace(
+            go.Scatterpolar(
+                r=home_vals + [home_vals[0]],
+                theta=categories + [categories[0]],
+                fill="toself",
+                name="Ev Sahibi",
+                fillcolor="rgba(0, 212, 255, 0.3)",
+                line=dict(color="#00d4ff", width=2),
+            )
+        )
+        fig_radar.add_trace(
+            go.Scatterpolar(
+                r=away_vals + [away_vals[0]],
+                theta=categories + [categories[0]],
+                fill="toself",
+                name="Deplasman",
+                fillcolor="rgba(255, 99, 71, 0.3)",
+                line=dict(color="#ff6347", width=2),
+            )
+        )
         fig_radar.update_layout(
             polar=dict(bgcolor="rgba(0,0,0,0)"),
             template="plotly_dark",
@@ -362,7 +459,9 @@ if STREAMLIT_AVAILABLE:
 
         fig_mom = go.Figure()
         colors = ["#00d4ff" if m > 0 else "#ff6347" for m in momentum]
-        fig_mom.add_trace(go.Bar(x=minutes, y=momentum, marker_color=colors, name="Momentum"))
+        fig_mom.add_trace(
+            go.Bar(x=minutes, y=momentum, marker_color=colors, name="Momentum")
+        )
         fig_mom.add_hline(y=0, line_dash="dash", line_color="white")
         fig_mom.update_layout(
             xaxis_title="Dakika",
@@ -383,12 +482,36 @@ if STREAMLIT_AVAILABLE:
         st.subheader("📉 Dropping Odds Uyarıları")
 
         demo_alerts = [
-            {"Maç": "GS vs FB", "Seçim": "1", "Oran": "1.85 → 1.62", "Z-Score": -2.8, "Düşüş": "-12.4%", "Seviye": "🔴 HIGH"},
-            {"Maç": "BJK vs TS", "Seçim": "X", "Oran": "3.40 → 3.10", "Z-Score": -2.2, "Düşüş": "-8.8%", "Seviye": "🟡 MEDIUM"},
-            {"Maç": "Ank vs Kny", "Seçim": "2", "Oran": "2.60 → 2.25", "Z-Score": -3.1, "Düşüş": "-13.5%", "Seviye": "🔴 HIGH"},
+            {
+                "Maç": "GS vs FB",
+                "Seçim": "1",
+                "Oran": "1.85 → 1.62",
+                "Z-Score": -2.8,
+                "Düşüş": "-12.4%",
+                "Seviye": "🔴 HIGH",
+            },
+            {
+                "Maç": "BJK vs TS",
+                "Seçim": "X",
+                "Oran": "3.40 → 3.10",
+                "Z-Score": -2.2,
+                "Düşüş": "-8.8%",
+                "Seviye": "🟡 MEDIUM",
+            },
+            {
+                "Maç": "Ank vs Kny",
+                "Seçim": "2",
+                "Oran": "2.60 → 2.25",
+                "Z-Score": -3.1,
+                "Düşüş": "-13.5%",
+                "Seviye": "🔴 HIGH",
+            },
         ]
         import pandas as pd
-        st.dataframe(pd.DataFrame(demo_alerts), use_container_width=True, hide_index=True)
+
+        st.dataframe(
+            pd.DataFrame(demo_alerts), use_container_width=True, hide_index=True
+        )
 
         # Z-Score dağılımı
         st.subheader("📊 Oran Hareketi Z-Score Dağılımı")
@@ -397,12 +520,22 @@ if STREAMLIT_AVAILABLE:
         anomalies = z_scores[np.abs(z_scores) > 2]
 
         fig_hist = go.Figure()
-        fig_hist.add_trace(go.Histogram(x=z_scores, nbinsx=40, name="Normal", marker_color="#4a9eff"))
-        fig_hist.add_trace(go.Histogram(x=anomalies, nbinsx=20, name="Anomali", marker_color="#ff4444"))
-        fig_hist.add_vline(x=-2, line_dash="dash", line_color="red", annotation_text="Z=-2")
-        fig_hist.add_vline(x=2, line_dash="dash", line_color="red", annotation_text="Z=+2")
+        fig_hist.add_trace(
+            go.Histogram(x=z_scores, nbinsx=40, name="Normal", marker_color="#4a9eff")
+        )
+        fig_hist.add_trace(
+            go.Histogram(x=anomalies, nbinsx=20, name="Anomali", marker_color="#ff4444")
+        )
+        fig_hist.add_vline(
+            x=-2, line_dash="dash", line_color="red", annotation_text="Z=-2"
+        )
+        fig_hist.add_vline(
+            x=2, line_dash="dash", line_color="red", annotation_text="Z=+2"
+        )
         fig_hist.update_layout(
-            barmode="overlay", template="plotly_dark", height=350,
+            barmode="overlay",
+            template="plotly_dark",
+            height=350,
             title="Z-Score Dağılımı (Kırmızı = Anomali)",
         )
         st.plotly_chart(fig_hist, use_container_width=True)
@@ -410,6 +543,7 @@ if STREAMLIT_AVAILABLE:
 else:
     # Streamlit yüklü değilse
     from loguru import logger
+
     logger.warning("Streamlit yüklü değil – dashboard devre dışı.")
 
     def launch():
