@@ -21,6 +21,8 @@ from src.pipeline.core import create_default_pipeline, PipelineEngine
 from src.system.lifecycle import lifecycle
 from src.core.regime_kelly import RegimeKelly, RegimeState
 from src.system.container import container
+from src.core.event_bus import EventBus
+from src.quant.portfolio_manager import PortfolioManager
 
 class Sentinel:
     """
@@ -31,16 +33,27 @@ class Sentinel:
         self.daemon_mode = daemon_mode
         self.running = False
 
+        # 0. Event Bus (Merkezi Sinir Sistemi)
+        self.bus = EventBus()
+        self.portfolio_manager = PortfolioManager(self.bus)
+
         # 1. Bot Entegrasyonu
         self.bot = TelegramBot()
         self.bot.set_sentinel(self)
+        # Botu event bus'a abone yapabiliriz (daha sonra)
 
         # 2. Pipeline Hazırlığı
-        self.pipeline: PipelineEngine = create_default_pipeline(bot_instance=self.bot)
+        self.pipeline: PipelineEngine = create_default_pipeline(
+            bot_instance=self.bot,
+            bus=self.bus
+        )
 
         # 3. Risk Yöneticisi (Shared State via Container)
         # RiskStage ile aynı instance'ı kullandığımızdan emin olmalıyız.
         self.risk_manager = container.get("regime_kelly")
+        if self.risk_manager:
+            self.bus.subscribe("market_regime_update", self.risk_manager.update_regime)
+
         self.portfolio_opt = container.get("portfolio_opt")
 
         # Sinyal Yakalama
