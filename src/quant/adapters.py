@@ -6,6 +6,7 @@ from loguru import logger
 from src.core.interfaces import QuantModel
 from src.quant.models.benter_model import BenterModel
 from src.quant.models.lstm_trend import LSTMTrendAnalyzer
+from src.quant.models.dixon_coles_model import DixonColesModel
 
 class BenterAdapter(QuantModel):
     """
@@ -96,3 +97,32 @@ class LSTMAdapter(QuantModel):
         for _ in range(losses): history.append({"result": "L", "xg": 0.5})
 
         return history
+
+class DixonColesAdapter(QuantModel):
+    """
+    Dixon-Coles Modelini QuantModel arayüzüne uyarlar.
+    """
+    def __init__(self):
+        self.model = DixonColesModel()
+
+    def predict(self, context: Dict[str, Any]) -> Dict[str, Any]:
+        try:
+            home = context.get("home_team", "Home")
+            away = context.get("away_team", "Away")
+            h_xg = context.get("home_xg", 1.35)
+            a_xg = context.get("away_xg", 1.10)
+
+            # Dixon-Coles Predict
+            res = self.model.predict(home, away, h_xg, a_xg)
+
+            return {
+                "model": "dixon_coles",
+                "prob_home": res["prob_home"],
+                "prob_draw": res["prob_draw"],
+                "prob_away": res["prob_away"],
+                "confidence": res["prob_home"] if res["prob_home"] > res["prob_away"] else res["prob_away"],
+                "details": res
+            }
+        except Exception as e:
+            logger.error(f"DixonColesAdapter hatası: {e}")
+            return {"model": "dixon_coles", "error": str(e)}
