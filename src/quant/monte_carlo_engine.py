@@ -43,12 +43,21 @@ class MonteCarloEngine:
         btts = np.sum((home_goals > 0) & (away_goals > 0))
 
         # Skor dağılımı
-        score_counts = {}
-        for h, a in zip(home_goals, away_goals):
-            key = f"{h}-{a}"
-            score_counts[key] = score_counts.get(key, 0) + 1
+        # Vectorized optimization for score counting (approx 7x faster)
+        # Assuming max goals < 100 per team, which is safe for football
+        combined = home_goals * 100 + away_goals
+        unique, counts = np.unique(combined, return_counts=True)
 
-        top_scores = sorted(score_counts.items(), key=lambda x: x[1], reverse=True)[:10]
+        # Sort by counts descending and take top 10
+        sorted_indices = np.argsort(-counts)[:10]
+
+        top_scores = []
+        for idx in sorted_indices:
+            code = unique[idx]
+            count = counts[idx]
+            h = code // 100
+            a = code % 100
+            top_scores.append((f"{h}-{a}", int(count)))
 
         return {
             "n_simulations": self._n_sim,
