@@ -74,7 +74,7 @@ class DependencyContainer:
 
             # --- Quant Engines ---
             elif name == "prob_engine":
-                from src.quant.probabilistic_engine import ProbabilisticEngine
+                from src.quant.analysis.probabilistic_engine import ProbabilisticEngine
                 self._services["prob_engine"] = ProbabilisticEngine()
 
             elif name == "regime_kelly":

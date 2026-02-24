@@ -45,6 +45,8 @@ class TelegramBot:
         self.offset = 0
         self.running = False
         self._task = None
+        self.warroom_task = None
+        self.warroom_active = False
         self.voice_handler = VoiceInterrogator() if VoiceInterrogator else None
         self.bet_history = []  # Son bahisleri sakla (Explain için)
         self.context: Optional[BettingContext] = None # Live Context
@@ -102,6 +104,21 @@ class TelegramBot:
                 await self._task
             except asyncio.CancelledError:
                 pass
+
+    async def _warroom_loop(self, chat_id: int):
+        """High frequency updates."""
+        try:
+            while self.warroom_active and self.running:
+                # Send a pulse every 60s
+                if self.sentinel and hasattr(self.sentinel, "portfolio_manager"):
+                    opps = len(self.sentinel.portfolio_manager.current_opportunities)
+                    cycle = self.context.cycle_id if self.context else "?"
+                    await self.send_message(chat_id, f"📡 *Live Pulse*\nCycle: {cycle}\nOpporunities: {opps}")
+                await asyncio.sleep(60)
+        except asyncio.CancelledError:
+            pass
+        except Exception as e:
+            logger.error(f"Warroom loop error: {e}")
 
     async def _poll_loop(self):
         """Sürekli yeni mesajları kontrol et."""
@@ -191,13 +208,55 @@ class TelegramBot:
 
         elif command == "/status":
             cycle = self.context.cycle_id if self.context else 0
-            await self.send_message(chat_id, f"✅ *Sistem Çalışıyor*\nMod: Otonom\nCycle: #{cycle}\nVeri Akışı: Aktif")
+            warroom = "ON" if self.warroom_active else "OFF"
+            await self.send_message(chat_id, f"✅ *Sistem Çalışıyor*\nMod: Otonom\nCycle: #{cycle}\nWarRoom: {warroom}\nVeri Akışı: Aktif")
+
+        elif command == "/warroom":
+            self.warroom_active = not self.warroom_active
+            if self.warroom_active:
+                self.warroom_task = asyncio.create_task(self._warroom_loop(chat_id))
+                await self.send_message(chat_id, "🚨 *WAR ROOM MODU AKTİF* 🚨\nCanlı akış başlıyor...")
+            else:
+                if self.warroom_task:
+                    self.warroom_task.cancel()
+                await self.send_message(chat_id, "💤 War Room modu kapatıldı.")
+
+        elif command == "/audit":
+            msg = "🔍 *Sistem Denetimi*\n"
+            # 1. Heartbeat Check
+            try:
+                from pathlib import Path
+                import time
+                hb = Path("data/heartbeat.txt")
+                if hb.exists():
+                    delta = time.time() - float(hb.read_text())
+                    msg += f"- Heartbeat: {delta:.1f}s ago {'✅' if delta < 60 else '⚠️'}\n"
+                else:
+                    msg += "- Heartbeat: ❌ (No file)\n"
+            except Exception as e:
+                msg += f"- Heartbeat: Error ({e})\n"
+
+            # 2. Portfolio Manager
+            if self.sentinel and hasattr(self.sentinel, "portfolio_manager"):
+                pm = self.sentinel.portfolio_manager
+                msg += f"- Portfolio Ops: {len(pm.current_opportunities)} pending\n"
+            else:
+                msg += "- Portfolio Ops: ❌ (Unlinked)\n"
+
+            await self.send_message(chat_id, msg)
 
         elif command == "/pnl":
             stats = self._read_bankroll_state()
             pnl = stats.get("pnl", 0.0)
             emoji = "🟢" if pnl >= 0 else "🔴"
-            await self.send_message(chat_id, f"{emoji} *PnL:* {pnl:.2f} TL")
+
+            # Try to get live Kelly stats
+            kelly_msg = ""
+            if self.sentinel and hasattr(self.sentinel, "portfolio_manager"):
+                 k_hist = len(self.sentinel.portfolio_manager.kelly_manager.history)
+                 kelly_msg = f"\nKelly History: {k_hist} bets"
+
+            await self.send_message(chat_id, f"{emoji} *PnL:* {pnl:.2f} TL{kelly_msg}")
 
         elif command == "/risk":
             stats = self._read_bankroll_state()
