@@ -105,6 +105,24 @@ class TelegramBot:
         msg = update.get("message", {})
         chat_id = msg.get("chat", {}).get("id")
 
+        if not chat_id:
+            return
+
+        # --- Security Check ---
+        allowed_users = set()
+        if settings.TELEGRAM_ALLOWED_USERS:
+            allowed_users.update(u.strip() for u in settings.TELEGRAM_ALLOWED_USERS.split(",") if u.strip())
+
+        # Legacy support: TELEGRAM_CHAT_ID is also admin
+        admin_id = os.getenv("TELEGRAM_CHAT_ID")
+        if admin_id:
+            allowed_users.add(str(admin_id))
+
+        if str(chat_id) not in allowed_users:
+            logger.warning(f"Unauthorized access attempt from {chat_id}")
+            return
+        # ----------------------
+
         # Sesli mesaj kontrolü
         if ("voice" in msg or "audio" in msg) and self.voice_handler:
             await self._handle_voice(msg, chat_id)
