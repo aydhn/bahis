@@ -292,7 +292,17 @@ class TelegramBot:
         elif command == "/risk":
             stats = self._read_bankroll_state()
             dd = stats.get("drawdown", 0.0)
-            await self.send_message(chat_id, f"🛡️ *Risk Seviyesi*\nDrawdown: %{dd*100:.2f}")
+
+            # Retrieve regime from sentinel or context if possible
+            regime = "NORMAL"
+            kelly = 1.0
+            if self.context and self.context.ensemble_results:
+                 # Just take the first one as proxy
+                 first = self.context.ensemble_results[0]
+                 regime = first.get("regime_status", "NORMAL")
+                 kelly = first.get("kelly_fraction", 1.0)
+
+            await self.send_message(chat_id, f"🛡️ *Risk Seviyesi*\nDrawdown: %{dd*100:.2f}\nRegime: {regime}\nKelly Scale: {kelly:.2f}x")
 
         elif command == "/chart":
             await self.send_message(chat_id, "📊 *Grafik Hazırlanıyor...*")
@@ -432,6 +442,24 @@ class TelegramBot:
                      prediction=res,
                      entropy=entropy
                  )
+
+                 # Append Advanced Analysis
+                 sim = res.get("similar_matches", {})
+                 if sim:
+                     matches = sim.get("matches", [])
+                     summary = sim.get("summary", {})
+                     story += f"\n\n👻 *Ghost Games ({len(matches)})*\n"
+                     story += f"History: {summary.get('HOME',0)} Home, {summary.get('DRAW',0)} Draw, {summary.get('AWAY',0)} Away"
+
+                 sent = res.get("market_sentiment", {})
+                 if sent and sent.get("direction") != "NEUTRAL":
+                     story += f"\n\n📉 *Market Sentiment*\n{sent.get('details')} ({sent.get('direction')})"
+
+                 # Meta Labeler Quality
+                 qual = res.get("meta_quality_score")
+                 if qual is not None:
+                     story += f"\n\n✅ *Meta-Quality Score:* {qual:.2f}"
+
                  await self.send_message(chat_id, story)
                  return
 

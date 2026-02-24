@@ -156,7 +156,7 @@ class RiskStage(PipelineStage):
                     kelly_decision.rejection_reason = f"Meta-Labeler Rejected (Score: {meta_score:.2f})"
 
                 # 2. Volatility Scaling
-                vol_mult = self.vol_modulator.get_stake_multiplier()
+                vol_mult = self.vol_modulator.get_kelly_fraction()
                 kelly_decision.stake_pct *= vol_mult
 
                 # 3. Cognitive Check

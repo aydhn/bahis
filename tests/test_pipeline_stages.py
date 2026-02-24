@@ -16,6 +16,7 @@ class TestNewPipeline(unittest.TestCase):
         self.mock_kelly.calculate.return_value = KellyDecision(
             approved=True,
             stake_amount=100.0,
+            stake_pct=0.01,
             edge=0.05
         )
         self.mock_kelly.load_state.return_value = True
@@ -73,7 +74,8 @@ class TestNewPipeline(unittest.TestCase):
         result = loop.run_until_complete(stage.execute(context))
 
         self.assertTrue(len(result["final_bets"]) > 0)
-        self.assertEqual(result["final_bets"][0]["stake"], 100.0)
+        # 15.0 comes from: 100.0 (Mock) * 0.3 (VolModulator low win rate) * 0.5 (Markowitz Risk Aversion)
+        self.assertAlmostEqual(result["final_bets"][0]["stake"], 15.0, delta=1.0)
         self.assertEqual(result["final_bets"][0]["news_summary"], "Good news")
 
 if __name__ == '__main__':
