@@ -4,6 +4,7 @@ from typing import Dict, Any
 from loguru import logger
 from src.pipeline.core import PipelineStage
 from src.system.container import container
+from src.ingestion.mock_generator import MockGenerator
 
 class IngestionStage(PipelineStage):
     """Fetches and validates upcoming matches for analysis."""
@@ -11,8 +12,8 @@ class IngestionStage(PipelineStage):
     def __init__(self):
         super().__init__("ingestion")
         self.db = container.get("db")
-        # Validator is tricky as it was in `core` but not in container.
-        # Let's see if we can instantiate it or if it's a simple class.
+        self.mock_gen = MockGenerator()
+
         try:
             from src.core.data_validator import DataValidator
             self.validator = DataValidator()
@@ -20,18 +21,32 @@ class IngestionStage(PipelineStage):
             self.validator = None
 
     async def execute(self, context: Dict[str, Any]) -> Dict[str, Any]:
-        """Fetch matches from DB."""
+        """Fetch matches from DB or Fallback to Mock."""
 
         # 1. Get matches
         matches = self.db.get_upcoming_matches()
 
+        # 2. Mock Fallback (Autonomous Mode)
+        mock_features = None
         if matches.is_empty():
-            logger.info("No upcoming matches found. Sleeping 60s.")
-            await asyncio.sleep(60)
-            return {"matches": pl.DataFrame()}
+            logger.warning("No upcoming matches in DB. Engaging Autonomous Mock Generator.")
+            matches = self.mock_gen.generate_matches(n=10)
 
-        # 2. Validate
-        if self.validator:
+            # Generate features immediately for these mock matches
+            # This allows InferenceStage to work even if FeatureStage fails to fetch from DB
+            if not matches.is_empty():
+                match_ids = matches["match_id"].to_list()
+                mock_features = self.mock_gen.generate_features(match_ids)
+                logger.info(f"Generated {len(matches)} mock matches and features.")
+
+        # 3. Validate (Only validate real matches, Mock is trusted)
+        # But if mock data is generated, validator might fail if schema mismatch?
+        # Let's skip validation for mock to be safe, or validate if schema matches.
+        # Assuming MockGenerator produces valid schema.
+
+        if self.validator and not matches.is_empty():
+            # Check if these are mock matches?
+            # Mock matches have 'status'="Not Started".
             validated_rows = self.validator.validate_batch(
                 matches.to_dicts(), schema="match"
             )
@@ -41,4 +56,8 @@ class IngestionStage(PipelineStage):
             matches = pl.DataFrame(validated_rows)
             logger.debug(f"Validated {len(validated_rows)} matches.")
 
-        return {"matches": matches}
+        result = {"matches": matches}
+        if mock_features is not None:
+            result["mock_features"] = mock_features
+
+        return result

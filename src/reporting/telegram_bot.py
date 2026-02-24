@@ -34,6 +34,7 @@ except ImportError:
 from src.system.config import settings
 from src.reporting.visualizer import Visualizer
 from src.core.event_bus import Event
+from src.quant.analysis.narrative_generator import NarrativeGenerator
 
 class TelegramBot:
     """Async Polling tabanlı Telegram Botu."""
@@ -370,7 +371,23 @@ class TelegramBot:
             await self.send_message(chat_id, self.context.narratives[match_id], parse_mode="Markdown")
             return
 
-        # 2. Volatilite Raporu var mı?
+        # 2. Ensemble Analizi Var mı? (NEW)
+        if self.context.ensemble_results:
+             # Optimize lookup
+             res_map = {r.get("match_id"): r for r in self.context.ensemble_results}
+             res = res_map.get(match_id)
+
+             if res:
+                 entropy = res.get("entropy", 0.5)
+                 story = NarrativeGenerator.generate_story(
+                     match_data={"home_team": res.get("home_team"), "away_team": res.get("away_team")},
+                     prediction=res,
+                     entropy=entropy
+                 )
+                 await self.send_message(chat_id, story)
+                 return
+
+        # 3. Volatilite Raporu var mı?
         if match_id in self.context.volatility_reports:
             vol = self.context.volatility_reports[match_id]
             msg = (

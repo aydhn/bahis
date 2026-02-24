@@ -7,43 +7,56 @@ from src.pipeline.core import PipelineStage
 from src.system.container import container
 from src.core.model_registry import ModelRegistry
 from src.ingestion.news_rag import NewsRAGAnalyzer
+from src.quant.models.ensemble import EnsembleModel
+from src.quant.risk.entropy_kelly import EntropyKelly
 
 class InferenceStage(PipelineStage):
     """
-    Quant Modelleri ve AI Analiz Motoru.
-    Dinamik model yükleme (ModelRegistry) ile çalışır.
+    Quant Models & AI Analysis Engine.
+    Uses EnsembleModel for robust predictions and EntropyKelly for uncertainty metrics.
     """
 
     def __init__(self):
         super().__init__("inference")
 
-        # Modelleri Kaydet
-        ModelRegistry.load_defaults()
-        self.models = ModelRegistry.get_all_models()
+        # Initialize Ensemble Model (Aggregates Benter, Dixon-Coles, LSTM)
+        self.ensemble = EnsembleModel()
 
-        # RAG Analizcisi (Opsiyonel)
+        # Initialize Entropy Calculator
+        self.entropy_calc = EntropyKelly()
+
+        # RAG Analyzer (Optional)
         try:
             self.rag = NewsRAGAnalyzer()
         except Exception:
             self.rag = None
 
     async def execute(self, context: Dict[str, Any]) -> Dict[str, Any]:
-        """Tüm maçlar için paralel analiz yap."""
+        """Parallel analysis for all matches."""
         matches = context.get("matches", pl.DataFrame())
+
+        # Merge mocked features if available (Autonomous Mode)
         features = context.get("features", pl.DataFrame())
+        mock_features = context.get("mock_features")
+
+        if mock_features is not None:
+            if features.is_empty():
+                features = mock_features
+                logger.info("Using Mock Features for Inference.")
+            else:
+                # Append? Or override? usually Mock is fallback.
+                pass
 
         if matches.is_empty():
-            logger.info("Analiz edilecek maç yok.")
+            logger.info("No matches to analyze.")
             return {"ensemble_results": []}
 
         tasks = []
-        # Her maç için feature satırını bul ve analiz et
-        # Optimize: features DataFrame'ini hash map'e çevir (match_id -> row)
+        # Optimize: Create feature map
         feat_map = {row["match_id"]: row for row in features.iter_rows(named=True)}
 
         for row in matches.iter_rows(named=True):
             match_feat = feat_map.get(row["match_id"], {})
-            # Match ve Feature verilerini birleştir
             full_context = {**row, **match_feat}
             tasks.append(self._analyze_single_match(full_context))
 
@@ -54,63 +67,41 @@ class InferenceStage(PipelineStage):
             if isinstance(res, dict):
                 valid_results.append(res)
             elif isinstance(res, Exception):
-                logger.error(f"Maç analizi hatası: {res}")
+                logger.error(f"Match Analysis Error: {res}")
 
         return {"ensemble_results": valid_results}
 
     async def _analyze_single_match(self, context: Dict[str, Any]) -> Dict[str, Any]:
-        """Tek bir maçı tüm modellerle analiz et."""
+        """Analyze a single match using Ensemble and RAG."""
         match_id = context.get("match_id", "Unknown")
 
-        predictions = {
-            "match_id": match_id,
-            "home_team": context.get("home_team"),
-            "away_team": context.get("away_team"),
-            "prob_home": 0.0,
-            "details": {}
-        }
+        # 1. Ensemble Prediction (CPU Bound -> Thread)
+        prediction = await asyncio.to_thread(self.ensemble.predict, context)
 
-        # 1. Quant Modellerini Çalıştır (Parallel execution in thread pool)
-        # CPU-bound işlemleri thread'e atıyoruz
-        model_tasks = [
-            asyncio.to_thread(model.predict, context)
-            for model in self.models
+        # 2. Entropy Calculation
+        probs = [
+            prediction.get("prob_home", 0.0),
+            prediction.get("prob_draw", 0.0),
+            prediction.get("prob_away", 0.0)
         ]
+        entropy = self.entropy_calc.calculate_entropy(probs)
+        prediction["entropy"] = entropy
 
-        model_results = await asyncio.gather(*model_tasks, return_exceptions=True)
-
-        total_prob = 0.0
-        count = 0
-
-        for res in model_results:
-            if isinstance(res, dict) and "prob_home" in res:
-                model_name = res.get("model", "unknown")
-                predictions["details"][model_name] = res
-
-                # Basit ortalama (Ensemble logic buraya daha sonra eklenebilir)
-                prob = res.get("prob_home", 0.5)
-                conf = res.get("confidence", 0.5)
-
-                # Ağırlıklı ortalama
-                weight = conf if conf > 0 else 0.5
-                total_prob += prob * weight
-                count += weight
-
-        if count > 0:
-            predictions["prob_home"] = total_prob / count
-        else:
-            predictions["prob_home"] = 0.5  # Fallback
-
-        # 2. News RAG (I/O Bound)
+        # 3. News RAG (I/O Bound)
         if self.rag:
             try:
                 rag_res = await self.rag.analyze_match(
                     context.get("home_team"),
                     context.get("away_team")
                 )
-                predictions["news_summary"] = rag_res.get("summary", "")
-                predictions["news_sentiment"] = rag_res.get("sentiment_score", 0.0)
+                prediction["news_summary"] = rag_res.get("summary", "")
+                prediction["news_sentiment"] = rag_res.get("sentiment_score", 0.0)
             except Exception:
                 pass
 
-        return predictions
+        # Add basic identification
+        prediction["match_id"] = match_id
+        prediction["home_team"] = context.get("home_team")
+        prediction["away_team"] = context.get("away_team")
+
+        return prediction
