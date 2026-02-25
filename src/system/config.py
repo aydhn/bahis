@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     DB_PATH: str = "data/football.duckdb"
     NEO4J_URI: str = "bolt://localhost:7687"
     NEO4J_USER: str = "neo4j"
-    NEO4J_PASSWORD: str = "password"
+    NEO4J_PASSWORD: Optional[str] = None
 
     # LLM
     LLM_BACKEND: str = "auto"

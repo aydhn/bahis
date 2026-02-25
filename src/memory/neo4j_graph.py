@@ -28,7 +28,7 @@ Sorgular (Cypher):
 from __future__ import annotations
 
 import os
-from typing import Any
+from typing import Optional
 
 from loguru import logger
 
@@ -51,10 +51,10 @@ class Neo4jFootballGraph:
     """
 
     def __init__(self, uri: str = "", user: str = "neo4j",
-                 password: str = ""):
+                 password: Optional[str] = None):
         self._uri = uri or os.getenv("NEO4J_URI", "bolt://localhost:7687")
         self._user = user or os.getenv("NEO4J_USER", "neo4j")
-        self._password = password or os.getenv("NEO4J_PASSWORD", "bahis_graph_2026")
+        self._password = password or os.getenv("NEO4J_PASSWORD")
         self._driver = None
         self._connected = False
         logger.debug(f"Neo4jFootballGraph başlatıldı (uri={self._uri}).")
