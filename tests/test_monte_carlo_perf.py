@@ -2,7 +2,7 @@
 import pytest
 import numpy as np
 import time
-from src.quant.monte_carlo_engine import MonteCarloEngine
+from src.quant.analysis.monte_carlo_engine import MonteCarloEngine
 
 def test_monte_carlo_engine_structure():
     """Test the structure of the simulation result."""

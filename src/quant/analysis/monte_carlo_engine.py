@@ -151,24 +151,56 @@ class MonteCarloEngine:
 
         return {"n_seasons": n_seasons, "champion_probabilities": probs}
 
+    def predict_bulk(self, home_xg: np.ndarray, away_xg: np.ndarray) -> dict:
+        """Vectorized simulation for multiple matches."""
+        n_matches = len(home_xg)
+        # Ensure minimum xG
+        home_xg = np.maximum(home_xg, 0.1)
+        away_xg = np.maximum(away_xg, 0.1)
+
+        # (n_matches, n_sim)
+        # Generate all simulations at once
+        h_sims = self._rng.poisson(home_xg[:, None], size=(n_matches, self._n_sim))
+        a_sims = self._rng.poisson(away_xg[:, None], size=(n_matches, self._n_sim))
+
+        home_wins = np.sum(h_sims > a_sims, axis=1)
+        draws = np.sum(h_sims == a_sims, axis=1)
+        away_wins = np.sum(h_sims < a_sims, axis=1)
+
+        total_goals = h_sims + a_sims
+        over_25 = np.sum(total_goals > 2.5, axis=1)
+        btts = np.sum((h_sims > 0) & (a_sims > 0), axis=1)
+        avg_goals = np.mean(total_goals, axis=1)
+
+        return {
+            "prob_home": home_wins / self._n_sim,
+            "prob_draw": draws / self._n_sim,
+            "prob_away": away_wins / self._n_sim,
+            "prob_over_25": over_25 / self._n_sim,
+            "prob_btts": btts / self._n_sim,
+            "avg_total_goals": avg_goals
+        }
+
     def predict_for_dataframe(self, features: pl.DataFrame) -> pl.DataFrame:
-        """DataFrame üzerinden toplu MC simülasyonu."""
-        results = []
-        for row in features.iter_rows(named=True):
-            mid = row.get("match_id", "")
-            home_xg = row.get("home_xg", 1.3) or 1.3
-            away_xg = row.get("away_xg", 1.1) or 1.1
+        """DataFrame üzerinden toplu MC simülasyonu (Vectorized)."""
+        if features.is_empty():
+            return pl.DataFrame()
 
-            sim = self.simulate_match(home_xg, away_xg)
-            results.append({
-                "match_id": mid,
-                "mc_home": sim["prob_home"],
-                "mc_draw": sim["prob_draw"],
-                "mc_away": sim["prob_away"],
-                "mc_over25": sim["prob_over_25"],
-                "mc_btts": sim["prob_btts"],
-                "mc_avg_goals": sim["avg_total_goals"],
-                "mc_simulations": sim["n_simulations"],
-            })
+        # Handle missing columns or nulls with defaults
+        home_xg = features.get_column("home_xg").fill_null(1.3).to_numpy() if "home_xg" in features.columns else np.full(features.height, 1.3)
+        away_xg = features.get_column("away_xg").fill_null(1.1).to_numpy() if "away_xg" in features.columns else np.full(features.height, 1.1)
+        match_ids = features.get_column("match_id").to_list() if "match_id" in features.columns else [""] * features.height
 
-        return pl.DataFrame(results) if results else pl.DataFrame()
+        # Use vectorized bulk prediction
+        results = self.predict_bulk(home_xg, away_xg)
+
+        return pl.DataFrame({
+            "match_id": match_ids,
+            "mc_home": results["prob_home"],
+            "mc_draw": results["prob_draw"],
+            "mc_away": results["prob_away"],
+            "mc_over25": results["prob_over_25"],
+            "mc_btts": results["prob_btts"],
+            "mc_avg_goals": results["avg_total_goals"],
+            "mc_simulations": np.full(features.height, self._n_sim, dtype=int)
+        })
