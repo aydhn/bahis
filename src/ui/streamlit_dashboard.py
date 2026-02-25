@@ -104,13 +104,30 @@ if STREAMLIT_AVAILABLE:
 
         col1, col2, col3, col4 = st.columns(4)
         with col1:
-            st.metric("Kasa", "₺10,000", "+2.3%")
+            st.metric(
+                "Kasa", "₺10,000", "+2.3%", help="Toplam bakiye ve günlük değişim."
+            )
         with col2:
-            st.metric("Aktif Bahis", "3", "+1")
+            st.metric(
+                "Aktif Bahis",
+                "3",
+                "+1",
+                help="Şu anda açık olan (sonuçlanmamış) bahis sayısı.",
+            )
         with col3:
-            st.metric("Günlük ROI", "+1.8%", "0.5%")
+            st.metric(
+                "Günlük ROI",
+                "+1.8%",
+                "0.5%",
+                help="Günlük Yatırım Getirisi (Return on Investment).",
+            )
         with col4:
-            st.metric("Sharpe Ratio", "1.45", "+0.12")
+            st.metric(
+                "Sharpe Ratio",
+                "1.45",
+                "+0.12",
+                help="Riske göre düzeltilmiş getiri performansı. >1 iyidir, >2 mükemmeldir.",
+            )
 
         st.divider()
 
@@ -144,6 +161,17 @@ if STREAMLIT_AVAILABLE:
     elif page == "Value Finder":
         st.title("💎 Value Finder")
         st.caption("Modelimizin oranı ile İddaa oranı arasındaki farkı gösteren tablo")
+
+        with st.expander("ℹ️ Renk Kodları ve EV Nedir?"):
+            st.markdown("""
+            **EV (Beklenen Değer):** Bahisin uzun vadede ne kadar kârlı olacağını gösterir.
+
+            *   🟢 **Koyu Yeşil:** EV > %5 (Yüksek Değer - Önerilen)
+            *   🟢 **Açık Yeşil:** EV > %0 (Pozitif Değer)
+            *   🔴 **Kırmızı:** EV < %0 (Negatif Değer - Uzak Durun)
+
+            **Formül:** `(Model Olasılığı × Bahis Oranı) - 1`
+            """)
 
         db = get_db()
         matches = db.get_upcoming_matches()
