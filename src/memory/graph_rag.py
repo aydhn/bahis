@@ -26,10 +26,9 @@ Fallback: NetworkX + basit NER + şablon çıkarım
 from __future__ import annotations
 
 import hashlib
-import re
 import time
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Optional
 
 import numpy as np
 from loguru import logger
@@ -228,7 +227,7 @@ class GraphRAG:
 
     def __init__(self, neo4j_uri: str = "bolt://localhost:7687",
                  neo4j_user: str = "neo4j",
-                 neo4j_password: str = "password",
+                 neo4j_password: Optional[str] = None,
                  llm_backend: str = "auto"):
         self._neo4j_uri = neo4j_uri
         self._neo4j_user = neo4j_user
