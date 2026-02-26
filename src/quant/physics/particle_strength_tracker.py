@@ -339,18 +339,27 @@ class ParticleStrengthTracker:
 
         # Beklenen gözlem: güç oranlarından türetilir
         power_ratio = home_power / np.clip(home_power + away_power, 0.01, 2.0)
-        expected = np.column_stack([
-            power_ratio,                    # Şut oranı ~ güç oranı
-            0.3 + 0.4 * power_ratio,        # Top kontrolü ~ güç + bias
-            power_ratio,                    # Atak oranı ~ güç oranı
-            0.4 + 0.2 * power_ratio,        # Korner ~ güç + bias
-        ])
 
-        # Likelihood: Gaussian
-        diff = z[np.newaxis, :] - expected
-        log_likelihood = -0.5 * np.sum(
-            (diff / self._obs_noise) ** 2, axis=1,
-        )
+        # Optimize edilmiş likelihood hesaplaması (vektörize edilmiş)
+        # Orijinal: expected = [p, 0.3+0.4p, p, 0.4+0.2p]
+        # A = [1.0, 0.4, 1.0, 0.2]
+        # B = [0.0, 0.3, 0.0, 0.4]
+        # diff^2 = (z - (p*A + B))^2 = ((z - B) - p*A)^2
+        #        = (z-B)^2 - 2*p*A*(z-B) + p^2*A^2
+
+        A = np.array([1.0, 0.4, 1.0, 0.2])
+        B = np.array([0.0, 0.3, 0.0, 0.4])
+
+        z_prime = z - B
+
+        C0 = np.sum(z_prime**2)
+        C1 = 2 * np.sum(z_prime * A)
+        C2 = np.sum(A**2)  # Scalar: 1 + 0.16 + 1 + 0.04 = 2.2
+
+        # sum_sq_diff = C0 - C1 * p + C2 * p^2
+        sum_sq_diff = C0 - C1 * power_ratio + C2 * (power_ratio**2)
+
+        log_likelihood = -0.5 * sum_sq_diff / (self._obs_noise ** 2)
 
         # Log-weight update (sayısal kararlılık)
         log_weights = np.log(self._weights + 1e-300) + log_likelihood
