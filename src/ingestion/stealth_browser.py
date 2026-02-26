@@ -8,7 +8,10 @@ from __future__ import annotations
 
 import asyncio
 import random
+import sys
+import shutil
 from pathlib import Path
+from typing import Any
 
 from loguru import logger
 
@@ -90,11 +93,33 @@ class StealthBrowser:
         self._active_engine: str = ""
         logger.debug(f"StealthBrowser başlatıldı (engine={engine}).")
 
+    async def check_compatibility(self) -> bool:
+        """Verifies if undetected-chromedriver and Chrome are compatible."""
+        try:
+            import undetected_chromedriver as uc
+            # Basic check: verify Chrome binary exists
+            chrome_path = shutil.which("google-chrome") or shutil.which("chrome") or shutil.which("chromium")
+            if not chrome_path:
+                logger.warning("Chrome binary not found in PATH.")
+                return False
+
+            # Additional version checks could be implemented here
+            # by parsing `google-chrome --version` and uc.__version__
+            return True
+        except ImportError:
+            return False
+        except Exception as e:
+            logger.error(f"Compatibility check failed: {e}")
+            return False
+
     async def start(self):
         """Tarayıcıyı başlatır – anti-detection sırasıyla dener."""
         if self._engine in ("auto", "undetected"):
-            if await self._try_undetected():
-                return
+            if await self.check_compatibility():
+                if await self._try_undetected():
+                    return
+            else:
+                logger.debug("Skipping undetected-chromedriver due to compatibility check.")
 
         if self._engine in ("auto", "playwright"):
             if await self._try_playwright_stealth():
@@ -117,10 +142,17 @@ class StealthBrowser:
             options.add_argument("--disable-dev-shm-usage")
             options.add_argument(f"--window-size={self._fingerprint['viewport']['width']},{self._fingerprint['viewport']['height']}")
 
-            self._browser = uc.Chrome(options=options)
+            # Run in a separate thread because UC is blocking
+            def launch():
+                return uc.Chrome(options=options)
+
+            self._browser = await asyncio.to_thread(launch)
             self._active_engine = "undetected-chromedriver"
             logger.success(f"StealthBrowser: {self._active_engine} başlatıldı.")
             return True
+        except ImportError:
+            logger.debug("undetected-chromedriver not installed.")
+            return False
         except Exception as e:
             logger.debug(f"undetected-chromedriver başlatılamadı: {e}")
             return False
@@ -200,17 +232,58 @@ class StealthBrowser:
 
         try:
             if self._active_engine == "undetected-chromedriver":
-                self._browser.get(url)
+                await asyncio.to_thread(self._browser.get, url)
                 await asyncio.sleep(wait_ms / 1000)
                 return self._browser.page_source
             elif self._page:
-                resp = await self._page.goto(url, wait_until="domcontentloaded",
-                                             timeout=30000)
+                await self._page.goto(url, wait_until="domcontentloaded", timeout=30000)
                 await self._page.wait_for_timeout(wait_ms)
                 return await self._page.content()
         except Exception as e:
             logger.warning(f"StealthBrowser goto hatası ({url[:50]}): {e}")
             return None
+
+    # ─── Etkileşim (Page Actions) ───
+    async def page_action(self, action_type: str, selector: str = "", value: str = ""):
+        """Perform actions like click, type, scroll."""
+        if not self._page and self._active_engine != "undetected-chromedriver":
+            logger.warning("Browser not active or engine not supported for actions.")
+            return
+
+        try:
+            if self._active_engine == "undetected-chromedriver":
+                from selenium.webdriver.common.by import By
+
+                # Simple mapping for selector (heuristic)
+                by = By.CSS_SELECTOR
+                if selector.startswith("//"): by = By.XPATH
+                elif selector.startswith("#"): by = By.ID
+
+                def _perform_selenium():
+                    if action_type == "scroll":
+                        self._browser.execute_script(f"window.scrollBy(0, {value or 300})")
+                    else:
+                        el = self._browser.find_element(by, selector)
+                        if action_type == "click":
+                            el.click()
+                        elif action_type == "type":
+                            el.send_keys(value)
+
+                await asyncio.to_thread(_perform_selenium)
+
+            elif self._page:
+                if action_type == "click":
+                    await self._page.click(selector)
+                elif action_type == "type":
+                    await self._page.fill(selector, value)
+                elif action_type == "scroll":
+                    # Scroll down by value pixels or defaults
+                    await self._page.evaluate(f"window.scrollBy(0, {value or 300})")
+                elif action_type == "wait":
+                    await self._page.wait_for_selector(selector, timeout=5000)
+
+        except Exception as e:
+            logger.warning(f"Page action '{action_type}' failed on '{selector}': {e}")
 
     async def _rotate_fingerprint(self):
         """Fingerprint rotasyonu – yeni kimlik."""
@@ -235,9 +308,12 @@ class StealthBrowser:
     async def close(self):
         try:
             if self._active_engine == "undetected-chromedriver" and self._browser:
-                self._browser.quit()
+                # Quit is blocking
+                await asyncio.to_thread(self._browser.quit)
+                self._browser = None
             elif self._browser:
                 await self._browser.close()
+                self._browser = None
         except Exception:
             pass
 
