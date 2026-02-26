@@ -113,6 +113,7 @@ class RiskStage(PipelineStage):
         # Global Systemic Risk Check via Ricci Flow
         systemic_risk_alert = False
         ricci_report = context.get("ricci_report")
+        systemic_risk_multiplier = 1.0
 
         if ricci_report:
             if ricci_report.kill_betting:
@@ -121,7 +122,11 @@ class RiskStage(PipelineStage):
 
             if ricci_report.stress_level in ["high", "critical"]:
                 systemic_risk_alert = True
-                logger.warning(f"Ricci Flow High Stress: {ricci_report.stress_level}")
+                # Scale down ALL bets based on systemic risk score (0.0 - 1.0, high means risk)
+                # If risk is 0.8, we multiply stake by (1-0.8) = 0.2
+                risk_factor = min(max(ricci_report.systemic_risk, 0.0), 0.9) # Cap at 90% reduction
+                systemic_risk_multiplier = 1.0 - risk_factor
+                logger.warning(f"Ricci Flow High Stress: {ricci_report.stress_level}. Applying global multiplier: {systemic_risk_multiplier:.2f}")
 
         # Physics Reports Map
         chaos_reports = context.get("chaos_reports", {})
@@ -189,7 +194,13 @@ class RiskStage(PipelineStage):
                     match_id=match_id,
                     market_odds_spread=spread
                 )
-                epistemic_score = philo_report.epistemic_score if philo_report.epistemic_approved else 0.0
+
+                # Direct Epistemic Scaling: If we don't "know" enough, we bet less.
+                if philo_report.epistemic_approved:
+                    epistemic_score = philo_report.epistemic_score
+                else:
+                    epistemic_score = 0.0 # If rejected, score is effectively 0 for multiplier logic
+
                 if ctx:
                     ctx.philosophical_reports[match_id] = philo_report
 
@@ -199,7 +210,7 @@ class RiskStage(PipelineStage):
                 odds=odds_home,
                 match_id=match_id,
                 regime=regime,
-                epistemic_multiplier=epistemic_score
+                epistemic_multiplier=epistemic_score # Passed directly to Kelly as multiplier
             )
 
             # --- C2. Advanced Modulators (The Titan Upgrade) ---
@@ -217,9 +228,9 @@ class RiskStage(PipelineStage):
                 # 2.1 Fractal Scaling
                 kelly_decision.stake_pct *= fractal_mult
 
-                # 2.2 Systemic Risk Scaling
+                # 2.2 Systemic Risk Scaling (Global)
                 if systemic_risk_alert:
-                    kelly_decision.stake_pct *= 0.5 # Halve stakes in high stress
+                    kelly_decision.stake_pct *= systemic_risk_multiplier
 
                 # 3. Cognitive Check
                 bet_req = {"stake": kelly_decision.stake_pct, "team": decision.get("home_team")}
@@ -271,7 +282,8 @@ class RiskStage(PipelineStage):
                     "kelly_decision": kelly_decision,
                     "physics": {
                         "chaos": decision.get("chaos_regime", "unknown"),
-                        "fractal": decision.get("fractal_dim", 0.0)
+                        "fractal": decision.get("fractal_dim", 0.0),
+                        "systemic_mult": systemic_risk_multiplier
                     },
                     "pre_mortem_issues": pm_report.reasons if 'pm_report' in locals() and not pm_report.is_clean else []
                 }
@@ -303,6 +315,8 @@ class RiskStage(PipelineStage):
                 # Append Physics Info to Narrative
                 phy = meta.get("physics", {})
                 narrative += f"\n\n⚛️ **Physics Engine**\n- Chaos: {phy.get('chaos')}\n- Fractal Dim: {phy.get('fractal'):.3f}"
+                if phy.get("systemic_mult", 1.0) < 1.0:
+                    narrative += f"\n- Systemic Damping: {phy.get('systemic_mult'):.2f}x (Ricci Flow)"
 
                 pm_issues = meta.get("pre_mortem_issues", [])
                 if pm_issues:

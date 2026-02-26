@@ -132,67 +132,83 @@ class PhysicsStage(PipelineStage):
         if not features.is_empty():
              feat_map = {row["match_id"]: row for row in features.iter_rows(named=True)}
 
-        # 2. Per-Match Analysis
+        # 2. Per-Match Analysis (High-Performance Parallelism)
+        tasks = []
         for row in matches.iter_rows(named=True):
             match_id = row.get("match_id")
             if not match_id: continue
 
-            # A. Chaos Filter (Needs Odds History)
+            # Create a combined task for each match to run physics engines in parallel for that match,
+            # or collect all sub-tasks and run them all at once.
+            # Running all engines for all matches in one giant gather is usually fastest.
+
+            # A. Chaos Filter Task
             if self.chaos_filter:
-                try:
-                    # In a real scenario, fetch history from DB. Here we simulate for consistency.
-                    odds_history = self._simulate_odds_history(match_id)
-                    chaos_rep = self.chaos_filter.analyze(odds_history, match_id=match_id)
-                    results["chaos_reports"][match_id] = chaos_rep
-                except Exception as e:
-                    logger.warning(f"Chaos analysis failed for {match_id}: {e}")
+                tasks.append(self._run_chaos_filter(match_id, results))
 
-            # B. Quantum Brain (Needs Features)
+            # B. Quantum Brain Task
             if self.quantum_brain:
-                try:
-                    # Construct feature vector
-                    feat_row = feat_map.get(match_id, {})
-                    # Select relevant numeric features. Fallback to basic odds if features missing.
-                    if feat_row:
-                        # Extract numerical values only
-                        vec = [v for k, v in feat_row.items() if isinstance(v, (int, float)) and k != "match_id"]
-                        # Pad or truncate to match expected input size if needed (simple heuristic)
-                        vec = vec[:10] if len(vec) > 10 else vec + [0.0]*(10-len(vec))
-                    else:
-                        vec = [row.get("home_odds", 2.0), row.get("draw_odds", 3.0), row.get("away_odds", 3.5)]
+                tasks.append(self._run_quantum_brain(match_id, row, feat_map, results))
 
-                    q_pred = self.quantum_brain.predict_match(vec, match_id=match_id)
-                    results["quantum_predictions"][match_id] = q_pred
-                except Exception as e:
-                    logger.warning(f"Quantum prediction failed for {match_id}: {e}")
-
-            # C. Geometric Intelligence (Needs Features)
+            # C. Geometric Intelligence Task
             if self.geometric_intel:
-                try:
-                    feat_row = feat_map.get(match_id, row) # Fallback to match row if features missing
-                    # GeometricIntelligence expects a specific structure or just a dict/row
-                    # We wrap it in a DataFrame as per the tool definition usually, or pass dict if method supports
-                    # Looking at file trace: compute_potential takes DataFrame.
-                    # We can construct a mini DF for this row.
-                    mini_df = pl.DataFrame([feat_row])
-                    pot_df = self.geometric_intel.compute_potential(mini_df)
-                    if not pot_df.is_empty():
-                        results["geometric_potentials"][match_id] = pot_df.to_dicts()[0]
-                except Exception as e:
-                    logger.warning(f"Geometric analysis failed for {match_id}: {e}")
+                tasks.append(self._run_geometric_intelligence(match_id, row, feat_map, results))
 
-            # D. Particle Strength Tracker (Live/Mock)
+            # D. Particle Strength Tracker Task
             if self.particle_tracker:
-                try:
-                    # Check if match is 'live' (mock logic: if it has a specific flag or just run for all in demo)
-                    # For demo purposes, we run for all or a subset
-                    obs = self._create_mock_observation(match_id, context.get("cycle", 0))
-                    p_rep = self.particle_tracker.update(obs, match_id=match_id)
-                    results["particle_reports"][match_id] = p_rep
-                except Exception as e:
-                    logger.warning(f"Particle tracking failed for {match_id}: {e}")
+                tasks.append(self._run_particle_tracker(match_id, context.get("cycle", 0), results))
+
+        if tasks:
+            await asyncio.gather(*tasks)
 
         return results
+
+    async def _run_chaos_filter(self, match_id: str, results: Dict[str, Any]):
+        """Async wrapper for Chaos Filter."""
+        try:
+            # CPU-bound simulation/calculation should ideally be in a thread,
+            # but for now we wrap the sync call.
+            # If calculations are heavy, use loop.run_in_executor
+            odds_history = await asyncio.to_thread(self._simulate_odds_history, match_id)
+            chaos_rep = await asyncio.to_thread(self.chaos_filter.analyze, odds_history, match_id=match_id)
+            results["chaos_reports"][match_id] = chaos_rep
+        except Exception as e:
+            logger.warning(f"Chaos analysis failed for {match_id}: {e}")
+
+    async def _run_quantum_brain(self, match_id: str, row: Dict, feat_map: Dict, results: Dict[str, Any]):
+        """Async wrapper for Quantum Brain."""
+        try:
+            feat_row = feat_map.get(match_id, {})
+            if feat_row:
+                vec = [v for k, v in feat_row.items() if isinstance(v, (int, float)) and k != "match_id"]
+                vec = vec[:10] if len(vec) > 10 else vec + [0.0]*(10-len(vec))
+            else:
+                vec = [row.get("home_odds", 2.0), row.get("draw_odds", 3.0), row.get("away_odds", 3.5)]
+
+            q_pred = await asyncio.to_thread(self.quantum_brain.predict_match, vec, match_id=match_id)
+            results["quantum_predictions"][match_id] = q_pred
+        except Exception as e:
+            logger.warning(f"Quantum prediction failed for {match_id}: {e}")
+
+    async def _run_geometric_intelligence(self, match_id: str, row: Dict, feat_map: Dict, results: Dict[str, Any]):
+        """Async wrapper for Geometric Intelligence."""
+        try:
+            feat_row = feat_map.get(match_id, row)
+            mini_df = pl.DataFrame([feat_row])
+            pot_df = await asyncio.to_thread(self.geometric_intel.compute_potential, mini_df)
+            if not pot_df.is_empty():
+                results["geometric_potentials"][match_id] = pot_df.to_dicts()[0]
+        except Exception as e:
+            logger.warning(f"Geometric analysis failed for {match_id}: {e}")
+
+    async def _run_particle_tracker(self, match_id: str, cycle: int, results: Dict[str, Any]):
+        """Async wrapper for Particle Strength Tracker."""
+        try:
+            obs = await asyncio.to_thread(self._create_mock_observation, match_id, cycle)
+            p_rep = await asyncio.to_thread(self.particle_tracker.update, obs, match_id=match_id)
+            results["particle_reports"][match_id] = p_rep
+        except Exception as e:
+            logger.warning(f"Particle tracking failed for {match_id}: {e}")
 
     def _simulate_odds_history(self, match_id: str) -> np.ndarray:
         """

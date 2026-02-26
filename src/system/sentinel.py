@@ -10,11 +10,12 @@ Bu modül, tüm sistemi (Pipeline, Risk, Bot) tek bir çatı altında yönetir.
   - Risk modunu dinamik olarak değiştirir.
   - Acil durum komutlarını (Force Bet, Shutdown) uygular.
   - Strategy Evolver ile otonom iyileşme sağlar.
+  - Otonom Risk Regülasyonu: ROI performansına göre risk modunu otomatik ayarlar.
 """
 import asyncio
 import signal
 import sys
-from typing import Optional, Any
+from typing import Optional, Any, Dict
 from loguru import logger
 
 from src.reporting.telegram_bot import TelegramBot
@@ -88,6 +89,11 @@ class Sentinel:
         logger.info("║     SENTINEL OTONOM SİSTEM (v2.1)      ║")
         logger.info("╚════════════════════════════════════════╝")
 
+        # System Integrity Check at Startup
+        if not await self.system_integrity_check():
+            logger.critical("Sentinel: System integrity check failed. Aborting startup.")
+            return
+
         self.running = True
 
         # Botu başlat
@@ -131,7 +137,11 @@ class Sentinel:
                          initial_ctx["ensemble_weights"] = weights
                          initial_ctx["kelly_fraction"] = dna_dict.get("kelly_fraction", 0.25)
 
-                    await self.pipeline.run_once(initial_context=initial_ctx)
+                    cycle_result = await self.pipeline.run_once(initial_context=initial_ctx)
+
+                    # 2.5 Auto Risk Adjustment
+                    if cycle_result and "performance_report" in cycle_result:
+                        await self.auto_adjust_risk(cycle_result["performance_report"])
 
                     # 3. Evolver Check (Her 100 döngüde bir evrim)
                     if cycle_count % 100 == 0:
@@ -149,6 +159,70 @@ class Sentinel:
             logger.critical(f"Sentinel Critical Error: {e}")
         finally:
             await self.shutdown_async()
+
+    async def system_integrity_check(self) -> bool:
+        """Verifies critical components are operational before startup."""
+        logger.info("Sentinel: Performing system integrity check...")
+
+        checks = []
+
+        # 1. DB Connection
+        db = container.get("db")
+        if not db:
+            logger.error("Integrity Check: DB manager not found in container.")
+            return False
+        checks.append("DB Manager: OK")
+
+        # 2. Pipeline Configuration
+        if not self.pipeline or not self.pipeline.stages:
+            logger.error("Integrity Check: Pipeline stages not configured.")
+            return False
+        checks.append(f"Pipeline Stages: {len(self.pipeline.stages)} OK")
+
+        # 3. Risk Manager
+        if not self.risk_manager:
+            logger.warning("Integrity Check: Risk Manager (RegimeKelly) not found. Proceeding with caution.")
+        else:
+            checks.append("Risk Manager: OK")
+
+        logger.info(f"Integrity Check Passed. Components: {', '.join(checks)}")
+        return True
+
+    async def auto_adjust_risk(self, perf_report: Dict[str, Any]):
+        """
+        Autonomously adjusts risk parameters based on real-time performance (ROI).
+        Acts like a Fund Manager regulating exposure.
+        """
+        roi = perf_report.get("roi", 0.0)
+
+        # Current mode logic (could be stored in state, simplified here)
+        # We access risk_manager internal state directly for this autonomous logic
+        if not self.risk_manager: return
+
+        current_base_fraction = self.risk_manager._base_fraction
+        new_mode = None
+
+        if roi < -0.05: # Drawdown > 5%
+            if current_base_fraction > 0.15:
+                logger.warning(f"Sentinel: Auto-Risk Adjustment -> Conservative (ROI {roi:.2%})")
+                self.set_risk_mode("conservative")
+                new_mode = "CONSERVATIVE"
+        elif roi > 0.10: # Profit > 10%
+            if current_base_fraction < 0.35:
+                logger.success(f"Sentinel: Auto-Risk Adjustment -> Aggressive (ROI {roi:.2%})")
+                self.set_risk_mode("aggressive")
+                new_mode = "AGGRESSIVE"
+        elif -0.02 <= roi <= 0.05: # Stable
+             if current_base_fraction != 0.25:
+                 logger.info(f"Sentinel: Auto-Risk Adjustment -> Normal (ROI {roi:.2%})")
+                 self.set_risk_mode("normal")
+                 new_mode = "NORMAL"
+
+        if new_mode and self.bot:
+             await self.bot.send_message(
+                 int(self.bot.token.split(":")[0]) if self.bot.token else 0,
+                 f"🤖 *Otonom Risk Ayarı*\nROI: %{roi*100:.2f}\nYeni Mod: *{new_mode}*"
+             )
 
     async def _run_evolution(self):
         """Strateji evrimini tetikle."""
