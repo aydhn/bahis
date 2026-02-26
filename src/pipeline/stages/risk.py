@@ -11,6 +11,7 @@ from src.core.portfolio_optimizer import PortfolioOptimizer, PortfolioBet
 from src.system.config import settings
 from src.quant.risk.volatility_modulator import VolatilityModulator
 from src.core.cognitive_guardian import CognitiveGuardian
+from src.quant.analysis.pre_mortem import PreMortemAnalyzer
 
 # Enterprise Modules
 try:
@@ -74,6 +75,7 @@ class RiskStage(PipelineStage):
         # New Advanced Engines
         self.vol_modulator = VolatilityModulator()
         self.guardian = CognitiveGuardian()
+        self.pre_mortem = PreMortemAnalyzer()
 
         # Physics Engines
         self.chaos_filter = ChaosFilter() if ChaosFilter else None
@@ -243,6 +245,26 @@ class RiskStage(PipelineStage):
                     kelly_decision.approved = False
                     kelly_decision.rejection_reason = "Cognitive Guardian Blocked (Tilt/Chase)"
 
+                # 4. Pre-Mortem Check (The Devil's Advocate)
+                pm_report = self.pre_mortem.analyze({
+                    "match_id": match_id,
+                    "odds": odds_home,
+                    "prob_model": prob_home,
+                    "ev": kelly_decision.edge,
+                    "selection": "HOME",
+                    "home_odds": odds_home,
+                    # We can fetch draw/away odds if available in full context or ignore for now
+                    "draw_odds": matches.filter(pl.col("match_id") == match_id).select("draw_odds").item() if "draw_odds" in matches.columns else 0.0,
+                    "away_odds": matches.filter(pl.col("match_id") == match_id).select("away_odds").item() if "away_odds" in matches.columns else 0.0,
+                })
+
+                if pm_report.kill_signal:
+                    kelly_decision.approved = False
+                    kelly_decision.rejection_reason = f"Pre-Mortem KILL: {', '.join(pm_report.reasons)}"
+                elif pm_report.caution_signal:
+                    kelly_decision.stake_pct *= 0.5
+                    logger.warning(f"Pre-Mortem Caution {match_id}: Stake reduced 50%. ({pm_report.reasons})")
+
             # --- D. Portfolio Candidates ---
             if kelly_decision.approved:
                 # Create PortfolioBet candidate
@@ -268,7 +290,8 @@ class RiskStage(PipelineStage):
                     "physics": {
                         "chaos": decision.get("chaos_regime", "unknown"),
                         "fractal": decision.get("fractal_dim", 0.0)
-                    }
+                    },
+                    "pre_mortem_issues": pm_report.reasons if 'pm_report' in locals() and not pm_report.is_clean else []
                 }
             else:
                 logger.debug(f"Bet rejected for {match_id}: {kelly_decision.rejection_reason}")
@@ -298,6 +321,10 @@ class RiskStage(PipelineStage):
                 # Append Physics Info to Narrative
                 phy = meta.get("physics", {})
                 narrative += f"\n\n⚛️ **Physics Engine**\n- Chaos: {phy.get('chaos')}\n- Fractal Dim: {phy.get('fractal'):.3f}"
+
+                pm_issues = meta.get("pre_mortem_issues", [])
+                if pm_issues:
+                    narrative += f"\n\n⚠️ **Pre-Mortem Warning**\n" + "\n".join([f"- {i}" for i in pm_issues])
 
                 if ctx:
                     ctx.narratives[match_id] = narrative

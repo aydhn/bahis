@@ -104,9 +104,12 @@ class PipelineEngine:
             # We'll let the stages decide if they need to sleep or if the engine should.
             await asyncio.sleep(1)
 
-    async def run_once(self):
+    async def run_once(self, initial_context: Dict[str, Any] = None):
         """Run a single pass of the pipeline (for CLI/Testing)."""
         cycle_context = self.context.copy()
+        if initial_context:
+            cycle_context.update(initial_context)
+
         cycle_context["bus"] = self.bus
 
         # Initialize BettingContext
