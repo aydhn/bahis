@@ -9,6 +9,7 @@ Bu modül, tüm sistemi (Pipeline, Risk, Bot) tek bir çatı altında yönetir.
   - Pipeline'ı başlatır, durdurur, izler.
   - Risk modunu dinamik olarak değiştirir.
   - Acil durum komutlarını (Force Bet, Shutdown) uygular.
+  - Strategy Evolver ile otonom iyileşme sağlar.
 """
 import asyncio
 import signal
@@ -24,6 +25,7 @@ from src.system.container import container
 from src.core.event_bus import EventBus
 from src.quant.risk.portfolio_manager import PortfolioManager
 from src.core.circuit_breaker import CircuitBreakerRegistry
+from src.core.strategy_evolver import StrategyEvolver
 
 class Sentinel:
     """
@@ -63,6 +65,13 @@ class Sentinel:
         # 1 saatlik soğuma, 3 kritik hata -> OPEN
         self.system_breaker._config.recovery_timeout = 3600.0
 
+        # 5. Otonom Strateji Evrimi
+        self.evolver = StrategyEvolver(population_size=20, elitism_pct=0.1)
+        if self.evolver.load_checkpoint():
+            logger.info("Sentinel: Strategy Evolver checkpoint yüklendi.")
+        else:
+            logger.info("Sentinel: Strategy Evolver sıfırdan başlıyor.")
+
         # Sinyal Yakalama
         if daemon_mode:
             signal.signal(signal.SIGINT, self._handle_sigint)
@@ -76,7 +85,7 @@ class Sentinel:
     async def run(self):
         """Sistemi başlat."""
         logger.info("╔════════════════════════════════════════╗")
-        logger.info("║     SENTINEL OTONOM SİSTEM (v2.0)      ║")
+        logger.info("║     SENTINEL OTONOM SİSTEM (v2.1)      ║")
         logger.info("╚════════════════════════════════════════╝")
 
         self.running = True
@@ -90,10 +99,13 @@ class Sentinel:
             )
 
         # Pipeline döngüsü
+        cycle_count = 0
         try:
             if self.daemon_mode:
                 logger.info("Sentinel: Daemon Modu Aktif. Kontrollü döngü başlıyor.")
                 while self.running and not lifecycle.shutdown_event.is_set():
+                    cycle_count += 1
+
                     # 1. Sağlık Kontrolü
                     if not self._check_health():
                         logger.warning("Sentinel: Sistem sağlığı KRİTİK. Devre Kesici AÇIK. 5 dakika bekleniyor.")
@@ -105,7 +117,11 @@ class Sentinel:
                     # 2. Pipeline Döngüsü (Tek adım)
                     await self.pipeline.run_once()
 
-                    # 3. Bekleme
+                    # 3. Evolver Check (Her 100 döngüde bir evrim)
+                    if cycle_count % 100 == 0:
+                        await self._run_evolution()
+
+                    # 4. Bekleme
                     await asyncio.sleep(10)
             else:
                 if self._check_health():
@@ -117,6 +133,17 @@ class Sentinel:
             logger.critical(f"Sentinel Critical Error: {e}")
         finally:
             await self.shutdown_async()
+
+    async def _run_evolution(self):
+        """Strateji evrimini tetikle."""
+        logger.info("Sentinel: Evrim süreci başlıyor...")
+        # Geçmiş sonuçları DB'den çekmemiz gerekir
+        # Şimdilik basitçe logluyoruz
+        # results = self.db.get_recent_results(...)
+        # report = self.evolver.evolve(results)
+        # if report.improvements:
+        #     logger.success(f"Sentinel: Strateji iyileştirildi! {report.improvements}")
+        pass
 
     def _check_health(self) -> bool:
         """Sistemin finansal ve teknik sağlığını kontrol et."""

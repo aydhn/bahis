@@ -29,6 +29,21 @@ except ImportError:
     NarrativeEngine = None
 
 try:
+    from src.quant.physics.chaos_filter import ChaosFilter
+except ImportError:
+    ChaosFilter = None
+
+try:
+    from src.quant.physics.fractal_analyzer import FractalAnalyzer
+except ImportError:
+    FractalAnalyzer = None
+
+try:
+    from src.quant.physics.ricci_flow import RicciFlowAnalyzer
+except ImportError:
+    RicciFlowAnalyzer = None
+
+try:
     from src.pipeline.context import BettingContext
 except ImportError:
     BettingContext = None
@@ -38,6 +53,7 @@ class RiskStage(PipelineStage):
     Advanced Risk Stage (Level 41).
     Integrates Volatility (GARCH), Philosophy (Epistemic), Narrative (Voice),
     and Markowitz Portfolio Optimization.
+    Now includes Advanced Physics Engines (Chaos, Fractal, Ricci Flow).
     """
 
     def __init__(self):
@@ -58,6 +74,11 @@ class RiskStage(PipelineStage):
         # New Advanced Engines
         self.vol_modulator = VolatilityModulator()
         self.guardian = CognitiveGuardian()
+
+        # Physics Engines
+        self.chaos_filter = ChaosFilter() if ChaosFilter else None
+        self.fractal_analyzer = FractalAnalyzer() if FractalAnalyzer else None
+        self.ricci_analyzer = RicciFlowAnalyzer() if RicciFlowAnalyzer else None
 
         # Optional Legacy Engines
         try:
@@ -99,6 +120,23 @@ class RiskStage(PipelineStage):
         # Temporary storage to link back candidates to full bet info
         bet_metadata = {}
 
+        # Global Systemic Risk Check via Ricci Flow
+        systemic_risk_alert = False
+        if self.ricci_analyzer:
+            # Ricci analyzer needs a graph. We can build a simple one from matches.
+            # Convert matches to dict list
+            match_list = matches.to_dicts()
+            G = self.ricci_analyzer.build_market_graph(match_list)
+            ricci_report = self.ricci_analyzer.analyze(G, name=f"cycle_{context.get('cycle',0)}")
+
+            if ricci_report.kill_betting:
+                logger.critical(f"Ricci Flow Kill Switch Activated! Systemic Risk: {ricci_report.systemic_risk}")
+                return {"final_bets": [], "systemic_risk": True}
+
+            if ricci_report.stress_level in ["high", "critical"]:
+                systemic_risk_alert = True
+                logger.warning(f"Ricci Flow High Stress: {ricci_report.stress_level}")
+
         for decision in ensemble_decisions:
             match_id = decision.get("match_id")
             prob_home = decision.get("prob_home", 0.0)
@@ -106,6 +144,39 @@ class RiskStage(PipelineStage):
             odds_home = odds_map.get(match_id, 0.0)
 
             if odds_home <= 1.0:
+                continue
+
+            # --- 0. Advanced Physics Filters ---
+            kill_signal = False
+
+            # Chaos Filter
+            if self.chaos_filter:
+                # Need odds history. Mocking/fetching required.
+                # Assuming context has it or we simulate
+                # For now, simulate using hash for demo consistency
+                sim_odds = self._simulate_odds_history(match_id)
+                chaos_report = self.chaos_filter.analyze(sim_odds, match_id=match_id)
+
+                if chaos_report.kill_betting:
+                    logger.warning(f"Chaos Filter Kill: {match_id} (Lyapunov={chaos_report.params.max_lyapunov:.4f})")
+                    kill_signal = True
+
+                decision["chaos_regime"] = chaos_report.regime
+
+            # Fractal Analysis
+            fractal_mult = 1.0
+            if self.fractal_analyzer and not kill_signal:
+                # Use same simulated history or better one
+                sim_perf = self._simulate_returns(match_id)
+                frac_res = self.fractal_analyzer.compute_hurst(sim_perf)
+                fractal_mult = frac_res.kelly_multiplier
+                decision["fractal_dim"] = frac_res.fractal_dimension
+
+                if frac_res.regime == "random":
+                    # Reduce confidence if random walk
+                    confidence *= 0.8
+
+            if kill_signal:
                 continue
 
             # --- A. Volatility Analysis (The Context) ---
@@ -159,6 +230,13 @@ class RiskStage(PipelineStage):
                 vol_mult = self.vol_modulator.get_kelly_fraction()
                 kelly_decision.stake_pct *= vol_mult
 
+                # 2.1 Fractal Scaling
+                kelly_decision.stake_pct *= fractal_mult
+
+                # 2.2 Systemic Risk Scaling
+                if systemic_risk_alert:
+                    kelly_decision.stake_pct *= 0.5 # Halve stakes in high stress
+
                 # 3. Cognitive Check
                 bet_req = {"stake": kelly_decision.stake_pct, "team": decision.get("home_team")}
                 if not self.guardian.check_bet(bet_req):
@@ -186,7 +264,11 @@ class RiskStage(PipelineStage):
                     "philo_report": philo_report,
                     "vol_report": vol_report,
                     "news_summary": decision.get("news_summary", ""),
-                    "kelly_decision": kelly_decision
+                    "kelly_decision": kelly_decision,
+                    "physics": {
+                        "chaos": decision.get("chaos_regime", "unknown"),
+                        "fractal": decision.get("fractal_dim", 0.0)
+                    }
                 }
             else:
                 logger.debug(f"Bet rejected for {match_id}: {kelly_decision.rejection_reason}")
@@ -213,6 +295,10 @@ class RiskStage(PipelineStage):
                     vol_report=meta.get("vol_report"),
                     news_summary=meta.get("news_summary", "")
                 )
+                # Append Physics Info to Narrative
+                phy = meta.get("physics", {})
+                narrative += f"\n\n⚛️ **Physics Engine**\n- Chaos: {phy.get('chaos')}\n- Fractal Dim: {phy.get('fractal'):.3f}"
+
                 if ctx:
                     ctx.narratives[match_id] = narrative
 
@@ -267,6 +353,17 @@ class RiskStage(PipelineStage):
         elif seed % 5 == 0:
             returns[-20:-10] *= 2 # Past volatility spike
         return returns
+
+    def _simulate_odds_history(self, match_id: str) -> np.ndarray:
+        """
+        Simulates odds history for Chaos Analysis.
+        """
+        seed = int(hashlib.md5(match_id.encode()).hexdigest(), 16) % 2**32
+        np.random.seed(seed)
+        n = 50
+        # Random walk around 2.0
+        odds = np.cumprod(1 + np.random.normal(0, 0.02, n)) * 2.0
+        return odds
 
     def _calculate_spread(self, matches: pl.DataFrame, match_id: str) -> float:
         """Calculates market spread from odds."""

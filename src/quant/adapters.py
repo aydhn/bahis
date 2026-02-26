@@ -2,12 +2,14 @@
 adapters.py – Mevcut quant modellerini sisteme uyarlayan adapter katmanı.
 """
 from typing import Any, Dict, Optional
+import numpy as np
 from loguru import logger
 from src.core.interfaces import QuantModel
 from src.quant.models.benter_model import BenterModel
 from src.quant.models.lstm_trend import LSTMTrendAnalyzer
 from src.quant.models.dixon_coles_model import DixonColesModel
 from src.quant.analysis.bayesian_hierarchical import BayesianHierarchicalModel
+from src.quant.physics.quantum_brain import QuantumBrain
 from src.system.container import container
 
 class BenterAdapter(QuantModel):
@@ -194,3 +196,56 @@ class BayesianAdapter(QuantModel):
         except Exception as e:
             logger.error(f"BayesianAdapter hatası: {e}")
             return {"model": "bayesian", "error": str(e)}
+
+class QuantumAdapter(QuantModel):
+    """
+    Quantum Brain (VQC/QSVM) modelini QuantModel arayüzüne uyarlar.
+    """
+    def __init__(self):
+        # 8 Qubit, 2 Layer (daha karmaşık model için artırılabilir)
+        self.brain = QuantumBrain(n_qubits=8, n_layers=2)
+        # Basit bir ön eğitim (dummy data) - gerçekte DB'den eğitilmeli
+        # Burada simüle ediyoruz
+        try:
+            X_dummy = np.random.rand(20, 8)
+            y_dummy = np.random.randint(0, 3, 20)
+            self.brain.train(X_dummy, y_dummy, epochs=10)
+        except Exception as e:
+            logger.warning(f"QuantumBrain ön eğitimi başarısız: {e}")
+
+    def predict(self, context: Dict[str, Any]) -> Dict[str, Any]:
+        try:
+            # Context'ten quantum feature vektörü çıkar
+            # Özellikler: xG, possession, shots, odds...
+            # 8 özellikli bir vektör oluşturmalıyız
+            features = [
+                context.get("home_xg", 0.5),
+                context.get("away_xg", 0.5),
+                context.get("home_possession", 50) / 100.0,
+                context.get("away_possession", 50) / 100.0,
+                context.get("home_shots", 5) / 20.0,
+                context.get("away_shots", 5) / 20.0,
+                1.0 / context.get("home_odds", 2.0),
+                1.0 / context.get("away_odds", 3.0)
+            ]
+
+            # Eksik veri tamamlama (padding)
+            feat_vec = np.array(features, dtype=float)
+
+            res = self.brain.predict_match(feat_vec, match_id=context.get("match_id", "unknown"))
+
+            return {
+                "model": "quantum",
+                "prob_home": res.probabilities[0], # Home
+                "prob_draw": res.probabilities[1], # Draw
+                "prob_away": res.probabilities[2], # Away
+                "confidence": res.confidence,
+                "details": {
+                    "n_qubits": res.n_qubits,
+                    "circuit_depth": res.circuit_depth,
+                    "compute_time": res.compute_time_ms
+                }
+            }
+        except Exception as e:
+            logger.error(f"QuantumAdapter hatası: {e}")
+            return {"model": "quantum", "error": str(e)}

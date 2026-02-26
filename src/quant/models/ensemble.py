@@ -2,13 +2,13 @@
 ensemble.py – Quant Model Ensemble & Voting Mechanism.
 
 This module aggregates predictions from multiple quantitative models
-(Benter, Dixon-Coles, LSTM) to produce a robust consensus probability.
+(Benter, Dixon-Coles, LSTM, Bayesian, Quantum) to produce a robust consensus probability.
 """
 from typing import Any, Dict, List
 import numpy as np
 from loguru import logger
 from src.core.interfaces import QuantModel
-from src.quant.adapters import BenterAdapter, LSTMAdapter, DixonColesAdapter, BayesianAdapter
+from src.quant.adapters import BenterAdapter, LSTMAdapter, DixonColesAdapter, BayesianAdapter, QuantumAdapter
 
 class EnsembleModel(QuantModel):
     """
@@ -22,18 +22,21 @@ class EnsembleModel(QuantModel):
 
     def __init__(self):
         self.bayesian = BayesianAdapter()
+        self.quantum = QuantumAdapter()
         self.models: Dict[str, QuantModel] = {
             "benter": BenterAdapter(),
             "lstm": LSTMAdapter(),
             "dixon_coles": DixonColesAdapter(),
-            "bayesian": self.bayesian
+            "bayesian": self.bayesian,
+            "quantum": self.quantum
         }
         # Static weights if confidence is unavailable
         self.weights = {
-            "benter": 0.35,
-            "dixon_coles": 0.30,
+            "benter": 0.30,
+            "dixon_coles": 0.25,
             "lstm": 0.15,
-            "bayesian": 0.20
+            "bayesian": 0.15,
+            "quantum": 0.15
         }
 
     def predict(self, context: Dict[str, Any]) -> Dict[str, Any]:
@@ -76,7 +79,7 @@ class EnsembleModel(QuantModel):
                 probs_away.append(pa)
 
                 # Weighting
-                w = self.weights.get(name, 0.33)
+                w = self.weights.get(name, 0.20)
                 # Boost weight by confidence if available
                 conf = res.get("confidence", 0.5)
                 # Simple boost: w * (0.5 + conf)
