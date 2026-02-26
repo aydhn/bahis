@@ -30,19 +30,9 @@ except ImportError:
     NarrativeEngine = None
 
 try:
-    from src.quant.physics.chaos_filter import ChaosFilter
-except ImportError:
-    ChaosFilter = None
-
-try:
     from src.quant.physics.fractal_analyzer import FractalAnalyzer
 except ImportError:
     FractalAnalyzer = None
-
-try:
-    from src.quant.physics.ricci_flow import RicciFlowAnalyzer
-except ImportError:
-    RicciFlowAnalyzer = None
 
 try:
     from src.pipeline.context import BettingContext
@@ -77,10 +67,8 @@ class RiskStage(PipelineStage):
         self.guardian = CognitiveGuardian()
         self.pre_mortem = PreMortemAnalyzer()
 
-        # Physics Engines
-        self.chaos_filter = ChaosFilter() if ChaosFilter else None
+        # Physics Engines (Legacy/Fallback)
         self.fractal_analyzer = FractalAnalyzer() if FractalAnalyzer else None
-        self.ricci_analyzer = RicciFlowAnalyzer() if RicciFlowAnalyzer else None
 
         # Optional Legacy Engines
         try:
@@ -124,13 +112,9 @@ class RiskStage(PipelineStage):
 
         # Global Systemic Risk Check via Ricci Flow
         systemic_risk_alert = False
-        if self.ricci_analyzer:
-            # Ricci analyzer needs a graph. We can build a simple one from matches.
-            # Convert matches to dict list
-            match_list = matches.to_dicts()
-            G = self.ricci_analyzer.build_market_graph(match_list)
-            ricci_report = self.ricci_analyzer.analyze(G, name=f"cycle_{context.get('cycle',0)}")
+        ricci_report = context.get("ricci_report")
 
+        if ricci_report:
             if ricci_report.kill_betting:
                 logger.critical(f"Ricci Flow Kill Switch Activated! Systemic Risk: {ricci_report.systemic_risk}")
                 return {"final_bets": [], "systemic_risk": True}
@@ -138,6 +122,9 @@ class RiskStage(PipelineStage):
             if ricci_report.stress_level in ["high", "critical"]:
                 systemic_risk_alert = True
                 logger.warning(f"Ricci Flow High Stress: {ricci_report.stress_level}")
+
+        # Physics Reports Map
+        chaos_reports = context.get("chaos_reports", {})
 
         for decision in ensemble_decisions:
             match_id = decision.get("match_id")
@@ -152,13 +139,8 @@ class RiskStage(PipelineStage):
             kill_signal = False
 
             # Chaos Filter
-            if self.chaos_filter:
-                # Need odds history. Mocking/fetching required.
-                # Assuming context has it or we simulate
-                # For now, simulate using hash for demo consistency
-                sim_odds = self._simulate_odds_history(match_id)
-                chaos_report = self.chaos_filter.analyze(sim_odds, match_id=match_id)
-
+            if match_id in chaos_reports:
+                chaos_report = chaos_reports[match_id]
                 if chaos_report.kill_betting:
                     logger.warning(f"Chaos Filter Kill: {match_id} (Lyapunov={chaos_report.params.max_lyapunov:.4f})")
                     kill_signal = True
@@ -380,17 +362,6 @@ class RiskStage(PipelineStage):
         elif seed % 5 == 0:
             returns[-20:-10] *= 2 # Past volatility spike
         return returns
-
-    def _simulate_odds_history(self, match_id: str) -> np.ndarray:
-        """
-        Simulates odds history for Chaos Analysis.
-        """
-        seed = int(hashlib.md5(match_id.encode()).hexdigest(), 16) % 2**32
-        np.random.seed(seed)
-        n = 50
-        # Random walk around 2.0
-        odds = np.cumprod(1 + np.random.normal(0, 0.02, n)) * 2.0
-        return odds
 
     def _calculate_spread(self, matches: pl.DataFrame, match_id: str) -> float:
         """Calculates market spread from odds."""

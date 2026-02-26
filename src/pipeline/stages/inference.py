@@ -78,17 +78,32 @@ class InferenceStage(PipelineStage):
             logger.info("No matches to analyze.")
             return {"ensemble_results": []}
 
+        # Physics Metrics from Context
+        quantum_predictions = context.get("quantum_predictions", {})
+        geometric_potentials = context.get("geometric_potentials", {})
+
         tasks = []
         # Optimize: Create feature map
         feat_map = {row["match_id"]: row for row in features.iter_rows(named=True)}
 
         for row in matches.iter_rows(named=True):
-            match_feat = feat_map.get(row["match_id"], {})
+            match_id = row["match_id"]
+            match_feat = feat_map.get(match_id, {})
             full_context = {**row, **match_feat}
 
             # Inject global regime info
             full_context["_regime_status"] = regime_status
             full_context["_kelly_fraction"] = kelly_fraction
+
+            # Inject Physics Metrics into Context for Ensemble
+            if match_id in quantum_predictions:
+                q_pred = quantum_predictions[match_id]
+                full_context["quantum_conf"] = q_pred.confidence
+                full_context["quantum_prob"] = q_pred.probabilities[0] # Home prob
+
+            if match_id in geometric_potentials:
+                geo_pot = geometric_potentials[match_id]
+                full_context["geometric_dominance"] = geo_pot.get("dominance", 0.0)
 
             tasks.append(self._analyze_single_match(full_context))
 
