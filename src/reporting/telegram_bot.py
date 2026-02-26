@@ -10,6 +10,8 @@ Komutlar:
   /risk    - Risk seviyesi
   /stop    - Acil durdurma (Circuit Breaker)
   /brain   - Quantum Brain & Physics Engine durumu
+  /ceo     - Yönetici özeti (ROI, Regime, Top Picks)
+  /warroom - Canlı operasyon odası (Streaming events)
 """
 import asyncio
 import os
@@ -85,6 +87,8 @@ class TelegramBot:
             self.sentinel.bus.subscribe("bet_placed", self.handle_event)
             self.sentinel.bus.subscribe("risk_alert", self.handle_event)
             self.sentinel.bus.subscribe("pipeline_crash", self.handle_event)
+            self.sentinel.bus.subscribe("pipeline_cycle_start", self.handle_event)
+            self.sentinel.bus.subscribe("pipeline_cycle_end", self.handle_event)
 
     async def handle_event(self, event: Event):
         """Event Bus üzerinden gelen kritik olayları raporla."""
@@ -96,6 +100,26 @@ class TelegramBot:
 
         etype = event.event_type
         data = event.data
+
+        # --- WAR ROOM STREAM ---
+        if self.warroom_active:
+            try:
+                emoji = "🔹"
+                if "start" in etype: emoji = "🟢"
+                elif "end" in etype: emoji = "🏁"
+                elif "alert" in etype: emoji = "🚨"
+                elif "bet" in etype: emoji = "💰"
+
+                msg = f"{emoji} *Event:* `{etype}`"
+                if data:
+                    # Shorten data string
+                    d_str = str(data)[:100]
+                    msg += f"\nData: `{d_str}`"
+
+                await self.send_message(chat_id, msg)
+            except Exception as e:
+                logger.error(f"Warroom stream error: {e}")
+        # -----------------------
 
         if etype == "bet_placed":
             await self.send_bet_signal(data)
@@ -126,21 +150,6 @@ class TelegramBot:
                 await self._task
             except asyncio.CancelledError:
                 pass
-
-    async def _warroom_loop(self, chat_id: int):
-        """High frequency updates."""
-        try:
-            while self.warroom_active and self.running:
-                # Send a pulse every 60s
-                if self.sentinel and hasattr(self.sentinel, "portfolio_manager"):
-                    opps = len(self.sentinel.portfolio_manager.current_opportunities)
-                    cycle = self.context.cycle_id if self.context else "?"
-                    await self.send_message(chat_id, f"📡 *Live Pulse*\nCycle: {cycle}\nOpporunities: {opps}")
-                await asyncio.sleep(60)
-        except asyncio.CancelledError:
-            pass
-        except Exception as e:
-            logger.error(f"Warroom loop error: {e}")
 
     async def _poll_loop(self):
         """Sürekli yeni mesajları kontrol et."""
@@ -201,7 +210,7 @@ class TelegramBot:
         args = parts[1:] if len(parts) > 1 else []
 
         if command == "/start":
-            await self.send_message(chat_id, "🤖 *Otonom Quant Bot Devrede.*\nKomutlar: /status, /pnl, /risk, /brain, /explain, /analyze, /set_risk, /force, /shutdown")
+            await self.send_message(chat_id, "🤖 *Otonom Quant Bot Devrede.*\nKomutlar: /status, /ceo, /warroom, /pnl, /risk, /brain, /explain, /analyze, /set_risk, /force, /shutdown")
 
         elif command == "/set_risk":
             if not self.sentinel:
@@ -242,55 +251,47 @@ class TelegramBot:
 
             await self.send_message(chat_id, f"✅ *Sistem Çalışıyor*\nMod: Otonom\nCycle: #{cycle}\nWarRoom: {warroom}\nCircuit Breaker: {cb_status}\nVeri Akışı: Aktif")
 
-        elif command == "/brief":
-            # Morning Briefing (CEO Dashboard)
-            await self.send_message(chat_id, "☕ *Günaydın, Şef. İşte sabah raporu:*")
+        elif command == "/ceo" or command == "/brief":
+            # Executive Summary
+            await self.send_message(chat_id, "☕ *Yönetici Özeti Hazırlanıyor...*")
 
-            # 1. System Health
-            hb_status = "✅"
-            try:
-                from pathlib import Path
-                import time
-                hb = Path("data/heartbeat.txt")
-                if hb.exists() and time.time() - float(hb.read_text()) < 120:
-                    hb_status = "✅ Canlı"
-                else:
-                    hb_status = "⚠️ Gecikmeli"
-            except: hb_status = "❌ Yok"
+            # 1. Financials
+            stats = self._read_bankroll_state()
+            bankroll = stats.get("bankroll", 0.0)
+            roi = 0.0 # Calculate if possible or fetch from perf report
+            if self.performance_report:
+                roi = self.performance_report.get("roi", 0.0)
 
-            # 2. Market Sentiment (Global)
-            # Fetch from DB or Context
-            sentiment_msg = "Market Sentiment: Nötr 😐"
+            fin_emoji = "🟢" if roi >= 0 else "🔴"
+
+            # 2. Risk Regime
+            regime = "NORMAL"
             if self.context and self.context.ensemble_results:
-                # Simple aggregate of sentiments
-                bullish = sum(1 for r in self.context.ensemble_results if r.get("market_sentiment", {}).get("direction") == "BULLISH")
-                bearish = sum(1 for r in self.context.ensemble_results if r.get("market_sentiment", {}).get("direction") == "BEARISH")
-                if bullish > bearish: sentiment_msg = "Market Sentiment: İştahlı 🐂"
-                elif bearish > bullish: sentiment_msg = "Market Sentiment: Çekingen 🐻"
+                 # Just take the first one as proxy
+                 first = self.context.ensemble_results[0]
+                 regime = first.get("regime_status", "NORMAL")
 
-            # 3. Top Value Picks
-            top_picks = "Henüz fırsat yok."
+            # 3. Top Opportunities
+            top_picks = "Fırsat Yok"
             if self.context and hasattr(self.context, 'final_bets'):
                 bets = sorted(self.context.final_bets, key=lambda x: x.get('confidence', 0) * x.get('ev', 0), reverse=True)[:3]
                 if bets:
-                    top_picks = "\n".join([f"• {b['match_id']} ({b['selection']}) - EV: {b.get('edge', b.get('ev', 0)):.2f}" for b in bets])
+                    top_picks = "\n".join([f"• {b['match_id']} ({b['selection']}) - Odds: {b['odds']}" for b in bets])
 
             msg = (
-                f"📡 *Sistem Durumu*: {hb_status}\n"
-                f"🌍 {sentiment_msg}\n\n"
-                f"💎 *Günün Öne Çıkan Fırsatları:*\n{top_picks}\n\n"
-                f"Bol şans."
+                f"🏛️ *CEO Dashboard*\n\n"
+                f"{fin_emoji} **Finansal**: {bankroll:.2f} TL (ROI: %{roi*100:.2f})\n"
+                f"🛡️ **Rejim**: {regime}\n\n"
+                f"💎 **Top Fırsatlar**:\n{top_picks}\n\n"
+                f"Sistem stabil."
             )
             await self.send_message(chat_id, msg)
 
         elif command == "/warroom":
             self.warroom_active = not self.warroom_active
             if self.warroom_active:
-                self.warroom_task = asyncio.create_task(self._warroom_loop(chat_id))
-                await self.send_message(chat_id, "🚨 *WAR ROOM MODU AKTİF* 🚨\nCanlı akış başlıyor...")
+                await self.send_message(chat_id, "🚨 *WAR ROOM MODU AKTİF* 🚨\nCanlı akış başlıyor... (Pipeline Eventleri)")
             else:
-                if self.warroom_task:
-                    self.warroom_task.cancel()
                 await self.send_message(chat_id, "💤 War Room modu kapatıldı.")
 
         elif command == "/audit":
