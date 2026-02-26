@@ -41,9 +41,24 @@ class EnsembleModel(QuantModel):
 
     def predict(self, context: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Aggregates predictions.
+        Aggregates predictions with Physics Veto and Quantum Boost.
         """
-        # Dynamic Weight Override (Strategy Evolver)
+        # --- 1. Physics Veto (Chaos Filter) ---
+        # If chaos is detected, we might reject the bet immediately or switch to contrarian mode.
+        chaos_regime = context.get("chaos_regime", "unknown")
+
+        if chaos_regime == "chaotic":
+            # If chaotic, return neutral/uncertain result
+            logger.warning(f"Ensemble: Chaos Veto activated for {context.get('match_id')}")
+            return {
+                "prob_home": 0.33, "prob_draw": 0.34, "prob_away": 0.33,
+                "confidence": 0.0,
+                "consensus_score": 0.0,
+                "veto": "chaos",
+                "details": {}
+            }
+
+        # --- 2. Dynamic Weight Override (Strategy Evolver) ---
         if "ensemble_weights" in context:
             try:
                 dynamic_weights = context["ensemble_weights"]
@@ -53,6 +68,13 @@ class EnsembleModel(QuantModel):
                         self.weights[k] = float(v)
             except Exception as e:
                 logger.warning(f"Failed to apply dynamic weights: {e}")
+
+        # --- 3. Quantum Boost ---
+        # If Quantum Brain is highly confident, boost its weight
+        quantum_conf = context.get("quantum_conf", 0.0)
+        if quantum_conf > 0.8:
+            self.weights["quantum"] = self.weights.get("quantum", 0.15) * 2.0
+            logger.info(f"Ensemble: Quantum Boost activated (Conf: {quantum_conf:.2f})")
 
         results = {}
         probs_home = []
