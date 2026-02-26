@@ -385,29 +385,77 @@ class TelegramBot:
 
         elif command == "/brain":
             msg = "🧠 *Quantum Brain & Physics Status*\n"
-            # Quantum Check
+
+            # 1. Quantum Check
             try:
                 from src.quant.physics.quantum_brain import PENNYLANE_OK
                 q_status = "ACTIVE 🟢" if PENNYLANE_OK else "Simulated 🟡"
             except ImportError:
                 q_status = "OFF 🔴"
-            msg += f"- Quantum Engine: {q_status}\n"
 
-            # Physics Check
+            # Get Quantum details from context if available
+            q_conf = "N/A"
+            if self.context:
+                # Support both Object (Pydantic) and Dict access
+                if isinstance(self.context, dict):
+                    q_preds = self.context.get("quantum_predictions", {})
+                else:
+                    q_preds = getattr(self.context, "quantum_predictions", {})
+
+                if q_preds:
+                    avg_conf = sum(p.confidence for p in q_preds.values()) / len(q_preds)
+                    q_conf = f"{avg_conf:.2f}"
+            msg += f"- Quantum Engine: {q_status} (Avg Conf: {q_conf})\n"
+
+            # 2. Chaos Check
             try:
                 from src.quant.physics.chaos_filter import NOLDS_OK
                 c_status = "ACTIVE 🟢" if NOLDS_OK else "Fallback 🟡"
             except ImportError:
                 c_status = "OFF 🔴"
-            msg += f"- Chaos Filter: {c_status}\n"
 
-            # Ricci Check
+            # Get Chaos stats
+            c_regime = "N/A"
+            if self.context:
+                if isinstance(self.context, dict):
+                    c_reps = self.context.get("chaos_reports", {})
+                else:
+                    c_reps = getattr(self.context, "chaos_reports", {})
+
+                if c_reps:
+                    # Show first available match regime as sample
+                    first_k = list(c_reps.keys())[0]
+                    c_regime = f"{c_reps[first_k].regime} (Sample: {first_k})"
+            msg += f"- Chaos Filter: {c_status} [{c_regime}]\n"
+
+            # 3. Ricci Check
             try:
                 from src.quant.physics.ricci_flow import RICCI_LIB_OK
                 r_status = "ACTIVE 🟢" if RICCI_LIB_OK else "Fallback 🟡"
             except ImportError:
                 r_status = "OFF 🔴"
-            msg += f"- Ricci Flow: {r_status}\n"
+
+            r_val = "N/A"
+            if self.context:
+                if isinstance(self.context, dict):
+                    r_rep = self.context.get("ricci_report")
+                else:
+                    r_rep = getattr(self.context, "ricci_report", None)
+
+                if r_rep:
+                    r_val = f"κ={r_rep.avg_curvature:.2f} ({r_rep.stress_level})"
+            msg += f"- Ricci Flow: {r_status} [{r_val}]\n"
+
+            # 4. Particle Check
+            if self.context:
+                if isinstance(self.context, dict):
+                    p_reps = self.context.get("particle_reports", {})
+                else:
+                    p_reps = getattr(self.context, "particle_reports", {})
+
+                p_count = len(p_reps)
+                p_status = f"{p_count} Live" if p_count > 0 else "Idle"
+                msg += f"- Particle Tracker: {p_status}\n"
 
             await self.send_message(chat_id, msg)
 
