@@ -242,6 +242,19 @@ if STREAMLIT_AVAILABLE:
                 return ""
 
             styled = df.style.applymap(color_ev, subset=["EV 1", "EV X", "EV 2"])
+            styled = styled.format(
+                {
+                    "EV 1": "{:.1%}",
+                    "EV X": "{:.1%}",
+                    "EV 2": "{:.1%}",
+                    "İddaa 1": "{:.2f}",
+                    "İddaa X": "{:.2f}",
+                    "İddaa 2": "{:.2f}",
+                    "Model 1": "{:.2f}",
+                    "Model X": "{:.2f}",
+                    "Model 2": "{:.2f}",
+                }
+            )
             st.dataframe(styled, use_container_width=True, hide_index=True)
 
             # Value bahisleri filtrele
