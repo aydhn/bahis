@@ -14,6 +14,8 @@ from src.core.cognitive_guardian import CognitiveGuardian
 from src.quant.analysis.pre_mortem import PreMortemAnalyzer
 from src.quant.finance.treasury import TreasuryEngine
 from src.core.speed_cache import SpeedCache
+from src.quant.risk.physics_modulator import PhysicsRiskModulator
+from src.quant.finance.hedgehog import HedgeHog
 
 # Enterprise Modules
 try:
@@ -30,11 +32,6 @@ try:
     from src.quant.analysis.narrative_engine import NarrativeEngine
 except ImportError:
     NarrativeEngine = None
-
-try:
-    from src.quant.physics.fractal_analyzer import FractalAnalyzer
-except ImportError:
-    FractalAnalyzer = None
 
 try:
     from src.pipeline.context import BettingContext
@@ -70,9 +67,8 @@ class RiskStage(PipelineStage):
         self.pre_mortem = PreMortemAnalyzer()
         self.treasury = TreasuryEngine()
         self.speed_cache = SpeedCache()
-
-        # Physics Engines (Init handled in PhysicsStage, we consume reports)
-        self.fractal_analyzer = FractalAnalyzer() if FractalAnalyzer else None
+        self.physics_modulator = PhysicsRiskModulator()
+        self.hedgehog = HedgeHog()
 
         # Optional Legacy Engines
         try:
@@ -115,21 +111,7 @@ class RiskStage(PipelineStage):
         bet_metadata = {}
 
         # Global Systemic Risk Check via Ricci Flow
-        systemic_risk_alert = False
         ricci_report = context.get("ricci_report")
-        systemic_risk_multiplier = 1.0
-
-        if ricci_report:
-            if ricci_report.kill_betting:
-                logger.critical(f"Ricci Flow Kill Switch Activated! Systemic Risk: {ricci_report.systemic_risk}")
-                return {"final_bets": [], "systemic_risk": True}
-
-            if ricci_report.stress_level in ["high", "critical"]:
-                systemic_risk_alert = True
-                # Scale down ALL bets based on systemic risk score
-                risk_factor = min(max(ricci_report.systemic_risk, 0.0), 0.9)
-                systemic_risk_multiplier = 1.0 - risk_factor
-                logger.warning(f"Ricci Flow High Stress: {ricci_report.stress_level}. Applying global multiplier: {systemic_risk_multiplier:.2f}")
 
         # Physics Reports Map
         physics_reports = context.get("physics_reports", {})
@@ -138,7 +120,6 @@ class RiskStage(PipelineStage):
         topology_reports = physics_reports.get("topology_reports", {})
         path_signatures = physics_reports.get("path_signatures", {})
         homology_reports = physics_reports.get("homology_reports", {})
-        gcn_reports = physics_reports.get("gcn_coordination", {})
 
         for decision in ensemble_decisions:
             match_id = decision.get("match_id")
@@ -149,70 +130,40 @@ class RiskStage(PipelineStage):
             if odds_home <= 1.0:
                 continue
 
-            # --- 0. Advanced Physics Filters ---
-            kill_signal = False
+            # --- 0. Advanced Physics Modulation (Refactored) ---
+            # Construct Physics Context
             physics_context = {}
 
-            # Chaos Filter
+            # Populate Context
             if match_id in chaos_reports:
-                chaos_report = chaos_reports[match_id]
-                if chaos_report.kill_betting:
-                    logger.warning(f"Chaos Filter Kill: {match_id} (Lyapunov={chaos_report.params.max_lyapunov:.4f})")
-                    kill_signal = True
+                physics_context["chaos_regime"] = chaos_reports[match_id].regime
 
-                decision["chaos_regime"] = chaos_report.regime
-                physics_context["chaos_regime"] = chaos_report.regime
-
-            # Topology Mapper (Anomaly Detection)
             if match_id in topology_reports:
-                topo_rep = topology_reports[match_id]
-                if topo_rep.is_anomalous:
-                    logger.warning(f"Topology Mapper Kill: {match_id} (Anomaly Score: {topo_rep.anomaly_score:.2f})")
-                    kill_signal = True # Reject anomalous matches
-                physics_context["topology_cluster"] = topo_rep.assigned_cluster
+                topo = topology_reports[match_id]
+                physics_context["topology_anomaly"] = topo.is_anomalous
+                physics_context["topology_cluster"] = topo.assigned_cluster
 
-            # Fractal Analysis
-            fractal_mult = 1.0
             if match_id in fractal_reports:
-                frac_rep = fractal_reports[match_id]
-                fractal_mult = frac_rep.kelly_multiplier
-                decision["fractal_dim"] = frac_rep.fractal_dimension
-                physics_context["fractal_dim"] = frac_rep.fractal_dimension
+                frac = fractal_reports[match_id]
+                physics_context["fractal_regime"] = frac.regime
+                physics_context["fractal_dim"] = frac.fractal_dimension
+                physics_context["fractal_mult"] = frac.kelly_multiplier # Legacy support
 
-                if frac_rep.regime == "random":
-                    confidence *= 0.8
-
-            # Path Signature (Volatility/Roughness)
-            path_sig_mult = 1.0
             if match_id in path_signatures:
-                sig_data = path_signatures[match_id]
-                roughness = sig_data.get("sig_roughness", 0.0)
-                # High roughness -> Higher uncertainty -> Lower stake
-                if roughness > 0.1:
-                    path_sig_mult = max(0.5, 1.0 - (roughness * 2))
-                physics_context["roughness"] = roughness
+                physics_context["roughness"] = path_signatures[match_id].get("sig_roughness", 0.0)
 
-            # Homology & GCN (Team Coordination)
-            # If Home is organized and Away is panicking -> Boost confidence
-            coord_bonus = 1.0
             if match_id in homology_reports:
-                homo_rep = homology_reports[match_id] # This is a dict from compare_teams
-                # Structure: {'home_org': ..., 'away_panicking': ...}
-                if homo_rep.get("home_org", 0) > 0.6 and homo_rep.get("away_panicking", False):
-                    coord_bonus = 1.2
-                    decision["reason"] = decision.get("reason", "") + " (Homology: Org vs Panic)"
-                elif homo_rep.get("away_org", 0) > 0.6 and homo_rep.get("home_panicking", False):
-                    # Betting on home, but home is panicking? Reduce confidence drastically
-                    coord_bonus = 0.6
+                homo = homology_reports[match_id]
+                physics_context["homology_org_diff"] = homo.get("org_advantage", 0.0)
+                physics_context["home_org"] = homo.get("home_org", 0.0)
+                physics_context["away_panicking"] = homo.get("away_panicking", False)
 
-                physics_context["homology_org_diff"] = homo_rep.get("org_advantage", 0.0)
+            # Apply Modulation
+            physics_multiplier = self.physics_modulator.modulate(decision, physics_context, ricci_report)
 
-            if kill_signal:
+            if physics_multiplier <= 0.0:
+                logger.warning(f"Physics Kill Signal for {match_id}")
                 continue
-
-            # Apply Coordination Bonus to confidence
-            confidence *= coord_bonus
-            confidence = min(confidence, 1.0)
 
             # --- A. Volatility Analysis (The Context) ---
             vol_report = None
@@ -271,22 +222,33 @@ class RiskStage(PipelineStage):
                 vol_mult = self.vol_modulator.get_kelly_fraction()
                 kelly_decision.stake_pct *= vol_mult
 
-                # 2.1 Physics Scaling (Fractal + PathSignature)
-                kelly_decision.stake_pct *= fractal_mult
-                kelly_decision.stake_pct *= path_sig_mult
-
-                # 2.2 Systemic Risk Scaling (Global)
-                if systemic_risk_alert:
-                    kelly_decision.stake_pct *= systemic_risk_multiplier
+                # 2.1 Physics Scaling
+                kelly_decision.stake_pct *= physics_multiplier
 
                 # 3. HedgeHog Logic (Real-time Hedging)
                 # Check SpeedCache for real-time odds diffs (e.g. from API Hijacker stream)
-                # If market odds significantly diverged since inference, adjust or hedge.
-                # Simplified: Check if current odds from SpeedCache are very different from DB odds
                 latest_odds = self.speed_cache.get(f"odds_{match_id}")
-                if latest_odds and abs(latest_odds - odds_home) > 0.2:
-                    logger.warning(f"HedgeHog: Real-time odds shift for {match_id} ({odds_home} -> {latest_odds})")
-                    # Could trigger re-calc, for now just log
+                if latest_odds:
+                    # Construct a mock position to check for opportunity
+                    # Assuming we are about to enter this position
+                    mock_pos = {
+                        "match_id": match_id,
+                        "selection": "HOME",
+                        "stake": kelly_decision.stake_amount, # Estimate
+                        "odds": odds_home
+                    }
+
+                    # NOTE: Here we usually check existing positions, but we can also check if
+                    # the current opportunity has drifted so much that we should wait or arbitrage.
+                    # For simplicity, if odds drifted favourably (higher) before we bet, we might bet more?
+                    # Or if they dropped (lower), we missed the boat?
+
+                    if abs(latest_odds - odds_home) > 0.2:
+                        logger.warning(f"HedgeHog: Real-time odds shift for {match_id} ({odds_home} -> {latest_odds})")
+                        # If odds dropped significantly (value gone?), maybe reduce stake
+                        if latest_odds < odds_home * 0.9:
+                            kelly_decision.stake_pct *= 0.8
+                            logger.info("HedgeHog: Odds dropped before execution. Reducing stake.")
 
                 # 4. Cognitive Check
                 bet_req = {"stake": kelly_decision.stake_pct, "team": decision.get("home_team")}
@@ -339,7 +301,7 @@ class RiskStage(PipelineStage):
                     "physics": {
                         "chaos": physics_context.get('chaos_regime', "unknown"),
                         "fractal": physics_context.get('fractal_dim', 0.0),
-                        "systemic_mult": systemic_risk_multiplier,
+                        "physics_mult": physics_multiplier,
                         "roughness": physics_context.get("roughness", 0.0),
                         "org_diff": physics_context.get("homology_org_diff", 0.0)
                     },
@@ -392,8 +354,8 @@ class RiskStage(PipelineStage):
                 narrative += f"\n\n⚛️ **Deep Physics**\n- Chaos: {phy.get('chaos')}\n- Fractal Dim: {phy.get('fractal'):.3f}"
                 if phy.get("roughness", 0) > 0:
                     narrative += f"\n- Path Roughness: {phy.get('roughness'):.3f}"
-                if phy.get("systemic_mult", 1.0) < 1.0:
-                    narrative += f"\n- Systemic Damping: {phy.get('systemic_mult'):.2f}x (Ricci Flow)"
+                if phy.get("physics_mult", 1.0) < 1.0:
+                    narrative += f"\n- Physics Modulation: {phy.get('physics_mult'):.2f}x"
 
                 pm_issues = meta.get("pre_mortem_issues", [])
                 if pm_issues:
