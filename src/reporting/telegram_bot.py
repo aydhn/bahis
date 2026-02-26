@@ -230,7 +230,16 @@ class TelegramBot:
         elif command == "/status":
             cycle = self.context.cycle_id if self.context else 0
             warroom = "ON" if self.warroom_active else "OFF"
-            await self.send_message(chat_id, f"✅ *Sistem Çalışıyor*\nMod: Otonom\nCycle: #{cycle}\nWarRoom: {warroom}\nVeri Akışı: Aktif")
+
+            # Circuit Breaker Durumu
+            cb_status = "Bilinmiyor"
+            if self.sentinel and hasattr(self.sentinel, "system_breaker"):
+                 if self.sentinel.system_breaker.is_available:
+                     cb_status = "✅ HEALTHY"
+                 else:
+                     cb_status = "🔴 TRIPPED (Safe Mode)"
+
+            await self.send_message(chat_id, f"✅ *Sistem Çalışıyor*\nMod: Otonom\nCycle: #{cycle}\nWarRoom: {warroom}\nCircuit Breaker: {cb_status}\nVeri Akışı: Aktif")
 
         elif command == "/warroom":
             self.warroom_active = not self.warroom_active
@@ -459,6 +468,14 @@ class TelegramBot:
                  qual = res.get("meta_quality_score")
                  if qual is not None:
                      story += f"\n\n✅ *Meta-Quality Score:* {qual:.2f}"
+
+                 # Bayesian Insight
+                 details = res.get("details", {})
+                 if "bayesian" in details:
+                     bay = details["bayesian"]
+                     conf = bay.get("confidence", 0.0)
+                     prob = bay.get("prob_home", 0.0)
+                     story += f"\n\n🔮 *Bayesian Insight*\nProb: %{prob*100:.1f}\nConf: %{conf*100:.1f} (Shrinkage: {1-conf:.2f})"
 
                  await self.send_message(chat_id, story)
                  return

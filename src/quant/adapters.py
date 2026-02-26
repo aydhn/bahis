@@ -7,6 +7,8 @@ from src.core.interfaces import QuantModel
 from src.quant.models.benter_model import BenterModel
 from src.quant.models.lstm_trend import LSTMTrendAnalyzer
 from src.quant.models.dixon_coles_model import DixonColesModel
+from src.quant.analysis.bayesian_hierarchical import BayesianHierarchicalModel
+from src.system.container import container
 
 class BenterAdapter(QuantModel):
     """
@@ -126,3 +128,69 @@ class DixonColesAdapter(QuantModel):
         except Exception as e:
             logger.error(f"DixonColesAdapter hatası: {e}")
             return {"model": "dixon_coles", "error": str(e)}
+
+class BayesianAdapter(QuantModel):
+    """
+    Bayesian Hiyerarşik Modeli QuantModel arayüzüne uyarlar.
+    """
+    def __init__(self):
+        self.model = BayesianHierarchicalModel()
+        self.trained = False
+
+    def train(self):
+        """Historical maçlarla modeli eğit."""
+        if self.trained:
+            return
+
+        db = container.get("db")
+        if not db:
+            logger.warning("BayesianAdapter: DB yok, eğitim atlanıyor.")
+            return
+
+        try:
+            # Son 500 maçı çek (gol sayıları gerekli)
+            # Not: status='Finished' veya benzeri bir kontrol
+            df = db.query("""
+                SELECT home_team as home, away_team as away,
+                       home_score as home_goals, away_score as away_goals
+                FROM matches
+                WHERE status IN ('Finished', 'FT')
+                ORDER BY match_date DESC
+                LIMIT 500
+            """)
+
+            if not df.is_empty():
+                matches = df.to_dicts()
+                self.model.batch_update(matches)
+                self.trained = True
+                logger.info(f"Bayesian Model {len(matches)} maç ile eğitildi.")
+        except Exception as e:
+            # DB hatası olabilir, yutalım ama loglayalım
+            logger.error(f"Bayesian eğitimi hatası: {e}")
+
+    def predict(self, context: Dict[str, Any]) -> Dict[str, Any]:
+        try:
+            if not self.trained:
+                self.train()
+
+            home = context.get("home_team", "Home")
+            away = context.get("away_team", "Away")
+
+            res = self.model.predict(home, away)
+
+            # Confidence: Shrinkage ne kadar azsa (veri çoksa) o kadar güvenli
+            # shrinkage_home = 1.0 -> 0 veri, Full Prior
+            avg_shrinkage = (res.get("shrinkage_home", 0.5) + res.get("shrinkage_away", 0.5)) / 2
+            confidence = 1.0 - avg_shrinkage
+
+            return {
+                "model": "bayesian",
+                "prob_home": res["prob_home"],
+                "prob_draw": res["prob_draw"],
+                "prob_away": res["prob_away"],
+                "confidence": confidence,
+                "details": res
+            }
+        except Exception as e:
+            logger.error(f"BayesianAdapter hatası: {e}")
+            return {"model": "bayesian", "error": str(e)}
