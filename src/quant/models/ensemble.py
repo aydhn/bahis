@@ -43,6 +43,17 @@ class EnsembleModel(QuantModel):
         """
         Aggregates predictions.
         """
+        # Dynamic Weight Override (Strategy Evolver)
+        if "ensemble_weights" in context:
+            try:
+                dynamic_weights = context["ensemble_weights"]
+                # Normalize keys just in case
+                for k, v in dynamic_weights.items():
+                    if k in self.weights:
+                        self.weights[k] = float(v)
+            except Exception as e:
+                logger.warning(f"Failed to apply dynamic weights: {e}")
+
         results = {}
         probs_home = []
         probs_draw = []

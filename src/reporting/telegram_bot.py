@@ -242,6 +242,47 @@ class TelegramBot:
 
             await self.send_message(chat_id, f"✅ *Sistem Çalışıyor*\nMod: Otonom\nCycle: #{cycle}\nWarRoom: {warroom}\nCircuit Breaker: {cb_status}\nVeri Akışı: Aktif")
 
+        elif command == "/brief":
+            # Morning Briefing (CEO Dashboard)
+            await self.send_message(chat_id, "☕ *Günaydın, Şef. İşte sabah raporu:*")
+
+            # 1. System Health
+            hb_status = "✅"
+            try:
+                from pathlib import Path
+                import time
+                hb = Path("data/heartbeat.txt")
+                if hb.exists() and time.time() - float(hb.read_text()) < 120:
+                    hb_status = "✅ Canlı"
+                else:
+                    hb_status = "⚠️ Gecikmeli"
+            except: hb_status = "❌ Yok"
+
+            # 2. Market Sentiment (Global)
+            # Fetch from DB or Context
+            sentiment_msg = "Market Sentiment: Nötr 😐"
+            if self.context and self.context.ensemble_results:
+                # Simple aggregate of sentiments
+                bullish = sum(1 for r in self.context.ensemble_results if r.get("market_sentiment", {}).get("direction") == "BULLISH")
+                bearish = sum(1 for r in self.context.ensemble_results if r.get("market_sentiment", {}).get("direction") == "BEARISH")
+                if bullish > bearish: sentiment_msg = "Market Sentiment: İştahlı 🐂"
+                elif bearish > bullish: sentiment_msg = "Market Sentiment: Çekingen 🐻"
+
+            # 3. Top Value Picks
+            top_picks = "Henüz fırsat yok."
+            if self.context and hasattr(self.context, 'final_bets'):
+                bets = sorted(self.context.final_bets, key=lambda x: x.get('confidence', 0) * x.get('ev', 0), reverse=True)[:3]
+                if bets:
+                    top_picks = "\n".join([f"• {b['match_id']} ({b['selection']}) - EV: {b.get('edge', b.get('ev', 0)):.2f}" for b in bets])
+
+            msg = (
+                f"📡 *Sistem Durumu*: {hb_status}\n"
+                f"🌍 {sentiment_msg}\n\n"
+                f"💎 *Günün Öne Çıkan Fırsatları:*\n{top_picks}\n\n"
+                f"Bol şans."
+            )
+            await self.send_message(chat_id, msg)
+
         elif command == "/warroom":
             self.warroom_active = not self.warroom_active
             if self.warroom_active:
@@ -277,27 +318,55 @@ class TelegramBot:
             await self.send_message(chat_id, msg)
 
         elif command == "/pnl":
-            stats = self._read_bankroll_state()
-            pnl = stats.get("pnl", 0.0)
-            emoji = "🟢" if pnl >= 0 else "🔴"
-
-            # Try to get live Kelly stats
-            kelly_msg = ""
-            if self.sentinel and hasattr(self.sentinel, "portfolio_manager"):
-                 k_hist = len(self.sentinel.portfolio_manager.kelly_manager.history)
-                 kelly_msg = f"\nKelly History: {k_hist} bets"
-
-            await self.send_message(chat_id, f"{emoji} *PnL:* {pnl:.2f} TL{kelly_msg}")
+            # Real-Time DB Query for accuracy
+            try:
+                from src.system.container import container
+                db = container.get("db")
+                if db:
+                    df = db.query("SELECT SUM(pnl) as total_pnl, COUNT(*) as count FROM bets WHERE status IN ('won', 'lost')")
+                    pnl = df["total_pnl"][0] if not df.is_empty() and df["total_pnl"][0] is not None else 0.0
+                    count = df["count"][0] if not df.is_empty() else 0
+                    emoji = "🟢" if pnl >= 0 else "🔴"
+                    await self.send_message(chat_id, f"{emoji} *Realized PnL:* {pnl:.2f} TL ({count} bets)")
+                else:
+                    stats = self._read_bankroll_state()
+                    pnl = stats.get("pnl", 0.0)
+                    await self.send_message(chat_id, f"📝 *PnL (State):* {pnl:.2f} TL")
+            except Exception as e:
+                await self.send_message(chat_id, f"⚠️ DB Hatası: {e}")
 
         elif command == "/performance":
-            if self.performance_report:
-                roi = self.performance_report.get("roi", 0.0)
-                wr = self.performance_report.get("win_rate", 0.0)
-                tpnl = self.performance_report.get("total_pnl", 0.0)
-                emoji = "🚀" if roi > 0 else "📉"
-                await self.send_message(chat_id, f"{emoji} *Canlı Performans*\nROI: %{roi*100:.2f}\nWin Rate: %{wr*100:.2f}\nRealized PnL: {tpnl:.2f} TL")
-            else:
-                await self.send_message(chat_id, "⚠️ Henüz performans verisi oluşmadı.")
+            try:
+                from src.system.container import container
+                db = container.get("db")
+                if db:
+                    df = db.query("""
+                        SELECT
+                            COUNT(*) as total,
+                            SUM(CASE WHEN status='won' THEN 1 ELSE 0 END) as wins,
+                            SUM(stake) as total_stake,
+                            SUM(pnl) as total_pnl
+                        FROM bets
+                        WHERE status IN ('won', 'lost')
+                    """)
+                    if not df.is_empty() and df["total"][0] > 0:
+                        wins = df["wins"][0]
+                        total = df["total"][0]
+                        stake = df["total_stake"][0]
+                        pnl = df["total_pnl"][0]
+
+                        wr = wins / total
+                        roi = pnl / stake if stake > 0 else 0.0
+                        emoji = "🚀" if roi > 0 else "📉"
+
+                        await self.send_message(chat_id, f"{emoji} *Canlı Performans*\nROI: %{roi*100:.2f}\nWin Rate: %{wr*100:.2f}\nRealized PnL: {pnl:.2f} TL\nTotal Vol: {stake:.2f} TL")
+                    else:
+                        await self.send_message(chat_id, "⚠️ Henüz sonuçlanmış bahis yok.")
+                else:
+                     await self.send_message(chat_id, "⚠️ DB bağlantısı yok.")
+            except Exception as e:
+                logger.error(f"Performance calc error: {e}")
+                await self.send_message(chat_id, "⚠️ Hesaplama hatası.")
 
         elif command == "/risk":
             stats = self._read_bankroll_state()

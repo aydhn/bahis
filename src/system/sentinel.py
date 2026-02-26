@@ -115,7 +115,23 @@ class Sentinel:
                         continue
 
                     # 2. Pipeline Döngüsü (Tek adım)
-                    await self.pipeline.run_once()
+                    # Evolver'dan en iyi strateji ağırlıklarını al
+                    best_dna = self.evolver.get_best_dna()
+                    initial_ctx = {}
+                    if best_dna:
+                         # DNA'yı context'e enjekte et
+                         dna_dict = best_dna.to_dict()
+                         # Ensemble Weights'leri ayrıştır
+                         weights = {
+                             "benter": dna_dict.get("ensemble_weight_poisson", 0.3),
+                             "lgbm": dna_dict.get("ensemble_weight_lgbm", 0.35),
+                             "lstm": dna_dict.get("ensemble_weight_lstm", 0.2),
+                             # Diğer modeller için mapping gerekebilir
+                         }
+                         initial_ctx["ensemble_weights"] = weights
+                         initial_ctx["kelly_fraction"] = dna_dict.get("kelly_fraction", 0.25)
+
+                    await self.pipeline.run_once(initial_context=initial_ctx)
 
                     # 3. Evolver Check (Her 100 döngüde bir evrim)
                     if cycle_count % 100 == 0:
