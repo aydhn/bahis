@@ -5,6 +5,7 @@ from loguru import logger
 from src.pipeline.core import PipelineStage
 from src.system.container import container
 from src.ingestion.mock_generator import MockGenerator
+from src.core.circuit_breaker import CircuitBreakerRegistry
 
 class IngestionStage(PipelineStage):
     """Fetches and validates upcoming matches for analysis."""
@@ -13,6 +14,8 @@ class IngestionStage(PipelineStage):
         super().__init__("ingestion")
         self.db = container.get("db")
         self.mock_gen = MockGenerator()
+        self.cb_registry = CircuitBreakerRegistry()
+        self.db_breaker = self.cb_registry.get_or_create("db_ingestion", preset="api")
 
         try:
             from src.core.data_validator import DataValidator
@@ -23,13 +26,26 @@ class IngestionStage(PipelineStage):
     async def execute(self, context: Dict[str, Any]) -> Dict[str, Any]:
         """Fetch matches from DB or Fallback to Mock."""
 
-        # 1. Get matches
-        matches = self.db.get_upcoming_matches()
+        # 1. Get matches with Circuit Breaker
+        matches = pl.DataFrame()
+
+        # Define wrapper for breaker
+        def _fetch():
+            return self.db.get_upcoming_matches()
+
+        if self.db_breaker.is_available:
+            matches = self.db_breaker.call(_fetch)
+
+        if matches is None: # Breaker tripped or call failed
+            matches = pl.DataFrame()
 
         # 2. Mock Fallback (Autonomous Mode)
         mock_features = None
         if matches.is_empty():
-            logger.warning("No upcoming matches in DB. Engaging Autonomous Mock Generator.")
+            if not self.db_breaker.is_available:
+                logger.warning("Circuit Breaker OPEN. Engaging Autonomous Mock Generator.")
+            else:
+                logger.warning("No upcoming matches in DB. Engaging Autonomous Mock Generator.")
             matches = self.mock_gen.generate_matches(n=10)
 
             # Generate features immediately for these mock matches

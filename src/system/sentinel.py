@@ -23,6 +23,7 @@ from src.core.regime_kelly import RegimeKelly, RegimeState
 from src.system.container import container
 from src.core.event_bus import EventBus
 from src.quant.risk.portfolio_manager import PortfolioManager
+from src.core.circuit_breaker import CircuitBreakerRegistry
 
 class Sentinel:
     """
@@ -56,6 +57,12 @@ class Sentinel:
 
         self.portfolio_opt = container.get("portfolio_opt")
 
+        # 4. Global Circuit Breaker (Panic Button)
+        self.cb_registry = CircuitBreakerRegistry()
+        self.system_breaker = self.cb_registry.get_or_create("system_health", preset="api")
+        # 1 saatlik soğuma, 3 kritik hata -> OPEN
+        self.system_breaker._config.recovery_timeout = 3600.0
+
         # Sinyal Yakalama
         if daemon_mode:
             signal.signal(signal.SIGINT, self._handle_sigint)
@@ -85,13 +92,59 @@ class Sentinel:
         # Pipeline döngüsü
         try:
             if self.daemon_mode:
-                await self.pipeline.run()
+                logger.info("Sentinel: Daemon Modu Aktif. Kontrollü döngü başlıyor.")
+                while self.running and not lifecycle.shutdown_event.is_set():
+                    # 1. Sağlık Kontrolü
+                    if not self._check_health():
+                        logger.warning("Sentinel: Sistem sağlığı KRİTİK. Devre Kesici AÇIK. 5 dakika bekleniyor.")
+                        if self.bot and self.bot.enabled:
+                             await self.bot.send_risk_alert("CIRCUIT BREAKER", "Sistem finansal koruma moduna geçti. İşlemler durduruldu.")
+                        await asyncio.sleep(300)
+                        continue
+
+                    # 2. Pipeline Döngüsü (Tek adım)
+                    await self.pipeline.run_once()
+
+                    # 3. Bekleme
+                    await asyncio.sleep(10)
             else:
-                await self.pipeline.run_once()
+                if self._check_health():
+                    await self.pipeline.run_once()
+                else:
+                    logger.error("Sistem sağlığı yetersiz. Çalışma iptal edildi.")
+
         except Exception as e:
             logger.critical(f"Sentinel Critical Error: {e}")
         finally:
             await self.shutdown_async()
+
+    def _check_health(self) -> bool:
+        """Sistemin finansal ve teknik sağlığını kontrol et."""
+        if not self.system_breaker.is_available:
+            return False
+
+        try:
+            # DB'den Ardışık Kayıp Kontrolü
+            db = container.get("db")
+            if db:
+                # Son 10 bahis kontrolü
+                try:
+                    df = db.query("SELECT status FROM bets WHERE status IN ('won', 'lost') ORDER BY settled_at DESC LIMIT 10")
+                    if not df.is_empty():
+                        statuses = df["status"].to_list()
+                        # Eğer 10 bahis varsa ve hepsi kayıpsa
+                        if len(statuses) >= 10 and all(s == 'lost' for s in statuses):
+                            raise Exception("10 Ardışık Kayıp! Panic Button devrede.")
+                except Exception as db_err:
+                     # Tablo yoksa vs yut, sistemi durdurma
+                     logger.warning(f"Health check DB uyarısı: {db_err}")
+
+            self.system_breaker._on_success()
+            return True
+        except Exception as e:
+            logger.critical(f"Health Check Failed: {e}")
+            self.system_breaker._on_failure(e)
+            return False
 
     def set_risk_mode(self, mode: str) -> str:
         """Risk modunu değiştir (Telegram komutu)."""

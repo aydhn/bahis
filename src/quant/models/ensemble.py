@@ -8,7 +8,7 @@ from typing import Any, Dict, List
 import numpy as np
 from loguru import logger
 from src.core.interfaces import QuantModel
-from src.quant.adapters import BenterAdapter, LSTMAdapter, DixonColesAdapter
+from src.quant.adapters import BenterAdapter, LSTMAdapter, DixonColesAdapter, BayesianAdapter
 
 class EnsembleModel(QuantModel):
     """
@@ -21,16 +21,19 @@ class EnsembleModel(QuantModel):
     """
 
     def __init__(self):
+        self.bayesian = BayesianAdapter()
         self.models: Dict[str, QuantModel] = {
             "benter": BenterAdapter(),
             "lstm": LSTMAdapter(),
-            "dixon_coles": DixonColesAdapter()
+            "dixon_coles": DixonColesAdapter(),
+            "bayesian": self.bayesian
         }
         # Static weights if confidence is unavailable
         self.weights = {
-            "benter": 0.40,
-            "dixon_coles": 0.40,
-            "lstm": 0.20
+            "benter": 0.35,
+            "dixon_coles": 0.30,
+            "lstm": 0.15,
+            "bayesian": 0.20
         }
 
     def predict(self, context: Dict[str, Any]) -> Dict[str, Any]:
