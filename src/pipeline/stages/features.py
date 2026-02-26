@@ -33,6 +33,12 @@ class FeatureStage(PipelineStage):
         except ImportError:
             self.jax_acc = None
 
+        try:
+            from src.quant.physics.path_signature_engine import PathSignatureEngine
+            self.path_sig = PathSignatureEngine(depth=3)
+        except ImportError:
+            self.path_sig = None
+
         # Elo System Integration
         try:
             from src.quant.models.elo_glicko_rating import EloGlickoSystem
@@ -108,7 +114,16 @@ class FeatureStage(PipelineStage):
             except Exception as e:
                 logger.debug(f"[Features] npxg_filter failed: {e}")
 
-        # 4. Acceleration
+        # 4. Path Signature Features (Geometric)
+        if self.path_sig:
+            try:
+                sig_feats = self.path_sig.extract(features)
+                if not sig_feats.is_empty():
+                    features = features.join(sig_feats, on="match_id", how="left")
+            except Exception as e:
+                logger.error(f"PathSignature failed: {e}")
+
+        # 5. Acceleration
         if self.jax_acc:
              features = self.jax_acc.accelerate(features)
 

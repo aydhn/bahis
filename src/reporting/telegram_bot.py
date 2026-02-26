@@ -9,6 +9,7 @@ Komutlar:
   /pnl     - Finansal özet
   /risk    - Risk seviyesi
   /stop    - Acil durdurma (Circuit Breaker)
+  /brain   - Quantum Brain & Physics Engine durumu
 """
 import asyncio
 import os
@@ -200,7 +201,7 @@ class TelegramBot:
         args = parts[1:] if len(parts) > 1 else []
 
         if command == "/start":
-            await self.send_message(chat_id, "🤖 *Otonom Quant Bot Devrede.*\nKomutlar: /status, /pnl, /risk, /explain, /analyze, /set_risk, /force, /shutdown")
+            await self.send_message(chat_id, "🤖 *Otonom Quant Bot Devrede.*\nKomutlar: /status, /pnl, /risk, /brain, /explain, /analyze, /set_risk, /force, /shutdown")
 
         elif command == "/set_risk":
             if not self.sentinel:
@@ -312,6 +313,34 @@ class TelegramBot:
                  kelly = first.get("kelly_fraction", 1.0)
 
             await self.send_message(chat_id, f"🛡️ *Risk Seviyesi*\nDrawdown: %{dd*100:.2f}\nRegime: {regime}\nKelly Scale: {kelly:.2f}x")
+
+        elif command == "/brain":
+            msg = "🧠 *Quantum Brain & Physics Status*\n"
+            # Quantum Check
+            try:
+                from src.quant.physics.quantum_brain import PENNYLANE_OK
+                q_status = "ACTIVE 🟢" if PENNYLANE_OK else "Simulated 🟡"
+            except ImportError:
+                q_status = "OFF 🔴"
+            msg += f"- Quantum Engine: {q_status}\n"
+
+            # Physics Check
+            try:
+                from src.quant.physics.chaos_filter import NOLDS_OK
+                c_status = "ACTIVE 🟢" if NOLDS_OK else "Fallback 🟡"
+            except ImportError:
+                c_status = "OFF 🔴"
+            msg += f"- Chaos Filter: {c_status}\n"
+
+            # Ricci Check
+            try:
+                from src.quant.physics.ricci_flow import RICCI_LIB_OK
+                r_status = "ACTIVE 🟢" if RICCI_LIB_OK else "Fallback 🟡"
+            except ImportError:
+                r_status = "OFF 🔴"
+            msg += f"- Ricci Flow: {r_status}\n"
+
+            await self.send_message(chat_id, msg)
 
         elif command == "/chart":
             await self.send_message(chat_id, "📊 *Grafik Hazırlanıyor...*")
