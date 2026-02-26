@@ -17,6 +17,13 @@ DB_PATH = Path(__file__).resolve().parents[2] / "data" / "bahis.duckdb"
 class DBManager:
     """Merkezi veri yöneticisi – DuckDB + Polars."""
 
+    # Security: Valid columns for matches table to prevent SQL Injection
+    ALLOWED_MATCH_COLUMNS = {
+        "match_id", "league", "home_team", "away_team", "kickoff", "status",
+        "home_odds", "draw_odds", "away_odds", "over25_odds", "under25_odds",
+        "btts_yes", "btts_no", "home_score", "away_score", "created_at"
+    }
+
     def __init__(self, db_path: Path | str = DB_PATH):
         self._path = Path(db_path)
         self._path.parent.mkdir(parents=True, exist_ok=True)
@@ -113,14 +120,30 @@ class DBManager:
 
     # ── Veri ekleme ──
     def upsert_match(self, data: dict):
-        cols = ", ".join(data.keys())
-        placeholders = ", ".join(["?"] * len(data))
-        updates = ", ".join(f"{k} = EXCLUDED.{k}" for k in data if k != "match_id")
+        # Security: Whitelist columns to prevent SQL Injection
+        valid_data = {
+            k: v for k, v in data.items()
+            if k in self.ALLOWED_MATCH_COLUMNS
+        }
+
+        if not valid_data:
+            return
+
+        if len(valid_data) < len(data):
+            dropped = set(data.keys()) - set(valid_data.keys())
+            logger.debug(f"Dropped invalid columns in upsert_match: {dropped}")
+
+        cols = ", ".join(valid_data.keys())
+        placeholders = ", ".join(["?"] * len(valid_data))
+        updates = ", ".join(f"{k} = EXCLUDED.{k}" for k in valid_data if k != "match_id")
+
+        conflict_clause = f"DO UPDATE SET {updates}" if updates else "DO NOTHING"
+
         sql = f"""
             INSERT INTO matches ({cols}) VALUES ({placeholders})
-            ON CONFLICT (match_id) DO UPDATE SET {updates}
+            ON CONFLICT (match_id) {conflict_clause}
         """
-        self._con.execute(sql, list(data.values()))
+        self._con.execute(sql, list(valid_data.values()))
 
     def upsert_matches_bulk(self, df: pl.DataFrame):
         for row in df.iter_rows(named=True):
