@@ -4,6 +4,7 @@ from typing import Any, Dict
 from loguru import logger
 from src.system.lifecycle import lifecycle
 from src.core.event_bus import EventBus, Event
+from src.core.auto_healer import SelfHealingEngine
 
 class PipelineStage(ABC):
     """Abstract base class for pipeline stages."""
@@ -24,6 +25,7 @@ class PipelineEngine:
         self.context: Dict[str, Any] = {}
         self.running = False
         self.bus = bus
+        self.healer = SelfHealingEngine(llm_backend="auto")
 
     def add_stage(self, stage: PipelineStage):
         self.stages.append(stage)
@@ -86,9 +88,24 @@ class PipelineEngine:
                             cycle_context.update(result)
                     except Exception as e:
                         logger.error(f"Error in stage {stage.name}: {e}")
-                        # Depending on severity, we might continue or break
-                        # For now, log and continue to next stage (or next cycle?)
-                        # Ideally, use a circuit breaker here.
+                        # Autonomous Healing Attempt
+                        try:
+                            # We need the module path for the stage.
+                            # Best guess: src/pipeline/stages/{stage.name}.py or verify via inspect
+                            import inspect
+                            stage_file = inspect.getfile(stage.__class__)
+
+                            healing_attempt = await self.healer.attempt_heal(e, module_path=stage_file)
+
+                            if healing_attempt.patch_applied and healing_attempt.test_passed:
+                                logger.success(f"AutoHealer fixed {stage.name}! Retrying next cycle.")
+                                if self.bus:
+                                    await self.bus.emit(Event("system_healed", data={"stage": stage.name, "error": str(e)}))
+                            else:
+                                logger.warning(f"AutoHealer failed for {stage.name}.")
+
+                        except Exception as heal_err:
+                            logger.error(f"AutoHealer crashed: {heal_err}")
 
                 if self.bus:
                     await self.bus.emit(Event(event_type="pipeline_cycle_end", cycle=cycle))
@@ -140,7 +157,16 @@ def create_default_pipeline(bot_instance: Any = None, bus: EventBus = None) -> P
     from src.pipeline.stages.reporting import ReportingStage
 
     engine = PipelineEngine(bus=bus)
+    # Lazy imports to avoid circular dependencies
+    from src.pipeline.stages.ingestion import IngestionStage
+    from src.pipeline.stages.features import FeatureStage
+    from src.pipeline.stages.validator import DataValidatorStage
+    from src.pipeline.stages.physics import PhysicsStage
+    from src.pipeline.stages.inference import InferenceStage
+
+    engine = PipelineEngine(bus=bus)
     engine.add_stage(IngestionStage())
+    engine.add_stage(DataValidatorStage())
     engine.add_stage(FeatureStage())
     engine.add_stage(PhysicsStage())
     engine.add_stage(InferenceStage())
