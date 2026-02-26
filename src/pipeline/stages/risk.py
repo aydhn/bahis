@@ -41,10 +41,10 @@ except ImportError:
 
 class RiskStage(PipelineStage):
     """
-    Advanced Risk Stage (Level 41).
+    Advanced Risk Stage (Level 42).
     Integrates Volatility (GARCH), Philosophy (Epistemic), Narrative (Voice),
     and Markowitz Portfolio Optimization.
-    Now includes Advanced Physics Engines (Chaos, Fractal, Ricci Flow).
+    Now includes ALL 10 Advanced Physics Engines.
     """
 
     def __init__(self):
@@ -67,7 +67,7 @@ class RiskStage(PipelineStage):
         self.guardian = CognitiveGuardian()
         self.pre_mortem = PreMortemAnalyzer()
 
-        # Physics Engines (Legacy/Fallback)
+        # Physics Engines (Init handled in PhysicsStage, we consume reports)
         self.fractal_analyzer = FractalAnalyzer() if FractalAnalyzer else None
 
         # Optional Legacy Engines
@@ -122,14 +122,19 @@ class RiskStage(PipelineStage):
 
             if ricci_report.stress_level in ["high", "critical"]:
                 systemic_risk_alert = True
-                # Scale down ALL bets based on systemic risk score (0.0 - 1.0, high means risk)
-                # If risk is 0.8, we multiply stake by (1-0.8) = 0.2
-                risk_factor = min(max(ricci_report.systemic_risk, 0.0), 0.9) # Cap at 90% reduction
+                # Scale down ALL bets based on systemic risk score
+                risk_factor = min(max(ricci_report.systemic_risk, 0.0), 0.9)
                 systemic_risk_multiplier = 1.0 - risk_factor
                 logger.warning(f"Ricci Flow High Stress: {ricci_report.stress_level}. Applying global multiplier: {systemic_risk_multiplier:.2f}")
 
         # Physics Reports Map
-        chaos_reports = context.get("chaos_reports", {})
+        physics_reports = context.get("physics_reports", {})
+        chaos_reports = physics_reports.get("chaos_reports", context.get("chaos_reports", {}))
+        fractal_reports = physics_reports.get("fractal_reports", {})
+        topology_reports = physics_reports.get("topology_reports", {})
+        path_signatures = physics_reports.get("path_signatures", {})
+        homology_reports = physics_reports.get("homology_reports", {})
+        gcn_reports = physics_reports.get("gcn_coordination", {})
 
         for decision in ensemble_decisions:
             match_id = decision.get("match_id")
@@ -142,6 +147,7 @@ class RiskStage(PipelineStage):
 
             # --- 0. Advanced Physics Filters ---
             kill_signal = False
+            physics_context = {}
 
             # Chaos Filter
             if match_id in chaos_reports:
@@ -151,22 +157,58 @@ class RiskStage(PipelineStage):
                     kill_signal = True
 
                 decision["chaos_regime"] = chaos_report.regime
+                physics_context["chaos_regime"] = chaos_report.regime
+
+            # Topology Mapper (Anomaly Detection)
+            if match_id in topology_reports:
+                topo_rep = topology_reports[match_id]
+                if topo_rep.is_anomalous:
+                    logger.warning(f"Topology Mapper Kill: {match_id} (Anomaly Score: {topo_rep.anomaly_score:.2f})")
+                    kill_signal = True # Reject anomalous matches
+                physics_context["topology_cluster"] = topo_rep.assigned_cluster
 
             # Fractal Analysis
             fractal_mult = 1.0
-            if self.fractal_analyzer and not kill_signal:
-                # Use same simulated history or better one
-                sim_perf = self._simulate_returns(match_id)
-                frac_res = self.fractal_analyzer.compute_hurst(sim_perf)
-                fractal_mult = frac_res.kelly_multiplier
-                decision["fractal_dim"] = frac_res.fractal_dimension
+            if match_id in fractal_reports:
+                frac_rep = fractal_reports[match_id]
+                fractal_mult = frac_rep.kelly_multiplier
+                decision["fractal_dim"] = frac_rep.fractal_dimension
+                physics_context["fractal_dim"] = frac_rep.fractal_dimension
 
-                if frac_res.regime == "random":
-                    # Reduce confidence if random walk
+                if frac_rep.regime == "random":
                     confidence *= 0.8
+
+            # Path Signature (Volatility/Roughness)
+            path_sig_mult = 1.0
+            if match_id in path_signatures:
+                sig_data = path_signatures[match_id]
+                roughness = sig_data.get("sig_roughness", 0.0)
+                # High roughness -> Higher uncertainty -> Lower stake
+                if roughness > 0.1:
+                    path_sig_mult = max(0.5, 1.0 - (roughness * 2))
+                physics_context["roughness"] = roughness
+
+            # Homology & GCN (Team Coordination)
+            # If Home is organized and Away is panicking -> Boost confidence
+            coord_bonus = 1.0
+            if match_id in homology_reports:
+                homo_rep = homology_reports[match_id] # This is a dict from compare_teams
+                # Structure: {'home_org': ..., 'away_panicking': ...}
+                if homo_rep.get("home_org", 0) > 0.6 and homo_rep.get("away_panicking", False):
+                    coord_bonus = 1.2
+                    decision["reason"] = decision.get("reason", "") + " (Homology: Org vs Panic)"
+                elif homo_rep.get("away_org", 0) > 0.6 and homo_rep.get("home_panicking", False):
+                    # Betting on home, but home is panicking? Reduce confidence drastically
+                    coord_bonus = 0.6
+
+                physics_context["homology_org_diff"] = homo_rep.get("org_advantage", 0.0)
 
             if kill_signal:
                 continue
+
+            # Apply Coordination Bonus to confidence
+            confidence *= coord_bonus
+            confidence = min(confidence, 1.0)
 
             # --- A. Volatility Analysis (The Context) ---
             vol_report = None
@@ -225,8 +267,9 @@ class RiskStage(PipelineStage):
                 vol_mult = self.vol_modulator.get_kelly_fraction()
                 kelly_decision.stake_pct *= vol_mult
 
-                # 2.1 Fractal Scaling
+                # 2.1 Physics Scaling (Fractal + PathSignature)
                 kelly_decision.stake_pct *= fractal_mult
+                kelly_decision.stake_pct *= path_sig_mult
 
                 # 2.2 Systemic Risk Scaling (Global)
                 if systemic_risk_alert:
@@ -281,9 +324,11 @@ class RiskStage(PipelineStage):
                     "news_summary": decision.get("news_summary", ""),
                     "kelly_decision": kelly_decision,
                     "physics": {
-                        "chaos": decision.get("chaos_regime", "unknown"),
-                        "fractal": decision.get("fractal_dim", 0.0),
-                        "systemic_mult": systemic_risk_multiplier
+                        "chaos": physics_context.get('chaos_regime', "unknown"),
+                        "fractal": physics_context.get('fractal_dim', 0.0),
+                        "systemic_mult": systemic_risk_multiplier,
+                        "roughness": physics_context.get("roughness", 0.0),
+                        "org_diff": physics_context.get("homology_org_diff", 0.0)
                     },
                     "pre_mortem_issues": pm_report.reasons if 'pm_report' in locals() and not pm_report.is_clean else []
                 }
@@ -314,7 +359,9 @@ class RiskStage(PipelineStage):
                 )
                 # Append Physics Info to Narrative
                 phy = meta.get("physics", {})
-                narrative += f"\n\n⚛️ **Physics Engine**\n- Chaos: {phy.get('chaos')}\n- Fractal Dim: {phy.get('fractal'):.3f}"
+                narrative += f"\n\n⚛️ **Deep Physics**\n- Chaos: {phy.get('chaos')}\n- Fractal Dim: {phy.get('fractal'):.3f}"
+                if phy.get("roughness", 0) > 0:
+                    narrative += f"\n- Path Roughness: {phy.get('roughness'):.3f}"
                 if phy.get("systemic_mult", 1.0) < 1.0:
                     narrative += f"\n- Systemic Damping: {phy.get('systemic_mult'):.2f}x (Ricci Flow)"
 

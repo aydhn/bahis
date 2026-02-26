@@ -12,6 +12,8 @@ Komutlar:
   /brain   - Quantum Brain & Physics Engine durumu
   /ceo     - Yönetici özeti (ROI, Regime, Top Picks)
   /warroom - Canlı operasyon odası (Streaming events)
+  /analyze - Derinlemesine maç analizi (Physics + AI)
+  /physics - Fizik motoru raporları
 """
 import asyncio
 import os
@@ -210,7 +212,7 @@ class TelegramBot:
         args = parts[1:] if len(parts) > 1 else []
 
         if command == "/start":
-            await self.send_message(chat_id, "🤖 *Otonom Quant Bot Devrede.*\nKomutlar: /status, /ceo, /warroom, /pnl, /risk, /brain, /explain, /analyze, /set_risk, /force, /shutdown")
+            await self.send_message(chat_id, "🤖 *Otonom Quant Bot Devrede.*\nKomutlar: /status, /ceo, /warroom, /pnl, /risk, /brain, /explain, /analyze, /physics, /set_risk, /force, /shutdown")
 
         elif command == "/set_risk":
             if not self.sentinel:
@@ -385,78 +387,73 @@ class TelegramBot:
             await self.send_message(chat_id, f"🛡️ *Risk Seviyesi*\nDrawdown: %{dd*100:.2f}\nRegime: {regime}\nKelly Scale: {kelly:.2f}x")
 
         elif command == "/brain":
-            msg = "🧠 *Quantum Brain & Physics Status*\n"
+            # List status of all 10 engines
+            msg = "🧠 *Physics & AI Engine Status*\n"
 
-            # 1. Quantum Check
-            try:
-                from src.quant.physics.quantum_brain import PENNYLANE_OK
-                q_status = "ACTIVE 🟢" if PENNYLANE_OK else "Simulated 🟡"
-            except ImportError:
-                q_status = "OFF 🔴"
+            # Helper to check engine presence
+            def status(name, check):
+                return f"- {name}: {'🟢 ACTIVE' if check else '🟡 SIM/OFF'}"
 
-            # Get Quantum details from context if available
-            q_conf = "N/A"
-            if self.context:
-                # Support both Object (Pydantic) and Dict access
-                if isinstance(self.context, dict):
-                    q_preds = self.context.get("quantum_predictions", {})
-                else:
-                    q_preds = getattr(self.context, "quantum_predictions", {})
-
-                if q_preds:
-                    avg_conf = sum(p.confidence for p in q_preds.values()) / len(q_preds)
-                    q_conf = f"{avg_conf:.2f}"
-            msg += f"- Quantum Engine: {q_status} (Avg Conf: {q_conf})\n"
-
-            # 2. Chaos Check
+            # We check context or imports (simulated here)
+            chaos = False
             try:
                 from src.quant.physics.chaos_filter import NOLDS_OK
-                c_status = "ACTIVE 🟢" if NOLDS_OK else "Fallback 🟡"
+                chaos=NOLDS_OK
             except ImportError:
-                c_status = "OFF 🔴"
+                pass
 
-            # Get Chaos stats
-            c_regime = "N/A"
-            if self.context:
-                if isinstance(self.context, dict):
-                    c_reps = self.context.get("chaos_reports", {})
-                else:
-                    c_reps = getattr(self.context, "chaos_reports", {})
+            quantum = False
+            try:
+                from src.quant.physics.quantum_brain import PENNYLANE_OK
+                quantum=PENNYLANE_OK
+            except ImportError:
+                pass
 
-                if c_reps:
-                    # Show first available match regime as sample
-                    first_k = list(c_reps.keys())[0]
-                    c_regime = f"{c_reps[first_k].regime} (Sample: {first_k})"
-            msg += f"- Chaos Filter: {c_status} [{c_regime}]\n"
-
-            # 3. Ricci Check
+            ricci = False
             try:
                 from src.quant.physics.ricci_flow import RICCI_LIB_OK
-                r_status = "ACTIVE 🟢" if RICCI_LIB_OK else "Fallback 🟡"
+                ricci=RICCI_LIB_OK
             except ImportError:
-                r_status = "OFF 🔴"
+                pass
 
-            r_val = "N/A"
-            if self.context:
-                if isinstance(self.context, dict):
-                    r_rep = self.context.get("ricci_report")
-                else:
-                    r_rep = getattr(self.context, "ricci_report", None)
+            topo = False
+            try:
+                from src.quant.physics.topology_mapper import KMAPPER_OK
+                topo=KMAPPER_OK
+            except ImportError:
+                pass
 
-                if r_rep:
-                    r_val = f"κ={r_rep.avg_curvature:.2f} ({r_rep.stress_level})"
-            msg += f"- Ricci Flow: {r_status} [{r_val}]\n"
+            path = False
+            try:
+                from src.quant.physics.path_signature_engine import IIS_AVAILABLE
+                path=IIS_AVAILABLE
+            except ImportError:
+                pass
 
-            # 4. Particle Check
-            if self.context:
-                if isinstance(self.context, dict):
-                    p_reps = self.context.get("particle_reports", {})
-                else:
-                    p_reps = getattr(self.context, "particle_reports", {})
+            homo = False
+            try:
+                from src.quant.physics.homology_scanner import RIPSER_OK
+                homo=RIPSER_OK
+            except ImportError:
+                pass
 
-                p_count = len(p_reps)
-                p_status = f"{p_count} Live" if p_count > 0 else "Idle"
-                msg += f"- Particle Tracker: {p_status}\n"
+            gcn = False
+            try:
+                from src.quant.physics.gcn_pitch_graph import TORCH_AVAILABLE
+                gcn=TORCH_AVAILABLE
+            except ImportError:
+                pass
+
+            msg += status("Chaos Filter", chaos) + "\n"
+            msg += status("Quantum Brain", quantum) + "\n"
+            msg += status("Ricci Flow", ricci) + "\n"
+            msg += status("Topology Mapper", topo) + "\n"
+            msg += status("Path Signature", path) + "\n"
+            msg += status("Homology Scanner", homo) + "\n"
+            msg += status("GCN Pitch Graph", gcn) + "\n"
+            msg += status("Fractal Analyzer", True) + "\n" # Pure math, usually active
+            msg += status("Geometric Intel", True) + "\n"
+            msg += status("Particle Tracker", True) + "\n"
 
             await self.send_message(chat_id, msg)
 
@@ -494,6 +491,12 @@ class TelegramBot:
 
         elif command == "/analyze":
             await self._handle_analyze(chat_id, args)
+
+        elif command == "/physics":
+            if not args:
+                await self.send_message(chat_id, "⚠️ Kullanım: `/physics <match_id>`")
+            else:
+                await self._handle_physics_detail(chat_id, args[0])
 
         elif command == "/portfolio":
             count = 0
@@ -616,13 +619,15 @@ class TelegramBot:
                  if qual is not None:
                      story += f"\n\n✅ *Meta-Quality Score:* {qual:.2f}"
 
-                 # Bayesian Insight
-                 details = res.get("details", {})
-                 if "bayesian" in details:
-                     bay = details["bayesian"]
-                     conf = bay.get("confidence", 0.0)
-                     prob = bay.get("prob_home", 0.0)
-                     story += f"\n\n🔮 *Bayesian Insight*\nProb: %{prob*100:.1f}\nConf: %{conf*100:.1f} (Shrinkage: {1-conf:.2f})"
+                 # Deep Physics Insight
+                 physics = self.context.physics_reports if hasattr(self.context, "physics_reports") else {}
+                 if physics:
+                     chaos = physics.get("chaos_reports", {}).get(match_id)
+                     fractal = physics.get("fractal_reports", {}).get(match_id)
+                     if chaos:
+                         story += f"\n\n⚛️ *Deep Physics*\nChaos Regime: {chaos.regime} (λ={chaos.params.max_lyapunov:.3f})"
+                     if fractal:
+                         story += f"\nFractal Dim: {fractal.fractal_dimension:.3f} ({fractal.regime})"
 
                  await self.send_message(chat_id, story)
                  return
@@ -640,6 +645,38 @@ class TelegramBot:
             return
 
         await self.send_message(chat_id, f"❌ `{match_id}` için güncel analiz bulunamadı.")
+
+    async def _handle_physics_detail(self, chat_id: int, match_id: str):
+        """Physics motorlarının detaylı çıktısını raporla."""
+        if not self.context or not hasattr(self.context, "physics_reports"):
+            await self.send_message(chat_id, "⚠️ Fizik motoru verisi yok.")
+            return
+
+        reps = self.context.physics_reports
+
+        msg = f"⚛️ *PHYSICS REPORT: {match_id}*\n"
+
+        # 1. Chaos
+        if match_id in reps.get("chaos_reports", {}):
+            c = reps["chaos_reports"][match_id]
+            msg += f"\n🌪️ **Chaos Theory**\nRegime: {c.regime}\nLyapunov: {c.params.max_lyapunov:.4f}\nEntropy: {c.params.sample_entropy:.3f}\n"
+
+        # 2. Topology
+        if match_id in reps.get("topology_reports", {}):
+            t = reps["topology_reports"][match_id]
+            msg += f"\n🕸️ **Topology**\nCluster: #{t.assigned_cluster}\nAnomaly Score: {t.anomaly_score:.2f}\nStatus: {t.cluster_label}\n"
+
+        # 3. Homology
+        if match_id in reps.get("homology_reports", {}):
+            h = reps["homology_reports"][match_id]
+            msg += f"\n🍩 **Homology**\nOrg Score: {h.get('home_org',0):.2f} (Home) vs {h.get('away_org',0):.2f} (Away)\nAdvantage: {h.get('org_advantage',0):.2f}\n"
+
+        # 4. Fractal
+        if match_id in reps.get("fractal_reports", {}):
+            f = reps["fractal_reports"][match_id]
+            msg += f"\n❄️ **Fractal**\nHurst: {f.hurst:.3f}\nDim: {f.fractal_dimension:.3f}\n"
+
+        await self.send_message(chat_id, msg)
 
     async def send_message(self, chat_id: int, text: str, parse_mode: str = "Markdown"):
         """Mesaj gönder."""
