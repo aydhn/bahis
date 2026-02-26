@@ -42,6 +42,9 @@ try:
 except ImportError:
     HTTPX_AVAILABLE = False
 
+from src.ingestion.api_hijacker import APIHijacker
+from src.ingestion.stealth_browser import StealthBrowser
+from src.core.mimic_engine import MimicEngine
 
 def _jitter(min_s: float = 1.0, max_s: float = 4.0):
     """Rastgele bekleme süresi – bot tespitinden kaçınmak için."""
@@ -55,9 +58,12 @@ async def _async_jitter(min_s: float = 1.0, max_s: float = 4.0):
 class BaseScraper:
     """Tüm scraper'ların temel sınıfı."""
 
-    def __init__(self, name: str):
+    def __init__(self, name: str, hijacker: APIHijacker | None = None):
         self.name = name
+        self._hijacker = hijacker
         self._client: httpx.AsyncClient | None = None
+        self._browser = None
+        self._mimic = MimicEngine()
         self._session_count = 0
 
     async def _ensure_client(self):
@@ -72,11 +78,17 @@ class BaseScraper:
                 follow_redirects=True,
             )
 
+    async def _ensure_browser(self):
+        if self._browser is None:
+            self._browser = StealthBrowser()
+            await self._browser.start()
+
     async def _fetch(self, url: str) -> str | None:
-        """URL'den HTML çeker, jitter ile."""
-        await self._ensure_client()
+        """URL'den HTML çeker, jitter ile. Prioritizes httpx, falls back to StealthBrowser."""
         await _async_jitter(1.5, 4.0)
 
+        # 1. Try Fast Path (httpx)
+        await self._ensure_client()
         # Her 10 istekte User-Agent değiştir
         self._session_count += 1
         if self._session_count % 10 == 0:
@@ -84,16 +96,38 @@ class BaseScraper:
 
         try:
             resp = await self._client.get(url)
-            resp.raise_for_status()
-            logger.debug(f"[{self.name}] {url[:60]}… → {resp.status_code}")
-            return resp.text
+            # If successful and not blocked (some sites return 200 with captcha page, but status check is first step)
+            if resp.status_code == 200:
+                logger.debug(f"[{self.name}] Fast Fetch: {url[:60]}… → {resp.status_code}")
+                return resp.text
+            elif resp.status_code in (403, 401, 503):
+                logger.warning(f"[{self.name}] Fast Fetch Blocked ({resp.status_code}). Switching to Stealth Browser.")
+            else:
+                resp.raise_for_status()
         except Exception as e:
-            logger.warning(f"[{self.name}] Fetch hatası ({url[:50]}): {e}")
-            return None
+            logger.warning(f"[{self.name}] Fast Fetch Error ({url[:50]}): {e}. Switching to Stealth Browser.")
+
+        # 2. Fallback to Stealth Browser
+        await self._ensure_browser()
+
+        # Mimic human behavior before navigation
+        if self._mimic.should_idle():
+            await self._mimic.idle_pause()
+
+        html = await self._browser.goto(url)
+
+        # Mimic human behavior after navigation (e.g. scroll)
+        await self._mimic.human_delay()
+        if self._browser:
+            await self._browser.page_action("scroll", value=str(self._mimic.scroll_amount()))
+
+        return html
 
     async def close(self):
         if self._client:
             await self._client.aclose()
+        if self._browser:
+            await self._browser.close()
 
 
 # ═══════════════════════════════════════════════════════
@@ -104,11 +138,38 @@ class MackolikScraper(BaseScraper):
 
     BASE_URL = "https://www.mackolik.com"
 
-    def __init__(self):
-        super().__init__("Mackolik")
+    def __init__(self, hijacker: APIHijacker | None = None):
+        super().__init__("Mackolik", hijacker)
 
     async def scrape_fixtures(self) -> list[dict]:
         """Günün maçlarını çeker."""
+        # Try API Hijacker first
+        if self._hijacker:
+            # Note: This pattern is illustrative. In a real scenario, the Hijacker discovers the exact pattern.
+            # We use a try-except block to gracefully handle the case where the pattern isn't yet known or valid.
+            try:
+                data = await self._hijacker.direct_fetch(f"{self.BASE_URL}/api/v1/fixtures/*")
+                if data and isinstance(data, list):
+                    logger.info("[Mackolik] Hijacked API Hit!")
+                    # Basic parsing logic assuming a standard event list structure
+                    matches = []
+                    for item in data:
+                        if isinstance(item, dict) and "home_team" in item:
+                             matches.append({
+                                "home_team": item.get("home_team"),
+                                "away_team": item.get("away_team"),
+                                "time": item.get("time"),
+                                "source": "mackolik_api",
+                                "league": item.get("league"),
+                            })
+                    if matches:
+                        return matches
+                else:
+                    # If direct fetch fails or returns empty, logging it as a debug info
+                    logger.debug("[Mackolik] Hijacked API fetch returned no data or invalid format. Proceeding to HTML scrape.")
+            except Exception as e:
+                logger.warning(f"[Mackolik] API hijack attempt failed: {e}")
+
         html = await self._fetch(f"{self.BASE_URL}/canli-sonuclar")
         if not html or not BS4_AVAILABLE:
             return []
@@ -194,11 +255,27 @@ class SofascoreScraper(BaseScraper):
 
     API_BASE = "https://api.sofascore.com/api/v1"
 
-    def __init__(self):
-        super().__init__("Sofascore")
+    def __init__(self, hijacker: APIHijacker | None = None):
+        super().__init__("Sofascore", hijacker)
 
     async def scrape_live(self) -> list[dict]:
         """Canlı maçları API'den çeker."""
+
+        # 1. Attempt Hijacked API Direct Fetch
+        if self._hijacker:
+            # Try to find a relevant endpoint template
+            # Ideally this map is better maintained, here we guess based on common patterns
+            endpoint_template = f"{self.API_BASE}/sport/football/events/live".replace("https://api.sofascore.com/", "")
+
+            # If hijacker has captured this endpoint, use it directly (it handles session refresh)
+            data = await self._hijacker.direct_fetch(endpoint_template)
+            if data:
+                logger.info("[Sofascore] Hijacked API Hit!")
+                return self._parse_sofa_response(data)
+
+        # 2. Fallback to Standard Fetch (which uses httpx then StealthBrowser)
+        # Sofascore API is protected by Cloudflare usually, so direct httpx might fail without valid cookies/headers
+
         await self._ensure_client()
         await _async_jitter(2.0, 5.0)
 
@@ -207,37 +284,66 @@ class SofascoreScraper(BaseScraper):
                 f"{self.API_BASE}/sport/football/events/live",
                 headers={"User-Agent": random_ua()},
             )
-            if resp.status_code != 200:
-                logger.warning(f"[Sofascore] API yanıtı: {resp.status_code}")
-                return []
-
-            data = resp.json()
-            events = data.get("events", [])
-            matches = []
-            for ev in events[:50]:
-                home = ev.get("homeTeam", {}).get("name", "")
-                away = ev.get("awayTeam", {}).get("name", "")
-                tournament = ev.get("tournament", {}).get("name", "")
-
-                home_score = ev.get("homeScore", {}).get("current", 0)
-                away_score = ev.get("awayScore", {}).get("current", 0)
-
-                matches.append({
-                    "match_id": f"sofa_{ev.get('id', '')}",
-                    "home_team": home,
-                    "away_team": away,
-                    "league": tournament,
-                    "home_score": home_score,
-                    "away_score": away_score,
-                    "status": "live",
-                    "source": "sofascore",
-                })
-
-            logger.info(f"[Sofascore] {len(matches)} canlı maç çekildi.")
-            return matches
+            if resp.status_code == 200:
+                data = resp.json()
+                return self._parse_sofa_response(data)
+            else:
+                logger.warning(f"[Sofascore] API yanıtı: {resp.status_code} - Browser Fallback başlatılıyor.")
         except Exception as e:
             logger.warning(f"[Sofascore] API hatası: {e}")
-            return []
+
+        # 3. Stealth Browser Fallback & Learn
+        await self._ensure_browser()
+
+        # Only navigate if fallback is triggered
+        try:
+            # Navigate to main page to refresh session/cookies for next API hijack attempt
+            logger.info("[Sofascore] Browser fallback: Refreshing session...")
+            await self._browser.goto("https://www.sofascore.com")
+            await self._browser.page_action("scroll", value="500")
+
+            # Since we can't easily get the XHR response body from Selenium without hijacking middleware,
+            # we rely on the side-effect: The APIHijacker background listener (if active via Playwright)
+            # will catch these requests.
+            # If APIHijacker is in fallback mode (StealthBrowser), it relies on session warming.
+
+            # However, for immediate data return, we can try to scrape the rendered page.
+            if BS4_AVAILABLE and self._browser._page: # Check if page exists (Playwright) or selenium
+                html = await self._browser.goto("https://www.sofascore.com") # Reload/Navigate
+                if html:
+                    # Basic HTML parsing for Sofascore live scores if rendered in DOM
+                    # Note: Sofascore is heavy SPA, DOM scraping is hard.
+                    # We return empty list here, accepting that this cycle is for "recovery/learning".
+                    logger.info("[Sofascore] Browser session refreshed. Data will be available in next cycle via Hijacker.")
+                    pass
+        except Exception as e:
+            logger.error(f"[Sofascore] Browser fallback failed: {e}")
+
+        return []
+
+    def _parse_sofa_response(self, data: dict) -> list[dict]:
+        events = data.get("events", [])
+        matches = []
+        for ev in events[:50]:
+            home = ev.get("homeTeam", {}).get("name", "")
+            away = ev.get("awayTeam", {}).get("name", "")
+            tournament = ev.get("tournament", {}).get("name", "")
+
+            home_score = ev.get("homeScore", {}).get("current", 0)
+            away_score = ev.get("awayScore", {}).get("current", 0)
+
+            matches.append({
+                "match_id": f"sofa_{ev.get('id', '')}",
+                "home_team": home,
+                "away_team": away,
+                "league": tournament,
+                "home_score": home_score,
+                "away_score": away_score,
+                "status": "live",
+                "source": "sofascore",
+            })
+        logger.info(f"[Sofascore] {len(matches)} canlı maç çekildi.")
+        return matches
 
     async def scrape_team_stats(self, team_id: int) -> dict:
         """Takım istatistiklerini çeker."""
@@ -285,8 +391,8 @@ class TransfermarktScraper(BaseScraper):
 
     BASE_URL = "https://www.transfermarkt.com.tr"
 
-    def __init__(self):
-        super().__init__("Transfermarkt")
+    def __init__(self, hijacker: APIHijacker | None = None):
+        super().__init__("Transfermarkt", hijacker)
 
     async def scrape_squad_value(self, team_slug: str) -> dict:
         """Takım kadro piyasa değerini çeker."""
@@ -376,9 +482,10 @@ class ScraperAgent:
     def __init__(self, db, notifier=None, cb_registry=None):
         self._db = db
         self._notifier = notifier
-        self._mackolik = MackolikScraper()
-        self._sofascore = SofascoreScraper()
-        self._transfermarkt = TransfermarktScraper()
+        self._hijacker = APIHijacker(db=db)
+        self._mackolik = MackolikScraper(hijacker=self._hijacker)
+        self._sofascore = SofascoreScraper(hijacker=self._hijacker)
+        self._transfermarkt = TransfermarktScraper(hijacker=self._hijacker)
 
         # Her scraper'a ayrı circuit breaker
         from src.core.circuit_breaker import CircuitBreakerRegistry, CBConfig
@@ -412,6 +519,10 @@ class ScraperAgent:
 
     async def run_all(self, shutdown: asyncio.Event):
         """Tüm scraper'ları periyodik olarak çalıştırır."""
+
+        # Start API Hijacker listener in background
+        asyncio.create_task(self._hijacker.listen(shutdown))
+
         logger.info("ScraperAgent – tüm ajanlar başlatılıyor…")
         while not shutdown.is_set():
             tasks = []

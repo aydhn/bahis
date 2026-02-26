@@ -21,9 +21,22 @@ import json
 import re
 import time
 from datetime import datetime
+from pathlib import Path
 from typing import Any
 
 from loguru import logger
+
+# Import StealthBrowser for fallback navigation
+try:
+    from src.ingestion.stealth_browser import StealthBrowser
+    STEALTH_OK = True
+except ImportError:
+    STEALTH_OK = False
+
+ROOT = Path(__file__).resolve().parent.parent.parent
+DATA_DIR = ROOT / "data"
+DATA_DIR.mkdir(parents=True, exist_ok=True)
+ENDPOINTS_FILE = DATA_DIR / "endpoints.json"
 
 
 class APIHijacker:
@@ -94,7 +107,34 @@ class APIHijacker:
             "ws_frames": 0,
             "matches_stored": 0,
         }
+        self._load_endpoints()
         logger.debug("APIHijacker v2 (Network Sniffer) başlatıldı.")
+
+    def _load_endpoints(self):
+        """Discovered endpointleri diskten yükle."""
+        if ENDPOINTS_FILE.exists():
+            try:
+                data = json.loads(ENDPOINTS_FILE.read_text(encoding="utf-8"))
+                self._discovered_endpoints = data
+                logger.info(f"Yüklenen endpoint sayısı: {len(self._discovered_endpoints)}")
+            except Exception as e:
+                logger.error(f"Endpoint yükleme hatası: {e}")
+
+    def _save_endpoints(self):
+        """Discovered endpointleri diske kaydet (Non-blocking I/O)."""
+        # Run synchronous file I/O in a thread to avoid blocking the event loop
+        asyncio.create_task(self._save_endpoints_async())
+
+    async def _save_endpoints_async(self):
+        try:
+            # Prepare data
+            data = json.dumps(self._discovered_endpoints, indent=2)
+            await asyncio.to_thread(self._write_file, data)
+        except Exception as e:
+            logger.error(f"Endpoint kaydetme hatası: {e}")
+
+    def _write_file(self, data: str):
+        ENDPOINTS_FILE.write_text(data, encoding="utf-8")
 
     # ═══════════════════════════════════════════
     #  ANA DİNLEYİCİ
@@ -103,20 +143,21 @@ class APIHijacker:
         """Playwright ile hedef siteleri dinlemeye başla."""
         logger.info("[Hijack] Ağ dinleyici başlatılıyor…")
 
+        browser = None
         try:
             from playwright.async_api import async_playwright
-        except ImportError:
-            logger.warning("[Hijack] Playwright yüklü değil – devre dışı.")
-            return
-
-        try:
             pw = await async_playwright().start()
             browser = await pw.chromium.launch(
                 headless=True,
                 args=["--disable-blink-features=AutomationControlled"],
             )
+        except ImportError:
+            logger.warning("[Hijack] Playwright yüklü değil – StealthBrowser session warmer fallback kullanılacak.")
+            await self._run_session_warmer(shutdown)
+            return
         except Exception as e:
-            logger.warning(f"[Hijack] Tarayıcı başlatılamadı: {e}")
+            logger.warning(f"[Hijack] Tarayıcı başlatılamadı ({e}) – StealthBrowser session warmer fallback kullanılacak.")
+            await self._run_session_warmer(shutdown)
             return
 
         # Her site için bir sayfa aç ve dinle
@@ -166,6 +207,8 @@ class APIHijacker:
                     f"{self._stats['ws_frames']} WS, "
                     f"{self._stats['matches_stored']} maç"
                 )
+                # Save periodically
+                self._save_endpoints()
 
         # Temizlik
         for page in pages:
@@ -179,6 +222,35 @@ class APIHijacker:
             f"{self._stats['json_captured']} JSON yakalandı, "
             f"{len(self._discovered_endpoints)} endpoint keşfedildi."
         )
+
+    async def _run_session_warmer(self, shutdown: asyncio.Event):
+        """
+        Playwright çalışmadığında StealthBrowser kullanarak hedef siteleri periyodik olarak ziyaret eder.
+        """
+        if not STEALTH_OK:
+            logger.error("[Hijack] StealthBrowser da mevcut değil. Hijacker çalışamaz.")
+            return
+
+        logger.info("[Hijack] Session Warmer Modu: Trafik yakalama devre dışı, sadece oturum tazeleme aktif.")
+        sb = StealthBrowser()
+        await sb.start()
+
+        while not shutdown.is_set():
+            for target in self.TARGET_SITES:
+                try:
+                    logger.debug(f"[Hijack-Warmer] Ziyaret ediliyor (Cookies Refresh): {target['name']}")
+                    await sb.goto(target["url"], wait_ms=target.get("wait_ms", 3000))
+                    # Scroll to mimic activity
+                    await sb.page_action("scroll", value="300")
+                except Exception as e:
+                    logger.warning(f"[Hijack-Warmer] Hata: {e}")
+
+            # Daha seyrek çalış (her 10 dk)
+            for _ in range(20):
+                if shutdown.is_set(): break
+                await asyncio.sleep(30)
+
+        await sb.close()
 
     # ═══════════════════════════════════════════
     #  RESPONSE HANDLER
@@ -281,6 +353,7 @@ class APIHijacker:
                 f"[Hijack] 🆕 Endpoint keşfedildi: {template} "
                 f"[{data_type}] ({source})"
             )
+            self._save_endpoints()
 
         self._discovered_endpoints[template]["hit_count"] += 1
 
@@ -429,9 +502,32 @@ class APIHijacker:
                 resp = await client.get(url, params=params)
                 if resp.status_code == 200:
                     return resp.json()
+                elif resp.status_code in (401, 403):
+                    logger.warning(f"Endpoint {url} yetki hatası verdi ({resp.status_code}). Session tazeleme gerekli.")
+                    await self.refresh_session(url)
+                    # Retry once
+                    resp = await client.get(url, params=params)
+                    if resp.status_code == 200:
+                        return resp.json()
+
         except Exception:
             pass
         return None
+
+    async def refresh_session(self, url: str):
+        """401/403 durumunda StealthBrowser ile oturumu tazele."""
+        if not STEALTH_OK:
+            logger.error("Session refresh için StealthBrowser gerekli.")
+            return
+
+        logger.info(f"Session tazeleniyor: {url}")
+        sb = StealthBrowser()
+        await sb.start()
+        # Navigate to the root/main page to refresh cookies
+        root_url = "/".join(url.split("/")[:3]) # https://site.com
+        await sb.goto(root_url, wait_ms=5000)
+        # In a real scenario, we might export cookies here and inject them into httpx client
+        await sb.close()
 
     # ═══════════════════════════════════════════
     #  İSTATİSTİKLER
