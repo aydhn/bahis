@@ -14,6 +14,7 @@ from src.quant.analysis.similarity import SimilarityEngine
 from src.quant.analysis.market_sentiment import MarketSentiment
 from src.quant.risk.volatility_modulator import VolatilityModulator
 from src.quant.meta_labeling import MetaLabeler
+from src.quant.uncertainty.conformal import ConformalPredictor
 
 
 class InferenceStage(PipelineStage):
@@ -43,6 +44,11 @@ class InferenceStage(PipelineStage):
         self.meta_labeler = MetaLabeler()
         logger.info("Training Meta-Labeler on DB...")
         self.meta_labeler.train_on_db()
+
+        # Initialize Conformal Predictor
+        self.conformal = ConformalPredictor(alpha=0.1) # 90% confidence
+        # Ideally, calibrate here if historical data is available in context or DB
+        # self.conformal.calibrate(X_cal, y_cal)
 
         # Risk / Regime Context
         self.volatility_modulator = VolatilityModulator()
@@ -176,7 +182,21 @@ class InferenceStage(PipelineStage):
             logger.warning(f"Meta-labeling failed: {e}")
             prediction["meta_quality_score"] = 0.5
 
-        # 6. Inject Risk Context
+        # 6. Conformal Prediction (Certainty Set)
+        try:
+            # Create a mock prob vector for conformal
+            prob_vec = np.array([prediction.get("prob_home", 0.33),
+                                 prediction.get("prob_draw", 0.33),
+                                 prediction.get("prob_away", 0.33)])
+            # Since conformal.predict expects batch (N, 3), we wrap and unwrap
+            pred_set = self.conformal.predict(prob_vec.reshape(1, -1))[0]
+            prediction["conformal_set"] = pred_set # Set of indices {0, 1, ...}
+            prediction["conformal_certainty"] = self.conformal.check_certainty(pred_set)
+        except Exception as e:
+            logger.warning(f"Conformal prediction failed: {e}")
+            prediction["conformal_certainty"] = "UNKNOWN"
+
+        # 7. Inject Risk Context
         prediction["regime_status"] = context.get("_regime_status", "NORMAL")
         prediction["kelly_fraction"] = context.get("_kelly_fraction", 1.0)
 

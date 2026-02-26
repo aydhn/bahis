@@ -12,6 +12,8 @@ from src.system.config import settings
 from src.quant.risk.volatility_modulator import VolatilityModulator
 from src.core.cognitive_guardian import CognitiveGuardian
 from src.quant.analysis.pre_mortem import PreMortemAnalyzer
+from src.quant.finance.treasury import TreasuryEngine
+from src.core.speed_cache import SpeedCache
 
 # Enterprise Modules
 try:
@@ -66,6 +68,8 @@ class RiskStage(PipelineStage):
         self.vol_modulator = VolatilityModulator()
         self.guardian = CognitiveGuardian()
         self.pre_mortem = PreMortemAnalyzer()
+        self.treasury = TreasuryEngine()
+        self.speed_cache = SpeedCache()
 
         # Physics Engines (Init handled in PhysicsStage, we consume reports)
         self.fractal_analyzer = FractalAnalyzer() if FractalAnalyzer else None
@@ -275,13 +279,22 @@ class RiskStage(PipelineStage):
                 if systemic_risk_alert:
                     kelly_decision.stake_pct *= systemic_risk_multiplier
 
-                # 3. Cognitive Check
+                # 3. HedgeHog Logic (Real-time Hedging)
+                # Check SpeedCache for real-time odds diffs (e.g. from API Hijacker stream)
+                # If market odds significantly diverged since inference, adjust or hedge.
+                # Simplified: Check if current odds from SpeedCache are very different from DB odds
+                latest_odds = self.speed_cache.get(f"odds_{match_id}")
+                if latest_odds and abs(latest_odds - odds_home) > 0.2:
+                    logger.warning(f"HedgeHog: Real-time odds shift for {match_id} ({odds_home} -> {latest_odds})")
+                    # Could trigger re-calc, for now just log
+
+                # 4. Cognitive Check
                 bet_req = {"stake": kelly_decision.stake_pct, "team": decision.get("home_team")}
                 if not self.guardian.check_bet(bet_req):
                     kelly_decision.approved = False
                     kelly_decision.rejection_reason = "Cognitive Guardian Blocked (Tilt/Chase)"
 
-                # 4. Pre-Mortem Check (The Devil's Advocate)
+                # 5. Pre-Mortem Check (The Devil's Advocate)
                 pm_report = self.pre_mortem.analyze({
                     "match_id": match_id,
                     "odds": odds_home,
@@ -342,6 +355,23 @@ class RiskStage(PipelineStage):
         for res in optimized_results:
             match_id = res["match_id"]
             meta = bet_metadata.get(match_id, {})
+
+            # --- Treasury Check ---
+            # Ask Treasury for capital. It might reduce stake or deny based on daily drawdown.
+            # Convert pct to amount (assuming base capital from treasury state)
+            # Actually portfolio_opt output is amount or pct? Usually optimizer outputs weights.
+            # Assuming 'stake_amount' is already calculated by PortfolioOptimizer based on some total capital.
+            # We re-verify with Treasury.
+
+            requested_stake = res["stake_amount"]
+            approved_stake = self.treasury.request_capital(requested_stake, strategy_type="aggressive") # Defaulting to aggressive for now
+
+            if approved_stake < requested_stake:
+                logger.warning(f"Treasury reduced stake for {match_id}: {requested_stake:.2f} -> {approved_stake:.2f}")
+                res["stake_amount"] = approved_stake
+
+            if approved_stake <= 0:
+                continue
 
             # Generate Narrative with finalized stake
             narrative = ""

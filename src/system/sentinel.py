@@ -27,6 +27,8 @@ from src.core.event_bus import EventBus
 from src.quant.risk.portfolio_manager import PortfolioManager
 from src.core.circuit_breaker import CircuitBreakerRegistry
 from src.core.strategy_evolver import StrategyEvolver
+from src.quant.finance.treasury import TreasuryEngine
+from src.quant.analysis.oracle import TheOracle
 
 class Sentinel:
     """
@@ -66,7 +68,11 @@ class Sentinel:
         # 1 saatlik soğuma, 3 kritik hata -> OPEN
         self.system_breaker._config.recovery_timeout = 3600.0
 
-        # 5. Otonom Strateji Evrimi
+        # 5. Treasury & Oracle (Financial & Strategic Command)
+        self.treasury = TreasuryEngine()
+        self.oracle = TheOracle()
+
+        # 6. Otonom Strateji Evrimi
         self.evolver = StrategyEvolver(population_size=20, elitism_pct=0.1)
         if self.evolver.load_checkpoint():
             logger.info("Sentinel: Strategy Evolver checkpoint yüklendi.")
@@ -309,6 +315,12 @@ class Sentinel:
         """Async cleanup."""
         if self.bot:
             await self.bot.stop()
+
+        # Persist Treasury State
+        if self.treasury:
+            self.treasury.save_state()
+            logger.info("Sentinel: Treasury state saved.")
+
         logger.info("Sentinel: Sistem kapandı. Görüşmek üzere.")
 
 if __name__ == "__main__":

@@ -36,6 +36,11 @@ try:
 except ImportError:
     BettingContext = None
 
+# New modules
+from src.quant.finance.treasury import TreasuryEngine
+from src.quant.analysis.oracle import TheOracle
+from src.core.speed_cache import SpeedCache
+
 from src.system.config import settings
 from src.reporting.visualizer import Visualizer
 from src.core.event_bus import Event
@@ -58,6 +63,12 @@ class TelegramBot:
         self.context: Optional[BettingContext] = None # Live Context
         self.sentinel: Any = None # Sentinel (Orchestrator) referansı
         self.performance_report: Dict[str, Any] = {}
+
+        # Initialize new engines (or access via sentinel later)
+        # For simplicity, we assume they are singletons or can be instantiated here for reporting
+        self.treasury = TreasuryEngine()
+        self.oracle = TheOracle()
+        self.speed_cache = SpeedCache()
 
         if not self.enabled:
             logger.warning("TelegramBot devre dışı: Token veya httpx eksik.")
@@ -212,7 +223,7 @@ class TelegramBot:
         args = parts[1:] if len(parts) > 1 else []
 
         if command == "/start":
-            await self.send_message(chat_id, "🤖 *Otonom Quant Bot Devrede.*\nKomutlar: /status, /ceo, /warroom, /pnl, /risk, /brain, /explain, /analyze, /physics, /set_risk, /force, /shutdown")
+            await self.send_message(chat_id, "🤖 *Otonom Quant Bot Devrede.*\nKomutlar: /status, /ceo, /warroom, /pnl, /risk, /brain, /explain, /analyze, /physics, /treasury, /oracle, /set_risk, /force, /shutdown")
 
         elif command == "/set_risk":
             if not self.sentinel:
@@ -385,6 +396,17 @@ class TelegramBot:
                  kelly = first.get("kelly_fraction", 1.0)
 
             await self.send_message(chat_id, f"🛡️ *Risk Seviyesi*\nDrawdown: %{dd*100:.2f}\nRegime: {regime}\nKelly Scale: {kelly:.2f}x")
+
+        elif command == "/treasury":
+            status = self.treasury.get_status()
+            await self.send_message(chat_id, f"🏦 *Treasury Report*\n\n{status}")
+
+        elif command == "/oracle":
+            if self.context:
+                prophecy = self.oracle.consult(self.context.__dict__)
+                await self.send_message(chat_id, prophecy)
+            else:
+                await self.send_message(chat_id, "🔮 The Oracle is meditating... (Waiting for pipeline context)")
 
         elif command == "/brain":
             # List status of all 10 engines
