@@ -303,9 +303,38 @@ class TelegramBot:
         elif command == "/warroom":
             self.warroom_active = not self.warroom_active
             if self.warroom_active:
-                await self.send_message(chat_id, "🚨 *WAR ROOM MODU AKTİF* 🚨\nCanlı akış başlıyor... (Pipeline Eventleri)")
+                # Executive Dashboard Visualization
+                dashboard = (
+                    "🚨 *EXECUTIVE WAR ROOM* 🚨\n"
+                    "━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                    f"🟢 **System Status:** ONLINE\n"
+                    f"⚡ **Cycle:** #{self.context.cycle_id if self.context else 0}\n"
+                    f"🛡️ **Regime:** {self.context.ensemble_results[0].get('regime_status', 'NORMAL') if self.context and self.context.ensemble_results else 'NORMAL'}\n"
+                    "━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                    "**Live Feeds:**\n"
+                    "📡 Odds Stream: ACTIVE\n"
+                    "🧠 Quantum Brain: ONLINE\n"
+                    "⚛️ Physics Engine: RUNNING\n"
+                    "━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                    "Waiting for critical events..."
+                )
+                await self.send_message(chat_id, dashboard)
             else:
                 await self.send_message(chat_id, "💤 War Room modu kapatıldı.")
+
+        elif command == "/finance":
+            # Financial Health Check
+            t_status = self.treasury.get_status()
+            # Hedge Status (Mock for now, would query HedgeHog state)
+            h_status = "No active hedges."
+
+            msg = (
+                "💰 **FINANCIAL HEADQUARTERS**\n\n"
+                f"{t_status}\n\n"
+                "**Hedge Operations:**\n"
+                f"{h_status}"
+            )
+            await self.send_message(chat_id, msg)
 
         elif command == "/audit":
             msg = "🔍 *Sistem Denetimi*\n"

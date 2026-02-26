@@ -59,6 +59,11 @@ try:
 except ImportError:
     GCNPitchGraph = None
 
+try:
+    from src.quant.physics.renormalization import RenormalizationGroup
+except ImportError:
+    RenormalizationGroup = None
+
 
 class PhysicsStage(PipelineStage):
     """
@@ -179,6 +184,16 @@ class PhysicsStage(PipelineStage):
             logger.warning("GCNPitchGraph module missing.")
             self.gcn_graph = None
 
+        if RenormalizationGroup:
+            try:
+                self.rg_flow = RenormalizationGroup()
+            except Exception as e:
+                logger.error(f"Failed to init RenormalizationGroup: {e}")
+                self.rg_flow = None
+        else:
+            logger.warning("RenormalizationGroup module missing.")
+            self.rg_flow = None
+
     async def execute(self, context: Dict[str, Any]) -> Dict[str, Any]:
         """Run physics analysis on the current batch of matches."""
         matches = context.get("matches", pl.DataFrame())
@@ -195,7 +210,8 @@ class PhysicsStage(PipelineStage):
             "topology_reports": {},
             "path_signatures": {},
             "homology_reports": {},
-            "gcn_coordination": {}
+            "gcn_coordination": {},
+            "rg_flow_reports": {}
         }
 
         # 1. Global Systemic Risk (Ricci Flow)
@@ -272,6 +288,10 @@ class PhysicsStage(PipelineStage):
             # I. GCN Pitch Graph Task
             if self.gcn_graph:
                 tasks.append(self._run_gcn_graph(match_id, cycle, results))
+
+            # J. Renormalization Group Task
+            if self.rg_flow:
+                tasks.append(self._run_rg_flow(match_id, results))
 
 
         if tasks:
@@ -376,6 +396,15 @@ class PhysicsStage(PipelineStage):
         except Exception as e:
             logger.warning(f"GCN graph failed for {match_id}: {e}")
 
+    async def _run_rg_flow(self, match_id: str, results: Dict[str, Any]):
+        try:
+            # Simulate momentum series
+            momentum = self._simulate_momentum_series(match_id)
+            rg_rep = await asyncio.to_thread(self.rg_flow.analyze_flow, momentum)
+            results["rg_flow_reports"][match_id] = rg_rep
+        except Exception as e:
+            logger.warning(f"RG Flow failed for {match_id}: {e}")
+
 
     # --- Simulators ---
 
@@ -427,3 +456,18 @@ class PhysicsStage(PipelineStage):
         pos[:, 1] = np.clip(pos[:, 1], 0, 68)
 
         return pos
+
+    def _simulate_momentum_series(self, match_id: str) -> List[float]:
+        """Simulates a momentum time series (60 minutes)."""
+        seed = int(hashlib.md5(match_id.encode()).hexdigest(), 16) % 2**32
+        np.random.seed(seed)
+        # Generate fractional Brownian motion-like series
+        n = 60
+        hurst = 0.7 # Persistent
+        # Simple approximation using accumulated noise
+        white_noise = np.random.normal(0, 1, n)
+        # Filter for persistence? Just simple accumulation for now
+        momentum = np.cumsum(white_noise)
+        # Normalize
+        momentum = (momentum - momentum.mean()) / (momentum.std() + 1e-9)
+        return momentum.tolist()
