@@ -368,11 +368,54 @@ class PhysicsStage(PipelineStage):
         if tasks:
             await asyncio.gather(*tasks)
 
+        # Compute Holistic Confidence for each match
+        for match_id, ctx in physics_context_map.items():
+            ctx["holistic_confidence"] = self._calculate_holistic_confidence(match_id, results)
+
         # Return results
         return {
             "physics_reports": results,
             "physics_context": physics_context_map
         }
+
+    def _calculate_holistic_confidence(self, match_id: str, results: Dict[str, Any]) -> float:
+        """
+        Aggregates multiple physics signals into a single scalar confidence score (0.0 - 1.0).
+        Logic:
+        - Chaos (Lyapunov > 0) -> High penalty
+        - Quantum (High Conf) -> Bonus
+        - Topology (Anomaly) -> Penalty
+        - Ricci (Systemic Stress) -> Global penalty
+        """
+        score = 0.5 # Base
+
+        # 1. Chaos (The Veto)
+        chaos_rep = results["chaos_reports"].get(match_id)
+        if chaos_rep:
+            if chaos_rep.regime == "chaotic":
+                score -= 0.3
+            elif chaos_rep.regime == "stable":
+                score += 0.1
+
+        # 2. Quantum (The Oracle)
+        quant_pred = results["quantum_predictions"].get(match_id)
+        if quant_pred:
+            if quant_pred.confidence > 0.7:
+                score += 0.1
+            elif quant_pred.confidence < 0.4:
+                score -= 0.05
+
+        # 3. Topology (The Structure)
+        topo_rep = results["topology_reports"].get(match_id)
+        if topo_rep and topo_rep.is_anomalous:
+            score -= 0.15
+
+        # 4. Ricci (The System)
+        ricci_rep = results.get("ricci_report")
+        if ricci_rep and ricci_rep.stress_level in ["high", "critical"]:
+            score -= 0.1
+
+        return float(np.clip(score, 0.0, 1.0))
 
     # --- Async Worker Methods ---
 

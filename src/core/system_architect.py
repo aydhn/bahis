@@ -13,7 +13,7 @@ Directives:
 - LIQUIDATION: Emergency risk reduction.
 """
 from dataclasses import dataclass
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from loguru import logger
 
 @dataclass
@@ -22,7 +22,7 @@ class StrategicDirective:
     posture: str = "CONSOLIDATION"  # EXPANSION, CONSOLIDATION, BUNKER, LIQUIDATION
     max_daily_exposure: float = 0.10 # % of bankroll
     required_edge_multiplier: float = 1.0 # 1.0 = standard, 1.5 = high conviction
-    allowed_leagues: List[str] = None # None = All
+    allowed_leagues: Optional[List[str]] = None # None = All
     rationale: str = ""
 
 class SystemArchitect:
@@ -42,14 +42,20 @@ class SystemArchitect:
 
         Args:
             treasury_status: Dict from TreasuryEngine (drawdown, pnl, etc.)
-            regime_metrics: RegimeMetrics object from MarketRegimeDetector.
+            regime_metrics: RegimeMetrics object from MarketRegimeDetector (or similar dict/obj).
             news_sentiment: Float 0.0-1.0 (0=Panic, 1=Euphoria).
         """
         directive = StrategicDirective()
 
         # Unpack inputs
         drawdown = treasury_status.get("drawdown", 0.0)
-        regime = getattr(regime_metrics, "regime", "STABLE")
+
+        # Handle regime_metrics as object or dict
+        regime = "STABLE"
+        if hasattr(regime_metrics, "regime"):
+            regime = regime_metrics.regime
+        elif isinstance(regime_metrics, dict):
+            regime = regime_metrics.get("regime", "STABLE")
 
         reasons = []
 

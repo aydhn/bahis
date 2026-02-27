@@ -12,6 +12,7 @@ Functionality:
 """
 import asyncio
 import numpy as np
+import random
 from typing import Dict, List, Optional
 from loguru import logger
 from src.core.speed_cache import SpeedCache
@@ -28,6 +29,8 @@ class FlashOddsMonitor:
         self.running = False
         self.window_size = 60 # Look back 60 ticks
         self.z_threshold = 3.0 # Sigma trigger
+        self._history: Dict[str, List[float]] = {}
+        self._simulated_assets = ["match_live_001_home", "match_live_002_home", "match_live_003_away"]
 
     async def start(self):
         """Start monitoring loop."""
@@ -41,23 +44,48 @@ class FlashOddsMonitor:
         logger.info("FlashOddsMonitor stopped.")
 
     async def _monitor_loop(self):
-        """Main loop checking for anomalies."""
+        """
+        Main loop checking for anomalies.
+        In simulation mode, this generates synthetic odds ticks.
+        """
+        logger.info("FlashOddsMonitor: Starting Simulation Loop...")
+
         while self.running:
             try:
-                # In a real system, this would iterate over active subscriptions in SpeedCache
-                # For simulation, we check a few key keys or rely on cache updates triggering callbacks.
-                # Here we assume we poll active matches.
+                # --- Simulation Logic ---
+                # Generate random ticks for monitored assets
+                for asset_key in self._simulated_assets:
+                    match_id, selection = asset_key.rsplit("_", 1)
 
-                # Mock: Get active match IDs from cache (if method existed)
-                # match_ids = self.cache.get_active_matches()
-                # For now, we wait for 'odds_tick' events via Bus if connected,
-                # OR we simulate a check on a known set.
+                    # 1. Get previous price or init
+                    if asset_key in self._history and self._history[asset_key]:
+                        prev_price = self._history[asset_key][-1]
+                    else:
+                        prev_price = random.uniform(1.8, 3.5)
 
-                # Let's assume we are triggered by the EventBus subscription instead of polling?
-                # But Step 4 says "Implement FlashOddsMonitor class".
-                # Ideally it subscribes to the stream.
+                    # 2. Simulate Random Walk
+                    # Normal drift
+                    change = np.random.normal(0, 0.01)
 
-                await asyncio.sleep(1.0) # High frequency poll
+                    # Occasional Crash (Black Swan)
+                    if random.random() < 0.01: # 1% chance
+                        change = -0.15 # Massive drop
+                        logger.debug(f"Simulating CRASH for {asset_key}")
+
+                    new_price = max(1.01, prev_price + change)
+
+                    # 3. Create Event
+                    tick_event = Event("odds_tick", {
+                        "match_id": match_id,
+                        "selection": selection,
+                        "odds": new_price,
+                        "timestamp": asyncio.get_event_loop().time()
+                    })
+
+                    # 4. Feed into own handler (Simulating Bus subscription)
+                    await self.on_odds_tick(tick_event)
+
+                await asyncio.sleep(0.5) # High frequency poll (2Hz)
 
             except Exception as e:
                 logger.error(f"FlashMonitor loop error: {e}")
@@ -75,22 +103,17 @@ class FlashOddsMonitor:
 
         key = f"{match_id}_{selection}"
 
-        # Get history from SpeedCache
-        # Assuming cache stores a list of recent odds or we maintain it here
-        # SpeedCache is usually key-value. We might need a local deque for history.
-        # Let's use a local history dict for this "Sniper" logic.
-
-        if not hasattr(self, "_history"):
-            self._history: Dict[str, List[float]] = {}
-
         if key not in self._history:
             self._history[key] = []
 
         hist = self._history[key]
         hist.append(current_odds)
+
+        # Keep window fixed
         if len(hist) > self.window_size:
             hist.pop(0)
 
+        # Need enough data for Z-score
         if len(hist) > 10:
             # Calculate Z-Score
             mean = np.mean(hist)
@@ -100,7 +123,16 @@ class FlashOddsMonitor:
                 z = (current_odds - mean) / std
 
                 # Detect Crash (Odds dropping significantly -> Z < -3)
+                # Dropping odds = Value increasing (Implied Prob up) or Market Correction
+                # "Sniper" looks for rapid drops in odds (which means market thinks prob is higher)
+                # If we catch it early, we might arb or value bet?
+                # Actually, usually 'Dropping Odds' means "Everyone is betting on this".
+                # If Z < -Threshold, it's a "Crash" (Price went down fast).
+
                 if z < -self.z_threshold:
+                    # Debounce / Suppression
+                    # Ensure we didn't just fire? (Simplified: just log)
+
                     logger.warning(f"⚡ FLASH ALERT: {key} Odds Crash! Z={z:.2f} ({mean:.2f} -> {current_odds:.2f})")
 
                     # Fire Opportunity
@@ -108,7 +140,9 @@ class FlashOddsMonitor:
                         "match_id": match_id,
                         "selection": selection,
                         "current_odds": current_odds,
-                        "z_score": z,
-                        "type": "dropping_odds"
+                        "z_score": float(z),
+                        "type": "dropping_odds",
+                        "timestamp": data.get("timestamp")
                     }
+                    # Emit to global bus
                     await self.bus.emit(Event("flash_opportunity", payload))
