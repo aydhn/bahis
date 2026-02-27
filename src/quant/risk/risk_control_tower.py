@@ -30,6 +30,7 @@ from src.quant.analysis.game_theory_engine import GameTheoryEngine
 # NEW: Advanced Risk Modules
 from src.quant.finance.liquidity_engine import LiquidityEngine
 from src.quant.risk.extreme_value import ExtremeValueAnalyzer
+from src.quant.finance.stress_tester import PortfolioStressTester
 import numpy as np
 
 # Import Physics Reports for Type Hinting (Optional, but good for clarity)
@@ -73,6 +74,7 @@ class RiskControlTower:
         self.synthetic = SyntheticEngine()
         self.arb_scanner = ArbitrageScanner()
         self.liquidity = LiquidityEngine() # NEW
+        self.stress_tester = PortfolioStressTester() # NEW
 
         # 5. Zero Error Components (Philosophical, Causal & EVT)
         self.philosopher = PhilosophicalEngine()
@@ -361,6 +363,36 @@ class RiskControlTower:
         # --- 6. Treasury Check ---
         # Can we afford it?
         amount = final_stake_pct * self.treasury.state.total_capital # Estimate amount
+
+        # --- 6.1 Portfolio Stress Test (NEW) ---
+        # Check if this bet, combined with current portfolio, violates VaR limits
+        # We need current open bets. Assuming Treasury or a new 'PortfolioManager' has them.
+        # For now, we simulate with a placeholder if not available in context.
+        # Ideally, we should fetch: open_bets = self.treasury.get_open_bets()
+        # Mocking retrieval for integration:
+        open_bets = context.get("open_bets", []) # Need to ensure this is populated in Pipeline
+
+        stress_bet = {
+            "stake_amount": amount,
+            "odds": bet_candidate.get("odds", 2.0),
+            "prob_home": bet_candidate.get("prob_home", 0.5)
+        }
+
+        stress_res = self.stress_tester.check_portfolio_health(
+            current_bets=open_bets,
+            new_bet=stress_bet,
+            total_capital=self.treasury.state.total_capital
+        )
+
+        if not stress_res["approved"]:
+            decision.approved = False
+            decision.rejection_reason = stress_res["reason"]
+            return decision
+
+        # Log stress if near limit
+        if stress_res.get("var_pct", 0) > 0.15:
+            decision.adjustments.append(f"Stress Warning: VaR at {stress_res['var_pct']:.1%}")
+
 
         # --- 6.5 Liquidity Check (NEW) ---
         # Ensure the amount doesn't exceed market depth

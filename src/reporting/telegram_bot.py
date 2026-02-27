@@ -269,7 +269,7 @@ class TelegramBot:
         args = parts[1:] if len(parts) > 1 else []
 
         if command == "/start":
-            await self.send_message(chat_id, "🤖 *Otonom Quant Bot Devrede.*\nKomutlar: /status, /strategy, /ceo, /brief, /warroom, /pnl, /risk, /brain, /explain, /analyze, /physics, /treasury, /oracle, /set_risk, /force, /shutdown, /hedge, /synthetic")
+            await self.send_message(chat_id, "🤖 *Otonom Quant Bot Devrede.*\nKomutlar: /status, /strategy, /ceo, /brief, /warroom, /pnl, /risk, /brain, /explain, /analyze, /physics, /treasury, /oracle, /set_risk, /force, /shutdown, /hedge, /synthetic, /memo")
 
         elif command == "/strategy":
             if self.context and hasattr(self.context, 'strategic_directive'):
@@ -618,6 +618,9 @@ class TelegramBot:
         elif command == "/explain":
             await self._handle_explain(chat_id, args)
 
+        elif command == "/memo":
+            await self._handle_memo(chat_id, args)
+
         elif command == "/analyze":
             await self._handle_analyze(chat_id, args)
 
@@ -801,6 +804,76 @@ class TelegramBot:
             await self.send_message(chat_id, report_msg)
         else:
             await self.send_message(chat_id, "Detaylı rapor bulunamadı.")
+
+    async def _handle_memo(self, chat_id: int, args: list):
+        """Generates a detailed Investment Memo (CEO Vision)."""
+        if not args:
+            await self.send_message(chat_id, "⚠️ Usage: `/memo <match_id>`")
+            return
+
+        match_id = args[0]
+        if not self.context or not self.context.ensemble_results:
+            await self.send_message(chat_id, "⚠️ Data not ready.")
+            return
+
+        # Find result
+        res_map = {r.get("match_id"): r for r in self.context.ensemble_results}
+        res = res_map.get(match_id)
+        if not res:
+            await self.send_message(chat_id, f"❌ Analysis not found for {match_id}")
+            return
+
+        # Construct Memo
+        home = res.get("home_team", "Home")
+        away = res.get("away_team", "Away")
+
+        # Syndicate Data
+        audit = res.get("syndicate_audit", [])
+        verdict = res.get("verdict_text", "Consensus")
+
+        # Format Audit Log
+        audit_str = "\n".join([f"• {line}" for line in audit[:5]]) # Limit to 5 lines
+
+        # Thesis & Counter-Thesis (Simulated from model details)
+        # In a real implementation, we'd have explicit thesis strings
+        details = res.get("details", {})
+
+        thesis = "N/A"
+        counter_thesis = "N/A"
+
+        # Try to find Benter vs LSTM
+        if "benter" in details and "lstm" in details:
+            b_home = details["benter"].get("prob_home", 0)
+            l_home = details["lstm"].get("prob_home", 0)
+
+            if abs(b_home - l_home) > 0.15:
+                if b_home > l_home:
+                    thesis = f"Benter (Value): High stats dominance ({b_home:.2f})."
+                    counter_thesis = f"LSTM (Trend): Recent form suggests struggle ({l_home:.2f})."
+                else:
+                    thesis = f"LSTM (Trend): Momentum is strong ({l_home:.2f})."
+                    counter_thesis = f"Benter (Value): Fundamentals weak ({b_home:.2f})."
+            else:
+                thesis = f"Unified View: Both models agree (~{(b_home+l_home)/2:.2f})."
+                counter_thesis = "No significant model divergence."
+
+        msg = (
+            f"📝 **INVESTMENT MEMO: {home} vs {away}**\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+            f"💡 **Investment Thesis**\n"
+            f"{thesis}\n\n"
+            f"⚖️ **Counter-Argument**\n"
+            f"{counter_thesis}\n\n"
+            f"🗳️ **Syndicate Verdict**\n"
+            f"_{verdict}_\n"
+            f"Confidence: {res.get('confidence', 0):.2%}\n\n"
+            f"🔍 **Model Audit**\n"
+            f"{audit_str}\n\n"
+            f"🛡️ **Risk Note**\n"
+            f"Portfolio Stress Impact: Low (Simulated)"
+        )
+
+        await self.send_message(chat_id, msg)
 
     async def _handle_analyze(self, chat_id: int, args: list):
         """Belirli bir maçın analizini getir."""

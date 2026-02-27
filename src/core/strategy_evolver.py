@@ -54,6 +54,11 @@ GENE_SCHEMA = {
     "correlation_max": (0.20, 0.70, 0.40),
     "time_decay_lambda": (0.001, 0.05, 0.01),
     "anti_tilt_streak": (3, 10, 5),
+    # Market Selection Genes (Google Growth Engine)
+    "league_multiplier_tier1": (0.5, 2.0, 1.0), # Aggression for Top Leagues
+    "league_multiplier_tier2": (0.5, 1.5, 1.0), # Aggression for Mid Leagues
+    "league_multiplier_tier3": (0.0, 1.2, 0.8), # Aggression for Lower Leagues
+    "market_whitelist_threshold": (-0.10, 0.05, -0.05), # Min ROI to stay in a market
 }
 
 GENE_NAMES = list(GENE_SCHEMA.keys())
@@ -257,6 +262,15 @@ class StrategyEvolver:
             kelly_f = params["kelly_fraction"]
             raw_k = max((prob * odds - 1) / max(odds - 1, 0.01), 0)
             stake = raw_k * kelly_f
+
+            # Market Selection & Aggression (Growth Engine)
+            tier = r.get("league_tier", 2) # Default to Mid
+            if tier == 1:
+                stake *= params["league_multiplier_tier1"]
+            elif tier == 3:
+                stake *= params["league_multiplier_tier3"]
+            else:
+                stake *= params["league_multiplier_tier2"]
 
             # Edge filtresi
             edge = prob * odds - 1
