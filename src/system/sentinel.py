@@ -554,6 +554,14 @@ class Sentinel:
 
             logger.info("Sentinel: Active Inference feedback loop executed.")
 
+            # Reset health of rotted models if performance improved
+            ensemble_model = container.get("ensemble_model") or self.pipeline.get_stage_model("ensemble")
+            if ensemble_model and hasattr(ensemble_model, "reset_health"):
+                # Strategy: periodically try to rehabilitate rotted models
+                # For now, just log that we could reset
+                # ensemble_model.reset_health()
+                pass
+
         # 4. Evrimleştir
         if len(results_for_evolver) >= 5:  # Lower threshold for testing
             try:
