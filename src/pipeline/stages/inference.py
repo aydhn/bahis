@@ -15,6 +15,8 @@ from src.quant.analysis.market_sentiment import MarketSentiment
 from src.quant.risk.volatility_modulator import VolatilityModulator
 from src.quant.analysis.reflexivity_engine import ReflexivityEngine
 from src.quant.meta_labeling import MetaLabeler
+from src.extensions.smart_money import SmartMoneyDetector
+from src.quant.analysis.game_theory_engine import GameTheoryEngine
 from src.quant.uncertainty.conformal import ConformalPredictor
 from src.quant.analysis.teleology import TeleologicalEngine
 from src.core.zero_copy_bridge import ZeroCopyBridge
@@ -83,6 +85,8 @@ class InferenceStage(PipelineStage):
 
         # Market God (The Omniscient Strategist)
         self.market_god = MarketGod() if MarketGod else None
+        self.smart_money = SmartMoneyDetector()
+        self.game_theory = GameTheoryEngine()
 
         # Advanced Quant Engines (Level 43)
         self.dtw_matcher = DTWMatcher()
@@ -306,11 +310,33 @@ class InferenceStage(PipelineStage):
         entropy = self.entropy_calc.calculate_entropy(probs)
         prediction["entropy"] = entropy
 
-        # 3. Market Sentiment (Odds Movement)
+        # 3. Market Sentiment & Smart Money
         try:
             sentiment = self.market_sentiment.analyze_sentiment(match_id)
             prediction["market_sentiment"] = sentiment
-        except Exception:
+
+            # Smart money integration
+            # Mock retrieving asian handicap data if we had it in context
+            asian_hc = context.get("asian_handicap", None)
+            public_money_pct = context.get("public_money_pct", None)
+
+            euro_odds = {
+                "home": context.get("home_odds", 2.0),
+                "draw": context.get("draw_odds", 3.0),
+                "away": context.get("away_odds", 4.0)
+            }
+
+            sm_sig = self.smart_money.analyze(match_id, euro_odds, asian_hc, public_money_pct)
+            prediction["smart_money_signal"] = sm_sig.signal
+            prediction["smart_money_strength"] = sm_sig.strength
+
+            if sm_sig.signal == "BULLISH":
+                 prediction["confidence"] *= (1.0 + sm_sig.strength * 0.2)
+            elif sm_sig.signal == "BEARISH":
+                 prediction["confidence"] *= (1.0 - sm_sig.strength * 0.2)
+
+        except Exception as e:
+            logger.warning(f"Market Sentiment/Smart Money Error: {e}")
             prediction["market_sentiment"] = {}
 
         # 3.5. Soros Reflexivity Engine
@@ -420,26 +446,30 @@ class InferenceStage(PipelineStage):
             prediction["conformal_certainty"] = "UNKNOWN"
 
         # 8. Game Theory Check (Strategic Defense)
-        # If market sentiment is extremely skewed (everyone betting home),
-        # check if we should randomize our decision to avoid exploitation?
-        # Or simply check Nash Equilibrium of the odds.
-        # Simple use case: If implied prob (1/odds) is exactly equal to model prob,
-        # it's a Nash Equilibrium (Efficient Market). Edge is 0.
-        # We can flag "Perfectly Priced" markets.
         try:
-            # Mock payoff matrix for simulation: Bettor vs Market
-            # 2x2: [Bet Home, Bet Away] vs [Home Wins, Away Wins] (Simplified)
-            # This is illustrative. Real application would be more complex.
-            # Here we just check if EV is near zero, which is a sign of efficiency.
-            implied_home = 1.0 / max(context.get("home_odds", 2.0), 1.01)
-            model_home = prediction.get("prob_home", 0.33)
+            # Construct a basic bettor vs bookie matrix
+            home_odds = context.get("home_odds", 2.0)
+            p = prediction.get("prob_home", 0.5)
 
-            if abs(implied_home - model_home) < 0.01:
-                prediction["game_theory_status"] = "NASH_EQUILIBRIUM"
-                prediction["reasoning"] = "Market is efficient. No edge."
-            else:
-                prediction["game_theory_status"] = "EXPLOITABLE"
-        except Exception:
+            # Row 1: Bet Home, Row 2: Pass
+            # Col 1: Bookie holds odds, Col 2: Bookie drops odds (by 5%)
+            payoff_hold = p * home_odds - 1.0
+            payoff_drop = p * (home_odds * 0.95) - 1.0
+
+            matrix = np.array([
+                [payoff_hold, payoff_drop], # Bet
+                [0.0, 0.0]                  # Pass
+            ])
+
+            nash_res = self.game_theory.solve_nash(matrix)
+            prediction["game_theory_status"] = "NASH_EQUILIBRIUM" if nash_res.game_value <= 0.01 else "EXPLOITABLE"
+            prediction["nash_value"] = nash_res.game_value
+
+            opt_strat = nash_res.optimal_strategy
+            prediction["nash_bet_prob"] = float(opt_strat[0]) if len(opt_strat) > 0 else 0.0
+
+        except Exception as e:
+            logger.warning(f"Game Theory error: {e}")
             pass
 
         # 9. Market God Consultation

@@ -92,7 +92,7 @@ from src.quant.analysis.dtw_matcher import DTWMatcher
 from src.quant.analysis.microstructure_engine import MicrostructureEngine
 
 from src.quant.analysis.reflexivity_engine import ReflexivityEngine
-from src.quant.finance.black_litterman_optimizer import BlackLittermanOptimizer
+from src.core.black_litterman_optimizer import BlackLittermanOptimizer
 
 class TelegramBot:
     """Async Polling tabanlı Telegram Botu."""
@@ -386,7 +386,7 @@ class TelegramBot:
         args = parts[1:] if len(parts) > 1 else []
 
         if command == "/start":
-            await self.send_message(chat_id, "🤖 *Otonom Quant Bot Devrede.*\nKomutlar: /status, /strategy, /ceo, /brief, /warroom, /pnl, /risk, /brain, /explain, /analyze, /physics, /treasury, /oracle, /set_risk, /force, /shutdown, /hedge, /synthetic, /memo, /smart, /forecast, /boardroom, /greeks, /radar, /reflexivity, /alloc, /flow, /execution")
+            await self.send_message(chat_id, "🤖 *Otonom Quant Bot Devrede.*\nKomutlar: /status, /strategy, /ceo, /brief, /warroom, /pnl, /risk, /brain, /explain, /analyze, /physics, /treasury, /oracle, /set_risk, /force, /shutdown, /hedge, /synthetic, /memo, /smartmoney, /forecast, /boardroom, /greeks, /radar, /reflexivity, /alloc, /flow, /execution")
 
         elif command == "/flow":
             # Mock or read real data for Microstructure VPIN/OFI
@@ -820,6 +820,12 @@ class TelegramBot:
             else:
                 await self._handle_physics_detail(chat_id, args[0])
 
+        elif command == "/smartmoney":
+            await self._handle_smartmoney(chat_id)
+
+        elif command == "/boardroom":
+            await self._handle_boardroom(chat_id)
+
         elif command == "/portfolio":
             count = 0
             if self.sentinel and hasattr(self.sentinel, 'portfolio_manager'):
@@ -1102,6 +1108,44 @@ class TelegramBot:
                     await self._handle_update({"message": {"chat": {"id": chat_id}, "text": f"/{cmd}"}})
                 else:
                     await self.send_message(chat_id, f"🤔 Anlaşılamadı: *{result.get('raw')}*")
+
+    async def _handle_smartmoney(self, chat_id: int):
+        smart_money_attr = getattr(self, 'smart_money', None)
+        if not smart_money_attr:
+            await self.send_message(chat_id, "❌ Smart Money Detector modülü yüklü değil.")
+            return
+
+        msg = "💸 **Smart Money & Line Movement**\n\n"
+        if not smart_money_attr.history:
+             msg += "Son 5 dakikada belirgin bir para akışı veya steam hareketi tespit edilmedi."
+        else:
+             for match_id, history in list(smart_money_attr.history.items())[:10]:
+                 if len(history) < 2: continue
+
+                 start_price = history[0][1]
+                 current_price = history[-1][1]
+                 pct_change = (current_price - start_price) / start_price
+
+                 emoji = "🔥 (BULLISH)" if pct_change < -0.05 else "🧊 (BEARISH)" if pct_change > 0.05 else "↔️"
+
+                 msg += f"• `{match_id}`: {start_price:.2f} ➔ {current_price:.2f} ({pct_change:.1%}) {emoji}\n"
+
+        await self.send_message(chat_id, msg)
+
+    async def _handle_boardroom(self, chat_id: int):
+        if not self.context or not self.context.final_bets:
+            await self.send_message(chat_id, "📭 Kurul toplantısı için bekleyen karar yok.")
+            return
+
+        msg = "🏛️ **Board of Directors Kararları**\n\n"
+        # We need to extract boardroom reasoning. It's stored in the bet "reason" or "narrative"
+        # For a clean representation, we'll try to find it in the narratives
+        for bet in self.context.final_bets[-3:]:
+            match_id = bet.get('match_id', 'Unknown')
+            reason = bet.get('reason', '')
+            msg += f"**Maç:** `{match_id}`\n**Kurul Kararı:** {reason}\n\n"
+
+        await self.send_message(chat_id, msg)
 
     async def _handle_explain(self, chat_id: int, args: list):
         """Son bahsin detaylı yatırım notunu (Investment Memo) getir."""
