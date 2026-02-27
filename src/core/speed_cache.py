@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import time
 import threading
+import itertools
 from collections import deque
 from dataclasses import dataclass, field
 from typing import Any, Optional, Dict, List
@@ -101,7 +102,10 @@ class SpeedCache:
                 return []
 
             # Return last N items
-            return list(stream)[-limit:]
+            # Optimization: Use islice on reversed stream to avoid copying entire deque
+            # O(k) instead of O(N) where k=limit, N=stream length
+            items = list(itertools.islice(reversed(stream), limit))
+            return items[::-1]
 
     def clear(self):
         """Clear all data."""
