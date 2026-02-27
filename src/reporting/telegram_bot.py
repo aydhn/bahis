@@ -64,6 +64,11 @@ try:
 except ImportError:
     MarketRegimeDetector = None
 
+try:
+    from src.quant.treasury.synthetic_engine import SyntheticEngine
+except ImportError:
+    SyntheticEngine = None
+
 class TelegramBot:
     """Async Polling tabanlı Telegram Botu."""
 
@@ -94,6 +99,7 @@ class TelegramBot:
         # New Simulation Tools
         self.simulator = ScenarioSimulator() if ScenarioSimulator else None
         self.regime_detector = MarketRegimeDetector() if MarketRegimeDetector else None
+        self.synthetic = SyntheticEngine() if SyntheticEngine else None
 
         if not self.enabled:
             logger.warning("TelegramBot devre dışı: Token veya httpx eksik.")
@@ -263,7 +269,7 @@ class TelegramBot:
         args = parts[1:] if len(parts) > 1 else []
 
         if command == "/start":
-            await self.send_message(chat_id, "🤖 *Otonom Quant Bot Devrede.*\nKomutlar: /status, /strategy, /ceo, /brief, /warroom, /pnl, /risk, /brain, /explain, /analyze, /physics, /treasury, /oracle, /set_risk, /force, /shutdown, /hedge")
+            await self.send_message(chat_id, "🤖 *Otonom Quant Bot Devrede.*\nKomutlar: /status, /strategy, /ceo, /brief, /warroom, /pnl, /risk, /brain, /explain, /analyze, /physics, /treasury, /oracle, /set_risk, /force, /shutdown, /hedge, /synthetic")
 
         elif command == "/strategy":
             if self.context and hasattr(self.context, 'strategic_directive'):
@@ -642,6 +648,34 @@ class TelegramBot:
                 await self.send_message(chat_id, "⚙️ Optimizasyon tetiklendi.")
             else:
                 await self.send_message(chat_id, "❌ Sentinel yok.")
+
+        elif command == "/synthetic":
+            if not self.synthetic:
+                await self.send_message(chat_id, "⚠️ Synthetic Engine yüklü değil.")
+                return
+
+            if len(args) < 3:
+                await self.send_message(chat_id, "⚠️ Kullanım: `/synthetic <home_odds> <draw_odds> <away_odds>`")
+                return
+
+            try:
+                ho, do, ao = float(args[0]), float(args[1]), float(args[2])
+                dnb = self.synthetic.calculate_dnb(ho, do, ao)
+                dc = self.synthetic.calculate_double_chance(ho, do, ao)
+
+                msg = f"🧪 **Synthetic Markets Calculation**\nInput: {ho} | {do} | {ao}\n\n"
+                msg += f"🛡️ **Draw No Bet (DNB)**\n"
+                msg += f"Home: {dnb.get('home_dnb', 0):.3f}\n"
+                msg += f"Away: {dnb.get('away_dnb', 0):.3f}\n\n"
+
+                msg += f"⚖️ **Double Chance (DC)**\n"
+                msg += f"1X: {dc.get('1x', 0):.3f}\n"
+                msg += f"X2: {dc.get('x2', 0):.3f}\n"
+                msg += f"12: {dc.get('12', 0):.3f}"
+
+                await self.send_message(chat_id, msg)
+            except Exception as e:
+                await self.send_message(chat_id, f"⚠️ Hata: {e}")
 
     async def _handle_voice(self, msg: Dict[str, Any], chat_id: int):
         """Sesli mesajı işle ve komuta çevir."""
