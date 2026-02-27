@@ -54,6 +54,14 @@ class FeatureStage(PipelineStage):
             self.elo = None
             logger.warning("EloGlickoSystem not found.")
 
+        # Kalman Team Tracker Integration
+        try:
+            from src.quant.analysis.kalman_tracker import KalmanTeamTracker
+            self.kalman = KalmanTeamTracker()
+        except ImportError:
+            self.kalman = None
+            logger.warning("KalmanTeamTracker not found.")
+
     async def execute(self, context: Dict[str, Any]) -> Dict[str, Any]:
         matches = context.get("matches", pl.DataFrame())
         if matches.is_empty():
@@ -100,6 +108,39 @@ class FeatureStage(PipelineStage):
 
             except Exception as e:
                 logger.error(f"Elo integration failed: {e}")
+
+        # 1.6 Kalman Features Integration
+        if self.kalman:
+            try:
+                # Check for warm-up
+                if not self.kalman._filters:
+                    logger.info("Warming up Kalman Tracker...")
+                    hist_matches = self.db.get_finished_matches(limit=1000)
+                    if not hist_matches.is_empty():
+                        hist_data = hist_matches.to_dicts()
+                        self.kalman.bulk_update(hist_data)
+
+                # Predict for current matches
+                kalman_preds = []
+                for row in matches.iter_rows(named=True):
+                    pred = self.kalman.predict_match(row["home_team"], row["away_team"])
+                    # Flatten/Rename for features
+                    kalman_preds.append({
+                        "match_id": row["match_id"],
+                        "kalman_home_strength": pred["home_strength"],
+                        "kalman_away_strength": pred["away_strength"],
+                        "kalman_home_momentum": pred["home_momentum"],
+                        "kalman_away_momentum": pred["away_momentum"],
+                        "kalman_prob_home": pred["prob_home"]
+                    })
+
+                if kalman_preds:
+                    k_df = pl.DataFrame(kalman_preds)
+                    features = features.join(k_df, on="match_id", how="left")
+                    logger.debug(f"Kalman features attached. Shape: {features.shape}")
+
+            except Exception as e:
+                logger.error(f"Kalman integration failed: {e}")
 
         # 2. Time Decay
         if self.time_decay:

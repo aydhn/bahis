@@ -64,6 +64,12 @@ try:
 except ImportError:
     RenormalizationGroup = None
 
+try:
+    from src.quant.analysis.hypergraph_unit import HypergraphUnitAnalyzer, TacticalUnit
+except ImportError:
+    HypergraphUnitAnalyzer = None
+    TacticalUnit = None
+
 
 class PhysicsStage(PipelineStage):
     """
@@ -78,6 +84,8 @@ class PhysicsStage(PipelineStage):
     - PathSignatureEngine: Rough Path Theory (Volatility Signature).
     - HomologyScanner: Persistent Homology (Team Organization).
     - GCNPitchGraph: Graph Neural Networks (Player Coordination).
+    - RenormalizationGroup: Market flow analysis.
+    - HypergraphUnitAnalyzer: Tactical unit failure analysis.
     """
 
     def __init__(self):
@@ -194,6 +202,16 @@ class PhysicsStage(PipelineStage):
             logger.warning("RenormalizationGroup module missing.")
             self.rg_flow = None
 
+        if HypergraphUnitAnalyzer:
+            try:
+                self.hypergraph = HypergraphUnitAnalyzer()
+            except Exception as e:
+                logger.error(f"Failed to init HypergraphUnitAnalyzer: {e}")
+                self.hypergraph = None
+        else:
+            logger.warning("HypergraphUnitAnalyzer module missing.")
+            self.hypergraph = None
+
     async def execute(self, context: Dict[str, Any]) -> Dict[str, Any]:
         """Run physics analysis on the current batch of matches."""
         matches = context.get("matches", pl.DataFrame())
@@ -211,7 +229,8 @@ class PhysicsStage(PipelineStage):
             "path_signatures": {},
             "homology_reports": {},
             "gcn_coordination": {},
-            "rg_flow_reports": {}
+            "rg_flow_reports": {},
+            "hypergraph_reports": {}
         }
 
         # 1. Global Systemic Risk (Ricci Flow)
@@ -292,6 +311,10 @@ class PhysicsStage(PipelineStage):
             # J. Renormalization Group Task
             if self.rg_flow:
                 tasks.append(self._run_rg_flow(match_id, results))
+
+            # K. Hypergraph Unit Analyzer Task
+            if self.hypergraph:
+                tasks.append(self._run_hypergraph_analysis(match_id, cycle, results))
 
 
         if tasks:
@@ -404,6 +427,38 @@ class PhysicsStage(PipelineStage):
             results["rg_flow_reports"][match_id] = rg_rep
         except Exception as e:
             logger.warning(f"RG Flow failed for {match_id}: {e}")
+
+    async def _run_hypergraph_analysis(self, match_id: str, cycle: int, results: Dict[str, Any]):
+        try:
+            # Simulate player positions as a proxy for team structure
+            # We don't have individual player ratings in this context, so we mock them
+            # or derive them from position noise.
+            pos_h = self._simulate_player_positions(match_id, cycle, team="home")
+            pos_a = self._simulate_player_positions(match_id, cycle, team="away")
+
+            # Define standard tactical units
+            units_h = [
+                TacticalUnit("Defense", "defense", [0, 1, 2, 3], weight=1.5),
+                TacticalUnit("Midfield", "midfield", [4, 5, 6, 7], weight=1.2),
+                TacticalUnit("Attack", "attack", [8, 9, 10], weight=1.0)
+            ]
+            units_a = [
+                TacticalUnit("Defense", "defense", [0, 1, 2, 3], weight=1.5),
+                TacticalUnit("Midfield", "midfield", [4, 5, 6, 7], weight=1.2),
+                TacticalUnit("Attack", "attack", [8, 9, 10], weight=1.0)
+            ]
+
+            # Mock ratings (random normal centered around 70)
+            ratings_h = np.clip(np.random.normal(70, 10, 11), 40, 99)
+            ratings_a = np.clip(np.random.normal(70, 10, 11), 40, 99)
+
+            report_h = await asyncio.to_thread(self.hypergraph.analyze_team, "Home", units_h, ratings_h)
+            report_a = await asyncio.to_thread(self.hypergraph.analyze_team, "Away", units_a, ratings_a)
+
+            results["hypergraph_reports"][match_id] = {"home": report_h, "away": report_a}
+
+        except Exception as e:
+            logger.warning(f"Hypergraph analysis failed for {match_id}: {e}")
 
 
     # --- Simulators ---

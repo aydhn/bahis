@@ -46,6 +46,11 @@ from src.reporting.visualizer import Visualizer
 from src.core.event_bus import Event
 from src.quant.analysis.narrative_generator import NarrativeGenerator
 
+try:
+    from src.quant.analysis.xai_explainer import XAIExplainer
+except ImportError:
+    XAIExplainer = None
+
 class TelegramBot:
     """Async Polling tabanlı Telegram Botu."""
 
@@ -69,6 +74,9 @@ class TelegramBot:
         self.treasury = TreasuryEngine()
         self.oracle = TheOracle()
         self.speed_cache = SpeedCache()
+
+        # XAI Explainer
+        self.xai = XAIExplainer() if XAIExplainer else None
 
         if not self.enabled:
             logger.warning("TelegramBot devre dışı: Token veya httpx eksik.")
@@ -634,12 +642,31 @@ class TelegramBot:
             await self.send_message(chat_id, "⚠️ Sistem verisi henüz hazır değil.")
             return
 
-        # 1. Narrative var mı?
+        # 1. XAI Analysis (Visual & Text)
+        if self.context.features is not None:
+            # Polars filter for match_id
+            try:
+                row = self.context.features.filter(pl.col("match_id") == match_id)
+                if not row.is_empty():
+                    # Convert to dictionary for XAI
+                    feat_dict = row.to_dict(as_series=False)
+                    # Use index 0
+                    single_row = {k: v[0] for k, v in feat_dict.items()}
+
+                    if self.xai:
+                        await self.send_message(chat_id, "🔍 *XAI Analizi Hazırlanıyor...*")
+                        await self.xai.explain_and_send(single_row, match_id, chart_sender=self)
+                    else:
+                        await self.send_message(chat_id, "⚠️ XAI motoru yüklü değil.")
+            except Exception as e:
+                logger.error(f"Analysis failed: {e}")
+
+        # 2. Narrative var mı?
         if match_id in self.context.narratives:
             await self.send_message(chat_id, self.context.narratives[match_id], parse_mode="Markdown")
             return
 
-        # 2. Ensemble Analizi Var mı? (NEW)
+        # 3. Ensemble Analizi Var mı? (NEW)
         if self.context.ensemble_results:
              # Optimize lookup
              res_map = {r.get("match_id"): r for r in self.context.ensemble_results}
@@ -683,7 +710,7 @@ class TelegramBot:
                  await self.send_message(chat_id, story)
                  return
 
-        # 3. Volatilite Raporu var mı?
+        # 4. Volatilite Raporu var mı?
         if match_id in self.context.volatility_reports:
             vol = self.context.volatility_reports[match_id]
             msg = (
@@ -695,7 +722,9 @@ class TelegramBot:
             await self.send_message(chat_id, msg)
             return
 
-        await self.send_message(chat_id, f"❌ `{match_id}` için güncel analiz bulunamadı.")
+        # If nothing found
+        if not self.context.features or self.context.features.filter(pl.col("match_id") == match_id).is_empty():
+             await self.send_message(chat_id, f"❌ `{match_id}` için güncel analiz bulunamadı.")
 
     async def _handle_physics_detail(self, chat_id: int, match_id: str):
         """Physics motorlarının detaylı çıktısını raporla."""
@@ -726,6 +755,16 @@ class TelegramBot:
         if match_id in reps.get("fractal_reports", {}):
             f = reps["fractal_reports"][match_id]
             msg += f"\n❄️ **Fractal**\nHurst: {f.hurst:.3f}\nDim: {f.fractal_dimension:.3f}\n"
+
+        # 5. Hypergraph
+        if match_id in reps.get("hypergraph_reports", {}):
+            h = reps["hypergraph_reports"][match_id]
+            home_rep = h.get("home")
+            away_rep = h.get("away")
+            if home_rep:
+                msg += f"\n🔗 **Hypergraph (Home)**\nVuln: {home_rep.vulnerability_index:.2f}\nCohesion: {home_rep.team_cohesion:.2f}\n"
+            if away_rep:
+                msg += f"\n🔗 **Hypergraph (Away)**\nVuln: {away_rep.vulnerability_index:.2f}\nCohesion: {away_rep.team_cohesion:.2f}\n"
 
         await self.send_message(chat_id, msg)
 
