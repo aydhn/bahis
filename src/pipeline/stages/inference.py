@@ -13,6 +13,7 @@ from src.quant.risk.entropy_kelly import EntropyKelly
 from src.quant.analysis.similarity import SimilarityEngine
 from src.quant.analysis.market_sentiment import MarketSentiment
 from src.quant.risk.volatility_modulator import VolatilityModulator
+from src.quant.analysis.reflexivity_engine import ReflexivityEngine
 from src.quant.meta_labeling import MetaLabeler
 from src.quant.uncertainty.conformal import ConformalPredictor
 from src.quant.analysis.teleology import TeleologicalEngine
@@ -58,6 +59,7 @@ class InferenceStage(PipelineStage):
         self.similarity_engine.load_history()
 
         self.market_sentiment = MarketSentiment()
+        self.reflexivity_engine = ReflexivityEngine()
 
         self.teleology_engine = TeleologicalEngine()
 
@@ -303,6 +305,20 @@ class InferenceStage(PipelineStage):
             prediction["market_sentiment"] = sentiment
         except Exception:
             prediction["market_sentiment"] = {}
+
+        # 3.5. Soros Reflexivity Engine
+        try:
+            # Simulate recent odds history for the engine if not available directly
+            h_odd = context.get("home_odds", 2.0)
+            # A mock sequence representing recent drift (e.g. odds dropping slightly)
+            mock_history = [h_odd * 1.05, h_odd * 1.02, h_odd * 1.01, h_odd]
+            reflex_report = self.reflexivity_engine.analyze(mock_history, match_id=match_id)
+            prediction["reflexivity_index"] = reflex_report.index
+            prediction["reflexive_signal"] = reflex_report.signal
+        except Exception as e:
+            logger.warning(f"Reflexivity engine failed for {match_id}: {e}")
+            prediction["reflexivity_index"] = 0.0
+            prediction["reflexive_signal"] = "NEUTRAL"
 
         # 4. Teleological Analysis (Narrative & Motivation)
         # Assuming context has some rank/points data (from Features stage)
