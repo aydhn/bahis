@@ -25,6 +25,14 @@ from src.quant.analysis.market_regime_detector import MarketRegimeDetector, Regi
 from src.quant.analysis.philosophical_engine import PhilosophicalEngine
 from src.quant.analysis.causal_reasoner import CausalReasoner
 
+# Import Physics Reports for Type Hinting (Optional, but good for clarity)
+try:
+    from src.quant.physics.fisher_geometry import FisherReport
+    from src.quant.physics.ricci_flow import RicciReport
+    from src.quant.analysis.hypergraph_unit import HypergraphReport
+except ImportError:
+    pass
+
 @dataclass
 class RiskDecision:
     """Final decision from the Risk Tower."""
@@ -142,7 +150,51 @@ class RiskControlTower:
             decision.rejection_reason = f"Epistemic Veto: {', '.join(epistemic_report.rejection_reasons)}"
             return decision
 
-        # --- 3.2 Causal Check (Spurious Correlation) ---
+        # --- 3.2 Physics Veto (Ricci & Fisher) ---
+        # Deep Geometry Check
+        physics_reports = context.get("physics_reports", {})
+
+        # Ricci Flow (Systemic Risk)
+        if "ricci_report" in physics_reports:
+            ricci = physics_reports["ricci_report"]
+            if ricci and hasattr(ricci, 'stress_level') and ricci.stress_level == "critical":
+                decision.approved = False
+                decision.rejection_reason = f"Ricci Flow Veto: Critical Systemic Stress (Risk: {ricci.systemic_risk:.2f})"
+                return decision
+
+        # Fisher Geometry (Regime Shift & Anomaly)
+        if "fisher_reports" in physics_reports:
+            fisher = physics_reports["fisher_reports"].get(match_id)
+            if fisher:
+                # If anomalous AND regime shift, hard block
+                if fisher.is_anomaly and fisher.regime_shift:
+                    decision.approved = False
+                    decision.rejection_reason = f"Fisher Geometry Veto: Anomaly + Regime Shift (FR Distance: {fisher.fisher_rao_distance:.2f})"
+                    return decision
+
+                # If just Regime Shift, reduce confidence/stake
+                if fisher.regime_shift:
+                    decision.adjustments.append(f"Fisher Warning: Regime Shift detected (FR={fisher.fisher_rao_distance:.2f}).")
+
+        # --- 3.3 Structural Integrity (Hypergraph) ---
+        if "hypergraph_reports" in physics_reports:
+            # Check home/away vulnerability depending on bet
+            # For simplicity, if we bet on HOME, we check HOME structural integrity
+            # If HOME structure is compromised, reduce stake.
+            # If AWAY structure is compromised, increase confidence? (Not implemented here, but good idea)
+
+            # Assuming 'selection' is in bet_candidate or we infer from context
+            # Defaulting to checking HOME team for now as primary risk
+            hg_reports = physics_reports["hypergraph_reports"].get(match_id, {})
+            home_hg = hg_reports.get("home")
+
+            if home_hg and hasattr(home_hg, 'vulnerability_index'):
+                if home_hg.vulnerability_index > 0.6:
+                    decision.adjustments.append(f"Hypergraph Warning: High Structural Vulnerability ({home_hg.vulnerability_index:.2f}).")
+                    # We will apply this multiplier later in modulation or manually here
+                    # Let's add it as a modulation factor below
+
+        # --- 3.4 Causal Check (Spurious Correlation) ---
         # If any major causal factor (e.g. Red Card) is active, ensure we account for it
         # For now, we simulate a check. Real implementation would parse match_data.
         # causal_effect = self.causal_reasoner.estimate_effect("recent_form", "outcome")
@@ -175,6 +227,11 @@ class RiskControlTower:
         # Apply advanced physics multipliers
         physics_ctx = self._extract_physics_context(match_id, context)
         phys_mult = self.physics_modulator.modulate(bet_candidate, physics_ctx)
+
+        # Hypergraph Penalty Integration
+        # If we had a structural warning, reduce stake by 20%
+        if any("Hypergraph Warning" in adj for adj in decision.adjustments):
+            phys_mult *= 0.8
 
         if phys_mult <= 0.0:
             decision.approved = False
