@@ -109,6 +109,43 @@ class TreasuryEngine:
         self.save_state()
         logger.info(f"Treasury: Released {amount:.2f} + PnL {pnl:.2f} to '{strategy_type}'.")
 
+    def rebalance_buckets(self, regime: str):
+        """
+        Dynamically adjust capital allocation based on Market Regime.
+        Acting like a Central Bank changing reserve requirements.
+        """
+        regime = regime.lower()
+        logger.info(f"Treasury: Rebalancing Buckets for Regime: {regime.upper()}")
+
+        # Available liquid capital to redistribute (excluding locked)
+        # We re-pool available funds and redistribute according to new ratios
+        # But we must respect currently locked funds per bucket. This is complex.
+        # Simplified approach: We change target allocations. Actual rebalancing happens over time?
+        # No, for 'CRASH', we want to move AVAILABLE funds immediately to SAFE.
+
+        # 1. Identify Target Allocations
+        if regime in ["crash", "chaotic"]:
+            new_alloc = {"safe": 1.0, "aggressive": 0.0, "rnd": 0.0}
+        elif regime == "volatile":
+            new_alloc = {"safe": 0.7, "aggressive": 0.2, "rnd": 0.1}
+        elif regime == "stable":
+            new_alloc = {"safe": 0.5, "aggressive": 0.3, "rnd": 0.2}
+        else: # Normal default
+            new_alloc = {"safe": 0.5, "aggressive": 0.3, "rnd": 0.2}
+
+        self.state.allocations = new_alloc
+
+        # 2. Redistribute Liquid Funds
+        # Calculate total available liquid funds across all buckets
+        total_available = sum(self.state.buckets.values()) # This is what's currently in buckets
+
+        # Redistribute
+        for bucket, ratio in new_alloc.items():
+            self.state.buckets[bucket] = total_available * ratio
+
+        logger.success(f"Treasury: Rebalanced. New Buckets: {json.dumps(self.state.buckets, indent=2)}")
+        self.save_state()
+
     def reset_daily_pnl(self):
         """Call this at midnight."""
         logger.info(f"Treasury: Resetting Daily PnL (Was: {self.state.daily_pnl:.2f})")

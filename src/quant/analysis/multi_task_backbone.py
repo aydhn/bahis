@@ -173,6 +173,40 @@ class MultiTaskBackbone:
 
         return results_df
 
+    def predict_batch_numpy(self, X_batch: np.ndarray, match_ids: list[str] | None = None) -> pl.DataFrame:
+        """
+        Zero-Copy friendly inference.
+        Accepts numpy array directly.
+        """
+        if X_batch.size == 0:
+            return pl.DataFrame()
+
+        if match_ids is None:
+            # Generate placeholder IDs if not provided
+            match_ids = ["" for _ in range(X_batch.shape[0])]
+
+        # Ensure input dimensions match expectations (truncate if SHM is padded)
+        # We assume X_batch columns are at least input_dim
+        if X_batch.shape[1] > self.input_dim:
+            X_batch = X_batch[:, :self.input_dim]
+
+        if TORCH_AVAILABLE and self._model is not None:
+            preds = self._predict_torch_batch(X_batch)
+        else:
+            preds = self._predict_heuristic_batch_numpy(X_batch)
+
+        results_df = pl.DataFrame({
+            "match_id": match_ids,
+            "mtl_prob_home": preds["prob_home"],
+            "mtl_prob_draw": preds["prob_draw"],
+            "mtl_prob_away": preds["prob_away"],
+            "mtl_expected_goals": preds["expected_goals"],
+            "mtl_expected_corners": preds["expected_corners"],
+            "mtl_confidence": preds["confidence"],
+        })
+
+        return results_df
+
     def _predict_torch_batch(self, X_batch: np.ndarray) -> dict:
         """PyTorch batched inference."""
         self._model.eval()
@@ -198,7 +232,7 @@ class MultiTaskBackbone:
         }
 
     def _predict_heuristic_batch(self, features: pl.DataFrame) -> dict:
-        """Fallback logic when PyTorch is not available (Vectorized)."""
+        """Fallback logic when PyTorch is not available (Vectorized from DataFrame)."""
         n = features.height
 
         # Simple Odds Implied Probability
@@ -230,6 +264,52 @@ class MultiTaskBackbone:
         corners = xg * 4.5
 
         # Confidence is max prob
+        confidence = np.maximum(probs_h, np.maximum(probs_d, probs_a))
+
+        return {
+            "prob_home": probs_h,
+            "prob_draw": probs_d,
+            "prob_away": probs_a,
+            "expected_goals": xg,
+            "expected_corners": corners,
+            "confidence": confidence,
+        }
+
+    def _predict_heuristic_batch_numpy(self, X_batch: np.ndarray) -> dict:
+        """Fallback logic when PyTorch is not available (Vectorized from Numpy)."""
+        # Feature Mapping (Must match FEATURE_KEYS order)
+        # 0: home_odds, 1: draw_odds, 2: away_odds
+        # 5: home_xg, 6: away_xg
+
+        h = X_batch[:, 0]
+        d = X_batch[:, 1]
+        a = X_batch[:, 2]
+
+        h = np.maximum(h, 1.01)
+        d = np.maximum(d, 1.01)
+        a = np.maximum(a, 1.01)
+
+        probs_h = 1.0 / h
+        probs_d = 1.0 / d
+        probs_a = 1.0 / a
+
+        total_probs = probs_h + probs_d + probs_a
+        # Avoid zero total (if all odds are huge? unlikely with max 1.01)
+        probs_h /= total_probs
+        probs_d /= total_probs
+        probs_a /= total_probs
+
+        # xG
+        xg_h = X_batch[:, 5]
+        xg_a = X_batch[:, 6]
+
+        # Use defaults if 0
+        xg_h = np.where(xg_h <= 0, 1.35, xg_h)
+        xg_a = np.where(xg_a <= 0, 1.15, xg_a)
+
+        xg = xg_h + xg_a
+        corners = xg * 4.5
+
         confidence = np.maximum(probs_h, np.maximum(probs_d, probs_a))
 
         return {
