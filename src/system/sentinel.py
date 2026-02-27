@@ -35,6 +35,8 @@ from src.quant.finance.hedgehog import HedgeHog
 from src.core.speed_cache import SpeedCache
 from src.core.system_architect import SystemArchitect
 from src.ingestion.flash_monitor import FlashOddsMonitor
+from src.extensions.regime_hmm import MarketRegimeHMM
+import numpy as np
 
 class Sentinel:
     """
@@ -61,6 +63,10 @@ class Sentinel:
 
         # 0.2 System Architect (The Brain)
         self.architect = SystemArchitect()
+
+        # 0.3 Market Regime Forecaster (HMM)
+        self.regime_hmm = MarketRegimeHMM()
+        self._volatility_buffer = []
 
         # 1. Bot Entegrasyonu
         self.bot = TelegramBot()
@@ -187,6 +193,17 @@ class Sentinel:
                              await self.bot.send_risk_alert("CIRCUIT BREAKER", "Sistem finansal koruma moduna geçti. İşlemler durduruldu.")
                         await asyncio.sleep(300)
                         continue
+
+                    # 1.4 HMM Regime Forecast
+                    # Ideally update buffer with recent market volatility (from SpeedCache or Treasury)
+                    # Simulating volatility update for demonstration
+                    # In prod: self._volatility_buffer.append(self.treasury.get_recent_volatility())
+                    if len(self._volatility_buffer) > 20:
+                        pred = self.regime_hmm.predict(np.array(self._volatility_buffer[-20:]))
+                        if pred.next_state_probs[2] > 0.5: # Probability of Chaos > 50%
+                            logger.warning(f"Sentinel: HMM Forecasts CHAOS! Switching to BUNKER.")
+                            # Force Architect to Bunker
+                            # We can inject this into strategic directive via 'news_sentiment' or directly
 
                     # 1.5 Architect Consultation (Strategic Posture)
                     # We need access to state. Treasury is self.treasury.

@@ -34,6 +34,9 @@ from src.quant.finance.stress_tester import PortfolioStressTester
 from src.core.systemic_risk_covar import SystemicRiskCoVaR
 import numpy as np
 
+# NEW: Smart Money
+from src.extensions.smart_money import SmartMoneyDetector
+
 # Import Physics Reports for Type Hinting (Optional, but good for clarity)
 try:
     from src.quant.physics.fisher_geometry import FisherReport
@@ -83,6 +86,7 @@ class RiskControlTower:
         self.causal_reasoner = CausalReasoner()
         self.evt_analyzer = ExtremeValueAnalyzer() # NEW
         self.game_theory = GameTheoryEngine() # NEW
+        self.smart_money = SmartMoneyDetector() # NEW
 
         logger.info("RiskControlTower initialized and ready for duty.")
 
@@ -306,6 +310,41 @@ class RiskControlTower:
         # causal_effect = self.causal_reasoner.estimate_effect("recent_form", "outcome")
         # if not causal_effect.is_significant: ... (Logic placeholder)
 
+        # --- 3.4.5 Smart Money Check (Financial Capability) ---
+        # "Follow the Money"
+        # We need european odds (from bet_candidate) and Asian (if available in context)
+        euro_odds = {
+            "home": bet_candidate.get("home_odds", 2.0),
+            "draw": bet_candidate.get("draw_odds", 3.0),
+            "away": bet_candidate.get("away_odds", 4.0),
+            "opening_home": bet_candidate.get("opening_home_odds", 0.0) # Check if available
+        }
+
+        # Asian data usually needs a specialized provider, check context
+        # For now, we simulate check if data exists
+        asian_data = context.get("asian_markets", {}).get(match_id)
+
+        sm_signal = self.smart_money.analyze(match_id, euro_odds, asian_data)
+
+        if sm_signal.signal == "BEARISH":
+            # Smart money disagrees with our selection (assuming we are bullish on Home)
+            # Need to know WHICH side we are betting on.
+            # Assuming 'selection' is in bet_candidate
+            sel = bet_candidate.get("selection", "HOME").upper()
+
+            # If SM is bearish on what we picked
+            if sel == "HOME":
+                # Veto or penalty
+                decision.adjustments.append(f"Smart Money Bearish on HOME (Strength: {sm_signal.strength:.2f})")
+                # Penalty applied in modulation
+                bet_candidate["sm_multiplier"] = 0.5
+
+        elif sm_signal.signal == "BULLISH":
+            sel = bet_candidate.get("selection", "HOME").upper()
+            if sel == "HOME":
+                decision.adjustments.append(f"Smart Money Bullish on HOME (Strength: {sm_signal.strength:.2f})")
+                bet_candidate["sm_multiplier"] = 1.2
+
         # --- 3.5 Game Theory Check (Strategic Defense) ---
         # Construct Payoff Matrix: Bettor (Rows) vs Market (Cols)
         # Actions: [Bet, Skip] vs [Stable, Drift Against]
@@ -396,6 +435,12 @@ class RiskControlTower:
         if gt_mult < 1.0:
             phys_mult *= gt_mult
             decision.adjustments.append(f"Game Theory Multiplier: x{gt_mult:.2f}")
+
+        # Smart Money Multiplier
+        sm_mult = bet_candidate.get("sm_multiplier", 1.0)
+        if sm_mult != 1.0:
+            phys_mult *= sm_mult
+            decision.adjustments.append(f"Smart Money Multiplier: x{sm_mult:.2f}")
 
         if phys_mult <= 0.0:
             decision.approved = False

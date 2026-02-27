@@ -69,6 +69,17 @@ try:
 except ImportError:
     SyntheticEngine = None
 
+# New Extensions
+try:
+    from src.extensions.smart_money import SmartMoneyDetector
+except ImportError:
+    SmartMoneyDetector = None
+
+try:
+    from src.extensions.regime_hmm import MarketRegimeHMM
+except ImportError:
+    MarketRegimeHMM = None
+
 class TelegramBot:
     """Async Polling tabanlı Telegram Botu."""
 
@@ -100,6 +111,10 @@ class TelegramBot:
         self.simulator = ScenarioSimulator() if ScenarioSimulator else None
         self.regime_detector = MarketRegimeDetector() if MarketRegimeDetector else None
         self.synthetic = SyntheticEngine() if SyntheticEngine else None
+
+        # Extensions
+        self.smart_money = SmartMoneyDetector() if SmartMoneyDetector else None
+        self.regime_hmm = MarketRegimeHMM() if MarketRegimeHMM else None
 
         if not self.enabled:
             logger.warning("TelegramBot devre dışı: Token veya httpx eksik.")
@@ -349,7 +364,7 @@ class TelegramBot:
         args = parts[1:] if len(parts) > 1 else []
 
         if command == "/start":
-            await self.send_message(chat_id, "🤖 *Otonom Quant Bot Devrede.*\nKomutlar: /status, /strategy, /ceo, /brief, /warroom, /pnl, /risk, /brain, /explain, /analyze, /physics, /treasury, /oracle, /set_risk, /force, /shutdown, /hedge, /synthetic, /memo")
+            await self.send_message(chat_id, "🤖 *Otonom Quant Bot Devrede.*\nKomutlar: /status, /strategy, /ceo, /brief, /warroom, /pnl, /risk, /brain, /explain, /analyze, /physics, /treasury, /oracle, /set_risk, /force, /shutdown, /hedge, /synthetic, /memo, /smart, /forecast")
 
         elif command == "/strategy":
             if self.context and hasattr(self.context, 'strategic_directive'):
@@ -813,6 +828,55 @@ class TelegramBot:
                 await self.send_message(chat_id, msg)
             except Exception as e:
                 await self.send_message(chat_id, f"⚠️ Error: {e}")
+
+        elif command == "/smart":
+            if not self.smart_money:
+                await self.send_message(chat_id, "⚠️ Smart Money modülü eksik.")
+                return
+            if not args:
+                await self.send_message(chat_id, "⚠️ Usage: `/smart <match_id>` or `/smart <euro_home> <asian_line> <asian_odds>`")
+                return
+
+            # Simple manual mode for testing
+            if len(args) == 3:
+                try:
+                    euro_h = float(args[0])
+                    line = float(args[1])
+                    asian_h = float(args[2])
+
+                    euro = {"home": euro_h, "draw": 3.0, "away": 4.0} # dummy
+                    asian = {"line": line, "home_odds": asian_h, "away_odds": 2.0}
+
+                    sig = self.smart_money.analyze("manual", euro, asian)
+
+                    await self.send_message(chat_id, f"🧠 **Smart Money Signal**\nSignal: {sig.signal}\nStrength: {sig.strength:.2f}\nReason: {sig.reason}")
+                except Exception as e:
+                    await self.send_message(chat_id, f"⚠️ Error: {e}")
+            else:
+                await self.send_message(chat_id, "⚠️ Auto-lookup not implemented yet. Use manual args.")
+
+        elif command == "/forecast":
+            if not self.regime_hmm:
+                await self.send_message(chat_id, "⚠️ Regime HMM modülü eksik.")
+                return
+
+            # Use Sentinel buffer if available
+            if self.sentinel and hasattr(self.sentinel, "_volatility_buffer") and self.sentinel._volatility_buffer:
+                import numpy as np
+                buf = np.array(self.sentinel._volatility_buffer)
+                pred = self.regime_hmm.predict(buf)
+
+                msg = (
+                    f"🔮 **Market Regime Forecast (HMM)**\n"
+                    f"{pred.description}\n"
+                    f"Probabilities:\n"
+                    f"  Stable: {pred.next_state_probs[0]:.1%}\n"
+                    f"  Volatile: {pred.next_state_probs[1]:.1%}\n"
+                    f"  Chaotic: {pred.next_state_probs[2]:.1%}"
+                )
+                await self.send_message(chat_id, msg)
+            else:
+                await self.send_message(chat_id, "⚠️ Yeterli veri yok (Sentinel buffer boş).")
 
     async def _handle_voice(self, msg: Dict[str, Any], chat_id: int):
         """Sesli mesajı işle ve komuta çevir."""
