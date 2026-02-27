@@ -10,9 +10,66 @@ Concepts:
   - Hedge Ratio: Optimal stake for the hedge bet.
   - Stop Loss: Selling out of a position to minimize loss when odds drift against us.
   - Arbitrage: Exploiting price differences between bookmakers (theoretical here).
+  - Dynamic Hedging: Using VolatilityModulator to adjust hedge thresholds.
 """
-from typing import Dict, Optional, Tuple, Any
+from typing import Dict, Optional, Tuple, Any, List
 from loguru import logger
+import numpy as np
+
+class ArbitrageScanner:
+    """
+    Scans for Arbitrage opportunities across different bookmakers.
+    Requires odds data from multiple sources.
+    """
+    def __init__(self):
+        pass
+
+    def scan(self, match_odds: Dict[str, Dict[str, float]]) -> Optional[Dict[str, Any]]:
+        """
+        Detects arbitrage in a single match given odds from multiple bookies.
+
+        Args:
+            match_odds: {
+                "bookie_A": {"home": 2.1, "draw": 3.2, "away": 3.5},
+                "bookie_B": {"home": 2.0, "draw": 3.4, "away": 3.6},
+                ...
+            }
+
+        Returns:
+            Arb opportunity dict or None.
+        """
+        if not match_odds or len(match_odds) < 2:
+            return None
+
+        # Find best odds for each outcome
+        best_home = (0.0, "")
+        best_draw = (0.0, "")
+        best_away = (0.0, "")
+
+        for bookie, odds in match_odds.items():
+            if odds.get("home", 0) > best_home[0]: best_home = (odds["home"], bookie)
+            if odds.get("draw", 0) > best_draw[0]: best_draw = (odds["draw"], bookie)
+            if odds.get("away", 0) > best_away[0]: best_away = (odds["away"], bookie)
+
+        # Calculate Implied Probability
+        if best_home[0] == 0 or best_draw[0] == 0 or best_away[0] == 0:
+            return None
+
+        implied_prob = (1.0 / best_home[0]) + (1.0 / best_draw[0]) + (1.0 / best_away[0])
+
+        if implied_prob < 1.0:
+            roi = (1.0 / implied_prob) - 1.0
+            return {
+                "type": "ARBITRAGE",
+                "roi": roi,
+                "home": {"odds": best_home[0], "bookie": best_home[1]},
+                "draw": {"odds": best_draw[0], "bookie": best_draw[1]},
+                "away": {"odds": best_away[0], "bookie": best_away[1]},
+                "implied_prob": implied_prob
+            }
+
+        return None
+
 
 class HedgeHog:
     """
@@ -20,7 +77,7 @@ class HedgeHog:
     """
 
     def __init__(self):
-        pass
+        self.arb_scanner = ArbitrageScanner()
 
     def calculate_green_book(self,
                              current_stake: float,
@@ -43,34 +100,29 @@ class HedgeHog:
         Returns:
             Dict with 'hedge_stake', 'guaranteed_profit', 'roi'.
         """
-        # Simple Back-Lay Hedging Logic (assuming Exchange mechanics or inverse Backing)
-        # To lock profit, we need to cover the liability of the original bet?
-        # Actually, simpler:
-        # Profit if Win = Stake * (Odds - 1)
-        # We want to bet on 'Not Win' such that PnL is equal in both cases.
+        # Cashout Value = (Stake * OriginalOdds) / CurrentOdds (if backing same selection)
+        # But here we assume hedge_odds is for the COUNTER outcome (Lay or X2).
 
-        # Let's assume we are Backing the Counterpart (e.g. 1X2 market, we backed 1, now backing X2).
-        # Or simpler: Cashout calculation.
-        # Cashout Value = (Stake * OriginalOdds) / CurrentOdds
-
-        # If we use exchange logic (Lay):
-        # Hedge Stake (Lay) = (Current Stake * Current Odds) / Hedge Odds ? No.
-        # Standard formula for Equal Profit:
-        # Hedge Stake = (Back Stake * Back Odds) / Lay Odds
+        # Proper Green Book formula if using Lay (Exchange):
+        # Lay Stake = (Back Stake * Back Odds) / Lay Odds
+        # Profit = Lay Stake - Back Stake (minus commission)
 
         if hedge_odds <= 1.0:
             return {"error": "Invalid hedge odds"}
 
+        # Simplified "Cashout" logic using implied probabilities if we treat hedge_odds as the market price to EXIT.
+        # If hedge_odds is the Back odds of the Counterpart:
+        # We need to bet on Counterpart such that Profit_Home = Profit_Counterpart.
+        # Profit_Home = Stake*Odds - Stake - HedgeStake
+        # Profit_Counter = HedgeStake*HedgeOdds - HedgeStake - Stake
+        # ... this algebra gets complex for 3-way.
+
+        # Let's stick to the "Cash Out" value approximation which is standard.
+        # Cashout = Stake * (OriginalOdds / CurrentOddsForSameSelection)
+        # To support "Green Book", we need the Lay odds of the same selection.
+        # Let's assume 'hedge_odds' IS the Lay odds (or equivalent exit price).
+
         hedge_stake = (current_stake * current_odds) / hedge_odds
-
-        # Profit calculation (assuming Back-Lay scenario)
-        # If Original wins: Profit = Stake*(Odds-1) - (HedgeStake*(HedgeOdds-1)) ? No, Lay liability is (HedgeOdds-1)*HedgeStake
-        # If Hedge wins: Profit = HedgeStake - Stake
-
-        # Let's use the 'Cashout' approach which is model-agnostic
-        # Profit = (Stake * OriginalOdds) / HedgeOdds - Stake
-        # This assumes HedgeOdds is the Lay odds for the same selection.
-
         potential_profit = hedge_stake - current_stake
 
         return {
@@ -101,15 +153,11 @@ class HedgeHog:
             return None
 
         # Estimate Lay Odds (Counterpart)
-        # If we backed at 2.0, and now back odds are 1.5, implies Lay is around 1.52.
-        # We can hedge if current odds are significantly lower (profit) or higher (stop loss).
+        lay_odds = live_odds * 1.05 # Spread approximation
 
         # 1. Profit Taking (Green Book)
         # If odds dropped > 20%
         if live_odds < original_odds * 0.8:
-            # Calculate Green Book
-            # Approximating Lay Odds
-            lay_odds = live_odds * 1.05
             res = self.calculate_green_book(stake, original_odds, lay_odds)
 
             if res.get("guaranteed_profit", 0) > stake * 0.1: # Min 10% profit
@@ -121,11 +169,8 @@ class HedgeHog:
 
         # 2. Stop Loss
         # If odds drifted > 30% (e.g. 2.0 -> 2.6)
-        # Means probability dropped significantly.
         if live_odds > original_odds * 1.3:
-            # We want to exit to save remaining equity.
             # Cashout Value = (Stake * Orig) / Current
-            # Loss = Stake - Cashout
             cashout_value = (stake * original_odds) / live_odds
             loss = stake - cashout_value
 
@@ -135,5 +180,39 @@ class HedgeHog:
                 "loss": round(loss, 2),
                 "cashout_value": round(cashout_value, 2)
             }
+
+        return None
+
+    def dynamic_hedge(self,
+                      position: Dict[str, Any],
+                      live_odds: float,
+                      volatility: float) -> Optional[Dict[str, Any]]:
+        """
+        Advanced hedge check that adapts thresholds based on market volatility.
+        High volatility -> Wider stops (avoid noise).
+        Low volatility -> Tighter stops.
+
+        Args:
+            volatility: GARCH volatility or std dev of odds (0.01 - 0.10 range typical)
+        """
+        # Base thresholds
+        stop_loss_pct = 0.30 # 30% drift
+        take_profit_pct = 0.20 # 20% drop
+
+        # Adjust by volatility
+        # If vol is high (0.05+), widen stops to 1.5x
+        vol_factor = 1.0 + max(0, (volatility - 0.02) * 10) # e.g. 0.05 -> 1.3
+
+        adj_stop_loss = stop_loss_pct * vol_factor
+        adj_take_profit = take_profit_pct # Keep profit target static or tighten? Let's keep static for now.
+
+        original_odds = position.get("odds", 0.0)
+
+        # Check logic with adjusted thresholds
+        if live_odds > original_odds * (1.0 + adj_stop_loss):
+             return self.check_hedge_opportunity(position, live_odds) # Reuse basic logic or custom return
+
+        if live_odds < original_odds * (1.0 - adj_take_profit):
+             return self.check_hedge_opportunity(position, live_odds)
 
         return None

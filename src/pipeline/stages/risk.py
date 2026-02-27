@@ -42,8 +42,7 @@ class RiskStage(PipelineStage):
     """
     Advanced Risk Stage (Level 42).
     Integrates Volatility (GARCH), Philosophy (Epistemic), Narrative (Voice),
-    and Markowitz Portfolio Optimization.
-    Now includes ALL 10 Advanced Physics Engines.
+    Markowitz Portfolio Optimization, and Teleological Risk Adjustment.
     """
 
     def __init__(self):
@@ -225,30 +224,44 @@ class RiskStage(PipelineStage):
                 # 2.1 Physics Scaling
                 kelly_decision.stake_pct *= physics_multiplier
 
+                # 2.2 Teleological Adjustment (Motivation/Biscuits)
+                tele_score = decision.get("teleology_score", 0.5)
+                is_biscuit = decision.get("is_biscuit", False)
+
+                if is_biscuit:
+                    # If model bet is NOT draw but it's a biscuit game, reduce stake massively
+                    if decision.get("selection") != "DRAW":
+                        logger.warning(f"Teleology: Biscuit game detected but bet is not DRAW for {match_id}. Reducing stake by 80%.")
+                        kelly_decision.stake_pct *= 0.2
+                    else:
+                        logger.info(f"Teleology: Biscuit game confirmed for DRAW bet. Boosting stake.")
+                        kelly_decision.stake_pct *= 1.2
+
+                # If teleology score is high (strong narrative), we can boost slightly
+                if tele_score > 0.8:
+                    kelly_decision.stake_pct *= 1.1
+
                 # 3. HedgeHog Logic (Real-time Hedging)
-                # Check SpeedCache for real-time odds diffs (e.g. from API Hijacker stream)
                 latest_odds = self.speed_cache.get(f"odds_{match_id}")
                 if latest_odds:
-                    # Construct a mock position to check for opportunity
-                    # Assuming we are about to enter this position
                     mock_pos = {
                         "match_id": match_id,
                         "selection": "HOME",
-                        "stake": kelly_decision.stake_amount, # Estimate
+                        "stake": kelly_decision.stake_amount,
                         "odds": odds_home
                     }
 
-                    # NOTE: Here we usually check existing positions, but we can also check if
-                    # the current opportunity has drifted so much that we should wait or arbitrage.
-                    # For simplicity, if odds drifted favourably (higher) before we bet, we might bet more?
-                    # Or if they dropped (lower), we missed the boat?
+                    # Check Dynamic Hedge Opportunity
+                    # Pass volatility metric if available
+                    current_vol = vol_report.current_volatility if vol_report else 0.02
+                    hedge_signal = self.hedgehog.dynamic_hedge(mock_pos, latest_odds, current_vol)
 
-                    if abs(latest_odds - odds_home) > 0.2:
-                        logger.warning(f"HedgeHog: Real-time odds shift for {match_id} ({odds_home} -> {latest_odds})")
-                        # If odds dropped significantly (value gone?), maybe reduce stake
-                        if latest_odds < odds_home * 0.9:
-                            kelly_decision.stake_pct *= 0.8
-                            logger.info("HedgeHog: Odds dropped before execution. Reducing stake.")
+                    if hedge_signal:
+                        # If hedge says stop loss or profit take before even placing, maybe cancel?
+                        if hedge_signal["action"] == "STOP_LOSS":
+                            logger.warning(f"HedgeHog: Pre-bet Stop Loss triggered ({latest_odds}). Cancelling.")
+                            kelly_decision.approved = False
+                            kelly_decision.rejection_reason = "HedgeHog Pre-execution Stop Loss"
 
                 # 4. Cognitive Check
                 bet_req = {"stake": kelly_decision.stake_pct, "team": decision.get("home_team")}
@@ -298,6 +311,11 @@ class RiskStage(PipelineStage):
                     "vol_report": vol_report,
                     "news_summary": decision.get("news_summary", ""),
                     "kelly_decision": kelly_decision,
+                    "teleology": {
+                        "score": decision.get("teleology_score", 0.5),
+                        "narrative": decision.get("teleology_narrative", ""),
+                        "is_biscuit": decision.get("is_biscuit", False)
+                    },
                     "physics": {
                         "chaos": physics_context.get('chaos_regime', "unknown"),
                         "fractal": physics_context.get('fractal_dim', 0.0),
@@ -320,11 +338,6 @@ class RiskStage(PipelineStage):
 
             # --- Treasury Check ---
             # Ask Treasury for capital. It might reduce stake or deny based on daily drawdown.
-            # Convert pct to amount (assuming base capital from treasury state)
-            # Actually portfolio_opt output is amount or pct? Usually optimizer outputs weights.
-            # Assuming 'stake_amount' is already calculated by PortfolioOptimizer based on some total capital.
-            # We re-verify with Treasury.
-
             requested_stake = res["stake_amount"]
             approved_stake = self.treasury.request_capital(requested_stake, strategy_type="aggressive") # Defaulting to aggressive for now
 
@@ -354,8 +367,11 @@ class RiskStage(PipelineStage):
                 narrative += f"\n\n⚛️ **Deep Physics**\n- Chaos: {phy.get('chaos')}\n- Fractal Dim: {phy.get('fractal'):.3f}"
                 if phy.get("roughness", 0) > 0:
                     narrative += f"\n- Path Roughness: {phy.get('roughness'):.3f}"
-                if phy.get("physics_mult", 1.0) < 1.0:
-                    narrative += f"\n- Physics Modulation: {phy.get('physics_mult'):.2f}x"
+
+                # Append Teleology
+                tel = meta.get("teleology", {})
+                if tel.get("narrative"):
+                    narrative += f"\n\n🧠 **Teleological Narrative**\n{tel.get('narrative')}"
 
                 pm_issues = meta.get("pre_mortem_issues", [])
                 if pm_issues:
@@ -376,7 +392,8 @@ class RiskStage(PipelineStage):
                 "narrative": narrative,
                 "timestamp": meta.get("kelly_decision").timestamp if meta.get("kelly_decision") else "",
                 "trading_mode": res.get("trading_mode", "LIVE"),
-                "is_paper": res.get("is_paper", False)
+                "is_paper": res.get("is_paper", False),
+                "teleology_narrative": meta.get("teleology", {}).get("narrative", "")
             }
             final_bets.append(bet_record)
 

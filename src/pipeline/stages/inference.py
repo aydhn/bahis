@@ -15,6 +15,7 @@ from src.quant.analysis.market_sentiment import MarketSentiment
 from src.quant.risk.volatility_modulator import VolatilityModulator
 from src.quant.meta_labeling import MetaLabeler
 from src.quant.uncertainty.conformal import ConformalPredictor
+from src.quant.analysis.teleology import TeleologicalEngine
 
 # New Imports
 try:
@@ -33,7 +34,7 @@ class InferenceStage(PipelineStage):
     Quant Models & AI Analysis Engine.
     Uses EnsembleModel for robust predictions and EntropyKelly for uncertainty metrics.
     Integrated with SimilarityEngine (Pattern Matching), MarketSentiment (Odds Analysis),
-    and MetaLabeler (Error Correction).
+    MetaLabeler (Error Correction), and TeleologicalEngine (Purpose & Narrative).
     """
 
     def __init__(self):
@@ -51,6 +52,8 @@ class InferenceStage(PipelineStage):
         self.similarity_engine.load_history()
 
         self.market_sentiment = MarketSentiment()
+
+        self.teleology_engine = TeleologicalEngine()
 
         self.meta_labeler = MetaLabeler()
         logger.info("Training Meta-Labeler on DB...")
@@ -193,7 +196,7 @@ class InferenceStage(PipelineStage):
         return {"ensemble_results": valid_results}
 
     async def _analyze_single_match(self, context: Dict[str, Any]) -> Dict[str, Any]:
-        """Analyze a single match using Ensemble, RAG, Similarity and Meta-Labeling."""
+        """Analyze a single match using Ensemble, RAG, Similarity, Meta-Labeling, and Teleology."""
         match_id = context.get("match_id", "Unknown")
 
         # 1. Ensemble Prediction (CPU Bound -> Thread)
@@ -215,7 +218,18 @@ class InferenceStage(PipelineStage):
         except Exception:
             prediction["market_sentiment"] = {}
 
-        # 4. Pattern Matching (Similarity Engine)
+        # 4. Teleological Analysis (Narrative & Motivation)
+        # Assuming context has some rank/points data (from Features stage)
+        try:
+            teleology = self.teleology_engine.analyze(context)
+            prediction["teleology_score"] = teleology["teleology_score"]
+            prediction["teleology_narrative"] = teleology["narrative"]
+            prediction["is_biscuit"] = teleology["is_biscuit"]
+        except Exception as e:
+            logger.warning(f"Teleology failed for {match_id}: {e}")
+            prediction["teleology_score"] = 0.5
+
+        # 5. Pattern Matching (Similarity Engine)
         try:
             # Construct feature vector based on ODDS (Market View)
             # [home_odds, draw_odds, away_odds]
@@ -235,7 +249,7 @@ class InferenceStage(PipelineStage):
         except Exception as e:
             logger.warning(f"Similarity search failed: {e}")
 
-        # 5. Meta-Labeling (Quality Check)
+        # 6. Meta-Labeling (Quality Check)
         try:
             # We need Odds to assess quality properly.
             meta_features = {
@@ -250,7 +264,7 @@ class InferenceStage(PipelineStage):
             logger.warning(f"Meta-labeling failed: {e}")
             prediction["meta_quality_score"] = 0.5
 
-        # 6. Conformal Prediction (Certainty Set)
+        # 7. Conformal Prediction (Certainty Set)
         try:
             # Create a mock prob vector for conformal
             prob_vec = np.array([prediction.get("prob_home", 0.33),
@@ -264,7 +278,7 @@ class InferenceStage(PipelineStage):
             logger.warning(f"Conformal prediction failed: {e}")
             prediction["conformal_certainty"] = "UNKNOWN"
 
-        # 7. Inject Risk Context
+        # 8. Inject Risk Context
         prediction["regime_status"] = context.get("_regime_status", "NORMAL")
         prediction["kelly_fraction"] = context.get("_kelly_fraction", 1.0)
 

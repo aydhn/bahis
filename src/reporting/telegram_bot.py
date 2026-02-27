@@ -14,6 +14,7 @@ Komutlar:
   /warroom - Canlı operasyon odası (Streaming events)
   /analyze - Derinlemesine maç analizi (Physics + AI)
   /physics - Fizik motoru raporları
+  /brief   - Günlük Yönetici Brifingi (Teleoloji & Arb dahil)
 """
 import asyncio
 import os
@@ -40,6 +41,7 @@ except ImportError:
 from src.quant.finance.treasury import TreasuryEngine
 from src.quant.analysis.oracle import TheOracle
 from src.core.speed_cache import SpeedCache
+from src.utils.daily_briefing import DailyBriefing
 
 from src.system.config import settings
 from src.reporting.visualizer import Visualizer
@@ -231,7 +233,7 @@ class TelegramBot:
         args = parts[1:] if len(parts) > 1 else []
 
         if command == "/start":
-            await self.send_message(chat_id, "🤖 *Otonom Quant Bot Devrede.*\nKomutlar: /status, /ceo, /warroom, /pnl, /risk, /brain, /explain, /analyze, /physics, /treasury, /oracle, /set_risk, /force, /shutdown")
+            await self.send_message(chat_id, "🤖 *Otonom Quant Bot Devrede.*\nKomutlar: /status, /ceo, /brief, /warroom, /pnl, /risk, /brain, /explain, /analyze, /physics, /treasury, /oracle, /set_risk, /force, /shutdown")
 
         elif command == "/set_risk":
             if not self.sentinel:
@@ -272,9 +274,19 @@ class TelegramBot:
 
             await self.send_message(chat_id, f"✅ *Sistem Çalışıyor*\nMod: Otonom\nCycle: #{cycle}\nWarRoom: {warroom}\nCircuit Breaker: {cb_status}\nVeri Akışı: Aktif")
 
-        elif command == "/ceo" or command == "/brief":
-            # Executive Summary
-            await self.send_message(chat_id, "☕ *Yönetici Özeti Hazırlanıyor...*")
+        elif command == "/brief":
+            if not self.context:
+                await self.send_message(chat_id, "⚠️ Henüz veri hazır değil.")
+            else:
+                # Convert Pydantic context to dict if necessary or use directly if Briefing supports it
+                # Assuming DailyBriefing.generate expects a dict
+                ctx_dict = self.context.to_dict() if hasattr(self.context, 'to_dict') else self.context.__dict__
+                briefing = DailyBriefing.generate(ctx_dict)
+                await self.send_message(chat_id, briefing)
+
+        elif command == "/ceo":
+            # Executive Summary (Legacy - now similar to brief but more concise)
+            await self.send_message(chat_id, "☕ *Yönetici Özeti (Legacy)*")
 
             # 1. Financials
             stats = self._read_bankroll_state()
