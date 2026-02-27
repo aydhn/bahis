@@ -9,6 +9,7 @@ import numpy as np
 from loguru import logger
 from src.core.interfaces import QuantModel
 from src.quant.adapters import BenterAdapter, LSTMAdapter, DixonColesAdapter, BayesianAdapter, QuantumAdapter
+from src.system.container import container
 
 class EnsembleModel(QuantModel):
     """
@@ -23,6 +24,7 @@ class EnsembleModel(QuantModel):
     def __init__(self):
         self.bayesian = BayesianAdapter()
         self.quantum = QuantumAdapter()
+        self.active_agent = container.get("active_agent")
         self.models: Dict[str, QuantModel] = {
             "benter": BenterAdapter(),
             "lstm": LSTMAdapter(),
@@ -68,6 +70,23 @@ class EnsembleModel(QuantModel):
                         self.weights[k] = float(v)
             except Exception as e:
                 logger.warning(f"Failed to apply dynamic weights: {e}")
+
+        # --- 2.5 Active Inference Weight Adjustment ---
+        # Adjust weights based on precision (trust) from ActiveInferenceAgent
+        if self.active_agent:
+            try:
+                precision_weights = self.active_agent.get_precision_weights()
+                # Blend static/evolved weights with active precision weights
+                # Formula: new_weight = (static * 0.7) + (precision * 0.3)
+                for k, w in self.weights.items():
+                    if k in precision_weights:
+                        # Map model names if necessary (e.g. benter -> poisson in agent)
+                        # Assuming 1-to-1 mapping or close enough
+                        p_weight = precision_weights.get(k, precision_weights.get("default", 0.2))
+                        self.weights[k] = (w * 0.7) + (p_weight * 0.3)
+                        # logger.debug(f"Ensemble: Adjusted {k} weight to {self.weights[k]:.3f} via Active Inference")
+            except Exception as e:
+                logger.warning(f"Failed to apply active inference weights: {e}")
 
         # --- 3. Quantum Boost ---
         # If Quantum Brain is highly confident, boost its weight

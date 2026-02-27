@@ -85,6 +85,10 @@ class DependencyContainer:
                  from src.core.portfolio_optimizer import PortfolioOptimizer
                  self._services["portfolio_opt"] = PortfolioOptimizer()
 
+            elif name == "active_agent":
+                from src.core.active_inference_agent import ActiveInferenceAgent
+                self._services["active_agent"] = ActiveInferenceAgent()
+
             # Add more services as needed...
 
             else:
