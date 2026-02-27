@@ -16,6 +16,12 @@ from src.quant.risk.volatility_modulator import VolatilityModulator
 from src.quant.meta_labeling import MetaLabeler
 from src.quant.uncertainty.conformal import ConformalPredictor
 
+# New Imports
+try:
+    from src.quant.analysis.multi_task_backbone import MultiTaskBackbone
+except ImportError:
+    MultiTaskBackbone = None
+
 try:
     from src.quant.analysis.transport_metric import TransportMetric
 except ImportError:
@@ -71,6 +77,18 @@ class InferenceStage(PipelineStage):
             self.transport = None
             logger.warning("TransportMetric not found.")
 
+        # Multi-Task Learning Backbone
+        if MultiTaskBackbone:
+            try:
+                self.mtl_backbone = MultiTaskBackbone()
+                logger.info("Multi-Task Backbone initialized.")
+            except Exception as e:
+                logger.error(f"Failed to init MultiTaskBackbone: {e}")
+                self.mtl_backbone = None
+        else:
+            self.mtl_backbone = None
+            logger.warning("MultiTaskBackbone module missing.")
+
     async def execute(self, context: Dict[str, Any]) -> Dict[str, Any]:
         """Parallel analysis for all matches."""
         matches = context.get("matches", pl.DataFrame())
@@ -115,6 +133,18 @@ class InferenceStage(PipelineStage):
             except Exception as e:
                 logger.error(f"TransportMetric check failed: {e}")
 
+        # --- MTL Backbone Inference ---
+        mtl_predictions = {}
+        if self.mtl_backbone and not features.is_empty():
+            try:
+                mtl_df = await asyncio.to_thread(self.mtl_backbone.predict, features)
+                # Convert to dict for fast lookup
+                for row in mtl_df.iter_rows(named=True):
+                    mtl_predictions[row["match_id"]] = row
+                logger.info(f"MTL inference complete for {len(mtl_predictions)} matches.")
+            except Exception as e:
+                logger.error(f"MTL inference failed: {e}")
+
         # Physics Metrics from Context
         quantum_predictions = context.get("quantum_predictions", {})
         geometric_potentials = context.get("geometric_potentials", {})
@@ -141,6 +171,13 @@ class InferenceStage(PipelineStage):
             if match_id in geometric_potentials:
                 geo_pot = geometric_potentials[match_id]
                 full_context["geometric_dominance"] = geo_pot.get("dominance", 0.0)
+
+            # Inject MTL Predictions
+            if match_id in mtl_predictions:
+                mtl_res = mtl_predictions[match_id]
+                full_context["mtl_prob_home"] = mtl_res.get("mtl_prob_home", 0.0)
+                full_context["mtl_expected_goals"] = mtl_res.get("mtl_expected_goals", 0.0)
+                full_context["mtl_expected_corners"] = mtl_res.get("mtl_expected_corners", 0.0)
 
             tasks.append(self._analyze_single_match(full_context))
 
