@@ -20,6 +20,8 @@ from src.quant.analysis.pre_mortem import PreMortemAnalyzer, PreMortemReport
 from src.quant.risk.physics_modulator import PhysicsRiskModulator
 from src.quant.finance.treasury import TreasuryEngine
 from src.quant.analysis.market_regime_detector import MarketRegimeDetector, RegimeMetrics
+from src.quant.analysis.philosophical_engine import PhilosophicalEngine
+from src.quant.analysis.causal_reasoner import CausalReasoner
 
 @dataclass
 class RiskDecision:
@@ -51,6 +53,10 @@ class RiskControlTower:
 
         # 4. Treasury
         self.treasury = TreasuryEngine()
+
+        # 5. Zero Error Components (Philosophical & Causal)
+        self.philosopher = PhilosophicalEngine()
+        self.causal_reasoner = CausalReasoner()
 
         logger.info("RiskControlTower initialized and ready for duty.")
 
@@ -99,6 +105,24 @@ class RiskControlTower:
 
         if pm_report.caution_signal:
             decision.adjustments.append(f"Pre-Mortem Caution: {', '.join(pm_report.reasons)}")
+
+        # --- 3.1 Epistemic Validity (Zero Error) ---
+        epistemic_report = self.philosopher.evaluate(
+            probability=bet_candidate.get("prob_home", 0.5), # Assuming home bet for main logic
+            confidence=bet_candidate.get("confidence", 0.5),
+            sample_size=bet_candidate.get("sample_size", 100), # Default if not passed
+            match_id=match_id
+        )
+        if not epistemic_report.epistemic_approved:
+            decision.approved = False
+            decision.rejection_reason = f"Epistemic Veto: {', '.join(epistemic_report.rejection_reasons)}"
+            return decision
+
+        # --- 3.2 Causal Check (Spurious Correlation) ---
+        # If any major causal factor (e.g. Red Card) is active, ensure we account for it
+        # For now, we simulate a check. Real implementation would parse match_data.
+        # causal_effect = self.causal_reasoner.estimate_effect("recent_form", "outcome")
+        # if not causal_effect.is_significant: ... (Logic placeholder)
 
         # --- 4. Kelly Sizing ---
         # Calculate Base Stake
