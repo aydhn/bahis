@@ -60,6 +60,8 @@ class TeleologicalEngine:
             "teleology_score": np.clip(score, 0.0, 1.0),
             "is_biscuit": biscuit_res["is_biscuit"],
             "motivation_mismatch": motiv_res["mismatch_score"],
+            "home_motivation": motiv_res.get("home_motivation", 5.0),
+            "away_motivation": motiv_res.get("away_motivation", 5.0),
             "narrative": " ".join(narrative) if narrative else "Standard competitive match."
         }
 

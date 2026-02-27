@@ -78,7 +78,11 @@ class RiskStage(PipelineStage):
                 "odds": odds_home,
                 "confidence": confidence,
                 "ev": (prob_home * odds_home) - 1.0,
-                # Pass other needed data
+                "is_biscuit": decision.get("is_biscuit", False),
+                "motivation_mismatch": decision.get("motivation_mismatch", 0.0),
+                "home_motivation": decision.get("home_motivation", 5.0),
+                "away_motivation": decision.get("away_motivation", 5.0),
+                "teleology_narrative": decision.get("teleology_narrative", "")
             }
 
             # --- DELEGATE TO TOWER ---

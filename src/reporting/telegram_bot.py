@@ -135,6 +135,97 @@ class TelegramBot:
             self.sentinel.bus.subscribe("pipeline_cycle_end", self.handle_event)
             self.sentinel.bus.subscribe("hedge_order", self.handle_event)
 
+    async def _warroom_dashboard_loop(self, chat_id: int):
+        """Persistent dashboard loop that edits the same message."""
+        dashboard_msg_id = None
+
+        while self.warroom_active:
+            try:
+                # 1. Gather System Vitals
+                cycle = self.context.cycle_id if self.context else 0
+
+                # Regime
+                regime = "NORMAL"
+                if self.context and self.context.ensemble_results:
+                     regime = self.context.ensemble_results[0].get('regime_status', 'NORMAL')
+
+                # Financials
+                t_status = self.treasury.state
+                daily_pnl = t_status.daily_pnl
+                total_cap = t_status.total_capital
+                locked = t_status.locked_capital
+
+                pnl_color = "🟢" if daily_pnl >= 0 else "🔴"
+
+                # Active Hedges (from Treasury or Sentinel logic if accessible, or mock)
+                # We can check recent hedge events or open positions count
+                open_pos_count = 0
+                # This requires access to DB or Sentinel state.
+                # We'll use a placeholder or read from DB if available.
+
+                dashboard = (
+                    f"🚨 **EXECUTIVE WAR ROOM** 🚨\n"
+                    f"━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                    f"⚡ **Cycle:** #{cycle}  |  🕒 {asyncio.get_event_loop().time():.0f}\n"
+                    f"🛡️ **Regime:** {regime}\n"
+                    f"━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                    f"💰 **Financials**\n"
+                    f"• Capital: {total_cap:.2f}\n"
+                    f"• Locked: {locked:.2f}\n"
+                    f"• Daily PnL: {pnl_color} {daily_pnl:+.2f}\n"
+                    f"━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                    f"📡 **Live Feeds**\n"
+                    f"• Odds Stream: {'🟢 ACTIVE' if self.speed_cache else '🔴 OFF'}\n"
+                    f"• Quantum Brain: {'🟢 ONLINE' if self.context else '🟡 WAITING'}\n"
+                    f"• Physics Engine: {'🟢 RUNNING' if self.context else '🟡 WAITING'}\n"
+                    f"━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                    f"💡 *Waiting for next alpha signal...*"
+                )
+
+                if dashboard_msg_id:
+                    # Edit existing message
+                    await self._edit_message(chat_id, dashboard_msg_id, dashboard)
+                else:
+                    # Send new message and track ID
+                    # We need to capture the sent message ID.
+                    # send_message returns None currently, we need to modify it or use raw client.
+                    # For now, we will send a new message every 10 updates if we can't edit,
+                    # but let's implement _edit_message helper.
+                    dashboard_msg_id = await self._send_and_get_id(chat_id, dashboard)
+
+            except Exception as e:
+                logger.error(f"Warroom loop error: {e}")
+
+            await asyncio.sleep(5) # Refresh every 5 seconds
+
+    async def _send_and_get_id(self, chat_id: int, text: str) -> Optional[int]:
+        if not self.enabled: return None
+        try:
+            async with httpx.AsyncClient() as client:
+                resp = await client.post(f"{self.base_url}/sendMessage", json={
+                    "chat_id": chat_id,
+                    "text": text,
+                    "parse_mode": "Markdown"
+                })
+                if resp.status_code == 200:
+                    return resp.json().get("result", {}).get("message_id")
+        except Exception:
+            pass
+        return None
+
+    async def _edit_message(self, chat_id: int, message_id: int, text: str):
+        if not self.enabled: return
+        try:
+            async with httpx.AsyncClient() as client:
+                await client.post(f"{self.base_url}/editMessageText", json={
+                    "chat_id": chat_id,
+                    "message_id": message_id,
+                    "text": text,
+                    "parse_mode": "Markdown"
+                })
+        except Exception:
+            pass
+
     async def handle_event(self, event: Event):
         """Event Bus üzerinden gelen kritik olayları raporla."""
         if not self.enabled: return
@@ -147,24 +238,13 @@ class TelegramBot:
         data = event.data
 
         # --- WAR ROOM STREAM ---
+        # If dashboard is active, we don't spam simple events, only Critical ones.
         if self.warroom_active:
-            try:
-                emoji = "🔹"
-                if "start" in etype: emoji = "🟢"
-                elif "end" in etype: emoji = "🏁"
-                elif "alert" in etype: emoji = "🚨"
-                elif "bet" in etype: emoji = "💰"
-                elif "hedge" in etype: emoji = "🦔"
-
-                msg = f"{emoji} *Event:* `{etype}`"
-                if data:
-                    # Shorten data string
-                    d_str = str(data)[:100]
-                    msg += f"\nData: `{d_str}`"
-
-                await self.send_message(chat_id, msg)
-            except Exception as e:
-                logger.error(f"Warroom stream error: {e}")
+             # Only alert on high importance
+             if etype in ["risk_alert", "hedge_order", "bet_placed", "pipeline_crash"]:
+                 pass # Allow through
+             else:
+                 return # Suppress noise
         # -----------------------
 
         if etype == "bet_placed":
@@ -376,24 +456,13 @@ class TelegramBot:
         elif command == "/warroom":
             self.warroom_active = not self.warroom_active
             if self.warroom_active:
-                # Executive Dashboard Visualization
-                dashboard = (
-                    "🚨 *EXECUTIVE WAR ROOM* 🚨\n"
-                    "━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-                    f"🟢 **System Status:** ONLINE\n"
-                    f"⚡ **Cycle:** #{self.context.cycle_id if self.context else 0}\n"
-                    f"🛡️ **Regime:** {self.context.ensemble_results[0].get('regime_status', 'NORMAL') if self.context and self.context.ensemble_results else 'NORMAL'}\n"
-                    "━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-                    "**Live Feeds:**\n"
-                    "📡 Odds Stream: ACTIVE\n"
-                    "🧠 Quantum Brain: ONLINE\n"
-                    "⚛️ Physics Engine: RUNNING\n"
-                    "━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-                    "Waiting for critical events..."
-                )
-                await self.send_message(chat_id, dashboard)
+                # Start persistent dashboard updater
+                self.warroom_task = asyncio.create_task(self._warroom_dashboard_loop(chat_id))
+                await self.send_message(chat_id, "🚨 **WAR ROOM ACTIVATED** – Dashboard initializing...")
             else:
-                await self.send_message(chat_id, "💤 War Room modu kapatıldı.")
+                if self.warroom_task:
+                    self.warroom_task.cancel()
+                await self.send_message(chat_id, "💤 War Room deactivated.")
 
         elif command == "/finance":
             # Financial Health Check

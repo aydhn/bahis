@@ -100,6 +100,42 @@ class RiskControlTower:
         match_id = bet_candidate.get("match_id", "unknown")
         decision = RiskDecision(adjustments=[])
 
+        # --- 0.4 Teleology Check (Biscuit & Motivation) ---
+        is_biscuit = bet_candidate.get("is_biscuit", False)
+        # If Biscuit Game (Mutually beneficial draw) is detected:
+        # We REJECT standard Home/Away bets.
+        # (Unless we specifically support Draw bets here, but RiskStage usually passes Home candidates)
+        if is_biscuit:
+            decision.approved = False
+            decision.rejection_reason = "Teleology Veto: Biscuit Game (Mutually Beneficial Draw)."
+            return decision
+
+        # Motivation Mismatch Check
+        # If mismatch > 0.6, ensure we are not betting AGAINST the motivated team.
+        mismatch = bet_candidate.get("motivation_mismatch", 0.0)
+        if mismatch > 0.6:
+            h_mot = bet_candidate.get("home_motivation", 5.0)
+            a_mot = bet_candidate.get("away_motivation", 5.0)
+
+            # Check bet selection to apply motivation logic correctly
+            # Default to HOME if not specified (legacy behavior), but try to infer.
+            selection = bet_candidate.get("selection", "HOME").upper()
+
+            if selection == "HOME":
+                if h_mot < a_mot:
+                    decision.approved = False
+                    decision.rejection_reason = f"Teleology Veto: Motivation Mismatch (Home {h_mot} vs Away {a_mot})."
+                    return decision
+                else:
+                    decision.adjustments.append(f"Teleology Boost: High Motivation ({h_mot} vs {a_mot})")
+            elif selection == "AWAY":
+                if a_mot < h_mot:
+                    decision.approved = False
+                    decision.rejection_reason = f"Teleology Veto: Motivation Mismatch (Away {a_mot} vs Home {h_mot})."
+                    return decision
+                else:
+                    decision.adjustments.append(f"Teleology Boost: High Motivation ({a_mot} vs {h_mot})")
+
         # --- 0.5 The Architect (Strategic Directive Check) ---
         # Retrieve global strategy from context
         directive: Optional[StrategicDirective] = context.get("strategic_directive")
