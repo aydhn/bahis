@@ -67,25 +67,22 @@ class PortfolioStressTester:
         odds = np.array(odds)
 
         # --- SCENARIO 1: Standard Monte Carlo ---
-        # Simulate N outcomes for M bets
-        # Shape: (n_sims, n_bets)
+        try:
+            from src.core.rust_engine import RustEngine
+            rust_engine = RustEngine()
+            if rust_engine.engine_name() != "Pure Python":
+                # Assuming rust_engine can run faster simulations if we had a dedicated func.
+                # For now, just initialize it to ensure Rust/Numba is warm.
+                pass
+        except ImportError:
+            pass
+
         rng = np.random.default_rng()
         outcomes = rng.random((self.n_sims, len(portfolio))) < probs
-
-        # Calculate PnL for each sim
-        # If Win: Stake * (Odds - 1)
-        # If Loss: -Stake
         pnl_matrix = np.where(outcomes, stakes * (odds - 1), -stakes)
-
-        # Sum PnL for each simulation (Portfolio PnL)
         sim_pnls = pnl_matrix.sum(axis=1)
-
-        # Calculate VaR (5th percentile of PnL)
-        # Since these are PnLs, a negative number is a loss.
-        # VaR_95 is the value where 5% of outcomes are worse.
         var_95_abs = np.percentile(sim_pnls, 5)
 
-        # VaR is typically expressed as a positive loss amount
         var_loss = -var_95_abs if var_95_abs < 0 else 0.0
         var_pct = var_loss / total_capital
 

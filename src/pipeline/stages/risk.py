@@ -126,7 +126,44 @@ class RiskStage(PipelineStage):
              if first_meta["risk_decision"].regime_metrics:
                  global_regime = first_meta["risk_decision"].regime_metrics.regime
 
-        optimized_results = self.portfolio_opt.optimize(candidates, regime=global_regime)
+        # Run Black-Litterman optimization globally on candidates
+        from src.core.black_litterman_optimizer import BlackLittermanOptimizer
+        bl_opt = BlackLittermanOptimizer()
+
+        # Format candidates for BL
+        bl_candidates = []
+        for c in candidates:
+            # We need standard dicts for BL Optimizer
+            bl_candidates.append({
+                "match_id": c.match_id,
+                "selection": c.selection,
+                "ev_home": c.ev,
+                "best_ev": c.ev,
+                "confidence": bet_metadata[c.match_id]["confidence"],
+                "odds": c.odds,
+                "league": c.league
+            })
+
+        bl_results = bl_opt.optimize(bl_candidates, {"regime": global_regime})
+
+        # Apply BL multipliers/weights back to candidates before Markowitz
+        for i, res in enumerate(bl_results):
+            bl_weight = res.get("bl_weight", 0)
+            if bl_weight <= 0:
+                # Black Litterman vetoed it
+                candidates[i].stake_pct = 0.0
+                bet_metadata[candidates[i].match_id]["risk_decision"].approved = False
+                existing_reason = bet_metadata[candidates[i].match_id]["risk_decision"].rejection_reason or ""
+                bet_metadata[candidates[i].match_id]["risk_decision"].rejection_reason = existing_reason + " (Vetoed by Black-Litterman)"
+            else:
+                # BL suggests an optimal weight. We'll pass it to Markowitz as a hint
+                # Or we can just use it directly to scale
+                candidates[i].stake_pct = min(candidates[i].stake_pct, bl_weight)
+
+        # Filter out rejected bets before sending to portfolio optimizer
+        approved_candidates = [c for c in candidates if bet_metadata[c.match_id]["risk_decision"].approved]
+
+        optimized_results = self.portfolio_opt.optimize(approved_candidates, regime=global_regime)
 
         final_bets = []
         for res in optimized_results:

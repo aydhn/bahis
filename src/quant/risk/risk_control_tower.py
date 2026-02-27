@@ -32,7 +32,7 @@ from src.quant.finance.liquidity_engine import LiquidityEngine
 from src.quant.finance.optimal_execution import OptimalExecutionModel
 from src.quant.risk.extreme_value import ExtremeValueAnalyzer
 from src.quant.finance.stress_tester import PortfolioStressTester
-from src.quant.finance.black_litterman_optimizer import BlackLittermanOptimizer
+from src.core.black_litterman_optimizer import BlackLittermanOptimizer
 from src.core.systemic_risk_covar import SystemicRiskCoVaR
 import numpy as np
 
@@ -483,21 +483,7 @@ class RiskControlTower:
 
         final_stake_pct = kelly_res.stake_pct
 
-        # Black-Litterman Single Asset Multiplier
-        bl_multiplier = self.black_litterman.calculate_single_asset_multiplier(
-            implied_prob=1.0 / max(bet_candidate.get("odds", 2.0), 1.01),
-            model_prob=bet_candidate.get("prob_home", 0.5), # Assuming home
-            epistemic_uncertainty=bet_candidate.get("epistemic_uncertainty", 0.5)
-        )
-
-        if bl_multiplier == 0.0:
-            decision.approved = False
-            decision.rejection_reason = "Black-Litterman Optimizer: Negative expected return post-blending."
-            return decision
-
-        if bl_multiplier != 1.0:
-             final_stake_pct *= bl_multiplier
-             decision.adjustments.append(f"Black-Litterman Conviction: x{bl_multiplier:.2f}")
+        # Black-Litterman Optimization will be done globally in RiskStage over all candidates
 
         # --- 5. Physics Modulation ---
         # Apply advanced physics multipliers
