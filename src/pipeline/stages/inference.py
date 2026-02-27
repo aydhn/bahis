@@ -266,6 +266,7 @@ class InferenceStage(PipelineStage):
                 full_context["mtl_prob_home"] = mtl_res.get("mtl_prob_home", 0.0)
                 full_context["mtl_expected_goals"] = mtl_res.get("mtl_expected_goals", 0.0)
                 full_context["mtl_expected_corners"] = mtl_res.get("mtl_expected_corners", 0.0)
+                full_context["epistemic_uncertainty"] = mtl_res.get("mtl_epistemic_uncertainty", 0.5)
 
             tasks.append(self._analyze_single_match(full_context))
 
@@ -418,9 +419,10 @@ class InferenceStage(PipelineStage):
             except Exception as e:
                 logger.warning(f"Market God is silent for {match_id}: {e}")
 
-        # 10. Inject Risk Context
+        # 10. Inject Risk Context and Epistemic Uncertainty
         prediction["regime_status"] = context.get("_regime_status", "NORMAL")
         prediction["kelly_fraction"] = context.get("_kelly_fraction", 1.0)
+        prediction["epistemic_uncertainty"] = context.get("epistemic_uncertainty", 0.5)
 
         # Add basic identification
         prediction["match_id"] = match_id

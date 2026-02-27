@@ -372,7 +372,54 @@ class TelegramBot:
         args = parts[1:] if len(parts) > 1 else []
 
         if command == "/start":
-            await self.send_message(chat_id, "🤖 *Otonom Quant Bot Devrede.*\nKomutlar: /status, /strategy, /ceo, /brief, /warroom, /pnl, /risk, /brain, /explain, /analyze, /physics, /treasury, /oracle, /set_risk, /force, /shutdown, /hedge, /synthetic, /memo, /smart, /forecast, /boardroom, /greeks")
+            await self.send_message(chat_id, "🤖 *Otonom Quant Bot Devrede.*\nKomutlar: /status, /strategy, /ceo, /brief, /warroom, /pnl, /risk, /brain, /explain, /analyze, /physics, /treasury, /oracle, /set_risk, /force, /shutdown, /hedge, /synthetic, /memo, /smart, /forecast, /boardroom, /greeks, /radar")
+
+        elif command == "/radar":
+            if not args:
+                await self.send_message(chat_id, "⚠️ Kullanım: `/radar <match_id>`")
+                return
+
+            match_id = args[0]
+            if not self.context or not self.context.ensemble_results:
+                await self.send_message(chat_id, "⚠️ Sistem verisi henüz hazır değil.")
+                return
+
+            # Extract scores from context
+            # We mock default scores and try to pull real ones if available
+            value_score = 0.5
+            physics_score = 0.5
+            narrative_score = 0.5
+            market_score = 0.5
+            risk_score = 0.5
+
+            res_map = {r.get("match_id"): r for r in self.context.ensemble_results}
+            res = res_map.get(match_id)
+
+            if res:
+                # Value (Confidence or EV map)
+                value_score = res.get("confidence", 0.5)
+                # Teleology
+                narrative_score = res.get("teleology_score", 0.5)
+                # Epistemic Risk map
+                risk_score = 1.0 - res.get("epistemic_uncertainty", 0.5)
+
+            # Physics score from physics context if available
+            if hasattr(self.context, "physics_context") and match_id in self.context.physics_context:
+                physics_score = self.context.physics_context[match_id].get("holistic_confidence", 0.5)
+
+            buf = Visualizer.generate_gods_eye_radar(
+                match_id=match_id,
+                value_score=value_score,
+                physics_score=physics_score,
+                narrative_score=narrative_score,
+                market_score=market_score,
+                risk_score=risk_score
+            )
+
+            if buf:
+                await self.send_photo(chat_id, buf, caption=f"👁️ **God's Eye Radar: {match_id}**")
+            else:
+                await self.send_message(chat_id, "❌ Radar chart generation failed.")
 
         elif command == "/strategy":
             if self.context and hasattr(self.context, 'strategic_directive'):
