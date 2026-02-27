@@ -87,6 +87,9 @@ try:
 except ImportError:
     SensitivityEngine = None
 
+from src.quant.analysis.reflexivity_engine import ReflexivityEngine
+from src.quant.finance.black_litterman_optimizer import BlackLittermanOptimizer
+
 class TelegramBot:
     """Async Polling tabanlı Telegram Botu."""
 
@@ -123,6 +126,9 @@ class TelegramBot:
         # Extensions
         self.smart_money = SmartMoneyDetector() if SmartMoneyDetector else None
         self.regime_hmm = MarketRegimeHMM() if MarketRegimeHMM else None
+
+        self.reflexivity_engine = ReflexivityEngine()
+        self.black_litterman = BlackLittermanOptimizer()
 
         if not self.enabled:
             logger.warning("TelegramBot devre dışı: Token veya httpx eksik.")
@@ -372,7 +378,7 @@ class TelegramBot:
         args = parts[1:] if len(parts) > 1 else []
 
         if command == "/start":
-            await self.send_message(chat_id, "🤖 *Otonom Quant Bot Devrede.*\nKomutlar: /status, /strategy, /ceo, /brief, /warroom, /pnl, /risk, /brain, /explain, /analyze, /physics, /treasury, /oracle, /set_risk, /force, /shutdown, /hedge, /synthetic, /memo, /smart, /forecast, /boardroom, /greeks, /radar")
+            await self.send_message(chat_id, "🤖 *Otonom Quant Bot Devrede.*\nKomutlar: /status, /strategy, /ceo, /brief, /warroom, /pnl, /risk, /brain, /explain, /analyze, /physics, /treasury, /oracle, /set_risk, /force, /shutdown, /hedge, /synthetic, /memo, /smart, /forecast, /boardroom, /greeks, /radar, /reflexivity, /alloc")
 
         elif command == "/radar":
             if not args:
@@ -879,6 +885,55 @@ class TelegramBot:
                     f"Pass Frequency: {res.optimal_strategy[1]:.2%}\n\n"
                     f"Expected Value: {res.game_value:.4f}\n"
                     f"Method: {res.method}"
+                )
+                await self.send_message(chat_id, msg)
+            except Exception as e:
+                await self.send_message(chat_id, f"⚠️ Error: {e}")
+
+        elif command == "/reflexivity":
+            # Soros Reflexivity test
+            if len(args) < 1:
+                await self.send_message(chat_id, "⚠️ Usage: `/reflexivity <odds1> <odds2> ... <oddsN>` (e.g. /reflexivity 2.5 2.2 2.0 1.8)")
+                return
+
+            try:
+                odds_history = [float(x) for x in args]
+                report = self.reflexivity_engine.analyze(odds_history)
+
+                msg = (
+                    f"🔮 **Soros Reflexivity Engine**\n"
+                    f"Odds Path: {odds_history}\n\n"
+                    f"**Index:** {report.index:.2f}\n"
+                    f"**Momentum:** {report.momentum:.2f}\n"
+                    f"**Acceleration:** {report.acceleration:.2f}\n"
+                    f"**Status:** {'🚨 REFLEXIVE' if report.is_reflexive else 'Stable'}\n"
+                    f"**Signal:** {report.signal}\n"
+                    f"_{report.description}_"
+                )
+                await self.send_message(chat_id, msg)
+            except Exception as e:
+                await self.send_message(chat_id, f"⚠️ Error: {e}")
+
+        elif command == "/alloc":
+            if len(args) < 3:
+                await self.send_message(chat_id, "⚠️ Usage: `/alloc <market_odds> <model_prob> <epistemic_unc>`")
+                return
+
+            try:
+                odds = float(args[0])
+                model_prob = float(args[1])
+                epistemic = float(args[2])
+
+                implied = 1.0 / odds
+
+                multiplier = self.black_litterman.calculate_single_asset_multiplier(implied, model_prob, epistemic)
+
+                msg = (
+                    f"💼 **Black-Litterman Allocation**\n"
+                    f"Market Odds: {odds} (Implied: {implied:.2%})\n"
+                    f"Model Prob: {model_prob:.2%}\n"
+                    f"Epistemic Uncertainty: {epistemic:.2f}\n\n"
+                    f"**Recommended Stake Multiplier:** x{multiplier:.2f}"
                 )
                 await self.send_message(chat_id, msg)
             except Exception as e:
