@@ -50,6 +50,20 @@ class TreasuryEngine:
         self.state = TreasuryState()
         self.load_state()
 
+    def get_sniper_stake(self) -> float:
+        """
+        Returns a fixed, small stake for high-speed Sniper entries.
+        Bypasses standard approval but must respect absolute minimum liquidity.
+        """
+        # Fixed logic: 50 units or 1% of total capital, whichever is smaller
+        stake = min(50.0, self.state.total_capital * 0.01)
+
+        # Check absolute survival
+        if self.state.total_capital - self.state.locked_capital < stake:
+            return 0.0
+
+        return stake
+
     def request_capital(self, amount: float, strategy_type: str = "safe") -> float:
         """
         Request capital for a bet.

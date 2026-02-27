@@ -30,6 +30,10 @@ except ImportError:
     TransportMetric = None
 
 from src.quant.analysis.game_theory_engine import GameTheoryEngine
+try:
+    from src.extensions.market_god import MarketGod
+except ImportError:
+    MarketGod = None
 
 class InferenceStage(PipelineStage):
     """
@@ -71,6 +75,9 @@ class InferenceStage(PipelineStage):
 
         # Game Theory Engine (NEW)
         self.game_theory = GameTheoryEngine()
+
+        # Market God (The Omniscient Strategist)
+        self.market_god = MarketGod() if MarketGod else None
 
         # RAG Analyzer (Optional)
         try:
@@ -150,28 +157,33 @@ class InferenceStage(PipelineStage):
                 # Note: mtl_backbone.predict typically expects Polars or Dict,
                 # so we might need an adapter method `predict_batch_numpy`
 
-                # Retrieve match IDs corresponding to the SHM rows
-                # Assuming 'features' DF is available and aligned.
-                # Ideally, match_ids should also be in SHM or passed separately.
-                # For now, we take from features if aligned.
-                match_ids = None
-                if not features.is_empty():
-                    match_ids = features["match_id"].to_list()
-                    if len(match_ids) != feature_matrix.shape[0]:
-                        # Mismatch handling: slice to min length
-                        min_len = min(len(match_ids), feature_matrix.shape[0])
-                        match_ids = match_ids[:min_len]
-                        feature_matrix = feature_matrix[:min_len]
+                # Retrieve match IDs from context or features
+                # If only SHM is passed, we rely on context['match_ids'] if available
+                match_ids = context.get("match_ids")
 
+                if match_ids is None and not features.is_empty():
+                    match_ids = features["match_id"].to_list()
+
+                # Safety check: Ensure alignment
+                if match_ids and len(match_ids) != feature_matrix.shape[0]:
+                    # Mismatch handling: slice to min length
+                    min_len = min(len(match_ids), feature_matrix.shape[0])
+                    match_ids = match_ids[:min_len]
+                    feature_matrix = feature_matrix[:min_len]
+                    logger.warning(f"SHM shape mismatch corrected. New len: {min_len}")
+
+                # Optimized Path: Bypass DataFrame construction if backbone supports numpy
                 if hasattr(self.mtl_backbone, "predict_batch_numpy"):
                     mtl_df = await asyncio.to_thread(self.mtl_backbone.predict_batch_numpy, feature_matrix, match_ids)
                 else:
-                    # Fallback to standard predict with conversion (slower but works)
-                    # We need to map numpy back to Polars for standard `predict` if specific method missing
-                    # But wait, we have `features` dataframe available too (legacy path).
-                    # If `features` is empty (e.g. only SHM passed), we are stuck.
-                    # Assuming standard pipeline passed `features` DF as well for now.
-                    # This block is placeholder for future Pure-SHM optimization.
+                    # Fallback to standard predict (requires DF reconstruction if features empty)
+                    if features.is_empty():
+                        # Construct minimal DF from numpy array just for prediction (slower)
+                        # Assuming we know column names or backbone can handle unnamed
+                        features = pl.DataFrame(feature_matrix)
+                        if match_ids:
+                            features = features.with_columns(pl.Series("match_id", match_ids))
+
                     mtl_df = await asyncio.to_thread(self.mtl_backbone.predict, features)
 
                 for row in mtl_df.iter_rows(named=True):
@@ -374,7 +386,39 @@ class InferenceStage(PipelineStage):
         except Exception:
             pass
 
-        # 9. Inject Risk Context
+        # 9. Market God Consultation
+        if self.market_god:
+            try:
+                # Construct odds data from context
+                odds_data = {
+                    "home": context.get("home_odds", 2.0),
+                    "draw": context.get("draw_odds", 3.0),
+                    "away": context.get("away_odds", 4.0)
+                }
+                # Volatility history ideally passed in context, using dummy or empty list
+                vol_hist = context.get("volatility_history", [])
+
+                god_sig = self.market_god.consult(match_id, odds_data, vol_hist)
+
+                prediction["god_signal"] = god_sig.signal_type
+                prediction["god_conviction"] = god_sig.conviction
+                prediction["god_narrative"] = god_sig.narrative
+                prediction["god_multiplier"] = god_sig.suggested_multiplier
+
+                # Apply God Multiplier to Confidence?
+                # If God says BULLISH, we boost model confidence.
+                if god_sig.signal_type == "BULLISH":
+                    prediction["confidence"] = min(prediction.get("confidence", 0.5) * 1.2, 1.0)
+                elif god_sig.signal_type == "BEARISH":
+                    prediction["confidence"] *= 0.8
+                elif god_sig.signal_type in ["BLACK_SWAN", "FIX_DETECTED"]:
+                    # Severe warning
+                    prediction["god_veto"] = True
+
+            except Exception as e:
+                logger.warning(f"Market God is silent for {match_id}: {e}")
+
+        # 10. Inject Risk Context
         prediction["regime_status"] = context.get("_regime_status", "NORMAL")
         prediction["kelly_fraction"] = context.get("_kelly_fraction", 1.0)
 

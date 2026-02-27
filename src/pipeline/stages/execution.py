@@ -50,6 +50,11 @@ class ExecutionStage(PipelineStage):
             is_paper = bet.get("is_paper", False) or bet.get("trading_mode") == "PAPER"
             bet["is_paper"] = is_paper
 
+            # 0. SANITY CHECK (The "JP Morgan" Final Gate)
+            if not self._sanity_check(bet):
+                logger.error(f"EXECUTION BLOCKED (Sanity Check Failed): {match_id}")
+                continue
+
             # 1. Save to DB (Central Source of Truth)
             if self.db:
                 try:
@@ -98,6 +103,45 @@ class ExecutionStage(PipelineStage):
                 self.metrics.observe("bet_stake_amount", stake)
 
         return {"execution_status": "success", "bets_placed": len(bets)}
+
+    def _sanity_check(self, bet: Dict[str, Any]) -> bool:
+        """
+        Final safety validation before execution.
+        Prevents fat-finger errors, stale bets, or illegal parameters.
+        """
+        # 1. Stake Limits
+        stake = bet.get("stake", 0.0)
+        if stake <= 0:
+            logger.warning(f"Sanity Fail: Stake <= 0 ({stake})")
+            return False
+
+        # Hard cap (e.g. 20% of bankroll or fixed amount)
+        # Ideally fetch bankroll, but let's assume max single bet cap is 5000 units for now
+        if stake > 5000:
+            logger.warning(f"Sanity Fail: Stake > 5000 ({stake})")
+            return False
+
+        # 2. Odds Validation
+        odds = bet.get("odds", 0.0)
+        if odds < 1.01:
+            logger.warning(f"Sanity Fail: Odds < 1.01 ({odds})")
+            return False
+        if odds > 1000: # Suspiciously high
+            logger.warning(f"Sanity Fail: Odds > 1000 ({odds})")
+            return False
+
+        # 3. EV Validation (unless hedging/paper)
+        # Hedge orders might have negative EV on the hedge leg itself
+        if not bet.get("is_hedge", False) and not bet.get("is_paper", False):
+            ev = bet.get("ev", -1.0)
+            # Allow slightly negative if covered by other strategies? No, strictly positive for main bets.
+            # But sometimes 'ev' key is missing or not calculated for arb legs.
+            # We skip if EV is explicitly negative.
+            if ev < 0:
+                logger.warning(f"Sanity Fail: Negative EV ({ev}) for standard bet")
+                return False
+
+        return True
 
     async def handle_hedge_order(self, event_data: Dict[str, Any]):
         """

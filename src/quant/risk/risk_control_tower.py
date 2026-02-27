@@ -211,8 +211,19 @@ class RiskControlTower:
         decision.regime_metrics = regime
 
         if regime.regime == "CHAOTIC" or regime.regime == "CRASH":
+            # Strict Veto: Chaos Kill Switch
+            if regime.regime == "CHAOTIC" and regime.confidence > 0.8: # High confidence chaos
+                 decision.approved = False
+                 decision.rejection_reason = f"Chaos Veto: Market is Chaotic (Conf: {regime.confidence:.2f})"
+                 return decision
+
+            if regime.regime == "CRASH":
+                 decision.approved = False
+                 decision.rejection_reason = f"Market Regime Veto: {regime.regime} (Crash Protocol)"
+                 return decision
+
             # --- 2.1 Systemic Risk Check (CoVaR) ---
-            # If the market is chaotic, we run a CoVaR check to ensure this bet doesn't correlate
+            # If the market is chaotic/volatile, we run a CoVaR check to ensure this bet doesn't correlate
             # dangerously with our existing portfolio (contagion risk).
             open_bets = context.get("open_bets", []) # Ensure pipeline populates this
             if open_bets:
@@ -227,15 +238,6 @@ class RiskControlTower:
                     return decision
                 elif covar_res.get("delta_covar", 0) < -0.02:
                     decision.adjustments.append(f"Systemic Risk Warning: Moderate CoVaR ({covar_res['delta_covar']:.3f})")
-
-            # Even if CoVaR is okay, regime veto still applies unless strong override
-            if regime.regime == "CRASH":
-                 decision.approved = False
-                 decision.rejection_reason = f"Market Regime Veto: {regime.regime} (Crash Protocol)"
-                 return decision
-            else:
-                 # CHAOTIC but acceptable CoVaR -> proceed with caution (maybe handled by PhysicsModulator)
-                 pass
 
         # --- 3. Pre-Mortem Analysis ---
         # The Devil's Advocate
@@ -334,10 +336,15 @@ class RiskControlTower:
 
             # If SM is bearish on what we picked
             if sel == "HOME":
-                # Veto or penalty
-                decision.adjustments.append(f"Smart Money Bearish on HOME (Strength: {sm_signal.strength:.2f})")
-                # Penalty applied in modulation
-                bet_candidate["sm_multiplier"] = 0.5
+                # STRICT VETO: If Smart Money is fading us hard (> 0.7 strength)
+                if sm_signal.strength > 0.7:
+                    decision.approved = False
+                    decision.rejection_reason = f"Smart Money Veto: Bearish Signal (Strength: {sm_signal.strength:.2f})"
+                    return decision
+                else:
+                    # Weak bearish -> Penalty
+                    decision.adjustments.append(f"Smart Money Bearish on HOME (Strength: {sm_signal.strength:.2f})")
+                    bet_candidate["sm_multiplier"] = 0.5
 
         elif sm_signal.signal == "BULLISH":
             sel = bet_candidate.get("selection", "HOME").upper()
