@@ -54,6 +54,16 @@ try:
 except ImportError:
     XAIExplainer = None
 
+try:
+    from src.quant.analysis.scenario_simulator import ScenarioSimulator
+except ImportError:
+    ScenarioSimulator = None
+
+try:
+    from src.quant.analysis.market_regime_detector import MarketRegimeDetector
+except ImportError:
+    MarketRegimeDetector = None
+
 class TelegramBot:
     """Async Polling tabanlı Telegram Botu."""
 
@@ -80,6 +90,10 @@ class TelegramBot:
 
         # XAI Explainer
         self.xai = XAIExplainer() if XAIExplainer else None
+
+        # New Simulation Tools
+        self.simulator = ScenarioSimulator() if ScenarioSimulator else None
+        self.regime_detector = MarketRegimeDetector() if MarketRegimeDetector else None
 
         if not self.enabled:
             logger.warning("TelegramBot devre dışı: Token veya httpx eksik.")
@@ -584,6 +598,15 @@ class TelegramBot:
         elif command == "/analyze":
             await self._handle_analyze(chat_id, args)
 
+        elif command == "/simulate":
+            if not self.simulator:
+                await self.send_message(chat_id, "⚠️ Simülatör modülü yüklü değil.")
+                return
+            if not args:
+                await self.send_message(chat_id, "⚠️ Kullanım: `/simulate <match_id>`")
+                return
+            await self._handle_simulation(chat_id, args[0])
+
         elif command == "/physics":
             if not args:
                 await self.send_message(chat_id, "⚠️ Kullanım: `/physics <match_id>`")
@@ -758,6 +781,36 @@ class TelegramBot:
         # If nothing found
         if not self.context.features or self.context.features.filter(pl.col("match_id") == match_id).is_empty():
              await self.send_message(chat_id, f"❌ `{match_id}` için güncel analiz bulunamadı.")
+
+    async def _handle_simulation(self, chat_id: int, match_id: str):
+        """Monte Carlo Simülasyonu çalıştır ve histogram gönder."""
+        await self.send_message(chat_id, f"🎲 *{match_id}* için 10,000 maç simüle ediliyor...")
+
+        # Fetch xG data from context if available, else mock
+        home_xg, away_xg = 1.5, 1.2 # Default mock
+
+        if self.context and self.context.features is not None:
+            try:
+                row = self.context.features.filter(pl.col("match_id") == match_id)
+                if not row.is_empty():
+                    home_xg = row["home_xg"][0] or 1.5
+                    away_xg = row["away_xg"][0] or 1.2
+            except Exception:
+                pass
+
+        sim_res = self.simulator.simulate_match(home_xg, away_xg, match_id)
+
+        msg = (
+            f"📊 **Simülasyon Sonucu (xG: {home_xg:.2f} - {away_xg:.2f})**\n"
+            f"🏠 Home Win: %{sim_res['prob_home']*100:.1f}\n"
+            f"🤝 Draw: %{sim_res['prob_draw']*100:.1f}\n"
+            f"✈️ Away Win: %{sim_res['prob_away']*100:.1f}\n\n"
+        )
+
+        hist = self.simulator.generate_ascii_histogram(sim_res["home_goals_dist"], "Home Goals")
+        msg += f"```\n{hist}\n```"
+
+        await self.send_message(chat_id, msg)
 
     async def _handle_physics_detail(self, chat_id: int, match_id: str):
         """Physics motorlarının detaylı çıktısını raporla."""
