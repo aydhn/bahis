@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
+from datetime import datetime
 
 # Proje kökünü PYTHONPATH'e ekle
 ROOT = Path(__file__).resolve().parents[2]
@@ -96,6 +97,13 @@ if STREAMLIT_AVAILABLE:
         ],
     )
 
+    # 🎨 Palette: Refresh control for data freshness
+    if st.sidebar.button("🔄 Verileri Yenile", use_container_width=True):
+        st.cache_resource.clear()
+        st.rerun()
+
+    st.sidebar.caption(f"Son Güncelleme: {datetime.now().strftime('%H:%M:%S')}")
+
     # ═══════════════════════════════════════════════════
     # DASHBOARD
     # ═══════════════════════════════════════════════════
@@ -173,6 +181,9 @@ if STREAMLIT_AVAILABLE:
             **Formül:** `(Model Olasılığı × Bahis Oranı) - 1`
             """)
 
+        # 🎨 Palette: Toggle to focus only on opportunities
+        show_only_value = st.toggle("Sadece Fırsatları Göster (Value > 0)", value=False)
+
         db = get_db()
         matches = db.get_upcoming_matches()
 
@@ -228,36 +239,44 @@ if STREAMLIT_AVAILABLE:
 
             df = pd.DataFrame(rows)
 
-            # Renklendirme
-            def color_ev(val):
-                if isinstance(val, (int, float)):
-                    if val > 0.05:
-                        return (
-                            "background-color: #00ff88; color: black; font-weight: bold"
-                        )
-                    elif val > 0:
-                        return "background-color: #88ff88; color: black"
-                    else:
-                        return "background-color: #ff8888; color: black"
-                return ""
+            # 🎨 Palette: Apply filter if toggle is active
+            if show_only_value:
+                df = df[df["Value?"] == "✅"]
 
-            styled = df.style.applymap(color_ev, subset=["EV 1", "EV X", "EV 2"])
-            styled = styled.format(
-                {
-                    "EV 1": "{:.1%}",
-                    "EV X": "{:.1%}",
-                    "EV 2": "{:.1%}",
-                    "İddaa 1": "{:.2f}",
-                    "İddaa X": "{:.2f}",
-                    "İddaa 2": "{:.2f}",
-                    "Model 1": "{:.2f}",
-                    "Model X": "{:.2f}",
-                    "Model 2": "{:.2f}",
-                }
-            )
-            st.dataframe(styled, use_container_width=True, hide_index=True)
+            if df.empty and show_only_value:
+                st.info("Şu an için kriterlere uyan fırsat bulunamadı.")
 
-            # Value bahisleri filtrele
+            if not df.empty:
+                # Renklendirme
+                def color_ev(val):
+                    if isinstance(val, (int, float)):
+                        if val > 0.05:
+                            return (
+                                "background-color: #00ff88; color: black; font-weight: bold"
+                            )
+                        elif val > 0:
+                            return "background-color: #88ff88; color: black"
+                        else:
+                            return "background-color: #ff8888; color: black"
+                    return ""
+
+                styled = df.style.applymap(color_ev, subset=["EV 1", "EV X", "EV 2"])
+                styled = styled.format(
+                    {
+                        "EV 1": "{:.1%}",
+                        "EV X": "{:.1%}",
+                        "EV 2": "{:.1%}",
+                        "İddaa 1": "{:.2f}",
+                        "İddaa X": "{:.2f}",
+                        "İddaa 2": "{:.2f}",
+                        "Model 1": "{:.2f}",
+                        "Model X": "{:.2f}",
+                        "Model 2": "{:.2f}",
+                    }
+                )
+                st.dataframe(styled, use_container_width=True, hide_index=True)
+
+            # Value bahisleri filtrele (always calculate count from full rows for global context)
             value_bets = [r for r in rows if r["Value?"] == "✅"]
             if value_bets:
                 st.success(f"🎯 {len(value_bets)} adet değer bahisi bulundu!")
