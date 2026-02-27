@@ -54,7 +54,10 @@ class Sentinel:
         # "The Sniper" Upgrade
         self.flash_monitor = FlashOddsMonitor(self.bus, self.speed_cache)
         self.bus.subscribe("odds_tick", self.flash_monitor.on_odds_tick)
-        self.bus.subscribe("flash_opportunity", self._handle_flash_reaction)
+
+        # 0.1.5 Real-Time Hedging Wiring (The Sniper)
+        # Instead of just logging flash opportunities, we wire them to immediate hedge checks.
+        self.bus.subscribe("flash_opportunity", self._handle_flash_reaction_with_hedging)
 
         # 0.2 System Architect (The Brain)
         self.architect = SystemArchitect()
@@ -302,32 +305,85 @@ class Sentinel:
                  f"🤖 *Otonom Risk Ayarı*\nROI: %{roi*100:.2f}\nYeni Mod: *{new_mode}*"
              )
 
-    async def _handle_flash_reaction(self, event: Any):
+    async def _handle_flash_reaction_with_hedging(self, event: Any):
         """
-        Flash Reaction: Reacts to high-velocity odds changes (Dropping Odds).
-        Acts as a 'Liquidity Sniper'.
+        Flash Reaction & Sniper Hedging:
+        Reacts to high-velocity odds changes (Dropping/Drifting Odds).
+        1. Checks for 'Sniper' entry opportunities (Liquidity Sniping).
+        2. Checks for 'Hedge' triggers on existing positions (Stop-Loss/Profit-Taking).
         """
         data = event.data
         match_id = data.get("match_id")
-        # Assume data contains z-score or we calculate it here.
-        # For simplicity, let's assume ingestion calculated 'z_score'
+        current_odds = data.get("current_odds", {}) # Expected {home: 2.1, draw: ...}
         z_score = data.get("z_score", 0.0)
 
+        # 1. Sniper Entry Logic (Dropping Odds -> Value Entry)
         if z_score < -2.0:
             logger.warning(f"⚡ FLASH REACTION: Dropping Odds detected for {match_id} (Z={z_score})")
-            # Trigger immediate execution check for this match
-            # This bypasses the normal cycle
-            if self.pipeline:
-                # We need a way to run specific match. Pipeline run_once takes context.
-                # Construct a mini-context
-                logger.info(f"⚡ Sniping liquidity for {match_id}...")
+            # In a full HFT system, we would trigger an immediate buy order here if models concur.
+            # For now, we log the opportunity.
+            # if self.pipeline: await self.pipeline.run_single_match(match_id) # Future
 
-                # Fetch match data (pseudo-code, in real implementation we fetch from DB/Cache)
-                # match_data = self.db.get_match(match_id)
+        # 2. Real-Time Hedge Check (The "Binance CEO" Layer)
+        # If we have an open position on this match, check if this flash move warrants an exit.
 
-                # For now, just log the intent as we need full match context to run pipeline
-                # Ideally: await self.pipeline.run_single_match(match_id)
-                pass
+        # Fetch open bets for this match
+        db = container.get("db")
+        if not db: return
+
+        try:
+            # Optimized query for specific match using parameter binding to prevent SQL Injection
+            # db.query expects SQL string. If the underlying driver supports binding, we should use it.
+            # Assuming db.query might take params in future or we handle sanitation.
+            # For now, we sanitize match_id manually to be safe if binding isn't exposed.
+            sanitized_id = match_id.replace("'", "''")
+            open_bets_df = db.query(f"SELECT * FROM bets WHERE match_id = '{sanitized_id}' AND status IN ('pending', 'open')")
+            if open_bets_df.is_empty():
+                return
+
+            open_bets = open_bets_df.to_dicts()
+        except Exception as e:
+            logger.error(f"Sentinel Hedge Check DB Error: {e}")
+            return
+
+        for bet in open_bets:
+            selection = bet.get("selection", "").lower()
+
+            # Map selection to odds key
+            sel_key = selection
+            if selection in ["1", "home"]: sel_key = "home"
+            elif selection in ["x", "draw"]: sel_key = "draw"
+            elif selection in ["2", "away"]: sel_key = "away"
+
+            live_price = current_odds.get(sel_key)
+
+            if live_price:
+                # Check HedgeHog logic immediately
+                hedge_signal = self.hedgehog.dynamic_hedge(
+                    position=bet,
+                    live_odds=live_price,
+                    volatility=0.05 + (abs(z_score) * 0.01) # Increase volatility assumption during flash events
+                )
+
+                if hedge_signal:
+                    logger.warning(f"🦔 SNIPER HEDGE TRIGGERED: {match_id} -> {hedge_signal['action']}")
+
+                    # Emit Hedge Order Priority Event
+                    event_data = {
+                        "bet_id": bet.get("bet_id"),
+                        "match_id": match_id,
+                        "original_bet": bet,
+                        "hedge_signal": hedge_signal,
+                        "timestamp": str(asyncio.get_event_loop().time()),
+                        "reason": f"Flash Move (Z={z_score})"
+                    }
+                    await self.bus.emit(Event("hedge_order", data=event_data))
+
+                    if self.bot and self.bot.enabled:
+                        await self.bot.send_risk_alert(
+                            f"⚡ SNIPER HEDGE: {hedge_signal['action']}",
+                            f"Match: {match_id}\nFlash Move Z-Score: {z_score:.2f}\nAction: {hedge_signal['reason']}"
+                        )
 
     async def _run_hedge_monitor(self):
         """

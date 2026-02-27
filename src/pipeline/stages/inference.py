@@ -149,8 +149,22 @@ class InferenceStage(PipelineStage):
                 # Assuming MTL accepts numpy array directly for speed
                 # Note: mtl_backbone.predict typically expects Polars or Dict,
                 # so we might need an adapter method `predict_batch_numpy`
+
+                # Retrieve match IDs corresponding to the SHM rows
+                # Assuming 'features' DF is available and aligned.
+                # Ideally, match_ids should also be in SHM or passed separately.
+                # For now, we take from features if aligned.
+                match_ids = None
+                if not features.is_empty():
+                    match_ids = features["match_id"].to_list()
+                    if len(match_ids) != feature_matrix.shape[0]:
+                        # Mismatch handling: slice to min length
+                        min_len = min(len(match_ids), feature_matrix.shape[0])
+                        match_ids = match_ids[:min_len]
+                        feature_matrix = feature_matrix[:min_len]
+
                 if hasattr(self.mtl_backbone, "predict_batch_numpy"):
-                    mtl_df = await asyncio.to_thread(self.mtl_backbone.predict_batch_numpy, feature_matrix)
+                    mtl_df = await asyncio.to_thread(self.mtl_backbone.predict_batch_numpy, feature_matrix, match_ids)
                 else:
                     # Fallback to standard predict with conversion (slower but works)
                     # We need to map numpy back to Polars for standard `predict` if specific method missing

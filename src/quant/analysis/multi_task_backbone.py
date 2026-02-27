@@ -181,7 +181,10 @@ class MultiTaskBackbone:
         if X_batch.size == 0:
             return pl.DataFrame()
 
-        if match_ids is None:
+        # If SHM passed more rows than we need, we trust match_ids length if available, else slice
+        if match_ids and len(match_ids) < X_batch.shape[0]:
+             X_batch = X_batch[:len(match_ids)]
+        elif match_ids is None:
             # Generate placeholder IDs if not provided
             match_ids = ["" for _ in range(X_batch.shape[0])]
 
