@@ -109,37 +109,50 @@ class EnsembleModel(QuantModel):
             self.weights["quantum"] = self.weights.get("quantum", 0.15) * 2.0
             logger.info(f"Ensemble: Quantum Boost activated (Conf: {quantum_conf:.2f})")
 
-        # --- Execute Models & Health Check ---
+        # --- Execute Models & Health Check (Parallel/Pruned) ---
         results = {}
         active_weights = self.weights.copy()
 
+        # Determine models to run
+        models_to_run = []
         for name, model in self.models.items():
-            # Skip rotted models
-            if self.model_health[name]["status"] == "ROTTED":
+            # Prune rotted models
+            if self.model_health[name]["status"] == "ROTTED" or self.model_health[name]["errors"] >= 3:
                 logger.warning(f"Skipping rotted model: {name}")
                 active_weights[name] = 0.0
                 continue
 
-            try:
-                start_time = time.time()
-                res = model.predict(context)
-                duration = time.time() - start_time
+            # Dynamic Pruning: Skip models with weight near zero
+            if active_weights.get(name, 0.0) < 0.05:
+                logger.debug(f"Pruning model {name} dynamically due to low weight ({active_weights.get(name):.3f})")
+                self.model_health[name]["status"] = "PRUNED"
+                active_weights[name] = 0.0
+                continue
 
-                if "error" in res:
-                    logger.warning(f"Model {name} failed: {res['error']}")
+            # Ensure status is healthy if not rotted
+            self.model_health[name]["status"] = "HEALTHY"
+            models_to_run.append((name, model))
+
+        import concurrent.futures
+
+        # ensemble.predict is typically called inside asyncio.to_thread in InferenceStage,
+        # so we are in a thread here, not in the async loop directly.
+        # We use a thread pool for parallel execution of sync predict methods.
+        with concurrent.futures.ThreadPoolExecutor(max_workers=len(models_to_run) or 1) as executor:
+            future_to_model = {executor.submit(model.predict, context): name for name, model in models_to_run}
+            for future in concurrent.futures.as_completed(future_to_model):
+                name = future_to_model[future]
+                try:
+                    res = future.result()
+                    if "error" in res:
+                        logger.warning(f"Model {name} failed: {res['error']}")
+                        self._record_failure(name)
+                    else:
+                        self._record_success(name)
+                        results[name] = res
+                except Exception as e:
+                    logger.error(f"Ensemble execution error ({name}): {e}")
                     self._record_failure(name)
-                    continue
-
-                # Check for stale output (Rotting Model Detection)
-                # Ideally, models should return a timestamp or generation ID.
-                # Here we simulate by checking for suspiciously static outputs if available.
-                # For now, just success.
-                self._record_success(name)
-                results[name] = res
-
-            except Exception as e:
-                logger.error(f"Ensemble execution error ({name}): {e}")
-                self._record_failure(name)
 
         if not results:
             return {

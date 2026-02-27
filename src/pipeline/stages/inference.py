@@ -404,9 +404,24 @@ class InferenceStage(PipelineStage):
             d_odd = context.get("draw_odds", 3.0)
             a_odd = context.get("away_odds", 3.5)
 
-            feat_vec = np.array([[h_odd, d_odd, a_odd]])
+            # Define caching dictionary on the class if it doesn't exist
+            if not hasattr(self, "_similarity_cache"):
+                self._similarity_cache = {}
 
-            similar_res = self.similarity_engine.find_similar(feat_vec)
+            cache_key = (round(h_odd, 2), round(d_odd, 2), round(a_odd, 2))
+
+            if cache_key in self._similarity_cache:
+                similar_res = self._similarity_cache[cache_key]
+            else:
+                feat_vec = np.array([[h_odd, d_odd, a_odd]])
+                similar_res = self.similarity_engine.find_similar(feat_vec)
+
+                # Keep cache small to prevent memory leaks in long-running processes
+                if len(self._similarity_cache) > 1000:
+                    self._similarity_cache.clear()
+
+                self._similarity_cache[cache_key] = similar_res
+
             prediction["similar_matches"] = similar_res
 
             # Smart Adjustment: If history says 80% Home Win, but model says 40%, flag it.
