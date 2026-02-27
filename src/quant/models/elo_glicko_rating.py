@@ -6,10 +6,11 @@ Elo + Glicko-2: güçlü takımı yenen zayıf takım daha çok puan kazanır.
 from __future__ import annotations
 
 import math
-import pickle
-from dataclasses import dataclass, field
+import json
+from dataclasses import dataclass, field, asdict
 from datetime import datetime
 from pathlib import Path
+from typing import Any, Dict
 
 import numpy as np
 import polars as pl
@@ -50,6 +51,28 @@ class EloRating:
         if name not in self._teams:
             self._teams[name] = EloTeam(name=name)
         return self._teams[name]
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Durumu sözlük olarak döndür."""
+        return {
+            "k_factor": self._k,
+            "home_advantage": self._home_adv,
+            "teams": {name: asdict(team) for name, team in self._teams.items()}
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "EloRating":
+        """Sözlükten durumu yükle."""
+        instance = cls(
+            k_factor=data.get("k_factor", 32.0),
+            home_advantage=data.get("home_advantage", 65.0)
+        )
+
+        teams_data = data.get("teams", {})
+        for name, team_data in teams_data.items():
+            instance._teams[name] = EloTeam(**team_data)
+
+        return instance
 
     def expected_score(self, rating_a: float, rating_b: float) -> float:
         """Beklenen skor (0-1 arası)."""
@@ -166,6 +189,21 @@ class Glicko2Rating:
         if name not in self._teams:
             self._teams[name] = GlickoTeam(name=name)
         return self._teams[name]
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Durumu sözlük olarak döndür."""
+        return {
+            "teams": {name: asdict(team) for name, team in self._teams.items()}
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "Glicko2Rating":
+        """Sözlükten durumu yükle."""
+        instance = cls()
+        teams_data = data.get("teams", {})
+        for name, team_data in teams_data.items():
+            instance._teams[name] = GlickoTeam(**team_data)
+        return instance
 
     def _g(self, rd: float) -> float:
         return 1.0 / math.sqrt(1.0 + 3.0 * (rd / 400.0) ** 2 / math.pi ** 2)
@@ -322,31 +360,42 @@ class EloGlickoSystem:
         return pl.DataFrame(results) if results else pl.DataFrame()
 
     def save_state(self, filepath: str | Path):
-        """Durumu diske kaydeder."""
+        """Durumu diske JSON formatında kaydeder."""
         try:
             path = Path(filepath)
             path.parent.mkdir(parents=True, exist_ok=True)
-            with open(path, "wb") as f:
-                pickle.dump({
-                    "elo": self.elo,
-                    "glicko": self.glicko,
-                    "processed": self.processed_matches
-                }, f)
+
+            # Use .json extension if not present, but respect original path for now
+            # We will use text write mode
+
+            state = {
+                "elo": self.elo.to_dict(),
+                "glicko": self.glicko.to_dict(),
+                "processed": list(self.processed_matches)
+            }
+
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(state, f, indent=2)
             logger.debug(f"Elo state saved to {path}")
         except Exception as e:
             logger.error(f"Failed to save Elo state: {e}")
 
     def load_state(self, filepath: str | Path) -> bool:
-        """Durumu diskten yükler."""
+        """Durumu diskten (JSON) yükler."""
         path = Path(filepath)
         if not path.exists():
             return False
         try:
-            with open(path, "rb") as f:
-                state = pickle.load(f)
-                self.elo = state["elo"]
-                self.glicko = state["glicko"]
-                self.processed_matches = state.get("processed", set())
+            with open(path, "r", encoding="utf-8") as f:
+                state = json.load(f)
+
+                if "elo" in state:
+                    self.elo = EloRating.from_dict(state["elo"])
+                if "glicko" in state:
+                    self.glicko = Glicko2Rating.from_dict(state["glicko"])
+                if "processed" in state:
+                    self.processed_matches = set(state["processed"])
+
             logger.info(f"Elo state loaded from {path} (Matches: {len(self.processed_matches)})")
             return True
         except Exception as e:
