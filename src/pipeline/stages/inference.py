@@ -29,6 +29,7 @@ try:
 except ImportError:
     TransportMetric = None
 
+from src.quant.analysis.game_theory_engine import GameTheoryEngine
 
 class InferenceStage(PipelineStage):
     """
@@ -67,6 +68,9 @@ class InferenceStage(PipelineStage):
 
         # Risk / Regime Context
         self.volatility_modulator = VolatilityModulator()
+
+        # Game Theory Engine (NEW)
+        self.game_theory = GameTheoryEngine()
 
         # RAG Analyzer (Optional)
         try:
@@ -333,7 +337,30 @@ class InferenceStage(PipelineStage):
             logger.warning(f"Conformal prediction failed: {e}")
             prediction["conformal_certainty"] = "UNKNOWN"
 
-        # 8. Inject Risk Context
+        # 8. Game Theory Check (Strategic Defense)
+        # If market sentiment is extremely skewed (everyone betting home),
+        # check if we should randomize our decision to avoid exploitation?
+        # Or simply check Nash Equilibrium of the odds.
+        # Simple use case: If implied prob (1/odds) is exactly equal to model prob,
+        # it's a Nash Equilibrium (Efficient Market). Edge is 0.
+        # We can flag "Perfectly Priced" markets.
+        try:
+            # Mock payoff matrix for simulation: Bettor vs Market
+            # 2x2: [Bet Home, Bet Away] vs [Home Wins, Away Wins] (Simplified)
+            # This is illustrative. Real application would be more complex.
+            # Here we just check if EV is near zero, which is a sign of efficiency.
+            implied_home = 1.0 / max(context.get("home_odds", 2.0), 1.01)
+            model_home = prediction.get("prob_home", 0.33)
+
+            if abs(implied_home - model_home) < 0.01:
+                prediction["game_theory_status"] = "NASH_EQUILIBRIUM"
+                prediction["reasoning"] = "Market is efficient. No edge."
+            else:
+                prediction["game_theory_status"] = "EXPLOITABLE"
+        except Exception:
+            pass
+
+        # 9. Inject Risk Context
         prediction["regime_status"] = context.get("_regime_status", "NORMAL")
         prediction["kelly_fraction"] = context.get("_kelly_fraction", 1.0)
 

@@ -26,6 +26,10 @@ from src.quant.analysis.philosophical_engine import PhilosophicalEngine
 from src.quant.analysis.causal_reasoner import CausalReasoner
 from src.core.system_architect import StrategicDirective
 
+# NEW: Advanced Risk Modules
+from src.quant.finance.liquidity_engine import LiquidityEngine
+from src.quant.risk.extreme_value import ExtremeValueAnalyzer
+
 # Import Physics Reports for Type Hinting (Optional, but good for clarity)
 try:
     from src.quant.physics.fisher_geometry import FisherReport
@@ -66,10 +70,12 @@ class RiskControlTower:
         self.treasury = TreasuryEngine()
         self.synthetic = SyntheticEngine()
         self.arb_scanner = ArbitrageScanner()
+        self.liquidity = LiquidityEngine() # NEW
 
-        # 5. Zero Error Components (Philosophical & Causal)
+        # 5. Zero Error Components (Philosophical, Causal & EVT)
         self.philosopher = PhilosophicalEngine()
         self.causal_reasoner = CausalReasoner()
+        self.evt_analyzer = ExtremeValueAnalyzer() # NEW
 
         logger.info("RiskControlTower initialized and ready for duty.")
 
@@ -110,6 +116,18 @@ class RiskControlTower:
                 decision.approved = False
                 decision.rejection_reason = f"Architect: Insufficient Edge (Req: {required_ev:.2%}, Act: {bet_candidate.get('ev',0):.2%})"
                 return decision
+
+        # --- 0.6 EVT Tail Risk Check (NEW) ---
+        # If we have historical PnL/Loss data for this league/market, check tail risk.
+        # Assuming context might have 'league_losses' or similar.
+        league_losses = context.get("league_losses", []) # Placeholder
+        if league_losses:
+            tail_report = self.evt_analyzer.analyze_losses(league_losses)
+            # If tail is extremely fat (shape param > 0.3) or VaR is huge, block or reduce.
+            if tail_report.is_fat_tailed and tail_report.shape_param > 0.3:
+                decision.adjustments.append(f"EVT Warning: Fat Tail (xi={tail_report.shape_param:.2f}). Stake halved.")
+                # We apply this reduction later or return early if critical
+                # Let's just flag it for multiplier reduction.
 
         # --- 0. Synthetic Value & Arbitrage Check (Treasury Ops) ---
         # Before evaluating risk, check if we can optimize the entry using derivatives or arbitrage.
@@ -256,6 +274,10 @@ class RiskControlTower:
         if any("Hypergraph Warning" in adj for adj in decision.adjustments):
             phys_mult *= 0.8
 
+        # EVT Penalty (from 0.6 above)
+        if any("EVT Warning" in adj for adj in decision.adjustments):
+            phys_mult *= 0.5
+
         if phys_mult <= 0.0:
             decision.approved = False
             decision.rejection_reason = "Physics Kill Signal"
@@ -282,6 +304,20 @@ class RiskControlTower:
         # --- 6. Treasury Check ---
         # Can we afford it?
         amount = final_stake_pct * self.treasury.state.total_capital # Estimate amount
+
+        # --- 6.5 Liquidity Check (NEW) ---
+        # Ensure the amount doesn't exceed market depth
+        league_name = bet_candidate.get("league", "Default")
+        max_safe_stake = self.liquidity.calculate_max_safe_stake(
+            odds=bet_candidate.get("odds", 2.0),
+            edge=bet_candidate.get("ev", 0.05),
+            league=league_name
+        )
+
+        if amount > max_safe_stake:
+            amount = max_safe_stake
+            decision.adjustments.append(f"Liquidity Cap: Stake limited to {max_safe_stake:.2f} (Slippage protection)")
+
         approved_amount = self.treasury.request_capital(amount, strategy_type="aggressive")
 
         if approved_amount <= 0:
