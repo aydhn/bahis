@@ -1,27 +1,28 @@
 """
-liquidity_engine.py – Market Depth & Slippage Modeling.
+liquidity_engine.py – Market Depth & Slippage Modeling (Simulated LOB).
 
 Protects the "Edge" by ensuring stake sizes do not exceed market liquidity.
-Large bets move odds (slippage), reducing EV. This engine estimates
-the maximum safe stake before slippage erodes the edge.
+Large bets move odds (slippage), reducing EV. This engine simulates a Limit Order Book (LOB)
+to estimate the execution price for a given stake size.
 
 Concepts:
-  - Slippage: The difference between expected price and executed price.
-  - Market Depth: The volume available at the current price level.
-  - Resilience: How quickly the market absorbs a large order.
+  - Limit Order Book: Stack of available liquidity at different price levels.
+  - Market Impact: Walking the book (eating liquidity) moves the price against you.
+  - Execution Price: Weighted average price of the filled order.
 
 Usage:
     engine = LiquidityEngine()
-    max_stake = engine.calculate_max_stake(odds=2.0, edge=0.05, league="Premier League")
+    exec_price, slippage_pct = engine.simulate_execution(stake=5000, odds=2.0, league="Premier League")
 """
 from __future__ import annotations
 
 from loguru import logger
 import math
+import numpy as np
 
 class LiquidityEngine:
     """
-    Estimates market liquidity and safe trade sizing.
+    Estimates market liquidity and safe trade sizing using a simulated LOB.
     """
 
     # Estimated "Resistance" constants per league tier (Hypothetical Volume Multipliers)
@@ -40,59 +41,82 @@ class LiquidityEngine:
     }
 
     def __init__(self):
-        logger.debug("LiquidityEngine initialized.")
+        logger.debug("LiquidityEngine initialized (LOB Simulation Active).")
 
-    def calculate_slippage(self, stake: float, league: str, odds: float) -> float:
+    def simulate_execution(self, stake: float, odds: float, league: str) -> tuple[float, float]:
         """
-        Estimates the percentage slippage for a given stake.
-        Model: Slippage ~ (Stake / Volume) ^ k
+        Simulates "walking the book" to find the average execution price.
+
+        Args:
+            stake: Amount to bet.
+            odds: Current top-of-book price.
+            league: League name (defines depth profile).
+
+        Returns:
+            (execution_price, slippage_pct)
         """
-        volume = self.LEAGUE_LIQUIDITY.get(league, self.LEAGUE_LIQUIDITY["Default"])
+        if stake <= 0:
+            return odds, 0.0
 
-        # Simple impact model: Linear impact approximation
-        # Impact = k * (Stake / Volume)
-        # k depends on odds (lower odds = higher volume usually, but higher sensitivity?)
+        base_volume = self.LEAGUE_LIQUIDITY.get(league, self.LEAGUE_LIQUIDITY["Default"])
 
-        # Let's assume Volume is the amount matched at current price.
-        # If Stake > 1% of Volume, we start seeing slippage.
+        # LOB Model: Liquidity follows a power law or exponential decay away from the touch.
+        # Simple Model: Linear density.
+        # "Depth" = Amount available to bet before price moves 1 tick (e.g. 0.01).
+        # Assume depth is proportional to base_volume.
 
-        ratio = stake / volume
+        # Depth per tick (0.01 odds move)
+        depth_per_tick = base_volume * 0.01 # 1% of volume available per tick? Heuristic.
 
-        # Heuristic: 1% of volume moves price by 0.1% ?
-        # Slippage is roughly proportional to square root of stake in some models (square root law)
-        # But here we stick to linear approximation for simplicity in sports
+        # Calculate how many ticks we eat through
+        # Total Ticks = Stake / Depth_per_tick
+        ticks_consumed = stake / depth_per_tick
 
-        if ratio < 0.001:
-            return 0.0
+        if ticks_consumed < 1.0:
+            # Filled at top of book
+            return odds, 0.0
 
-        slippage_pct = ratio * 0.1 # 10% of volume = 1% price move
-        return slippage_pct
+        # Calculate weighted average price
+        # Price P(v) = Odds - (v / Depth) * TickSize
+        # Total Cost (in terms of potential payout units?) No, stake is constant.
+        # We get less odds.
+        # Avg Price approx = Odds - (TicksConsumed / 2) * TickSize
+
+        tick_size = 0.01
+        avg_price = odds - (ticks_consumed / 2.0) * tick_size
+
+        # Cap slippage at reasonable bounds (e.g. 20%)
+        min_price = odds * 0.8
+        avg_price = max(avg_price, min_price)
+
+        slippage_pct = (odds - avg_price) / odds
+
+        return avg_price, slippage_pct
 
     def calculate_max_safe_stake(self, odds: float, edge: float, league: str) -> float:
         """
-        Calculates the maximum stake that keeps slippage below the Edge.
-        If Slippage > Edge, the bet becomes -EV.
+        Calculates the maximum stake that keeps execution price above Break-Even.
+        Break-Even Price = 1 / Prob (where Edge = Prob*Odds - 1)
 
-        We want: EV_after_slip > 0
-        EV_raw = P * O - 1 = Edge
-        O_slip = O * (1 - SlippagePct)
-        EV_slip = P * O_slip - 1
-
-        We simplify: Max allowed slippage = Edge / (Odds * Prob) ~= Edge / (1 + Edge) ~= Edge
-        So we clamp SlippagePct < Edge * 0.5 (Safety Margin)
+        We iterate or solve for Stake such that ExecutionPrice(Stake) > BreakEvenPrice.
+        Or simpler: Target Slippage < Edge / 2 (Safety Margin).
         """
-        volume = self.LEAGUE_LIQUIDITY.get(league, self.LEAGUE_LIQUIDITY["Default"])
-
-        # Target max slippage = 50% of the edge
         target_slippage = edge * 0.5
 
-        # Slippage = (Stake / Volume) * 0.1
-        # Stake = (Slippage / 0.1) * Volume
+        # Inverse of simulate_execution logic
+        # Slippage = (TicksConsumed / 2) * TickSize / Odds
+        # TicksConsumed = (Slippage * Odds * 2) / TickSize
+        # Stake = TicksConsumed * DepthPerTick
 
-        max_stake = (target_slippage / 0.1) * volume
+        base_volume = self.LEAGUE_LIQUIDITY.get(league, self.LEAGUE_LIQUIDITY["Default"])
+        depth_per_tick = base_volume * 0.01
+        tick_size = 0.01
 
-        # Cap absolute max to avoid "infinity" on high edges
-        return min(max_stake, volume * 0.05) # Never bet more than 5% of estimated volume
+        ticks_allowed = (target_slippage * odds * 2.0) / tick_size
+        max_stake = ticks_allowed * depth_per_tick
+
+        # Cap absolute max
+        return min(max_stake, base_volume * 0.10) # Max 10% of volume
 
     def estimate_impact(self, stake: float, league: str) -> str:
         """Returns a human-readable impact assessment."""

@@ -37,6 +37,9 @@ import numpy as np
 # NEW: Smart Money
 from src.extensions.smart_money import SmartMoneyDetector
 
+# NEW: Boardroom
+from src.core.boardroom import Boardroom
+
 # Import Physics Reports for Type Hinting (Optional, but good for clarity)
 try:
     from src.quant.physics.fisher_geometry import FisherReport
@@ -87,6 +90,7 @@ class RiskControlTower:
         self.evt_analyzer = ExtremeValueAnalyzer() # NEW
         self.game_theory = GameTheoryEngine() # NEW
         self.smart_money = SmartMoneyDetector() # NEW
+        self.boardroom = Boardroom() # NEW
 
         logger.info("RiskControlTower initialized and ready for duty.")
 
@@ -400,6 +404,29 @@ class RiskControlTower:
             logger.warning(f"Game Theory check failed: {e}")
             bet_candidate["gt_multiplier"] = 1.0
 
+        # --- 3.6 Boardroom Meeting (NEW) ---
+        # The Human-in-the-Loop Simulation.
+        # CEO, CFO, and CTO debate the trade.
+        board_ctx = {
+            "ev": bet_candidate.get("ev", 0.0),
+            "teleology_score": bet_candidate.get("teleology_score", 0.5),
+            "drawdown": self.treasury.state.daily_pnl / max(self.treasury.state.total_capital, 1.0), # Approx
+            "volatility": 0.05, # Should be fetched from VolatilityModulator
+            "confidence": bet_candidate.get("confidence", 0.5),
+            "entropy": 0.5 # Placeholder, should be in bet_candidate
+        }
+
+        board_decision = self.boardroom.convene(board_ctx)
+        if not board_decision.approved:
+            decision.approved = False
+            decision.rejection_reason = "Boardroom Veto: " + "; ".join(board_decision.minutes)
+            return decision
+
+        # Apply Board Multiplier later
+        decision.adjustments.append(f"Boardroom Multiplier: x{board_decision.final_multiplier:.2f}")
+        bet_candidate["board_multiplier"] = board_decision.final_multiplier
+        decision.rationale += "\nBoard Minutes:\n" + "\n".join(board_decision.minutes)
+
         # --- 4. Kelly Sizing ---
         # Calculate Base Stake
         # Map MarketRegime to RegimeState for Kelly
@@ -449,14 +476,19 @@ class RiskControlTower:
             phys_mult *= sm_mult
             decision.adjustments.append(f"Smart Money Multiplier: x{sm_mult:.2f}")
 
+        # Board Multiplier
+        board_mult = bet_candidate.get("board_multiplier", 1.0)
+        if board_mult != 1.0:
+            phys_mult *= board_mult
+
         if phys_mult <= 0.0:
             decision.approved = False
-            decision.rejection_reason = "Physics Kill Signal"
+            decision.rejection_reason = "Physics/Board Kill Signal"
             return decision
 
         if phys_mult != 1.0:
             final_stake_pct *= phys_mult
-            decision.adjustments.append(f"Physics Multiplier: x{phys_mult:.2f}")
+            decision.adjustments.append(f"Physics/Board Multiplier: x{phys_mult:.2f}")
 
         # --- 5.5 Architect Stake Adjustment ---
         if directive:
@@ -506,9 +538,11 @@ class RiskControlTower:
             decision.adjustments.append(f"Stress Warning: VaR at {stress_res['var_pct']:.1%}")
 
 
-        # --- 6.5 Liquidity Check (NEW) ---
-        # Ensure the amount doesn't exceed market depth
+        # --- 6.5 Liquidity Check (NEW: LOB Simulation) ---
+        # Ensure the amount doesn't exceed market depth and calculate realistic execution price
         league_name = bet_candidate.get("league", "Default")
+
+        # 1. Max Safe Stake Check (Top level)
         max_safe_stake = self.liquidity.calculate_max_safe_stake(
             odds=bet_candidate.get("odds", 2.0),
             edge=bet_candidate.get("ev", 0.05),
@@ -518,6 +552,24 @@ class RiskControlTower:
         if amount > max_safe_stake:
             amount = max_safe_stake
             decision.adjustments.append(f"Liquidity Cap: Stake limited to {max_safe_stake:.2f} (Slippage protection)")
+
+        # 2. Simulated Slippage Check
+        # What is the effective price we get?
+        exec_price, slippage_pct = self.liquidity.simulate_execution(amount, bet_candidate.get("odds", 2.0), league_name)
+
+        # Re-check EV with execution price
+        # New EV = Prob * ExecPrice - 1
+        # Need correct probability for selection (default to 'prob_home' if not generic)
+        selection_prob = bet_candidate.get("prob", bet_candidate.get("prob_home", 0.5))
+        new_ev = selection_prob * exec_price - 1.0
+
+        if new_ev <= 0:
+            decision.approved = False
+            decision.rejection_reason = f"Liquidity Veto: Slippage ({slippage_pct:.1%}) kills Edge. New EV: {new_ev:.2%}"
+            return decision
+
+        if slippage_pct > 0.05:
+            decision.adjustments.append(f"Slippage Warning: {slippage_pct:.1%} (Price: {exec_price:.2f})")
 
         approved_amount = self.treasury.request_capital(amount, strategy_type="aggressive")
 
@@ -534,7 +586,7 @@ class RiskControlTower:
         decision.stake_amount = approved_amount
         # Re-calculate pct based on approved amount
         decision.stake_pct = approved_amount / max(self.treasury.state.total_capital, 1.0)
-        decision.rationale = f"Approved. Edge: {kelly_res.edge:.2%}. " + "; ".join(decision.adjustments)
+        decision.rationale = f"Approved. Edge: {kelly_res.edge:.2%}. " + "; ".join(decision.adjustments) + f"\n\nBoard Minutes:\n" + "\n".join(board_decision.minutes)
 
         return decision
 
