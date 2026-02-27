@@ -123,9 +123,13 @@ class PortfolioOptimizer:
             return []
 
         # 3. Korelasyon düzeltmesi
-        adjusted_stakes = self._adjust_for_correlation(
-            raw_stakes, corr, positive_mask
-        )
+        try:
+            adjusted_stakes = self._adjust_for_correlation(
+                raw_stakes, corr, positive_mask
+            )
+        except Exception as e:
+            logger.error(f"[Portfolio] Optimization crashed ({e}). Fallback to Heuristic.")
+            adjusted_stakes = self._heuristic_adjust(raw_stakes, corr, positive_mask)
 
         # 4. Toplam risk sınırlaması
         total_risk = adjusted_stakes.sum()
@@ -264,6 +268,7 @@ class PortfolioOptimizer:
                 optimized_sub = sub_stakes * 0.5 # Fallback
         except Exception as e:
             logger.error(f"Optimizasyon hatası: {e}")
+            # Fallback to simple mean if scipy crashes inside
             optimized_sub = sub_stakes * 0.5
 
         # Sonuçları ana vektöre yerleştir

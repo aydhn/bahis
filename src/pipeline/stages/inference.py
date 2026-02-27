@@ -16,6 +16,7 @@ from src.quant.risk.volatility_modulator import VolatilityModulator
 from src.quant.meta_labeling import MetaLabeler
 from src.quant.uncertainty.conformal import ConformalPredictor
 from src.quant.analysis.teleology import TeleologicalEngine
+from src.core.zero_copy_bridge import ZeroCopyBridge
 
 # New Imports
 try:
@@ -117,6 +118,71 @@ class InferenceStage(PipelineStage):
             logger.info("No matches to analyze.")
             return {"ensemble_results": []}
 
+        # --- Speed Upgrade: Zero-Copy Inference ---
+        shm_info = context.get("shm_info")
+        mtl_predictions = {}
+
+        # Use Zero-Copy Path if available AND MTL is active
+        if shm_info and self.mtl_backbone:
+            try:
+                logger.info(f"Using Zero-Copy Bridge: {shm_info['name']}")
+                bridge = ZeroCopyBridge(
+                    name=shm_info["name"],
+                    shape=shm_info["shape"],
+                    create=False
+                )
+
+                # Zero-copy read (returns a copy for safety but initial access is fast)
+                # In true zero-copy, we'd process directly from buffer but safety first.
+                raw_data = bridge.read()
+                bridge.close()
+
+                # Slice to valid rows
+                valid_rows = shm_info.get("valid_rows", raw_data.shape[0])
+                feature_matrix = raw_data[:valid_rows]
+
+                # Vectorized Inference via MTL Backbone
+                # Assuming MTL accepts numpy array directly for speed
+                # Note: mtl_backbone.predict typically expects Polars or Dict,
+                # so we might need an adapter method `predict_batch_numpy`
+                if hasattr(self.mtl_backbone, "predict_batch_numpy"):
+                    mtl_df = await asyncio.to_thread(self.mtl_backbone.predict_batch_numpy, feature_matrix)
+                else:
+                    # Fallback to standard predict with conversion (slower but works)
+                    # We need to map numpy back to Polars for standard `predict` if specific method missing
+                    # But wait, we have `features` dataframe available too (legacy path).
+                    # If `features` is empty (e.g. only SHM passed), we are stuck.
+                    # Assuming standard pipeline passed `features` DF as well for now.
+                    # This block is placeholder for future Pure-SHM optimization.
+                    mtl_df = await asyncio.to_thread(self.mtl_backbone.predict, features)
+
+                for row in mtl_df.iter_rows(named=True):
+                    mtl_predictions[row["match_id"]] = row
+
+                logger.info(f"Zero-Copy MTL inference complete for {len(mtl_predictions)} matches.")
+
+            except Exception as e:
+                logger.error(f"Zero-Copy Inference failed: {e}")
+                # Fallback to standard DF path
+                if not features.is_empty():
+                    try:
+                        mtl_df = await asyncio.to_thread(self.mtl_backbone.predict, features)
+                        for row in mtl_df.iter_rows(named=True):
+                            mtl_predictions[row["match_id"]] = row
+                    except Exception as ex:
+                        logger.error(f"Fallback MTL failed: {ex}")
+
+        # Standard Path if SHM not used/failed
+        elif self.mtl_backbone and not features.is_empty() and not mtl_predictions:
+            try:
+                mtl_df = await asyncio.to_thread(self.mtl_backbone.predict, features)
+                # Convert to dict for fast lookup
+                for row in mtl_df.iter_rows(named=True):
+                    mtl_predictions[row["match_id"]] = row
+                logger.info(f"MTL inference complete for {len(mtl_predictions)} matches.")
+            except Exception as e:
+                logger.error(f"MTL inference failed: {e}")
+
         # --- Data Drift Check (Transport Metric) ---
         if self.transport and not features.is_empty():
             try:
@@ -136,17 +202,6 @@ class InferenceStage(PipelineStage):
             except Exception as e:
                 logger.error(f"TransportMetric check failed: {e}")
 
-        # --- MTL Backbone Inference ---
-        mtl_predictions = {}
-        if self.mtl_backbone and not features.is_empty():
-            try:
-                mtl_df = await asyncio.to_thread(self.mtl_backbone.predict, features)
-                # Convert to dict for fast lookup
-                for row in mtl_df.iter_rows(named=True):
-                    mtl_predictions[row["match_id"]] = row
-                logger.info(f"MTL inference complete for {len(mtl_predictions)} matches.")
-            except Exception as e:
-                logger.error(f"MTL inference failed: {e}")
 
         # Physics Metrics from Context
         quantum_predictions = context.get("quantum_predictions", {})

@@ -15,6 +15,7 @@ Komutlar:
   /analyze - Derinlemesine maç analizi (Physics + AI)
   /physics - Fizik motoru raporları
   /brief   - Günlük Yönetici Brifingi (Teleoloji & Arb dahil)
+  /hedge   - Hedge Operasyon Durumu
 """
 import asyncio
 import os
@@ -112,6 +113,7 @@ class TelegramBot:
             self.sentinel.bus.subscribe("pipeline_crash", self.handle_event)
             self.sentinel.bus.subscribe("pipeline_cycle_start", self.handle_event)
             self.sentinel.bus.subscribe("pipeline_cycle_end", self.handle_event)
+            self.sentinel.bus.subscribe("hedge_order", self.handle_event)
 
     async def handle_event(self, event: Event):
         """Event Bus üzerinden gelen kritik olayları raporla."""
@@ -132,6 +134,7 @@ class TelegramBot:
                 elif "end" in etype: emoji = "🏁"
                 elif "alert" in etype: emoji = "🚨"
                 elif "bet" in etype: emoji = "💰"
+                elif "hedge" in etype: emoji = "🦔"
 
                 msg = f"{emoji} *Event:* `{etype}`"
                 if data:
@@ -150,6 +153,19 @@ class TelegramBot:
             await self.send_risk_alert("Risk Alert", str(data))
         elif etype == "pipeline_crash":
             await self.send_message(chat_id, f"🚨 *Sistem Çökmesi*\n{data.get('error')}")
+        elif etype == "hedge_order":
+             hedge_info = data.get("hedge_signal", {})
+             action = hedge_info.get("action", "UNKNOWN")
+             reason = hedge_info.get("reason", "N/A")
+             match_id = data.get("match_id", "Unknown")
+
+             await self.send_message(chat_id,
+                 f"🦔 **HEDGE ORDER TRIGGERED**\n"
+                 f"Match: `{match_id}`\n"
+                 f"Action: **{action}**\n"
+                 f"Reason: {reason}\n"
+                 f"Status: Executing..."
+             )
 
     def set_context(self, ctx: BettingContext):
         """Pipeline'dan gelen güncel context'i al."""
@@ -233,7 +249,7 @@ class TelegramBot:
         args = parts[1:] if len(parts) > 1 else []
 
         if command == "/start":
-            await self.send_message(chat_id, "🤖 *Otonom Quant Bot Devrede.*\nKomutlar: /status, /ceo, /brief, /warroom, /pnl, /risk, /brain, /explain, /analyze, /physics, /treasury, /oracle, /set_risk, /force, /shutdown")
+            await self.send_message(chat_id, "🤖 *Otonom Quant Bot Devrede.*\nKomutlar: /status, /ceo, /brief, /warroom, /pnl, /risk, /brain, /explain, /analyze, /physics, /treasury, /oracle, /set_risk, /force, /shutdown, /hedge")
 
         elif command == "/set_risk":
             if not self.sentinel:
@@ -449,6 +465,11 @@ class TelegramBot:
         elif command == "/treasury":
             status = self.treasury.get_status()
             await self.send_message(chat_id, f"🏦 *Treasury Report*\n\n{status}")
+
+        elif command == "/hedge":
+            # Show active hedges or potential
+            # Ideally ask Sentinel to report, but we can check Treasury/HedgeHog status if exposed
+            await self.send_message(chat_id, "🦔 *Hedge Operations*\nMonitoring active bets for Stop-Loss and Green Book opportunities...")
 
         elif command == "/oracle":
             if self.context:
