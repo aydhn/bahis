@@ -263,7 +263,24 @@ class TelegramBot:
         args = parts[1:] if len(parts) > 1 else []
 
         if command == "/start":
-            await self.send_message(chat_id, "🤖 *Otonom Quant Bot Devrede.*\nKomutlar: /status, /ceo, /brief, /warroom, /pnl, /risk, /brain, /explain, /analyze, /physics, /treasury, /oracle, /set_risk, /force, /shutdown, /hedge")
+            await self.send_message(chat_id, "🤖 *Otonom Quant Bot Devrede.*\nKomutlar: /status, /strategy, /ceo, /brief, /warroom, /pnl, /risk, /brain, /explain, /analyze, /physics, /treasury, /oracle, /set_risk, /force, /shutdown, /hedge")
+
+        elif command == "/strategy":
+            if self.context and hasattr(self.context, 'strategic_directive'):
+                sd = self.context.strategic_directive
+                if sd:
+                    msg = (
+                        f"🧠 **System Architect Directive**\n"
+                        f"Posture: **{sd.posture}**\n"
+                        f"Max Exposure: %{sd.max_daily_exposure*100:.1f}\n"
+                        f"Edge Multiplier: x{sd.required_edge_multiplier:.1f}\n"
+                        f"Rationale: {sd.rationale}"
+                    )
+                    await self.send_message(chat_id, msg)
+                else:
+                    await self.send_message(chat_id, "⚠️ No active directive found.")
+            else:
+                await self.send_message(chat_id, "⚠️ Pipeline context not available.")
 
         elif command == "/set_risk":
             if not self.sentinel:
