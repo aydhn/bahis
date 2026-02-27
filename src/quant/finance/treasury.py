@@ -146,6 +146,39 @@ class TreasuryEngine:
         logger.success(f"Treasury: Rebalanced. New Buckets: {json.dumps(self.state.buckets, indent=2)}")
         self.save_state()
 
+    def stress_test_portfolio(self, shock_factor: float = 0.20) -> Dict[str, Any]:
+        """
+        Simulates a market crash scenario (Stress Testing).
+        Checks if the treasury can survive a sudden loss of `shock_factor`% of all open positions.
+
+        Args:
+            shock_factor: The percentage loss to simulate on locked capital (default 20%).
+
+        Returns:
+            A dict with solvency status and projected capital.
+        """
+        projected_loss = self.state.locked_capital * shock_factor
+        projected_capital = self.state.total_capital - projected_loss
+
+        # Determine survival
+        # "Survival" means capital > 0 and liquidity > 5%
+        is_solvent = projected_capital > 0
+        liquidity_ratio = (projected_capital - (self.state.locked_capital * (1-shock_factor))) / projected_capital if projected_capital > 0 else 0.0
+
+        status = "SOLVENT"
+        if not is_solvent:
+            status = "INSOLVENT"
+        elif liquidity_ratio < 0.05:
+            status = "ILLIQUID"
+
+        return {
+            "status": status,
+            "shock_factor": shock_factor,
+            "projected_loss": round(projected_loss, 2),
+            "projected_capital": round(projected_capital, 2),
+            "liquidity_ratio": round(liquidity_ratio, 3)
+        }
+
     def reset_daily_pnl(self):
         """Call this at midnight."""
         logger.info(f"Treasury: Resetting Daily PnL (Was: {self.state.daily_pnl:.2f})")
@@ -153,9 +186,13 @@ class TreasuryEngine:
         self.save_state()
 
     def get_status(self) -> str:
+        # Perform live stress test for the report
+        stress = self.stress_test_portfolio(0.20)
+
         return (
             f"💰 Capital: {self.state.total_capital:.2f} | Locked: {self.state.locked_capital:.2f}\n"
             f"📉 Daily PnL: {self.state.daily_pnl:.2f} (Limit: {self.state.total_capital * -self.state.max_daily_drawdown_pct:.2f})\n"
+            f"🛡️ Stress Test (20% Crash): {stress['status']} (Proj. Cap: {stress['projected_capital']:.2f})\n"
             f"🪣 Buckets: {json.dumps(self.state.buckets, indent=2)}"
         )
 

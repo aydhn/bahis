@@ -24,6 +24,7 @@ from src.quant.treasury.arbitrage_scanner import ArbitrageScanner
 from src.quant.analysis.market_regime_detector import MarketRegimeDetector, RegimeMetrics
 from src.quant.analysis.philosophical_engine import PhilosophicalEngine
 from src.quant.analysis.causal_reasoner import CausalReasoner
+from src.core.system_architect import StrategicDirective
 
 # Import Physics Reports for Type Hinting (Optional, but good for clarity)
 try:
@@ -87,6 +88,28 @@ class RiskControlTower:
         """
         match_id = bet_candidate.get("match_id", "unknown")
         decision = RiskDecision(adjustments=[])
+
+        # --- 0.5 The Architect (Strategic Directive Check) ---
+        # Retrieve global strategy from context
+        directive: Optional[StrategicDirective] = context.get("strategic_directive")
+
+        if directive:
+            # Check Posture
+            if directive.posture == "LIQUIDATION":
+                decision.approved = False
+                decision.rejection_reason = "Architect Directive: LIQUIDATION (Panic Mode)"
+                return decision
+
+            if directive.posture == "BUNKER":
+                # Reduce stake or increase confidence requirement
+                decision.adjustments.append("Architect: BUNKER Mode (Stake Reduced)")
+
+            # Check Edge Requirement
+            required_ev = 0.05 * directive.required_edge_multiplier
+            if bet_candidate.get("ev", 0) < required_ev:
+                decision.approved = False
+                decision.rejection_reason = f"Architect: Insufficient Edge (Req: {required_ev:.2%}, Act: {bet_candidate.get('ev',0):.2%})"
+                return decision
 
         # --- 0. Synthetic Value & Arbitrage Check (Treasury Ops) ---
         # Before evaluating risk, check if we can optimize the entry using derivatives or arbitrage.
@@ -241,6 +264,20 @@ class RiskControlTower:
         if phys_mult != 1.0:
             final_stake_pct *= phys_mult
             decision.adjustments.append(f"Physics Multiplier: x{phys_mult:.2f}")
+
+        # --- 5.5 Architect Stake Adjustment ---
+        if directive:
+            if directive.posture == "BUNKER":
+                final_stake_pct *= 0.5
+                decision.adjustments.append("Architect: BUNKER Stake Cap (x0.5)")
+            elif directive.posture == "EXPANSION":
+                final_stake_pct = min(final_stake_pct * 1.2, directive.max_daily_exposure)
+                decision.adjustments.append(f"Architect: EXPANSION Boost (Max {directive.max_daily_exposure:.1%})")
+
+            # Global exposure cap enforcement
+            if final_stake_pct > directive.max_daily_exposure:
+                final_stake_pct = directive.max_daily_exposure
+                decision.adjustments.append(f"Architect: Capped at Max Exposure ({directive.max_daily_exposure:.1%})")
 
         # --- 6. Treasury Check ---
         # Can we afford it?
