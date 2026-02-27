@@ -19,6 +19,8 @@ from src.core.cognitive_guardian import CognitiveGuardian
 from src.quant.analysis.pre_mortem import PreMortemAnalyzer, PreMortemReport
 from src.quant.risk.physics_modulator import PhysicsRiskModulator
 from src.quant.finance.treasury import TreasuryEngine
+from src.quant.treasury.synthetic_engine import SyntheticEngine
+from src.quant.treasury.arbitrage_scanner import ArbitrageScanner
 from src.quant.analysis.market_regime_detector import MarketRegimeDetector, RegimeMetrics
 from src.quant.analysis.philosophical_engine import PhilosophicalEngine
 from src.quant.analysis.causal_reasoner import CausalReasoner
@@ -51,8 +53,10 @@ class RiskControlTower:
         self.physics_modulator = PhysicsRiskModulator()
         self.regime_detector = MarketRegimeDetector()
 
-        # 4. Treasury
+        # 4. Treasury & Value Ops
         self.treasury = TreasuryEngine()
+        self.synthetic = SyntheticEngine()
+        self.arb_scanner = ArbitrageScanner()
 
         # 5. Zero Error Components (Philosophical & Causal)
         self.philosopher = PhilosophicalEngine()
@@ -75,6 +79,26 @@ class RiskControlTower:
         """
         match_id = bet_candidate.get("match_id", "unknown")
         decision = RiskDecision(adjustments=[])
+
+        # --- 0. Synthetic Value & Arbitrage Check (Treasury Ops) ---
+        # Before evaluating risk, check if we can optimize the entry using derivatives or arbitrage.
+
+        # 0.1 Synthetic Value (DNB/DC)
+        # Assuming we have access to market odds for DNB/DC if available, or we just calculate theoretical.
+        # Here we just calculate what the fair DNB odds SHOULD be based on 1X2.
+        # If the bet is a HOME win, we check if Home DNB is a safer alternative with good EV.
+
+        odds_home = bet_candidate.get("odds", 0.0)
+        # We need draw and away odds to calculate synthetic. Assuming they might be in context or bet_candidate.
+        # If not available, we skip.
+
+        # Try to extract full market odds from context if available
+        # This part assumes context structure has 'matches' or 'raw_data' we can look up.
+        # For simplicity, we skip if we don't have full odds.
+
+        # 0.2 Arbitrage Check
+        # If this match has arbitrage opportunities, we flag it.
+        # This requires multi-bookie data which might be in 'context["raw_data"]'.
 
         # --- 1. Cognitive Gatekeeper ---
         # Prevent Tilt, Chase, Hubris
