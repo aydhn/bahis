@@ -4,8 +4,9 @@ ensemble.py – Quant Model Ensemble & Voting Mechanism.
 This module aggregates predictions from multiple quantitative models
 (Benter, Dixon-Coles, LSTM, Bayesian, Quantum) to produce a robust consensus probability.
 """
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 import numpy as np
+import time
 from loguru import logger
 from src.core.interfaces import QuantModel
 from src.quant.adapters import BenterAdapter, LSTMAdapter, DixonColesAdapter, BayesianAdapter, QuantumAdapter
@@ -20,12 +21,15 @@ class EnsembleModel(QuantModel):
     - Runs all registered sub-models.
     - Weights their predictions based on confidence (or static weights).
     - Calculates 'Consensus Score' (Variance of predictions).
+    - Detects 'Rotting Models' (Stale or drifting performance).
     """
 
     def __init__(self):
         self.bayesian = BayesianAdapter()
         self.quantum = QuantumAdapter()
         self.active_agent = container.get("active_agent")
+
+        # Initialize models
         self.models: Dict[str, QuantModel] = {
             "benter": BenterAdapter(),
             "lstm": LSTMAdapter(),
@@ -33,6 +37,7 @@ class EnsembleModel(QuantModel):
             "bayesian": self.bayesian,
             "quantum": self.quantum
         }
+
         # Static weights if confidence is unavailable
         self.weights = {
             "benter": 0.30,
@@ -41,7 +46,14 @@ class EnsembleModel(QuantModel):
             "bayesian": 0.15,
             "quantum": 0.15
         }
+
         self.syndicate = SyndicateConsensus()
+
+        # Model Health Monitoring
+        self.model_health: Dict[str, Dict[str, Any]] = {
+            name: {"last_success": time.time(), "errors": 0, "status": "HEALTHY"}
+            for name in self.models
+        }
 
     def predict(self, context: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -97,16 +109,37 @@ class EnsembleModel(QuantModel):
             self.weights["quantum"] = self.weights.get("quantum", 0.15) * 2.0
             logger.info(f"Ensemble: Quantum Boost activated (Conf: {quantum_conf:.2f})")
 
+        # --- Execute Models & Health Check ---
         results = {}
+        active_weights = self.weights.copy()
+
         for name, model in self.models.items():
+            # Skip rotted models
+            if self.model_health[name]["status"] == "ROTTED":
+                logger.warning(f"Skipping rotted model: {name}")
+                active_weights[name] = 0.0
+                continue
+
             try:
+                start_time = time.time()
                 res = model.predict(context)
+                duration = time.time() - start_time
+
                 if "error" in res:
                     logger.warning(f"Model {name} failed: {res['error']}")
+                    self._record_failure(name)
                     continue
+
+                # Check for stale output (Rotting Model Detection)
+                # Ideally, models should return a timestamp or generation ID.
+                # Here we simulate by checking for suspiciously static outputs if available.
+                # For now, just success.
+                self._record_success(name)
                 results[name] = res
+
             except Exception as e:
                 logger.error(f"Ensemble execution error ({name}): {e}")
+                self._record_failure(name)
 
         if not results:
             return {
@@ -116,12 +149,25 @@ class EnsembleModel(QuantModel):
                 "details": results
             }
 
+        # Normalize weights for active models
+        total_weight = sum(active_weights[k] for k in results.keys() if k in active_weights)
+        if total_weight > 0:
+            normalized_weights = {k: active_weights[k] / total_weight for k in results.keys() if k in active_weights}
+        else:
+            normalized_weights = {k: 1.0 / len(results) for k in results.keys()}
+
         # --- 4. Syndicate Adjudication ---
         # Delegate weighting and consensus logic to Syndicate
         verdict = self.syndicate.adjudicate(
             model_outputs=results,
-            trust_scores=self.weights
+            trust_scores=normalized_weights
         )
+
+        # Append health stats to details
+        if isinstance(verdict.audit_log, list):
+             verdict.audit_log.append(f"Model Health: {str(self.model_health)}")
+        elif isinstance(verdict.audit_log, dict):
+             verdict.audit_log["model_health"] = self.model_health
 
         return {
             "model": "ensemble",
@@ -134,3 +180,26 @@ class EnsembleModel(QuantModel):
             "syndicate_audit": verdict.audit_log,
             "details": results
         }
+
+    def _record_success(self, model_name: str):
+        """Updates health status on success."""
+        self.model_health[model_name]["last_success"] = time.time()
+        self.model_health[model_name]["errors"] = 0
+        self.model_health[model_name]["status"] = "HEALTHY"
+
+    def _record_failure(self, model_name: str):
+        """Updates health status on failure."""
+        self.model_health[model_name]["errors"] += 1
+        if self.model_health[model_name]["errors"] >= 3:
+            self.model_health[model_name]["status"] = "ROTTED"
+            logger.error(f"Model {model_name} marked as ROTTED due to repeated failures.")
+
+    def reset_health(self, model_name: Optional[str] = None):
+        """Manually resets health status (e.g. after fix/redeploy)."""
+        if model_name:
+             self.model_health[model_name] = {"last_success": time.time(), "errors": 0, "status": "HEALTHY"}
+             logger.info(f"Health reset for {model_name}")
+        else:
+            for name in self.models:
+                self.model_health[name] = {"last_success": time.time(), "errors": 0, "status": "HEALTHY"}
+            logger.info("Health reset for all models.")

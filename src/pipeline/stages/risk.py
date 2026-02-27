@@ -119,7 +119,14 @@ class RiskStage(PipelineStage):
 
         # --- Portfolio Optimization ---
         # Markowitz over the approved candidates
-        optimized_results = self.portfolio_opt.optimize(candidates)
+        # Determine global regime from the first approved bet (assuming regime is global)
+        global_regime = "STABLE"
+        if bet_metadata:
+             first_meta = next(iter(bet_metadata.values()))
+             if first_meta["risk_decision"].regime_metrics:
+                 global_regime = first_meta["risk_decision"].regime_metrics.regime
+
+        optimized_results = self.portfolio_opt.optimize(candidates, regime=global_regime)
 
         final_bets = []
         for res in optimized_results:

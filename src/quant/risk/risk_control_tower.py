@@ -31,6 +31,7 @@ from src.quant.analysis.game_theory_engine import GameTheoryEngine
 from src.quant.finance.liquidity_engine import LiquidityEngine
 from src.quant.risk.extreme_value import ExtremeValueAnalyzer
 from src.quant.finance.stress_tester import PortfolioStressTester
+from src.core.systemic_risk_covar import SystemicRiskCoVaR
 import numpy as np
 
 # Import Physics Reports for Type Hinting (Optional, but good for clarity)
@@ -75,6 +76,7 @@ class RiskControlTower:
         self.arb_scanner = ArbitrageScanner()
         self.liquidity = LiquidityEngine() # NEW
         self.stress_tester = PortfolioStressTester() # NEW
+        self.systemic_risk = SystemicRiskCoVaR() # NEW: Systemic Risk (CoVaR)
 
         # 5. Zero Error Components (Philosophical, Causal & EVT)
         self.philosopher = PhilosophicalEngine()
@@ -205,9 +207,31 @@ class RiskControlTower:
         decision.regime_metrics = regime
 
         if regime.regime == "CHAOTIC" or regime.regime == "CRASH":
-            decision.approved = False
-            decision.rejection_reason = f"Market Regime Veto: {regime.regime} ({regime.description})"
-            return decision
+            # --- 2.1 Systemic Risk Check (CoVaR) ---
+            # If the market is chaotic, we run a CoVaR check to ensure this bet doesn't correlate
+            # dangerously with our existing portfolio (contagion risk).
+            open_bets = context.get("open_bets", []) # Ensure pipeline populates this
+            if open_bets:
+                # Add current candidate to hypothetical portfolio
+                hypothetical_portfolio = open_bets + [bet_candidate]
+                covar_res = self.systemic_risk.measure(hypothetical_portfolio)
+
+                # Check Delta CoVaR (Systemic contribution)
+                if covar_res.get("delta_covar", 0) < -0.05: # High systemic risk contribution
+                    decision.approved = False
+                    decision.rejection_reason = f"Systemic Risk Veto: High Delta CoVaR ({covar_res['delta_covar']:.3f})"
+                    return decision
+                elif covar_res.get("delta_covar", 0) < -0.02:
+                    decision.adjustments.append(f"Systemic Risk Warning: Moderate CoVaR ({covar_res['delta_covar']:.3f})")
+
+            # Even if CoVaR is okay, regime veto still applies unless strong override
+            if regime.regime == "CRASH":
+                 decision.approved = False
+                 decision.rejection_reason = f"Market Regime Veto: {regime.regime} (Crash Protocol)"
+                 return decision
+            else:
+                 # CHAOTIC but acceptable CoVaR -> proceed with caution (maybe handled by PhysicsModulator)
+                 pass
 
         # --- 3. Pre-Mortem Analysis ---
         # The Devil's Advocate

@@ -1,6 +1,6 @@
 """
 portfolio_optimizer.py – Markowitz Modern Portföy Teorisi (Uyarlanmış) +
-                        Drawdown Control + Paper Trading.
+                        Drawdown Control + Paper Trading + Regime Awareness.
 
 Tek tek Kelly ile bakmak yerine, o günün tüm önerilerini
 bir havuz (pool) olarak değerlendiren portföy optimizasyonu.
@@ -12,6 +12,10 @@ Drawdown Control:
   Kasa -%10 eridiğinde → stake'ler yarıya iner
   Kasa -%15 eridiğinde → Paper Trading moduna geçer (sanal bahis)
   Kasa toparlandığında → Normal moda geri döner
+
+Regime Awareness:
+  Piyasa rejimine (STABLE, VOLATILE, CHAOTIC, CRASH) göre
+  risk iştahını ve maksimum pozisyon büyüklüklerini dinamik ayarlar.
 """
 from __future__ import annotations
 
@@ -22,6 +26,8 @@ from enum import Enum
 
 import numpy as np
 from loguru import logger
+
+from src.quant.finance.liquidity_engine import LiquidityEngine
 
 
 class TradingMode(Enum):
@@ -62,6 +68,8 @@ class PortfolioOptimizer:
     - Yüksek korelasyonlu bahislerde toplam stake düşer
     - Bağımsız bahislerde stake korunur (diversification)
     - Drawdown kontrolü ile otomatik risk yönetimi
+    - Likidite kontrolü ile slippage önlemi
+    - Piyasa rejimi ile dinamik risk yönetimi
     """
 
     # Aynı lig/gün korelasyon tahmini
@@ -70,7 +78,8 @@ class PortfolioOptimizer:
 
     def __init__(self, initial_bankroll: float = 10000.0,
                  max_portfolio_risk: float = 0.15,
-                 drawdown_config: DrawdownConfig | None = None):
+                 drawdown_config: DrawdownConfig | None = None,
+                 liquidity_engine: LiquidityEngine | None = None):
         self._initial_bankroll = initial_bankroll
         self._current_bankroll = initial_bankroll
         self._peak_bankroll = initial_bankroll
@@ -80,22 +89,26 @@ class PortfolioOptimizer:
         self._mode_entered_at = time.time()
         self._pnl_history: list[float] = []
         self._paper_pnl: list[float] = []
+
+        self.liquidity_engine = liquidity_engine or LiquidityEngine()
+
         logger.debug(
             f"PortfolioOptimizer başlatıldı: bankroll=₺{initial_bankroll:,.0f}, "
             f"max_risk={max_portfolio_risk:.0%}"
         )
 
     # ═══════════════════════════════════════════
-    #  MARKOWITZ OPTİMİZASYONU
+    #  MARKOWITZ OPTİMİZASYONU (REGIME-AWARE)
     # ═══════════════════════════════════════════
-    def optimize(self, candidates: list[PortfolioBet]) -> list[dict]:
+    def optimize(self, candidates: list[PortfolioBet], regime: str = "STABLE") -> list[dict]:
         """Portföy optimizasyonu uygula.
 
         1. Korelasyon matrisini oluştur
         2. Portföy varyansını hesapla
         3. Yüksek korelasyonlu bahislerde stake'i düşür
-        4. Toplam riski sınırla
-        5. Drawdown kontrolü uygula
+        4. Rejime göre risk limitlerini uygula
+        5. Likidite kontrolü yap
+        6. Drawdown kontrolü uygula
         """
         if not candidates:
             return []
@@ -106,6 +119,13 @@ class PortfolioOptimizer:
         if self._mode == TradingMode.FROZEN:
             logger.warning("[Portfolio] FROZEN – tüm bahisler donduruldu.")
             return []
+
+        # CRASH rejiminde ticaret durdurulabilir veya çok kısıtlı olabilir
+        if regime == "CRASH":
+            logger.warning("[Portfolio] CRASH rejimi tespit edildi. Güvenli mod - sadece minimum risk.")
+            if self._mode == TradingMode.LIVE:
+                 # CRASH modunda otomatik olarak REDUCED veya PAPER moda geçici geçiş mantığı eklenebilir
+                 pass
 
         n = len(candidates)
 
@@ -122,19 +142,23 @@ class PortfolioOptimizer:
             logger.info("[Portfolio] Pozitif EV yok – bahis yok.")
             return []
 
-        # 3. Korelasyon düzeltmesi
+        # 3. Korelasyon düzeltmesi (Rejime duyarlı)
+        risk_aversion = self._get_risk_aversion(regime)
         try:
             adjusted_stakes = self._adjust_for_correlation(
-                raw_stakes, corr, positive_mask
+                raw_stakes, corr, positive_mask, risk_aversion=risk_aversion
             )
         except Exception as e:
             logger.error(f"[Portfolio] Optimization crashed ({e}). Fallback to Heuristic.")
             adjusted_stakes = self._heuristic_adjust(raw_stakes, corr, positive_mask)
 
-        # 4. Toplam risk sınırlaması
+        # 4. Toplam risk sınırlaması (Rejime göre scale et)
+        regime_scale = self._get_regime_risk_factor(regime)
+        current_max_risk = self._max_risk * regime_scale
+
         total_risk = adjusted_stakes.sum()
-        if total_risk > self._max_risk:
-            scale = self._max_risk / total_risk
+        if total_risk > current_max_risk:
+            scale = current_max_risk / total_risk
             adjusted_stakes *= scale
 
         # 5. Drawdown moduna göre ek düzeltme
@@ -147,6 +171,22 @@ class PortfolioOptimizer:
             if not positive_mask[i] or adjusted_stakes[i] < 0.001:
                 continue
 
+            # Likidite Kontrolü: Max Safe Stake
+            # Edge approx EV for simple calculation
+            max_safe_amount = self.liquidity_engine.calculate_max_safe_stake(
+                odds=bet.odds,
+                edge=bet.ev,
+                league=bet.league
+            )
+            # Portföy yüzdesine çevir
+            max_safe_pct = max_safe_amount / self._current_bankroll
+
+            # Eğer optimize edilmiş stake, likidite sınırını aşıyorsa kes
+            final_stake_pct = min(adjusted_stakes[i], max_safe_pct)
+
+            # Stake miktarı
+            stake_amount = final_stake_pct * self._current_bankroll
+
             is_paper = self._mode == TradingMode.PAPER
 
             results.append({
@@ -156,10 +196,12 @@ class PortfolioOptimizer:
                 "prob_model": bet.prob_model,
                 "ev": bet.ev,
                 "raw_stake_pct": float(raw_stakes[i]),
-                "adjusted_stake_pct": float(adjusted_stakes[i]),
-                "stake_amount": float(adjusted_stakes[i] * self._current_bankroll),
-                "correlation_penalty": float(1 - adjusted_stakes[i] / max(raw_stakes[i], 0.001)),
+                "adjusted_stake_pct": float(final_stake_pct),
+                "stake_amount": float(stake_amount),
+                "correlation_penalty": float(1 - final_stake_pct / max(raw_stakes[i], 0.001)),
+                "liquidity_cap_hit": (final_stake_pct < adjusted_stakes[i]),
                 "trading_mode": self._mode.value,
+                "regime": regime,
                 "is_paper": is_paper,
             })
 
@@ -169,10 +211,29 @@ class PortfolioOptimizer:
             portfolio_ev = sum(r["ev"] * r["adjusted_stake_pct"] for r in results)
             logger.info(
                 f"[Portfolio] {len(results)} bahis, toplam stake: {total_stake:.2%}, "
-                f"portföy EV: {portfolio_ev:.4f}, mod: {self._mode.value}"
+                f"portföy EV: {portfolio_ev:.4f}, mod: {self._mode.value}, rejim: {regime}"
             )
 
         return results
+
+    def _get_regime_risk_factor(self, regime: str) -> float:
+        """Rejime göre maksimum risk çarpanı."""
+        return {
+            "STABLE": 1.0,
+            "VOLATILE": 0.6,  # Riski %40 düşür
+            "CHAOTIC": 0.3,   # Riski %70 düşür
+            "CRASH": 0.1,     # Riski %90 düşür
+        }.get(regime, 1.0)
+
+    def _get_risk_aversion(self, regime: str) -> float:
+        """Rejime göre risk aversion parametresi."""
+        # Yüksek değer = daha fazla varyans cezası (daha güvenli)
+        return {
+            "STABLE": 1.5,
+            "VOLATILE": 3.0,
+            "CHAOTIC": 5.0,
+            "CRASH": 10.0,
+        }.get(regime, 2.0)
 
     def _build_correlation_matrix(self, bets: list[PortfolioBet]) -> np.ndarray:
         """Bahisler arası korelasyon matrisini oluştur."""
@@ -211,7 +272,8 @@ class PortfolioOptimizer:
 
     def _adjust_for_correlation(self, stakes: np.ndarray,
                                  corr: np.ndarray,
-                                 mask: np.ndarray) -> np.ndarray:
+                                 mask: np.ndarray,
+                                 risk_aversion: float = 2.0) -> np.ndarray:
         """Korelasyon bazlı stake düzeltmesi (Markowitz Mean-Variance).
 
         Yüksek korelasyonlu bahislerde portföy varyansı artar.
@@ -238,9 +300,6 @@ class PortfolioOptimizer:
         # Expected Return vector (Basitçe Kelly stake ile orantılı varsayıyoruz)
         # Çünkü Kelly ~ Edge / Odds. Edge arttıkça Kelly artar.
         expected_returns = sub_stakes
-
-        # Risk Aversion (Agresiflik ayarı)
-        risk_aversion = 2.0
 
         # Objective Function: Minimize (-Utility)
         # Utility = w.T * mu - (lambda/2) * w.T * Sigma * w
