@@ -427,6 +427,35 @@ class RiskControlTower:
         bet_candidate["board_multiplier"] = board_decision.final_multiplier
         decision.rationale += "\nBoard Minutes:\n" + "\n".join(board_decision.minutes)
 
+        # --- 3.7 Hawkes Momentum & Epistemic Uncertainty Checks ---
+        epistemic_uncertainty = bet_candidate.get("epistemic_uncertainty", 0.5)
+        # If Epistemic Uncertainty (I don't know) is high, we must penalize
+        if epistemic_uncertainty > 0.8:
+             decision.approved = False
+             decision.rejection_reason = f"Epistemic Uncertainty Veto: Model is guessing ({epistemic_uncertainty:.2f})"
+             return decision
+        elif epistemic_uncertainty > 0.5:
+             decision.adjustments.append(f"Epistemic Risk Warning: High uncertainty ({epistemic_uncertainty:.2f}). Stake reduced.")
+             bet_candidate["epistemic_multiplier"] = 0.5
+        else:
+             bet_candidate["epistemic_multiplier"] = 1.0
+
+        # Hawkes Momentum (Self-Exciting process)
+        hawkes_home = bet_candidate.get("hawkes_home_intensity", 0.0)
+        hawkes_away = bet_candidate.get("hawkes_away_intensity", 0.0)
+
+        # If we are betting HOME and AWAY has massive Hawkes momentum, veto
+        sel_for_hawkes = bet_candidate.get("selection", "HOME").upper()
+        if sel_for_hawkes == "HOME" and hawkes_away > max(0.5, hawkes_home * 3):
+             decision.approved = False
+             decision.rejection_reason = f"Hawkes Momentum Veto: Away team is surging (λ_away={hawkes_away:.2f})"
+             return decision
+        elif sel_for_hawkes == "HOME" and hawkes_home > hawkes_away * 2:
+             decision.adjustments.append(f"Hawkes Momentum Boost: Home team surging (λ_home={hawkes_home:.2f})")
+             bet_candidate["hawkes_multiplier"] = 1.2
+        else:
+             bet_candidate["hawkes_multiplier"] = 1.0
+
         # --- 4. Kelly Sizing ---
         # Calculate Base Stake
         # Map MarketRegime to RegimeState for Kelly
@@ -480,6 +509,16 @@ class RiskControlTower:
         board_mult = bet_candidate.get("board_multiplier", 1.0)
         if board_mult != 1.0:
             phys_mult *= board_mult
+
+        # Epistemic Multiplier
+        epi_mult = bet_candidate.get("epistemic_multiplier", 1.0)
+        if epi_mult != 1.0:
+            phys_mult *= epi_mult
+
+        # Hawkes Multiplier
+        hawkes_mult = bet_candidate.get("hawkes_multiplier", 1.0)
+        if hawkes_mult != 1.0:
+            phys_mult *= hawkes_mult
 
         if phys_mult <= 0.0:
             decision.approved = False

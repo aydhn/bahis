@@ -68,6 +68,56 @@ class Visualizer:
             return None
 
     @staticmethod
+    def generate_gods_eye_radar(
+        match_id: str,
+        value_score: float,
+        physics_score: float,
+        narrative_score: float,
+        market_score: float,
+        risk_score: float
+    ) -> Optional[io.BytesIO]:
+        """
+        Generates the 'God's Eye' Radar Chart covering 5 system pillars.
+        Scores should be 0.0 to 1.0.
+        """
+        try:
+            # Labels and values
+            labels = np.array(['Value (Kelly)', 'Physics (Chaos)', 'Narrative (Teleology)', 'Market (Smart Money)', 'Risk (Safety)'])
+            values = np.array([value_score, physics_score, narrative_score, market_score, risk_score])
+
+            # Close the loop
+            angles = np.linspace(0, 2*np.pi, len(labels), endpoint=False)
+            values = np.concatenate((values, [values[0]]))
+            angles = np.concatenate((angles, [angles[0]]))
+
+            fig, ax = plt.subplots(figsize=(6, 6), subplot_kw=dict(polar=True))
+
+            # Draw plot
+            ax.plot(angles, values, color='#3498db', linewidth=2, linestyle='solid')
+            ax.fill(angles, values, color='#3498db', alpha=0.4)
+
+            # Customization
+            ax.set_theta_offset(np.pi / 2)
+            ax.set_theta_direction(-1)
+            ax.set_thetagrids(angles[:-1] * 180/np.pi, labels)
+
+            ax.set_ylim(0, 1)
+            ax.set_yticks([0.2, 0.4, 0.6, 0.8, 1.0])
+            ax.set_yticklabels(["0.2", "0.4", "0.6", "0.8", "1.0"], color="grey", size=8)
+
+            plt.title(f"God's Eye Analysis: {match_id}", size=14, y=1.1)
+
+            buf = io.BytesIO()
+            plt.savefig(buf, format='png', dpi=150, bbox_inches='tight')
+            buf.seek(0)
+            plt.close('all')
+            return buf
+
+        except Exception as e:
+            logger.error(f"Radar chart generation failed: {e}")
+            return None
+
+    @staticmethod
     def generate_dummy_chart() -> Optional[io.BytesIO]:
         """Generates a dummy chart for testing integration."""
         try:

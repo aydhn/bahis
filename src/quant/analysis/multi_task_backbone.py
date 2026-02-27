@@ -40,12 +40,13 @@ if TORCH_AVAILABLE:
                 nn.Dropout(0.2),
             )
 
-            # 1. Outcome Head (Classification: Home/Draw/Away)
+            # 1. Outcome Head (Evidential Deep Learning for Epistemic Uncertainty)
+            # Instead of Softmax, we output 'evidence' for a Dirichlet distribution
             self.head_outcome = nn.Sequential(
                 nn.Linear(hidden, 32),
                 nn.ReLU(),
                 nn.Linear(32, 3),
-                nn.Softmax(dim=-1),
+                nn.Softplus(), # Evidence must be strictly positive
             )
 
             # 2. Goals Head (Regression: Expected Goals)
@@ -70,8 +71,18 @@ if TORCH_AVAILABLE:
 
         def forward(self, x):
             shared_features = self.backbone(x)
+
+            # Evidential Output
+            evidence = self.head_outcome(shared_features)
+            alpha = evidence + 1.0 # Dirichlet concentration parameter
+            S = torch.sum(alpha, dim=1, keepdim=True)
+            outcome_probs = alpha / S # Expected probability
+            epistemic_uncertainty = 3.0 / S # Uncertainty (K / S, where K=3 classes)
+
             return {
-                "outcome_probs": self.head_outcome(shared_features),
+                "outcome_probs": outcome_probs,
+                "epistemic_uncertainty": epistemic_uncertainty.squeeze(-1),
+                "alpha": alpha,
                 "expected_goals": self.head_goals(shared_features),
                 "expected_corners": self.head_corners(shared_features),
             }
@@ -81,8 +92,21 @@ if TORCH_AVAILABLE:
             Multi-task loss with homoscedastic uncertainty weighting.
             Loss = (1/2σ₁²)*L₁ + log(σ₁) + (1/2σ₂²)*L₂ + log(σ₂) + ...
             """
-            # Outcome Loss (Cross Entropy)
-            loss_outcome = nn.CrossEntropyLoss()(preds["outcome_probs"], targets["outcome"])
+            # Evidential Loss for Outcome
+            # We use a simplified evidential MSE loss or cross entropy on expected probs
+            # For true evidential: Loss = Sum( (y_ij - p_ij)^2 + p_ij(1-p_ij)/(S_i + 1) )
+            y_one_hot = nn.functional.one_hot(targets["outcome"], num_classes=3).float()
+            p = preds["outcome_probs"]
+            alpha = preds["alpha"]
+            S = torch.sum(alpha, dim=1, keepdim=True)
+
+            # Expected error
+            err = (y_one_hot - p)**2
+            # Variance
+            var = p * (1 - p) / (S + 1)
+            loss_evidential = torch.sum(err + var, dim=1).mean()
+
+            loss_outcome = loss_evidential
             precision_outcome = torch.exp(-self.log_vars[0])
             weighted_outcome = precision_outcome * loss_outcome + 0.5 * self.log_vars[0]
 
@@ -169,6 +193,7 @@ class MultiTaskBackbone:
             "mtl_expected_goals": preds["expected_goals"],
             "mtl_expected_corners": preds["expected_corners"],
             "mtl_confidence": preds["confidence"],
+            "mtl_epistemic_uncertainty": preds["epistemic_uncertainty"]
         })
 
         return results_df
@@ -206,6 +231,7 @@ class MultiTaskBackbone:
             "mtl_expected_goals": preds["expected_goals"],
             "mtl_expected_corners": preds["expected_corners"],
             "mtl_confidence": preds["confidence"],
+            "mtl_epistemic_uncertainty": preds["epistemic_uncertainty"]
         })
 
         return results_df
@@ -218,6 +244,7 @@ class MultiTaskBackbone:
             out = self._model(x)
 
             probs = out["outcome_probs"].cpu().numpy() # (N, 3)
+            epistemic_u = out["epistemic_uncertainty"].cpu().numpy() # (N,)
             goals = out["expected_goals"].cpu().numpy().flatten() # (N,)
             corners = out["expected_corners"].cpu().numpy().flatten() # (N,)
 
@@ -232,6 +259,7 @@ class MultiTaskBackbone:
             "expected_goals": goals,
             "expected_corners": corners,
             "confidence": confidence,
+            "epistemic_uncertainty": epistemic_u,
         }
 
     def _predict_heuristic_batch(self, features: pl.DataFrame) -> dict:
@@ -276,6 +304,7 @@ class MultiTaskBackbone:
             "expected_goals": xg,
             "expected_corners": corners,
             "confidence": confidence,
+            "epistemic_uncertainty": np.full(n, 0.5), # Dummy uncertainty for heuristic
         }
 
     def _predict_heuristic_batch_numpy(self, X_batch: np.ndarray) -> dict:
@@ -322,6 +351,7 @@ class MultiTaskBackbone:
             "expected_goals": xg,
             "expected_corners": corners,
             "confidence": confidence,
+            "epistemic_uncertainty": np.full(X_batch.shape[0], 0.5), # Dummy uncertainty
         }
 
     def train(self, X: np.ndarray, targets: dict[str, np.ndarray], epochs: int = 50, lr: float = 1e-3):

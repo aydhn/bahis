@@ -15,6 +15,7 @@ Concepts:
 from typing import Dict, Optional, Tuple, Any, List
 from loguru import logger
 import numpy as np
+from src.quant.finance.black_scholes_hedge import BlackScholesHedge
 
 class ArbitrageScanner:
     """
@@ -78,6 +79,7 @@ class HedgeHog:
 
     def __init__(self):
         self.arb_scanner = ArbitrageScanner()
+        self.bsm_hedge = BlackScholesHedge()
 
     def calculate_green_book(self,
                              current_stake: float,
@@ -209,8 +211,29 @@ class HedgeHog:
         original_odds = position.get("odds", 0.0)
 
         # Check logic with adjusted thresholds
+        # Let's leverage the Black-Scholes module for a more advanced evaluation
+        # Assuming we know current match minute. If not, use 45 as a dummy mid-point
+        current_minute = position.get("current_minute", 45)
+
+        bsm_eval = self.bsm_hedge.evaluate_cashout(
+            original_odds=original_odds,
+            current_odds=live_odds,
+            stake=position.get("stake", 0.0),
+            minutes_played=current_minute,
+            volatility=volatility
+        )
+
+        action = bsm_eval["action"]
+        if action in ["STOP_LOSS", "GREEN_BOOK"]:
+            return {
+                "action": action,
+                "reason": bsm_eval["reason"] + f" (BSM Target: {bsm_eval['target_value']})",
+                "details": bsm_eval
+            }
+
+        # Fallback to standard check if BSM is neutral
         if live_odds > original_odds * (1.0 + adj_stop_loss):
-             return self.check_hedge_opportunity(position, live_odds) # Reuse basic logic or custom return
+             return self.check_hedge_opportunity(position, live_odds)
 
         if live_odds < original_odds * (1.0 - adj_take_profit):
              return self.check_hedge_opportunity(position, live_odds)

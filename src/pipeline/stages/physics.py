@@ -96,6 +96,12 @@ except ImportError:
     MultifractalAnalyzer = None
     logger.warning("MultifractalAnalyzer could not be imported.")
 
+try:
+    from src.quant.physics.hawkes_momentum import HawkesMomentum
+except ImportError:
+    HawkesMomentum = None
+    logger.warning("HawkesMomentum could not be imported.")
+
 
 class PhysicsStage(PipelineStage):
     """
@@ -147,6 +153,15 @@ class PhysicsStage(PipelineStage):
                 self.multifractal = None
         else:
             self.multifractal = None
+
+        if HawkesMomentum:
+            try:
+                self.hawkes_momentum = HawkesMomentum()
+            except Exception as e:
+                logger.error(f"Failed to init HawkesMomentum: {e}")
+                self.hawkes_momentum = None
+        else:
+            self.hawkes_momentum = None
 
         # 2. Quantum & Geometry
         if QuantumBrain:
@@ -271,7 +286,8 @@ class PhysicsStage(PipelineStage):
             "rg_flow_reports": {},
             "hypergraph_reports": {},
             "fisher_reports": {},
-            "multifractal_reports": {}
+            "multifractal_reports": {},
+            "hawkes_momentum": {}
         }
 
         # Initialize Simplified Context Map (for ML models)
@@ -363,6 +379,9 @@ class PhysicsStage(PipelineStage):
 
             if self.multifractal:
                 tasks.append(self._run_multifractal(match_id, results, physics_context_map))
+
+            if self.hawkes_momentum:
+                tasks.append(self._run_hawkes_momentum(match_id, cycle, results, physics_context_map))
 
         # Run all tasks concurrently
         if tasks:
@@ -596,6 +615,32 @@ class PhysicsStage(PipelineStage):
             ctx_map[match_id]["mf_crash_signal"] = 1 if mf_rep.regime_change_signal else 0
         except Exception as e:
              logger.warning(f"Multifractal analysis failed for {match_id}: {e}")
+
+    async def _run_hawkes_momentum(self, match_id: str, cycle: int, results: Dict[str, Any], ctx_map: Dict):
+        try:
+            # Simulate event times based on cycle to have some realistic progression
+            # In production, these would be actual minute markers of shots, corners, etc.
+            np.random.seed(int(hashlib.md5(f"{match_id}_hawkes".encode()).hexdigest(), 16) % 2**32)
+            current_minute = (cycle * 5) % 90
+            if current_minute == 0: current_minute = 1
+
+            # Generate random past events
+            num_home_events = np.random.poisson(current_minute / 10.0)
+            num_away_events = np.random.poisson(current_minute / 12.0)
+
+            home_events = sorted(np.random.uniform(0, current_minute, num_home_events).tolist())
+            away_events = sorted(np.random.uniform(0, current_minute, num_away_events).tolist())
+
+            h_rep = await asyncio.to_thread(self.hawkes_momentum.analyze_match, match_id, current_minute, home_events, away_events)
+
+            results["hawkes_momentum"][match_id] = h_rep
+            ctx_map[match_id]["hawkes_home_intensity"] = h_rep.home_intensity
+            ctx_map[match_id]["hawkes_away_intensity"] = h_rep.away_intensity
+            ctx_map[match_id]["hawkes_momentum_imbalance"] = h_rep.momentum_imbalance
+            ctx_map[match_id]["hawkes_home_surge"] = int(h_rep.is_home_surging)
+            ctx_map[match_id]["hawkes_away_surge"] = int(h_rep.is_away_surging)
+        except Exception as e:
+            logger.warning(f"Hawkes Momentum failed for {match_id}: {e}")
 
     # --- Simulation Helpers (Mocking Data Providers) ---
 
