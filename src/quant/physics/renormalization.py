@@ -13,7 +13,7 @@ Concepts:
     a phase transition (Goal) is imminent.
 """
 import numpy as np
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
 from loguru import logger
 
 class RenormalizationGroup:
