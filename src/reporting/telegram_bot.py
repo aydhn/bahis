@@ -649,6 +649,17 @@ class TelegramBot:
             else:
                 await self.send_message(chat_id, "❌ Sentinel yok.")
 
+        elif command == "/evolve":
+            if self.sentinel:
+                await self.send_message(chat_id, "🧬 Strateji Evrimi Tetikleniyor...")
+                # We need to expose _run_evolution or call it directly if accessible
+                if hasattr(self.sentinel, "_run_evolution"):
+                    await self.sentinel._run_evolution()
+                else:
+                    await self.send_message(chat_id, "⚠️ Evrim fonksiyonu erişilemez.")
+            else:
+                await self.send_message(chat_id, "❌ Sentinel yok.")
+
         elif command == "/synthetic":
             if not self.synthetic:
                 await self.send_message(chat_id, "⚠️ Synthetic Engine yüklü değil.")

@@ -90,6 +90,7 @@ class Sentinel:
         self.risk_manager = container.get("regime_kelly")
         if self.risk_manager:
             self.bus.subscribe("market_regime_update", self.risk_manager.update_regime)
+            self.bus.subscribe("market_regime_update", self._on_regime_change)
 
         self.portfolio_opt = container.get("portfolio_opt")
 
@@ -127,6 +128,20 @@ class Sentinel:
         """Bridge between EventBus and ExecutionStage method."""
         if self.execution_stage:
             await self.execution_stage.handle_hedge_order(event.data)
+
+    async def _on_regime_change(self, event: Event):
+        """Handle market regime updates."""
+        data = event.data
+        # Extract regime string (e.g. from RegimeMetrics)
+        # Assuming event data might contain 'regime' key directly or inside metrics
+        regime = data.get("regime", "STABLE")
+
+        # If it comes from MarketRegimeDetector (RegimeMetrics obj), it might be serialized differently
+        # Let's support both simple string and nested dict
+        if isinstance(regime, str):
+            self.treasury.rebalance_buckets(regime)
+        else:
+            logger.warning(f"Sentinel: Unknown regime format in event: {regime}")
 
     async def run(self):
         """Sistemi başlat."""
@@ -402,13 +417,92 @@ class Sentinel:
     async def _run_evolution(self):
         """Strateji evrimini tetikle."""
         logger.info("Sentinel: Evrim süreci başlıyor...")
-        # Geçmiş sonuçları DB'den çekmemiz gerekir
-        # Şimdilik basitçe logluyoruz
-        # results = self.db.get_recent_results(...)
-        # report = self.evolver.evolve(results)
-        # if report.improvements:
-        #     logger.success(f"Sentinel: Strateji iyileştirildi! {report.improvements}")
-        pass
+
+        db = container.get("db")
+        if not db:
+            logger.warning("Sentinel: DB bağlantısı yok, evrim atlanıyor.")
+            return
+
+        # 1. Sonuçlanmış bahisleri çek
+        try:
+            bets_df = db.get_settled_bets(limit=100)
+        except Exception as e:
+            logger.error(f"Sentinel: Bahis verisi çekilemedi: {e}")
+            return
+
+        if bets_df.is_empty():
+            logger.info("Sentinel: Evrim için yeterli veri yok (Sonuçlanmış bahis bulunamadı).")
+            return
+
+        # 2. Sinyallerle birleştir (Prob ve EV bilgisi için)
+        try:
+            signals_df = db.get_signals()
+        except Exception:
+            signals_df = None
+
+        results_for_evolver = []
+
+        signal_map = {}
+        if signals_df is not None and not signals_df.is_empty():
+            for row in signals_df.iter_rows(named=True):
+                key = f"{row.get('match_id')}_{row.get('selection')}"
+                signal_map[key] = row
+
+        for bet in bets_df.iter_rows(named=True):
+            match_id = bet.get("match_id", "")
+            selection = bet.get("selection", "")
+            status = bet.get("status", "lost")
+            odds = bet.get("odds", 2.0)
+
+            sig = signal_map.get(f"{match_id}_{selection}", {})
+
+            # Confidence is often used as probability in this system
+            prob = sig.get("confidence", 1.0 / odds if odds > 0 else 0.5)
+            ev = sig.get("ev", 0.0)
+
+            won = (status == "won")
+
+            results_for_evolver.append({
+                "won": won,
+                "pnl": bet.get("pnl", 0.0),
+                "odds": odds,
+                "prob": prob,
+                "ev": ev,
+                "match_id": match_id
+            })
+
+        # 3. Evrimleştir
+        if len(results_for_evolver) >= 5:  # Lower threshold for testing
+            try:
+                report = self.evolver.evolve(results_for_evolver)
+
+                if report.improvements:
+                    logger.success(f"Sentinel: Strateji iyileştirildi! {report.improvements}")
+
+                    # Log new DNA
+                    logger.info(f"Yeni DNA: {json.dumps(report.best_dna, indent=2)}")
+
+                    # Notify
+                    if self.bot and self.bot.enabled:
+                        chat_id = 0
+                        if self.bot.token and ":" in self.bot.token:
+                            try:
+                                chat_id = int(self.bot.token.split(":")[0])
+                            except Exception:
+                                pass
+
+                        if chat_id:
+                            await self.bot.send_message(
+                                chat_id,
+                                f"🧬 **Strateji Evrimi**\n"
+                                f"Gen: #{report.generation}\n"
+                                f"Fitness: {report.best_fitness:.4f}\n"
+                                f"İyileşme: {', '.join(report.improvements)}"
+                            )
+            except Exception as e:
+                logger.error(f"Sentinel: Evrim sırasında hata: {e}")
+        else:
+            logger.info(f"Sentinel: Yetersiz veri ({len(results_for_evolver)}).")
 
     def _check_health(self) -> bool:
         """Sistemin finansal ve teknik sağlığını kontrol et."""
