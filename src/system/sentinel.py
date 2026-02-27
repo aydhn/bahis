@@ -337,9 +337,27 @@ class Sentinel:
         # 1. Sniper Entry Logic (Dropping Odds -> Value Entry)
         if z_score < -2.0:
             logger.warning(f"⚡ FLASH REACTION: Dropping Odds detected for {match_id} (Z={z_score})")
-            # In a full HFT system, we would trigger an immediate buy order here if models concur.
-            # For now, we log the opportunity.
-            # if self.pipeline: await self.pipeline.run_single_match(match_id) # Future
+
+            # FAST TRACK: Sniper Execution
+            # If significant value drop, trigger execution directly, bypassing the heavy pipeline.
+            # We assume a fixed small stake for sniper entries or quick liquidity grab.
+            if z_score < -3.0: # Very strong signal
+                if self.execution_stage:
+                    sniper_order = {
+                        "match_id": match_id,
+                        "selection": data.get("selection", "home"), # Default to what moved
+                        "odds": current_odds.get(data.get("selection", "home"), 2.0),
+                        "stake": self.treasury.get_sniper_stake(), # Small fixed amount
+                        "reason": f"Sniper Entry (Z={z_score:.2f})",
+                        "is_hedge": False,
+                        "strategy": "flash_sniper"
+                    }
+                    # We reuse handle_hedge_order for urgent execution path
+                    await self.execution_stage.handle_hedge_order({
+                        "bet_id": f"sniper_{match_id}",
+                        "match_id": match_id,
+                        "hedge_signal": {"action": "SNIPER_ENTRY", "details": sniper_order}
+                    })
 
         # 2. Real-Time Hedge Check (The "Binance CEO" Layer)
         # If we have an open position on this match, check if this flash move warrants an exit.
