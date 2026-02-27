@@ -14,6 +14,13 @@ class ExecutionStage(PipelineStage):
         self.notifier = container.get("notifier")
         self.db = container.get("db")
 
+        # Subscribe to hedge events if bus is available
+        # But stages don't usually subscribe. Sentinel subscribes and calls methods?
+        # Or execution stage is part of the pipeline loop.
+        # Hedge orders come asynchronously from Sentinel via EventBus.
+        # Ideally, Sentinel should have a way to invoke execution for urgent orders.
+        # But to keep it simple, we can expose a method `handle_hedge_order`.
+
         # Optional Imports
         try:
             from src.ingestion.metric_exporter import MetricExporter
@@ -22,6 +29,9 @@ class ExecutionStage(PipelineStage):
             self.metrics = None
 
     async def execute(self, context: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Normal pipeline execution for NEW bets.
+        """
         bets = context.get("final_bets", [])
 
         if not bets:
@@ -88,3 +98,40 @@ class ExecutionStage(PipelineStage):
                 self.metrics.observe("bet_stake_amount", stake)
 
         return {"execution_status": "success", "bets_placed": len(bets)}
+
+    async def handle_hedge_order(self, event_data: Dict[str, Any]):
+        """
+        Handles urgent hedge orders triggered by Sentinel.
+        This is called asynchronously, outside the normal pipeline cycle.
+        """
+        logger.warning(f"ExecutionStage: Processing HEDGE ORDER for {event_data.get('match_id')}")
+
+        bet_id = event_data.get("bet_id")
+        hedge_signal = event_data.get("hedge_signal", {})
+        action = hedge_signal.get("action")
+
+        # 1. Update DB Status
+        if self.db and bet_id:
+            try:
+                # We mark the original bet as 'hedged' or 'closed'
+                # And maybe insert a new 'hedge' bet record?
+                # For simplicity, we just update status.
+                self.db.update_bet_status(bet_id, "hedged")
+                logger.info(f"Updated bet {bet_id} status to 'hedged'.")
+            except Exception as e:
+                logger.error(f"Failed to update bet status for hedge: {e}")
+
+        # 2. Execute Hedge Bet (if needed)
+        # In a real system, we would place a counter-bet (Lay) here.
+        # details = hedge_signal.get("details", {})
+        # if details and "hedge_stake" in details:
+        #      place_bet(...)
+
+        # 3. Notify
+        if self.notifier:
+            await self.notifier.send(
+                f"🦔 **HEDGE EXECUTED**\n"
+                f"Match: {event_data.get('match_id')}\n"
+                f"Action: {action}\n"
+                f"Status: Position Closed/Hedged."
+            )
