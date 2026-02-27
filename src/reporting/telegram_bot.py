@@ -16,6 +16,8 @@ Komutlar:
   /physics - Fizik motoru raporları
   /brief   - Günlük Yönetici Brifingi (Teleoloji & Arb dahil)
   /hedge   - Hedge Operasyon Durumu
+  /boardroom - Show the latest Board of Directors meeting minutes
+  /greeks  - Show sensitivity metrics (Delta, Gamma, Vega)
 """
 import asyncio
 import os
@@ -80,6 +82,11 @@ try:
 except ImportError:
     MarketRegimeHMM = None
 
+try:
+    from src.quant.analysis.sensitivity_engine import SensitivityEngine
+except ImportError:
+    SensitivityEngine = None
+
 class TelegramBot:
     """Async Polling tabanlı Telegram Botu."""
 
@@ -111,6 +118,7 @@ class TelegramBot:
         self.simulator = ScenarioSimulator() if ScenarioSimulator else None
         self.regime_detector = MarketRegimeDetector() if MarketRegimeDetector else None
         self.synthetic = SyntheticEngine() if SyntheticEngine else None
+        self.sensitivity_engine = SensitivityEngine() if SensitivityEngine else None
 
         # Extensions
         self.smart_money = SmartMoneyDetector() if SmartMoneyDetector else None
@@ -364,7 +372,7 @@ class TelegramBot:
         args = parts[1:] if len(parts) > 1 else []
 
         if command == "/start":
-            await self.send_message(chat_id, "🤖 *Otonom Quant Bot Devrede.*\nKomutlar: /status, /strategy, /ceo, /brief, /warroom, /pnl, /risk, /brain, /explain, /analyze, /physics, /treasury, /oracle, /set_risk, /force, /shutdown, /hedge, /synthetic, /memo, /smart, /forecast")
+            await self.send_message(chat_id, "🤖 *Otonom Quant Bot Devrede.*\nKomutlar: /status, /strategy, /ceo, /brief, /warroom, /pnl, /risk, /brain, /explain, /analyze, /physics, /treasury, /oracle, /set_risk, /force, /shutdown, /hedge, /synthetic, /memo, /smart, /forecast, /boardroom, /greeks")
 
         elif command == "/strategy":
             if self.context and hasattr(self.context, 'strategic_directive'):
@@ -877,6 +885,55 @@ class TelegramBot:
                 await self.send_message(chat_id, msg)
             else:
                 await self.send_message(chat_id, "⚠️ Yeterli veri yok (Sentinel buffer boş).")
+
+        elif command == "/boardroom":
+            # Display latest board meeting minutes
+            if not self.context or not self.context.narratives:
+                await self.send_message(chat_id, "📭 No active board meeting minutes found.")
+                return
+
+            # Find last narrative with board minutes
+            found = False
+            for match_id, narrative in self.context.narratives.items():
+                if "Board Minutes" in narrative:
+                    # Extract Minutes
+                    parts = narrative.split("Board Minutes:")
+                    if len(parts) > 1:
+                        minutes = parts[1].strip()
+                        await self.send_message(chat_id, f"🏛️ **Boardroom Meeting: {match_id}**\n\n{minutes}")
+                        found = True
+                        break
+            if not found:
+                await self.send_message(chat_id, "📭 No minutes in recent narratives.")
+
+        elif command == "/greeks":
+            if not self.sensitivity_engine:
+                await self.send_message(chat_id, "⚠️ Sensitivity Engine not installed.")
+                return
+
+            if not args:
+                # Default mock or help
+                await self.send_message(chat_id, "⚠️ Usage: `/greeks <odds> <prob>`")
+                return
+
+            try:
+                odds = float(args[0])
+                prob = float(args[1])
+                greeks = self.sensitivity_engine.calculate_greeks(odds, prob)
+
+                msg = (
+                    f"📐 **The Greeks (Derivative Analysis)**\n"
+                    f"Odds: {odds} | Prob: {prob:.2%}\n\n"
+                    f"**Delta (Δ):** {greeks.delta:.2f}\n"
+                    f"_(Sensitivity to Win Prob)_ \n"
+                    f"**Gamma (Γ):** {greeks.gamma:.2f}\n"
+                    f"_(Convexity of Edge)_\n"
+                    f"**Vega (ν):** {greeks.vega:.2f}\n"
+                    f"_(Sensitivity to Volatility)_"
+                )
+                await self.send_message(chat_id, msg)
+            except Exception as e:
+                await self.send_message(chat_id, f"⚠️ Error: {e}")
 
     async def _handle_voice(self, msg: Dict[str, Any], chat_id: int):
         """Sesli mesajı işle ve komuta çevir."""
