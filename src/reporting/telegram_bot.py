@@ -688,6 +688,60 @@ class TelegramBot:
             except Exception as e:
                 await self.send_message(chat_id, f"⚠️ Hata: {e}")
 
+        elif command == "/active":
+            # Active Inference Status
+            try:
+                from src.system.container import container
+                agent = container.get("active_agent")
+                if agent:
+                    report = agent.get_report()
+                    msg = (
+                        f"🧠 **Active Inference Status**\n"
+                        f"Free Energy: {report.total_free_energy:.4f}\n"
+                        f"Avg Surprisal: {report.avg_surprisal:.4f}\n\n"
+                        f"**Module Precision:**\n"
+                    )
+                    for mod, state in report.module_states.items():
+                        msg += f"- {mod}: {state.precision:.2f} (Acc: {state.accuracy:.2%})\n"
+
+                    msg += f"\n💡 **Recommendation:** {report.recommendation}"
+                    await self.send_message(chat_id, msg)
+                else:
+                    await self.send_message(chat_id, "⚠️ Active Agent not initialized.")
+            except Exception as e:
+                await self.send_message(chat_id, f"⚠️ Error: {e}")
+
+        elif command == "/nash":
+            # Game Theory Analysis for a hypothetical or specific match
+            # Usage: /nash <ev> <stake>
+            if len(args) < 1:
+                await self.send_message(chat_id, "⚠️ Usage: `/nash <ev>` (e.g. 0.05)")
+                return
+
+            try:
+                ev = float(args[0])
+                # Mock analysis using RiskTower logic
+                import numpy as np
+                from src.quant.analysis.game_theory_engine import GameTheoryEngine
+                engine = GameTheoryEngine()
+
+                payoff = np.array([[ev, -0.05], [0.0, 0.0]])
+                res = engine.solve_nash(payoff)
+
+                msg = (
+                    f"♟️ **Game Theory Analysis (Nash)**\n"
+                    f"Input EV: {ev:.2%}\n"
+                    f"Scenario: Bet vs Market Drift\n\n"
+                    f"**Optimal Strategy:**\n"
+                    f"Bet Frequency: {res.optimal_strategy[0]:.2%}\n"
+                    f"Pass Frequency: {res.optimal_strategy[1]:.2%}\n\n"
+                    f"Expected Value: {res.game_value:.4f}\n"
+                    f"Method: {res.method}"
+                )
+                await self.send_message(chat_id, msg)
+            except Exception as e:
+                await self.send_message(chat_id, f"⚠️ Error: {e}")
+
     async def _handle_voice(self, msg: Dict[str, Any], chat_id: int):
         """Sesli mesajı işle ve komuta çevir."""
         if not self.voice_handler: return

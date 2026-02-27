@@ -472,6 +472,33 @@ class Sentinel:
             })
 
         # 3. Evrimleştir
+        # 3. Active Inference Learning (Zero Error Loop)
+        active_agent = container.get("active_agent")
+        if active_agent:
+            for res in results_for_evolver:
+                # Retrieve individual model predictions for this match if stored
+                # This requires that we stored individual model outputs in DB or logs.
+                # Since we don't have deep history of sub-model predictions here,
+                # we can simulate learning on the 'ensemble' itself as a module,
+                # or if we had the data, loop through models.
+
+                # For now, we treat the final outcome as feedback for the 'ensemble' module
+                # In a full implementation, we'd need to query a 'predictions' table.
+
+                # Simulating feedback for ensemble
+                outcome_idx = 0 if res['won'] and res['odds'] < 2.5 else 1 # Simplified outcome mapping
+                # Ideally: outcome_idx = 0 (Home), 1 (Draw), 2 (Away) based on score
+
+                # Just trigger a generic observation for 'ensemble' to demonstrate loop
+                active_agent.observe(
+                    module="ensemble",
+                    predicted_probs=[res['prob'], (1-res['prob'])/2, (1-res['prob'])/2], # Rough approx
+                    observed=0 if res['won'] else 2 # Rough approx
+                )
+
+            logger.info("Sentinel: Active Inference feedback loop executed.")
+
+        # 4. Evrimleştir
         if len(results_for_evolver) >= 5:  # Lower threshold for testing
             try:
                 report = self.evolver.evolve(results_for_evolver)

@@ -25,10 +25,12 @@ from src.quant.analysis.market_regime_detector import MarketRegimeDetector, Regi
 from src.quant.analysis.philosophical_engine import PhilosophicalEngine
 from src.quant.analysis.causal_reasoner import CausalReasoner
 from src.core.system_architect import StrategicDirective
+from src.quant.analysis.game_theory_engine import GameTheoryEngine
 
 # NEW: Advanced Risk Modules
 from src.quant.finance.liquidity_engine import LiquidityEngine
 from src.quant.risk.extreme_value import ExtremeValueAnalyzer
+import numpy as np
 
 # Import Physics Reports for Type Hinting (Optional, but good for clarity)
 try:
@@ -76,6 +78,7 @@ class RiskControlTower:
         self.philosopher = PhilosophicalEngine()
         self.causal_reasoner = CausalReasoner()
         self.evt_analyzer = ExtremeValueAnalyzer() # NEW
+        self.game_theory = GameTheoryEngine() # NEW
 
         logger.info("RiskControlTower initialized and ready for duty.")
 
@@ -241,6 +244,54 @@ class RiskControlTower:
         # causal_effect = self.causal_reasoner.estimate_effect("recent_form", "outcome")
         # if not causal_effect.is_significant: ... (Logic placeholder)
 
+        # --- 3.5 Game Theory Check (Strategic Defense) ---
+        # Construct Payoff Matrix: Bettor (Rows) vs Market (Cols)
+        # Actions: [Bet, Skip] vs [Stable, Drift Against]
+        # Simplified payoff:
+        #          Stable (+EV)   Drift (-EV)
+        # Bet      +EV            -Stake
+        # Skip     0              0
+
+        try:
+            ev = bet_candidate.get("ev", 0.05)
+            stake = 1.0 # Normalized
+
+            # Scenario A: Market stays stable, we win EV
+            # Scenario B: Market drifts (smart money opposite), we lose stake (worst case) or just -EV
+            # Let's assume Drift Against makes the bet -0.05 EV
+
+            # Payoff Matrix (2x2)
+            # Row 0 (Bet):  [+ev, -0.05]
+            # Row 1 (Skip): [0,   0   ]
+
+            payoff_matrix = np.array([
+                [ev, -0.05],
+                [0.0, 0.0]
+            ])
+
+            # Solve Nash
+            gt_res = self.game_theory.solve_nash(payoff_matrix)
+
+            if gt_res.is_solved:
+                # Optimal strategy: Probability to BET (Action 0)
+                prob_bet = gt_res.optimal_strategy[0]
+
+                # If Nash says "Bet less than 50% of the time", it implies high risk of exploitation
+                if prob_bet < 0.5:
+                    decision.adjustments.append(f"Game Theory Warning: High Exploitation Risk (Optimal Bet Freq: {prob_bet:.2f})")
+                    # We reduce stake by this probability factor
+                    # e.g. if prob_bet is 0.3, we multiply stake by 0.3
+                    # But we apply this later in modulation.
+                    # Let's add it as a specific penalty adjustment string to be parsed or apply directly here?
+                    # We'll apply it as a multiplier in step 5.
+                    bet_candidate["gt_multiplier"] = prob_bet
+                else:
+                    bet_candidate["gt_multiplier"] = 1.0
+
+        except Exception as e:
+            logger.warning(f"Game Theory check failed: {e}")
+            bet_candidate["gt_multiplier"] = 1.0
+
         # --- 4. Kelly Sizing ---
         # Calculate Base Stake
         # Map MarketRegime to RegimeState for Kelly
@@ -277,6 +328,12 @@ class RiskControlTower:
         # EVT Penalty (from 0.6 above)
         if any("EVT Warning" in adj for adj in decision.adjustments):
             phys_mult *= 0.5
+
+        # Game Theory Multiplier
+        gt_mult = bet_candidate.get("gt_multiplier", 1.0)
+        if gt_mult < 1.0:
+            phys_mult *= gt_mult
+            decision.adjustments.append(f"Game Theory Multiplier: x{gt_mult:.2f}")
 
         if phys_mult <= 0.0:
             decision.approved = False
