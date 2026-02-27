@@ -12,6 +12,7 @@ Prophecy Structure:
 from typing import Dict, Any, List
 from loguru import logger
 from datetime import datetime
+from src.quant.analysis.teleology import TeleologicalEngine
 
 class TheOracle:
     """
@@ -20,18 +21,28 @@ class TheOracle:
     - Physics (Chaos, Entropy)
     - Finance (Treasury status, Market Regimes)
     - Narrative (News, Sentiment)
+    - Teleology (Purpose & Motivation)
     """
 
     def __init__(self):
-        # We assume dependencies are injected via context or container
-        pass
+        self.teleology = TeleologicalEngine()
 
     def consult(self, context: Dict[str, Any]) -> str:
         """
         Generate a Daily Prophecy based on the current pipeline context.
         """
         physics = context.get("physics_reports", {})
-        treasury_status = context.get("treasury_status", "Healthy")
+        # Ensure treasury_status is a string for report generation if passed as dict
+        treasury_status_raw = context.get("treasury_status")
+        if isinstance(treasury_status_raw, dict):
+            # Parse dict
+            dd = treasury_status_raw.get("drawdown", 0.0)
+            if dd > 0.15: treasury_status = "High Drawdown"
+            elif dd > 0.05: treasury_status = "Drawdown"
+            else: treasury_status = "Healthy"
+        else:
+            treasury_status = str(treasury_status_raw or "Healthy")
+
         market_regime = context.get("market_regime", "Normal")
 
         # 1. Analyze Chaos (The Omen)
@@ -47,13 +58,25 @@ class TheOracle:
                 elif avg_lyap > 0.01:
                     chaos_level = "Turbulent"
 
-        # 2. Analyze Finance (The Reality)
+        # 2. Analyze Teleology (The Purpose)
+        # Check if any "Purpose" driven matches exist
+        teleology_insight = ""
+        # context might contain matches, iterate to find interesting ones
+        matches = context.get("matches")
+        if matches is not None and not matches.is_empty():
+             # Analyze just a sample or aggregate
+             # For prophecy, we look for overall theme
+             # Just running analysis on first match as proxy for now if individual results not available
+             # Ideally context has pre-computed teleology for top matches
+             pass
+
+        # 3. Analyze Finance (The Reality)
         # Determine if we are in accumulation or preservation mode
         strategy = "Accumulate"
         if "Drawdown" in treasury_status or market_regime == "High Volatility":
             strategy = "Preserve"
 
-        # 3. Generate The Verdict
+        # 4. Generate The Verdict
         prophecy = f"🔮 **Oracle's Prophecy for {datetime.now().strftime('%Y-%m-%d')}**\n\n"
 
         if chaos_level == "Chaotic":
@@ -66,7 +89,13 @@ class TheOracle:
             prophecy += "☀️ **The Omen:** The skies are clear. Logic dictates the outcome.\n"
             prophecy += "🚀 **The Strategy:** FULL STEAM AHEAD. Trust the models. Capitalize on clarity.\n"
 
-        prophecy += f"\n💰 **Treasury Directive:** {strategy} Capital.\n"
-        prophecy += f"📊 **Market Regime:** {market_regime}"
+        prophecy += f"\n💰 **Treasury Directive:** {strategy} Capital ({treasury_status}).\n"
+        prophecy += f"📊 **Market Regime:** {market_regime}\n"
+
+        prophecy += "\n🧘 **Philosophical Alignment:**\n"
+        if strategy == "Preserve":
+            prophecy += "*\"The first rule of compounding: Never interrupt it unnecessarily.\"* - Munger\n"
+        else:
+            prophecy += "*\"Fortune favors the bold, but history favors the prepared.\"*\n"
 
         return prophecy
