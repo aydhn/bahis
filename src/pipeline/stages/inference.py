@@ -16,6 +16,11 @@ from src.quant.risk.volatility_modulator import VolatilityModulator
 from src.quant.meta_labeling import MetaLabeler
 from src.quant.uncertainty.conformal import ConformalPredictor
 
+try:
+    from src.quant.analysis.transport_metric import TransportMetric
+except ImportError:
+    TransportMetric = None
+
 
 class InferenceStage(PipelineStage):
     """
@@ -59,6 +64,13 @@ class InferenceStage(PipelineStage):
         except Exception:
             self.rag = None
 
+        # Transport Metric (Drift Detection)
+        if TransportMetric:
+            self.transport = TransportMetric()
+        else:
+            self.transport = None
+            logger.warning("TransportMetric not found.")
+
     async def execute(self, context: Dict[str, Any]) -> Dict[str, Any]:
         """Parallel analysis for all matches."""
         matches = context.get("matches", pl.DataFrame())
@@ -83,6 +95,25 @@ class InferenceStage(PipelineStage):
         if matches.is_empty():
             logger.info("No matches to analyze.")
             return {"ensemble_results": []}
+
+        # --- Data Drift Check (Transport Metric) ---
+        if self.transport and not features.is_empty():
+            try:
+                # Select only numeric features for drift detection
+                numeric_features = features.select(pl.col(pl.Float64, pl.Int64)).to_numpy()
+
+                # If reference is not set (first run), set it
+                if self.transport._monitor.reference_dist is None:
+                    self.transport.set_reference(numeric_features)
+                    logger.info("TransportMetric: Reference distribution set.")
+                else:
+                    drift_report = self.transport.check_drift(numeric_features)
+                    if drift_report.is_drifted:
+                        logger.warning(f"TransportMetric: DRIFT DETECTED ({drift_report.drift_severity}) W={drift_report.wasserstein_2:.4f}")
+                        # Inject drift info into context for RiskStage
+                        context["data_drift_report"] = drift_report
+            except Exception as e:
+                logger.error(f"TransportMetric check failed: {e}")
 
         # Physics Metrics from Context
         quantum_predictions = context.get("quantum_predictions", {})
