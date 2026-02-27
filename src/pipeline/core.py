@@ -149,6 +149,7 @@ def create_default_pipeline(bot_instance: Any = None, bus: EventBus = None) -> P
     # Lazy imports to avoid circular dependencies
     from src.pipeline.stages.ingestion import IngestionStage
     from src.pipeline.stages.features import FeatureStage
+    from src.pipeline.stages.validator import DataValidatorStage
     from src.pipeline.stages.physics import PhysicsStage
     from src.pipeline.stages.inference import InferenceStage
     from src.pipeline.stages.ensemble import EnsembleStage
@@ -156,18 +157,17 @@ def create_default_pipeline(bot_instance: Any = None, bus: EventBus = None) -> P
     from src.pipeline.stages.execution import ExecutionStage
     from src.pipeline.stages.reporting import ReportingStage
 
-    engine = PipelineEngine(bus=bus)
-    # Lazy imports to avoid circular dependencies
-    from src.pipeline.stages.ingestion import IngestionStage
-    from src.pipeline.stages.features import FeatureStage
-    from src.pipeline.stages.validator import DataValidatorStage
-    from src.pipeline.stages.physics import PhysicsStage
-    from src.pipeline.stages.inference import InferenceStage
+    # New Bridge Stage
+    from src.pipeline.stages.ingestion_bridge import IngestionBridgeStage
 
     engine = PipelineEngine(bus=bus)
     engine.add_stage(IngestionStage())
     engine.add_stage(DataValidatorStage())
     engine.add_stage(FeatureStage())
+
+    # Add Zero-Copy Bridge after features are generated but before inference
+    engine.add_stage(IngestionBridgeStage())
+
     engine.add_stage(PhysicsStage())
     engine.add_stage(InferenceStage())
     engine.add_stage(EnsembleStage())

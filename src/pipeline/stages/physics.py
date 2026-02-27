@@ -205,6 +205,7 @@ class PhysicsStage(PipelineStage):
         if HypergraphUnitAnalyzer:
             try:
                 self.hypergraph = HypergraphUnitAnalyzer()
+                logger.info("HypergraphUnitAnalyzer initialized.")
             except Exception as e:
                 logger.error(f"Failed to init HypergraphUnitAnalyzer: {e}")
                 self.hypergraph = None
