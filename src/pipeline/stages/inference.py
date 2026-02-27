@@ -36,6 +36,9 @@ try:
 except ImportError:
     MarketGod = None
 
+from src.quant.analysis.dtw_matcher import DTWMatcher
+from src.quant.analysis.microstructure_engine import MicrostructureEngine
+
 class InferenceStage(PipelineStage):
     """
     Quant Models & AI Analysis Engine.
@@ -80,6 +83,10 @@ class InferenceStage(PipelineStage):
 
         # Market God (The Omniscient Strategist)
         self.market_god = MarketGod() if MarketGod else None
+
+        # Advanced Quant Engines (Level 43)
+        self.dtw_matcher = DTWMatcher()
+        self.microstructure = MicrostructureEngine()
 
         # RAG Analyzer (Optional)
         try:
@@ -315,10 +322,42 @@ class InferenceStage(PipelineStage):
             reflex_report = self.reflexivity_engine.analyze(mock_history, match_id=match_id)
             prediction["reflexivity_index"] = reflex_report.index
             prediction["reflexive_signal"] = reflex_report.signal
+
+            # 3.6 DTW Flash Crash Detection
+            dtw_report = self.dtw_matcher.detect_flash_crash(mock_history)
+            prediction["dtw_anomaly_score"] = dtw_report.anomaly_score
+            prediction["dtw_is_crash"] = dtw_report.is_crash
+            prediction["dtw_template"] = dtw_report.closest_template
+
         except Exception as e:
-            logger.warning(f"Reflexivity engine failed for {match_id}: {e}")
+            logger.warning(f"Reflexivity/DTW engines failed for {match_id}: {e}")
             prediction["reflexivity_index"] = 0.0
             prediction["reflexive_signal"] = "NEUTRAL"
+            prediction["dtw_anomaly_score"] = 0.0
+
+        # 3.7 Microstructure Engine (OFI & VPIN)
+        try:
+            # Mock high frequency data for Microstructure
+            # In production, this would come from the context built by ZeroCopyBridge
+            mock_volume = {
+                "volumes": [500.0, 1000.0, 200.0],
+                "directions": [1.0, 1.0, -1.0] # Mostly buying
+            }
+            mock_lob = {
+                "bid_sizes": [1000.0, 1500.0, 2000.0],
+                "ask_sizes": [1000.0, 800.0, 500.0],
+                "bid_prices": [1.98, 1.99, 1.99],
+                "ask_prices": [2.00, 2.00, 2.01]
+            }
+            micro_report = self.microstructure.analyze(mock_volume, mock_lob)
+            prediction["vpin_score"] = micro_report.vpin_score
+            prediction["ofi_score"] = micro_report.ofi_score
+            prediction["microstructure_signal"] = micro_report.signal
+            prediction["is_toxic_flow"] = micro_report.is_toxic
+        except Exception as e:
+            logger.warning(f"Microstructure engine failed for {match_id}: {e}")
+            prediction["vpin_score"] = 0.0
+            prediction["is_toxic_flow"] = False
 
         # 4. Teleological Analysis (Narrative & Motivation)
         # Assuming context has some rank/points data (from Features stage)

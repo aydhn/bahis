@@ -29,6 +29,7 @@ from src.quant.analysis.game_theory_engine import GameTheoryEngine
 
 # NEW: Advanced Risk Modules
 from src.quant.finance.liquidity_engine import LiquidityEngine
+from src.quant.finance.optimal_execution import OptimalExecutionModel
 from src.quant.risk.extreme_value import ExtremeValueAnalyzer
 from src.quant.finance.stress_tester import PortfolioStressTester
 from src.quant.finance.black_litterman_optimizer import BlackLittermanOptimizer
@@ -82,6 +83,7 @@ class RiskControlTower:
         self.synthetic = SyntheticEngine()
         self.arb_scanner = ArbitrageScanner()
         self.liquidity = LiquidityEngine() # NEW
+        self.optimal_execution = OptimalExecutionModel() # NEW: Almgren-Chriss Slicing
         self.stress_tester = PortfolioStressTester() # NEW
         self.systemic_risk = SystemicRiskCoVaR() # NEW: Systemic Risk (CoVaR)
         self.black_litterman = BlackLittermanOptimizer() # NEW: Portfolio Optimizer
@@ -627,6 +629,19 @@ class RiskControlTower:
 
         if slippage_pct > 0.05:
             decision.adjustments.append(f"Slippage Warning: {slippage_pct:.1%} (Price: {exec_price:.2f})")
+
+        # 3. Optimal Execution Slicing for Large Stakes
+        # If the amount is substantial, we don't execute at once.
+        if amount > 5000.0:
+            # Assume high urgency (0.8) for now, could be dynamic based on Edge decay
+            schedule = self.optimal_execution.calculate_slicing_schedule(
+                total_stake=amount,
+                urgency=0.8,
+                volatility=0.05,
+                base_liquidity=self.liquidity.LEAGUE_LIQUIDITY.get(league_name, 5000.0)
+            )
+            if schedule.duration_steps > 1:
+                decision.adjustments.append(f"Almgren-Chriss Execution: Sliced {amount:.2f} into {schedule.duration_steps} steps. (Est. Slip: {schedule.total_expected_slippage:.2%})")
 
         approved_amount = self.treasury.request_capital(amount, strategy_type="aggressive")
 
