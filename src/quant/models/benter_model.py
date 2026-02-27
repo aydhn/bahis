@@ -124,7 +124,7 @@ class BenterModel(PoissonModel):
             "matrix_00": float(mat[0][0])
         }
 
-    def detect_value_bet(self, outcomes: dict, odds: dict, min_edge: float = 0.05) -> list[dict]:
+    def detect_value_bet(self, outcomes: dict, odds: dict, min_edge: float = 0.05, fractional_kelly: float = 0.5) -> list[dict]:
         """
         Bahis fırsatlarını (Value Bets) tespit eder.
 
@@ -132,21 +132,28 @@ class BenterModel(PoissonModel):
             outcomes: calculate_benter_probabilities çıktısı.
             odds: {"1": 2.10, "X": 3.20, "2": 3.50} formatında oranlar.
             min_edge: Minimum beklenen getiri (varsayılan %5).
+            fractional_kelly: Kelly çarpanı (varsayılan 0.5 Half-Kelly, bankroll güvenliği için).
         """
         bets = []
+
+        # Dinamik min_edge ayarı (Belirsizlik varsa edge beklentisini artır)
+        uncertainty = outcomes.get("epistemic_uncertainty", 0.0)
+        adjusted_min_edge = min_edge + (uncertainty * 0.1)  # Max %10 ek güvenlik marjı
 
         # Home
         if "1" in odds:
             p = outcomes["prob_home"]
             o = odds["1"]
             edge = p * o - 1
-            if edge > min_edge:
+            if edge > adjusted_min_edge:
+                k_frac = (edge / (o - 1)) if o > 1 else 0
                 bets.append({
                     "selection": "HOME",
                     "probability": p,
                     "odds": o,
                     "edge": edge,
-                    "kelly_fraction": edge / (o - 1)
+                    "kelly_fraction": k_frac,
+                    "suggested_stake_fraction": k_frac * fractional_kelly
                 })
 
         # Draw
@@ -154,13 +161,15 @@ class BenterModel(PoissonModel):
             p = outcomes["prob_draw"]
             o = odds["X"]
             edge = p * o - 1
-            if edge > min_edge:
+            if edge > adjusted_min_edge:
+                k_frac = (edge / (o - 1)) if o > 1 else 0
                 bets.append({
                     "selection": "DRAW",
                     "probability": p,
                     "odds": o,
                     "edge": edge,
-                    "kelly_fraction": edge / (o - 1)
+                    "kelly_fraction": k_frac,
+                    "suggested_stake_fraction": k_frac * fractional_kelly
                 })
 
         # Away
@@ -168,13 +177,15 @@ class BenterModel(PoissonModel):
             p = outcomes["prob_away"]
             o = odds["2"]
             edge = p * o - 1
-            if edge > min_edge:
+            if edge > adjusted_min_edge:
+                k_frac = (edge / (o - 1)) if o > 1 else 0
                 bets.append({
                     "selection": "AWAY",
                     "probability": p,
                     "odds": o,
                     "edge": edge,
-                    "kelly_fraction": edge / (o - 1)
+                    "kelly_fraction": k_frac,
+                    "suggested_stake_fraction": k_frac * fractional_kelly
                 })
 
         bets.sort(key=lambda x: x["edge"], reverse=True)

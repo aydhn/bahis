@@ -85,14 +85,18 @@ class NewsRAGAnalyzer:
 
     def __init__(self, gemini_key: str = "",
                  hf_token: str = "",
-                 hf_model: str = "facebook/bart-large-mnli"):
+                 hf_model: str = "facebook/bart-large-mnli",
+                 ollama_url: str = "",
+                 ollama_model: str = "llama3"):
         self._gemini_key = gemini_key or os.getenv("GEMINI_API_KEY", "")
         self._hf_token = hf_token or os.getenv("HF_TOKEN", "")
         self._hf_model = hf_model
+        self._ollama_url = ollama_url or os.getenv("OLLAMA_URL", "http://localhost:11434/api/generate")
+        self._ollama_model = ollama_model or os.getenv("OLLAMA_MODEL", "llama3")
         self._cache: dict[str, tuple[float, RAGResult]] = {}
         self._cache_ttl = 3600.0  # 1 saat
         logger.debug(
-            f"NewsRAG başlatıldı (Gemini={'✓' if self._gemini_key else '✗'}, "
+            f"NewsRAG başlatıldı (Ollama='✓', Gemini={'✓' if self._gemini_key else '✗'}, "
             f"HF={'✓' if self._hf_token else '✗'})."
         )
 
@@ -257,20 +261,71 @@ class NewsRAGAnalyzer:
     async def _analyze_with_llm(self, team: str,
                                  news: list[NewsItem]) -> RAGResult:
         """Haberleri LLM ile analiz et."""
-        # Gemini öncelikli
+        # 1. Ollama (Yerel & Ücretsiz) öncelikli
+        result = await self._analyze_ollama(team, news)
+        if result:
+            return result
+
+        # 2. Gemini yedek
         if self._gemini_key:
             result = await self._analyze_gemini(team, news)
             if result:
                 return result
 
-        # HuggingFace yedek
+        # 3. HuggingFace yedek
         if self._hf_token:
             result = await self._analyze_huggingface(team, news)
             if result:
                 return result
 
-        # Kural tabanlı fallback
+        # 4. Kural tabanlı fallback
         return self._analyze_rule_based(team, news)
+
+    async def _analyze_ollama(self, team: str,
+                               news: list[NewsItem]) -> RAGResult | None:
+        """Ollama ile yerel sentiment analizi (Tamamen Ücretsiz ve Özel)."""
+        if not HTTPX_OK:
+            return None
+
+        headlines = "\n".join(f"- {n.title}" for n in news[:10])
+        prompt = (
+            f"Aşağıdaki haber başlıkları {team} futbol takımı hakkındadır.\n\n"
+            f"{headlines}\n\n"
+            f"Lütfen şu soruları yanıtla:\n"
+            f"1. Genel atmosfer (0=çok negatif, 1=çok pozitif) -> sadece sayı yaz.\n"
+            f"2. Anahtar konular (virgülle ayır, max 5 kelime/konu)\n"
+            f"3. 2 cümlelik özet\n\n"
+            f"Lütfen SADECE şu formatta yanıt ver ve format dışına çıkma:\n"
+            f"SKOR|KONULAR|ÖZET"
+        )
+
+        try:
+            async with httpx.AsyncClient(timeout=30) as client:
+                resp = await client.post(
+                    self._ollama_url,
+                    json={
+                        "model": self._ollama_model,
+                        "prompt": prompt,
+                        "stream": False,
+                        "options": {
+                            "temperature": 0.1
+                        }
+                    },
+                )
+                if resp.status_code != 200:
+                    logger.debug(f"[RAG] Ollama HTTP hatası: {resp.status_code}")
+                    return None
+
+                data = resp.json()
+                text = data.get("response", "")
+
+                if text:
+                    logger.info(f"Ollama yanıt verdi: {text[:50]}...")
+                    return self._parse_llm_response(team, text, news, f"ollama_{self._ollama_model}")
+                return None
+        except Exception as e:
+            logger.debug(f"[RAG] Ollama hatası: {e}. Ollama kapalı olabilir.")
+            return None
 
     async def _analyze_gemini(self, team: str,
                                news: list[NewsItem]) -> RAGResult | None:
