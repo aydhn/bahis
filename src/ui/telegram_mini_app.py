@@ -16,6 +16,8 @@ from pathlib import Path
 
 from loguru import logger
 
+from src.extensions.ceo_dashboard import CEODashboard
+
 # Sabitler
 LOG_DIR = Path(__file__).resolve().parents[2] / "logs"
 ALERT_EMOJI = {
@@ -337,6 +339,7 @@ class TelegramApp:
         self._portfolio = portfolio # PortfolioOptimizer
         self._bot = None
         self._app = None
+        self.ceo_dashboard = CEODashboard()
         logger.debug("TelegramApp başlatıldı.")
 
     @property
@@ -369,6 +372,7 @@ class TelegramApp:
                 "volatility": self._cmd_volatility,
                 "hitl": self._cmd_hitl_stats,
                 "portfoy": self._cmd_portfolio,
+                "vision": self._cmd_vision,
             }
             for cmd, handler in commands.items():
                 self._app.add_handler(CommandHandler(cmd, handler))
@@ -413,11 +417,16 @@ class TelegramApp:
             "🔧 /devreler – Circuit Breaker durumları\n"
             "📈 /volatility – Takım VIX\n"
             "📄 /log – error.log dosyasını gönder\n"
+            "👁️ /vision – God Mode & CEO Dashboard\n"
             "❓ /help – Tüm komutlar\n\n"
             "<i>Bot otomatik olarak bildirir:\n"
             "💰 Value fırsatı, 📉 Anomali, 🚨 Hata</i>"
         )
         await update.message.reply_text(text, parse_mode="HTML")
+
+    async def _cmd_vision(self, update, context):
+        report = self.ceo_dashboard.generate_report(None)
+        await update.message.reply_text(report, parse_mode="Markdown")
 
     # ═══════════════════════════════════════════
     #  /durum – Anlık kasa + sistem

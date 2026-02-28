@@ -93,6 +93,7 @@ from src.quant.analysis.microstructure_engine import MicrostructureEngine
 
 from src.quant.analysis.reflexivity_engine import ReflexivityEngine
 from src.core.black_litterman_optimizer import BlackLittermanOptimizer
+from src.extensions.ceo_dashboard import CEODashboard
 
 class TelegramBot:
     """Async Polling tabanlı Telegram Botu."""
@@ -137,6 +138,8 @@ class TelegramBot:
         self.optimal_execution = OptimalExecutionModel()
         self.dtw_matcher = DTWMatcher()
         self.microstructure = MicrostructureEngine()
+
+        self.ceo_dashboard = CEODashboard()
 
         if not self.enabled:
             logger.warning("TelegramBot devre dışı: Token veya httpx eksik.")
@@ -386,7 +389,11 @@ class TelegramBot:
         args = parts[1:] if len(parts) > 1 else []
 
         if command == "/start":
-            await self.send_message(chat_id, "🤖 *Otonom Quant Bot Devrede.*\nKomutlar: /status, /strategy, /ceo, /brief, /warroom, /pnl, /risk, /brain, /explain, /analyze, /physics, /treasury, /oracle, /set_risk, /force, /shutdown, /hedge, /synthetic, /memo, /smartmoney, /forecast, /boardroom, /greeks, /radar, /reflexivity, /alloc, /flow, /execution")
+            await self.send_message(chat_id, "🤖 *Otonom Quant Bot Devrede.*\nKomutlar: /status, /strategy, /ceo, /brief, /warroom, /pnl, /risk, /brain, /explain, /analyze, /physics, /treasury, /oracle, /set_risk, /force, /shutdown, /hedge, /synthetic, /memo, /smartmoney, /forecast, /boardroom, /greeks, /radar, /reflexivity, /alloc, /flow, /execution, /vision")
+
+        elif command == "/vision":
+            report = self.ceo_dashboard.generate_report(self.context)
+            await self.send_message(chat_id, report)
 
         elif command == "/flow":
             # Mock or read real data for Microstructure VPIN/OFI
