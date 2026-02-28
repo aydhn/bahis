@@ -1,3 +1,4 @@
+import json
 """
 sentinel.py – Otonom Sistem Orkestratörü (The CEO).
 
@@ -15,15 +16,13 @@ Bu modül, tüm sistemi (Pipeline, Risk, Bot) tek bir çatı altında yönetir.
 """
 import asyncio
 import signal
-import sys
-from typing import Optional, Any, Dict, List
+from typing import Any, Dict
 from loguru import logger
 
 from src.reporting.telegram_bot import TelegramBot
 from src.pipeline.core import create_default_pipeline, PipelineEngine
 from src.pipeline.stages.execution import ExecutionStage
 from src.system.lifecycle import lifecycle
-from src.core.regime_kelly import RegimeKelly, RegimeState
 from src.system.container import container
 from src.core.event_bus import EventBus, Event
 from src.quant.risk.portfolio_manager import PortfolioManager
@@ -201,7 +200,7 @@ class Sentinel:
                     if len(self._volatility_buffer) > 20:
                         pred = self.regime_hmm.predict(np.array(self._volatility_buffer[-20:]))
                         if pred.next_state_probs[2] > 0.5: # Probability of Chaos > 50%
-                            logger.warning(f"Sentinel: HMM Forecasts CHAOS! Switching to BUNKER.")
+                            logger.warning("Sentinel: HMM Forecasts CHAOS! Switching to BUNKER.")
                             # Force Architect to Bunker
                             # We can inject this into strategic directive via 'news_sentiment' or directly
 
@@ -367,12 +366,7 @@ class Sentinel:
         if not db: return
 
         try:
-            # Optimized query for specific match using parameter binding to prevent SQL Injection
-            # db.query expects SQL string. If the underlying driver supports binding, we should use it.
-            # Assuming db.query might take params in future or we handle sanitation.
-            # For now, we sanitize match_id manually to be safe if binding isn't exposed.
-            sanitized_id = match_id.replace("'", "''")
-            open_bets_df = db.query(f"SELECT * FROM bets WHERE match_id = '{sanitized_id}' AND status IN ('pending', 'open')")
+            open_bets_df = db.query("SELECT * FROM bets WHERE match_id = ? AND status IN ('pending', 'open')", [match_id])
             if open_bets_df.is_empty():
                 return
 
