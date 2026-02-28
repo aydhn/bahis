@@ -1,11 +1,12 @@
-## 2026-02-24 - [Vectorized Score Counting]
-**Learning:** Vectorized score counting with numpy.unique on combined integers yielded ~7x speedup (0.15s -> 0.02s) for 100k simulations.
-**Action:** Always prefer numpy vectorization for frequency counting on large arrays.
+## 2024-05-19 - Optimization Targets
+**Learning:** Found potential optimization in InferenceStage. `_similarity_cache` key is created dynamically per row. MultiTaskBackbone inference may fall back to Polars DataFrame creation if `features.is_empty()` is false but `mtl_predictions` is empty. The `_analyze_single_match` method is called concurrently for every match, which could be slow. `EnsembleModel.predict` spins up threads for each sub-model, even though `_analyze_single_match` already spins up a thread. This means O(N*M) threads where N is matches and M is models, potentially causing thread thrashing.
 
-## 2026-02-25 - [Bulk Monte Carlo Simulation]
-**Learning:** Vectorizing Monte Carlo simulations for 1000 matches (10k sims each) yielded ~1.5x speedup (2.0s -> 1.3s). The cost is dominated by `np.random.poisson` generation (10M samples), so loop overhead was about 35% of the total time.
-**Action:** For heavy simulation tasks, batch processing is faster, but `numpy` random number generation itself has a base cost that scales linearly.
+**Action:** Look into thread pooling or batched predictions for `EnsembleModel` or `InferenceStage`.
 
-## 2026-02-26 - [Vectorized Likelihood Calculation]
-**Learning:** Expanding the squared difference term $(z - (pA + B))^2$ in `ParticleStrengthTracker` avoided allocating intermediate $N \times 4$ arrays, resulting in a ~27% speedup (3.14s -> 2.30s) for 100k particles.
-**Action:** When calculating distances or likelihoods against a broadcasted vector, consider expanding the algebraic terms to avoid large intermediate matrix allocations.
+## 2024-05-19 - `_similarity_cache` Optimization
+**Learning:** `_similarity_cache` has a flaw. When it reaches 1000 items, it is cleared completely (`self._similarity_cache.clear()`). This means all cache entries are dropped at once, causing a severe drop in hit rate and potentially leading to a thundering herd problem where many requests suddenly miss the cache and do expensive calculations. It would be better to implement a simple LRU cache or at least not clear the whole dictionary when it gets full, using python's `functools.lru_cache` or a simple LRU dict implementation.
+**Action:** Replace `_similarity_cache` dictionary management with Python's standard `functools.lru_cache` to handle evictions efficiently and naturally without explicitly clearing the whole dict.
+
+## 2024-05-19 - `_similarity_cache` Optimization
+**Learning:** `_similarity_cache` has a flaw. When it reaches 1000 items, it is cleared completely (`self._similarity_cache.clear()`). This means all cache entries are dropped at once, causing a severe drop in hit rate and potentially leading to a thundering herd problem where many requests suddenly miss the cache and do expensive calculations. Also, applying `@lru_cache` directly to a class method caches the `self` argument as part of the key. This prevents the `InferenceStage` instance from being garbage-collected until the cache is evicted or cleared, which can cause memory leaks depending on how often the class is instantiated.
+**Action:** Replace `_similarity_cache` dictionary management with Python's standard `functools.lru_cache` to handle evictions efficiently. To avoid memory leaks with `self`, decouple the cache logic from the class method or be aware of the lifecycle of `InferenceStage` (it's often a singleton in the pipeline).

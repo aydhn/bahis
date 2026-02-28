@@ -1,12 +1,11 @@
-from typing import Any, Dict, List
+from typing import Any, Dict
 import asyncio
+from functools import lru_cache
 from loguru import logger
 import polars as pl
 import numpy as np
 
 from src.pipeline.core import PipelineStage
-from src.system.container import container
-from src.core.model_registry import ModelRegistry
 from src.ingestion.news_rag import NewsRAGAnalyzer
 from src.quant.models.ensemble import EnsembleModel
 from src.quant.risk.entropy_kelly import EntropyKelly
@@ -32,7 +31,6 @@ try:
 except ImportError:
     TransportMetric = None
 
-from src.quant.analysis.game_theory_engine import GameTheoryEngine
 try:
     from src.extensions.market_god import MarketGod
 except ImportError:
@@ -116,6 +114,12 @@ class InferenceStage(PipelineStage):
         else:
             self.mtl_backbone = None
             logger.warning("MultiTaskBackbone module missing.")
+
+    @lru_cache(maxsize=1000)
+    def _get_similar_matches(self, h_odd: float, d_odd: float, a_odd: float) -> Dict[str, Any]:
+        """Cached wrapper for SimilarityEngine to prevent redundant calculations."""
+        feat_vec = np.array([[h_odd, d_odd, a_odd]])
+        return self.similarity_engine.find_similar(feat_vec)
 
     async def execute(self, context: Dict[str, Any]) -> Dict[str, Any]:
         """Parallel analysis for all matches."""
@@ -404,23 +408,8 @@ class InferenceStage(PipelineStage):
             d_odd = context.get("draw_odds", 3.0)
             a_odd = context.get("away_odds", 3.5)
 
-            # Define caching dictionary on the class if it doesn't exist
-            if not hasattr(self, "_similarity_cache"):
-                self._similarity_cache = {}
-
-            cache_key = (round(h_odd, 2), round(d_odd, 2), round(a_odd, 2))
-
-            if cache_key in self._similarity_cache:
-                similar_res = self._similarity_cache[cache_key]
-            else:
-                feat_vec = np.array([[h_odd, d_odd, a_odd]])
-                similar_res = self.similarity_engine.find_similar(feat_vec)
-
-                # Keep cache small to prevent memory leaks in long-running processes
-                if len(self._similarity_cache) > 1000:
-                    self._similarity_cache.clear()
-
-                self._similarity_cache[cache_key] = similar_res
+            # Use LRU cache to efficiently manage identical odds combinations
+            similar_res = self._get_similar_matches(round(h_odd, 2), round(d_odd, 2), round(a_odd, 2))
 
             prediction["similar_matches"] = similar_res
 
