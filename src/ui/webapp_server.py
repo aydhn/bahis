@@ -19,7 +19,6 @@ Kurulum:
 from __future__ import annotations
 
 import json
-import os
 from pathlib import Path
 from typing import Any
 
@@ -28,7 +27,6 @@ from loguru import logger
 try:
     from fastapi import FastAPI, Request
     from fastapi.responses import HTMLResponse, JSONResponse
-    from fastapi.staticfiles import StaticFiles
     import uvicorn
     FASTAPI_OK = True
 except ImportError:
@@ -294,7 +292,8 @@ def _render_webapp_html() -> str:
     cursor: pointer;
     margin-top: 8px;
   }
-  .refresh-btn:active { opacity: 0.8; }
+  .refresh-btn:active:not(:disabled) { opacity: 0.8; }
+  .refresh-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
   .loading { text-align: center; color: var(--dim); padding: 20px; }
 </style>
@@ -501,11 +500,26 @@ document.getElementById('dd-slider').addEventListener('input', function() {
   document.getElementById('dd-val').textContent = this.value;
 });
 
-function refreshAll() {
-  loadPortfolio();
-  loadBets();
-  loadRankings();
-  loadPnLChart();
+async function refreshAll() {
+  const btn = document.querySelector('.refresh-btn');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Yenileniyor...';
+  }
+
+  try {
+    await Promise.all([
+      loadPortfolio(),
+      loadBets(),
+      loadRankings(),
+      loadPnLChart()
+    ]);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = 'Yenile';
+    }
+  }
 }
 
 // Initial load
