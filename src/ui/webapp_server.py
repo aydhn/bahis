@@ -337,14 +337,14 @@ def _render_webapp_html() -> str:
 <div class="section">
   <h2>Risk Ayari</h2>
   <div class="slider-group">
-    <label>
+    <label for="kelly-slider">
       <span>Kelly Carpani</span>
       <span id="kelly-val">0.25</span>
     </label>
     <input type="range" id="kelly-slider" min="0.05" max="1.0" step="0.05" value="0.25">
   </div>
   <div class="slider-group">
-    <label>
+    <label for="dd-slider">
       <span>Max Drawdown (%)</span>
       <span id="dd-val">10</span>
     </label>
@@ -368,7 +368,7 @@ def _render_webapp_html() -> str:
   </div>
 </div>
 
-<button class="refresh-btn" onclick="refreshAll()">Yenile</button>
+<button class="refresh-btn" onclick="refreshAll()" aria-label="Verileri yenile" aria-busy="false" aria-live="polite">Yenile</button>
 
 <script>
 const tg = window.Telegram?.WebApp;
@@ -504,6 +504,7 @@ async function refreshAll() {
   const btn = document.querySelector('.refresh-btn');
   if (btn) {
     btn.disabled = true;
+    btn.setAttribute('aria-busy', 'true');
     btn.textContent = 'Yenileniyor...';
   }
 
@@ -517,6 +518,7 @@ async function refreshAll() {
   } finally {
     if (btn) {
       btn.disabled = false;
+      btn.setAttribute('aria-busy', 'false');
       btn.textContent = 'Yenile';
     }
   }
