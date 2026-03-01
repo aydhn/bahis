@@ -65,9 +65,9 @@ class DigitalTwin:
                 return {"error": "DB missing"}
 
             # Fetch random finished matches
-            query = f"SELECT * FROM matches WHERE status = 'FINISHED' ORDER BY RANDOM() LIMIT {n_matches}"
+            query = "SELECT * FROM matches WHERE status = 'FINISHED' ORDER BY RANDOM() LIMIT ?"
             try:
-                historical_matches = db.query(query)
+                historical_matches = db.query(query, [n_matches])
             except Exception:
                 # Fallback mock
                 historical_matches = pl.DataFrame({

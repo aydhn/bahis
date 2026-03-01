@@ -12,3 +12,8 @@
 **Vulnerability:** `DBManager.upsert_match` constructed SQL queries by directly interpolating dictionary keys into the `INSERT` statement. This allowed SQL injection if the keys were attacker-controlled.
 **Learning:** Even internal methods can be dangerous sinks if they assume trusted input structure. Dynamic SQL construction from object keys is a common but subtle vulnerability.
 **Prevention:** Whitelist valid column names based on the database schema. Filter all input dictionaries against this whitelist before constructing SQL queries.
+
+## 2026-02-27 - SQL Injection via String Interpolation in db.query()
+**Vulnerability:** `src/system/digital_twin.py` constructed SQL queries by interpolating integer inputs directly into the `SELECT` query statement via Python f-strings. This bypassed the parameterized query support.
+**Learning:** Even though the function type hints indicate an integer input, explicitly allowing string concatenation in database queries bypasses any built-in sanitation and introduces potential vector injection vulnerabilities if the types are bypassed anywhere in the calling stack.
+**Prevention:** Never use f-strings to pass variables into SQL query strings. Always use parameterized queries and pass parameters using a list (`db.query(sql, [params])`).
