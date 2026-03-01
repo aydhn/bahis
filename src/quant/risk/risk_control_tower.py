@@ -16,7 +16,7 @@ from loguru import logger
 
 from src.core.regime_kelly import RegimeKelly, RegimeState
 from src.core.cognitive_guardian import CognitiveGuardian
-from src.quant.analysis.pre_mortem import PreMortemAnalyzer, PreMortemReport
+from src.quant.analysis.pre_mortem import PreMortemAnalyzer
 from src.quant.risk.physics_modulator import PhysicsRiskModulator
 from src.quant.finance.treasury import TreasuryEngine
 from src.quant.treasury.synthetic_engine import SyntheticEngine
@@ -43,12 +43,7 @@ from src.extensions.smart_money import SmartMoneyDetector
 from src.core.boardroom import Boardroom
 
 # Import Physics Reports for Type Hinting (Optional, but good for clarity)
-try:
-    from src.quant.physics.fisher_geometry import FisherReport
-    from src.quant.physics.ricci_flow import RicciReport
-    from src.quant.analysis.hypergraph_unit import HypergraphReport
-except ImportError:
-    pass
+# Imports removed to avoid F401
 
 @dataclass
 class RiskDecision:
@@ -192,7 +187,7 @@ class RiskControlTower:
         # Here we just calculate what the fair DNB odds SHOULD be based on 1X2.
         # If the bet is a HOME win, we check if Home DNB is a safer alternative with good EV.
 
-        odds_home = bet_candidate.get("odds", 0.0)
+        # odds_home = bet_candidate.get("odds", 0.0) # Unused
         # We need draw and away odds to calculate synthetic. Assuming they might be in context or bet_candidate.
         # If not available, we skip.
 
@@ -370,7 +365,7 @@ class RiskControlTower:
 
         try:
             ev = bet_candidate.get("ev", 0.05)
-            stake = 1.0 # Normalized
+            # stake = 1.0 # Normalized, unused
 
             # Scenario A: Market stays stable, we win EV
             # Scenario B: Market drifts (smart money opposite), we lose stake (worst case) or just -EV
@@ -488,7 +483,8 @@ class RiskControlTower:
         # --- 5. Physics Modulation ---
         # Apply advanced physics multipliers
         physics_ctx = self._extract_physics_context(match_id, context)
-        phys_mult = self.physics_modulator.modulate(bet_candidate, physics_ctx)
+        ricci_rep = context.get("physics_reports", {}).get("ricci_report")
+        phys_mult = self.physics_modulator.modulate(bet_candidate, physics_ctx, ricci_rep)
 
         # Hypergraph Penalty Integration
         # If we had a structural warning, reduce stake by 20%
@@ -528,7 +524,7 @@ class RiskControlTower:
 
         if phys_mult <= 0.0:
             decision.approved = False
-            decision.rejection_reason = "Physics/Board Kill Signal"
+            decision.rejection_reason = f"Physics/Board Kill Signal: board={board_mult}, epi={epi_mult}, sm={sm_mult}, hawkes={hawkes_mult}, gt={gt_mult}"
             return decision
 
         if phys_mult != 1.0:
@@ -644,7 +640,7 @@ class RiskControlTower:
         decision.stake_amount = approved_amount
         # Re-calculate pct based on approved amount
         decision.stake_pct = approved_amount / max(self.treasury.state.total_capital, 1.0)
-        decision.rationale = f"Approved. Edge: {kelly_res.edge:.2%}. " + "; ".join(decision.adjustments) + f"\n\nBoard Minutes:\n" + "\n".join(board_decision.minutes)
+        decision.rationale = f"Approved. Edge: {kelly_res.edge:.2%}. " + "; ".join(decision.adjustments) + "\n\nBoard Minutes:\n" + "\n".join(board_decision.minutes)
 
         return decision
 
@@ -661,5 +657,9 @@ class RiskControlTower:
         if "fractal_reports" in physics_reports and match_id in physics_reports["fractal_reports"]:
              ctx["fractal_regime"] = physics_reports["fractal_reports"][match_id].regime
 
-        # Add other extractions as needed by PhysicsRiskModulator
+        # Pass multipliers from context if they exist directly
+        if "ricci_report" in physics_reports:
+             # Modulator expects ricci_report directly, but in RiskControlTower it's passed separately!
+             pass
+
         return ctx

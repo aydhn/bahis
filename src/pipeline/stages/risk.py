@@ -1,5 +1,4 @@
 from typing import Dict, Any, List, Optional
-import numpy as np
 import polars as pl
 from loguru import logger
 
@@ -82,7 +81,20 @@ class RiskStage(PipelineStage):
                 "motivation_mismatch": decision.get("motivation_mismatch", 0.0),
                 "home_motivation": decision.get("home_motivation", 5.0),
                 "away_motivation": decision.get("away_motivation", 5.0),
-                "teleology_narrative": decision.get("teleology_narrative", "")
+                "teleology_narrative": decision.get("teleology_narrative", ""),
+                "sample_size": decision.get("sample_size", 100),
+                "model_count": decision.get("model_count", 1),
+                "recent_results": decision.get("recent_results", []),
+                "brier_score": decision.get("brier_score", 0.1),
+                "epistemic_uncertainty": decision.get("epistemic_uncertainty", 0.5),
+                "meta_quality_score": decision.get("meta_quality_score", 0.5),
+                "board_multiplier": decision.get("board_multiplier", 1.0),
+                "epistemic_multiplier": decision.get("epistemic_multiplier", 1.0),
+                "hawkes_multiplier": decision.get("hawkes_multiplier", 1.0),
+                "sm_multiplier": decision.get("sm_multiplier", 1.0),
+                "gt_multiplier": decision.get("gt_multiplier", 1.0),
+                "fractal_mult": decision.get("fractal_mult", 1.0),
+                "game_theory_status": decision.get("game_theory_status", "NASH_EQUILIBRIUM")
             }
 
             # --- DELEGATE TO TOWER ---

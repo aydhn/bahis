@@ -115,8 +115,10 @@ class InferenceStage(PipelineStage):
             self.mtl_backbone = None
             logger.warning("MultiTaskBackbone module missing.")
 
-    @lru_cache(maxsize=1000)
-    def _get_similar_matches(self, h_odd: float, d_odd: float, a_odd: float) -> Dict[str, Any]:
+        # Bind lru_cache to instance method to prevent memory leak (holding self reference globally)
+        self._get_similar_matches = lru_cache(maxsize=1000)(self._get_similar_matches_impl)
+
+    def _get_similar_matches_impl(self, h_odd: float, d_odd: float, a_odd: float) -> Dict[str, Any]:
         """Cached wrapper for SimilarityEngine to prevent redundant calculations."""
         feat_vec = np.array([[h_odd, d_odd, a_odd]])
         return self.similarity_engine.find_similar(feat_vec)
