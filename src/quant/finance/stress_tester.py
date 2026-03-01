@@ -70,7 +70,11 @@ class PortfolioStressTester:
         try:
             from src.core.rust_engine import RustEngine
             rust_engine = RustEngine()
-            if rust_engine.engine_name() != "Pure Python":
+            if callable(rust_engine.engine_name):
+                engine_type = rust_engine.engine_name()
+            else:
+                engine_type = rust_engine.engine_name
+            if engine_type != "Pure Python":
                 # Assuming rust_engine can run faster simulations if we had a dedicated func.
                 # For now, just initialize it to ensure Rust/Numba is warm.
                 pass
