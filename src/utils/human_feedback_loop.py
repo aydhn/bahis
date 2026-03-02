@@ -27,14 +27,11 @@ Teknoloji: SQLite + Telegram Polls + Reward Function
 """
 from __future__ import annotations
 
-import json
 import sqlite3
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
 
-import numpy as np
 from loguru import logger
 
 ROOT = Path(__file__).resolve().parent.parent.parent
