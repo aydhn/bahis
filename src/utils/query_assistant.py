@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import re
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -201,8 +201,18 @@ Sadece SQL sorgusu döndür, açıklama ekleme. Tehlikeli (DROP, DELETE, UPDATE)
             sql = response.text.strip()
             # SQL temizle
             sql = sql.replace("```sql", "").replace("```", "").strip()
-            # Güvenlik kontrolü
-            if any(kw in sql.upper() for kw in ["DROP", "DELETE", "UPDATE", "INSERT", "ALTER"]):
+            # Güvenlik kontrolü - DuckDB read_only mode still allows reading arbitrary files
+            # via read_csv, read_parquet etc. Block these explicitly.
+            dangerous_kws = [
+                "DROP", "DELETE", "UPDATE", "INSERT", "ALTER", "CREATE",
+                "READ_CSV", "READ_PARQUET", "READ_JSON", "COPY",
+                "ATTACH", "DETACH", "PRAGMA", "CALL", "INSTALL", "LOAD", "SYSTEM"
+            ]
+
+            # Use regex with word boundaries to avoid matching substrings like "created_at"
+            pattern = re.compile(rf"\b({'|'.join(dangerous_kws)})\b", re.IGNORECASE)
+            if pattern.search(sql):
+                logger.warning(f"[Security] Blocked potentially dangerous SQL: {sql}")
                 return None
             return sql
         except Exception as e:
