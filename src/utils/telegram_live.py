@@ -9,11 +9,9 @@ Maç bittiğinde "Analiz Başarısı: ✅/❌" damgası vurulur.
 """
 from __future__ import annotations
 
-import asyncio
 import time
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any
 
 from loguru import logger
 
