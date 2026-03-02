@@ -329,7 +329,7 @@ def _render_webapp_html() -> str:
 <div class="section">
   <h2>PnL Grafigi</h2>
   <div class="chart-container">
-    <canvas id="pnlChart"></canvas>
+    <canvas id="pnlChart" role="img" aria-label="Kasa PnL Grafigi"></canvas>
   </div>
 </div>
 
