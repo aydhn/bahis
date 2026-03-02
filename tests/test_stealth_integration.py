@@ -1,4 +1,3 @@
-
 import asyncio
 import json
 from pathlib import Path
@@ -26,12 +25,16 @@ async def test_stealth_browser_lifecycle():
          patch("src.ingestion.stealth_browser.StealthBrowser._try_playwright_stealth", new_callable=AsyncMock) as mock_pw:
 
         mock_uc.return_value = False # Force fallback to next
-        mock_pw.return_value = True # Simulate success
+
+        async def mock_pw_side_effect():
+            browser._active_engine = "playwright-stealth"
+            return True
+        mock_pw.side_effect = mock_pw_side_effect # Simulate success and state mutation
 
         browser = StealthBrowser(headless=True)
         await browser.start()
 
-        assert browser.engine == "playwright-stealth"
+        assert browser._active_engine == "playwright-stealth"
 
         # Mock goto
         browser._page = AsyncMock()
@@ -48,10 +51,11 @@ async def test_api_hijacker_persistence(tmp_path):
     # Setup temporary data dir
     data_dir = tmp_path / "data"
     data_dir.mkdir()
+    endpoints_file = data_dir / "endpoints.json"
 
-    # Patch DATA_DIR in the module to point to tmp_path
+    # Patch ENDPOINTS_FILE explicitly
     with patch("src.ingestion.api_hijacker.DATA_DIR", data_dir), \
-         patch("src.ingestion.api_hijacker.ENDPOINTS_FILE", data_dir / "endpoints.json"):
+         patch("src.ingestion.api_hijacker.ENDPOINTS_FILE", endpoints_file):
 
         hijacker = APIHijacker()
 
@@ -62,10 +66,10 @@ async def test_api_hijacker_persistence(tmp_path):
         assert "http://api.test/v1/event/*" in hijacker.discovered_endpoints
 
         # Trigger save (usually happens in loop, we call manually or verify file write)
-        hijacker._save_endpoints()
+        await hijacker._save_endpoints_async()
 
         # Verify file exists
-        assert (data_dir / "endpoints.json").exists()
+        assert endpoints_file.exists()
 
         # Create new instance, check load
         hijacker2 = APIHijacker()
