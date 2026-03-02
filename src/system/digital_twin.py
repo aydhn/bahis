@@ -11,9 +11,8 @@ Concepts:
   - Time Warp: Simulating a 90-minute match in milliseconds.
   - Scenario Injection: Injecting "What If" scenarios (e.g., Red Card at 10th min).
 """
-import asyncio
 import time
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, Optional
 from loguru import logger
 import polars as pl
 
