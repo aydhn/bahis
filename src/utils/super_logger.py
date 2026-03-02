@@ -27,7 +27,6 @@ Teknoloji: loguru (Python'un en gelişmiş log kütüphanesi)
 from __future__ import annotations
 
 import json
-import os
 import time
 from contextlib import contextmanager
 from dataclasses import dataclass, field
