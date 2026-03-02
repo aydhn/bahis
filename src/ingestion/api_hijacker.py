@@ -19,7 +19,6 @@ from __future__ import annotations
 import asyncio
 import json
 import re
-import time
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -247,7 +246,8 @@ class APIHijacker:
 
             # Daha seyrek çalış (her 10 dk)
             for _ in range(20):
-                if shutdown.is_set(): break
+                if shutdown.is_set():
+                    break
                 await asyncio.sleep(30)
 
         await sb.close()
