@@ -4,7 +4,6 @@ Edge-TTS ile Türkçe sesli analiz bülteni oluşturur.
 """
 from __future__ import annotations
 
-import asyncio
 from datetime import datetime
 from pathlib import Path
 
