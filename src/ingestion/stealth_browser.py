@@ -8,10 +8,7 @@ from __future__ import annotations
 
 import asyncio
 import random
-import sys
 import shutil
-from pathlib import Path
-from typing import Any
 
 from loguru import logger
 
@@ -96,7 +93,9 @@ class StealthBrowser:
     async def check_compatibility(self) -> bool:
         """Verifies if undetected-chromedriver and Chrome are compatible."""
         try:
-            import undetected_chromedriver as uc
+            import importlib.util
+            if importlib.util.find_spec("undetected_chromedriver") is None:
+                raise ImportError("No module named \'undetected_chromedriver\'")
             # Basic check: verify Chrome binary exists
             chrome_path = shutil.which("google-chrome") or shutil.which("chrome") or shutil.which("chromium")
             if not chrome_path:
@@ -256,8 +255,10 @@ class StealthBrowser:
 
                 # Simple mapping for selector (heuristic)
                 by = By.CSS_SELECTOR
-                if selector.startswith("//"): by = By.XPATH
-                elif selector.startswith("#"): by = By.ID
+                if selector.startswith("//"):
+                    by = By.XPATH
+                elif selector.startswith("#"):
+                    by = By.ID
 
                 def _perform_selenium():
                     if action_type == "scroll":
