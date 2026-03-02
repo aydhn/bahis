@@ -5,7 +5,6 @@ Ağır feature hesaplamalarını cache'ler, TTL ile eskiyen veriyi temizler.
 from __future__ import annotations
 
 import hashlib
-import pickle
 from pathlib import Path
 from typing import Any, Callable
 
