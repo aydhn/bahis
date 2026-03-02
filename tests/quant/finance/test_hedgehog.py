@@ -50,8 +50,8 @@ class TestHedgeHog(unittest.TestCase):
         # Explicitly remove the imported module to prevent test pollution
         if 'src.quant.finance.hedgehog' in sys.modules:
             del sys.modules['src.quant.finance.hedgehog']
-        if 'src.quant' in sys.modules:
-            del sys.modules['src.quant']
+        # if 'src.quant' in sys.modules:
+            # del sys.modules['src.quant']
 
     def test_check_hedge_opportunity_invalid_odds(self):
         """Test with invalid original or live odds (<= 1.0)."""
