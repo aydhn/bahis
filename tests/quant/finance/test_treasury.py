@@ -102,3 +102,55 @@ def test_stress_test_portfolio(tmp_path):
     assert result["projected_loss"] == 12000.0
     assert result["projected_capital"] == -2000.0
     assert result["liquidity_ratio"] == 0.0
+
+def test_get_sniper_stake(tmp_path):
+    """
+    Test get_sniper_stake functionality.
+    Rules:
+    - Min of 50.0 or 1% of total_capital
+    - Returns 0.0 if absolute liquidity (total - locked) < stake
+    """
+    engine = TreasuryEngine(state_path=tmp_path / "treasury_state.json")
+
+    # Case 1: 1% of total capital is less than 50.0
+    # 1000 * 0.01 = 10.0 (which is < 50.0)
+    engine.state.total_capital = 1000.0
+    engine.state.locked_capital = 0.0
+
+    stake = engine.get_sniper_stake()
+    assert stake == 10.0
+
+    # Case 2: 50.0 is less than 1% of total capital
+    # 10000 * 0.01 = 100.0 (50.0 < 100.0)
+    engine.state.total_capital = 10000.0
+    engine.state.locked_capital = 0.0
+
+    stake = engine.get_sniper_stake()
+    assert stake == 50.0
+
+    # Case 3: Insufficient liquidity (total - locked < stake)
+    # 1000 * 0.01 = 10.0 stake
+    # But locked is 995.0, so available is 5.0 (5.0 < 10.0 stake)
+    engine.state.total_capital = 1000.0
+    engine.state.locked_capital = 995.0
+
+    stake = engine.get_sniper_stake()
+    assert stake == 0.0
+
+    # Case 4: Insufficient liquidity (total - locked < stake) when stake is 50.0
+    # 10000 * 0.01 = 100.0, so stake is 50.0
+    # locked is 9960.0, available is 40.0 (40.0 < 50.0 stake)
+    engine.state.total_capital = 10000.0
+    engine.state.locked_capital = 9960.0
+
+    stake = engine.get_sniper_stake()
+    assert stake == 0.0
+
+    # Case 5: Exact boundary of sufficient liquidity
+    # 1000 * 0.01 = 10.0 stake
+    # locked is 990.0, available is 10.0 (10.0 == 10.0 stake) -> should return 10.0
+    engine.state.total_capital = 1000.0
+    engine.state.locked_capital = 990.0
+
+    stake = engine.get_sniper_stake()
+    assert stake == 10.0
