@@ -27,13 +27,10 @@ Fallback: Basit ASCII art + Mermaid.js text
 """
 from __future__ import annotations
 
-import io
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
 
-import numpy as np
 from loguru import logger
 
 try:
@@ -47,7 +44,6 @@ try:
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
-    import matplotlib.patches as mpatches
     MPL_OK = True
 except ImportError:
     MPL_OK = False
