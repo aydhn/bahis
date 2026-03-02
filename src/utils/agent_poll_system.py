@@ -26,7 +26,6 @@ Teknoloji: python-telegram-bot (Polls / Quiz Mode)
 """
 from __future__ import annotations
 
-import time
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
@@ -34,12 +33,11 @@ from typing import Any
 from loguru import logger
 
 try:
-    from telegram import Bot, InlineKeyboardButton, InlineKeyboardMarkup
+    from telegram import InlineKeyboardButton, InlineKeyboardMarkup
     TELEGRAM_OK = True
 except ImportError:
     TELEGRAM_OK = False
     logger.debug("python-telegram-bot yüklü değil – poll sistemi offline modda.")
-
 
 # ═══════════════════════════════════════════════
 #  VERİ YAPILARI
@@ -54,7 +52,6 @@ class AgentVote:
     reasoning: str = ""         # Gerekçe (kısa)
     key_metric: str = ""        # En önemli metrik (ör: "EV=+8.5%")
     risk_flag: str = ""         # Risk uyarısı (varsa)
-
 
 @dataclass
 class CouncilDecision:
@@ -83,7 +80,6 @@ class CouncilDecision:
     detail_message_id: int = 0
     user_vote: str = ""          # Kullanıcının oyu (callback ile gelir)
 
-
 @dataclass
 class PollStats:
     """Anket istatistikleri."""
@@ -92,7 +88,6 @@ class PollStats:
     user_disagreed: int = 0
     council_accuracy: float = 0.0  # Konsey kararının tutma oranı
     user_accuracy: float = 0.0     # Kullanıcı kararının tutma oranı
-
 
 # ═══════════════════════════════════════════════
 #  AGENT POLL SYSTEM (Ana Sınıf)
@@ -247,7 +242,7 @@ class AgentPollSystem:
         )
 
         lines = [
-            f"🏛️ <b>KARAR KONSEYİ</b>",
+            "🏛️ <b>KARAR KONSEYİ</b>",
             f"⚽ <b>{council.home} vs {council.away}</b>",
             f"📊 Oran: {council.odds:.2f} | EV: {council.ev_pct:+.1%} | "
             f"Kelly: {council.kelly_pct:.1%}",
