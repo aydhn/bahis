@@ -14,3 +14,7 @@
 ## 2026-03-01 - lru_cache Memory Leak on Class Methods
 **Learning:** Using `@lru_cache` directly on a class method caches the `self` argument, which keeps the instance alive and prevents garbage collection, leading to memory leaks. This is especially problematic if the class is instantiated multiple times.
 **Action:** Apply `lru_cache` to instance methods inside `__init__` instead of using the decorator on the class method definition (e.g., `self.method = lru_cache(maxsize=...)(self._method_impl)`).
+
+## $(date +%Y-%m-%d) - O(1) Cache Eviction using Python 3.7+ Dicts
+**Learning:** LRU and TTL caches tracking oldest entries via `min(dict, key=...)` create an O(N) performance bottleneck for large caches. In Python 3.7+, dictionaries strictly maintain insertion order, meaning the oldest un-evicted item is always the first one `next(iter(dict))`.
+**Action:** Always utilize dictionary insertion order for caches in modern Python. Delete and re-insert items to refresh their TTL/LRU position to the end. For max size eviction, use `del dict[next(iter(dict))]` for O(1) performance instead of O(N) `min()` scans.

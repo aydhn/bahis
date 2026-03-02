@@ -59,6 +59,7 @@ class TTLCache:
 
     def set(self, key: str, value: Any) -> None:
         """Cache'e veri yaz."""
+        self._store.pop(key, None)
         if len(self._store) >= self._max_size:
             self._evict_oldest()
         self._store[key] = (time.time(), value)
@@ -92,12 +93,24 @@ class TTLCache:
     def _evict_oldest(self):
         """En eski (veya süresi dolmuş) entry'yi sil."""
         now = time.time()
-        expired = [k for k, (ts, _) in self._store.items() if now - ts > self._ttl]
-        for k in expired:
+
+        # Python 3.7+ dictionaries maintain insertion order.
+        # Since items are inserted chronologically, the oldest items are at the beginning.
+        # We can safely iterate from the start and stop at the first non-expired item.
+        keys_to_del = []
+        for k, (ts, _) in self._store.items():
+            if now - ts > self._ttl:
+                keys_to_del.append(k)
+            else:
+                break
+
+        for k in keys_to_del:
             del self._store[k]
 
+        # If still at max capacity, remove the oldest remaining item (first in the dict).
+        # This replaces an O(N) min() scan with an O(1) operation.
         if len(self._store) >= self._max_size:
-            oldest_key = min(self._store, key=lambda k: self._store[k][0])
+            oldest_key = next(iter(self._store))
             del self._store[oldest_key]
 
     @property
@@ -227,11 +240,14 @@ def cached(ttl: float = 3600.0, maxsize: int = 128):
                 return entry[1]
 
             result = fn(*args, **kwargs)
+
+            # Maintain insertion order by deleting existing key before adding it again
+            _cache.pop(key, None)
             _cache[key] = (time.time(), result)
 
-            # Maxsize aşılırsa en eskiyi sil
+            # Maxsize aşılırsa en eskiyi sil (O(1) in dict)
             if len(_cache) > maxsize:
-                oldest = min(_cache, key=lambda k: _cache[k][0])
+                oldest = next(iter(_cache))
                 del _cache[oldest]
 
             return result
