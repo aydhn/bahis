@@ -13,10 +13,8 @@ Teknoloji:
   - HTML/Markdown formatting
   - Retry mekanizması
 """
-import asyncio
 import os
-from dataclasses import asdict
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 from loguru import logger
 
@@ -81,7 +79,8 @@ class TelegramReporter:
 
         # Emoji seçimi
         emoji = "🟢" if conf > 0.7 else "🟡"
-        if conf > 0.85: emoji = "🔥"
+        if conf > 0.85:
+            emoji = "🔥"
 
         msg = (
             f"<b>{emoji} YENİ POZİSYON ALINDI</b>\n\n"
@@ -146,13 +145,17 @@ class TelegramReporter:
 
         # Trend Emojisi
         trend = "🚀" if daily_pnl > 0 else "🔻"
-        if daily_pnl == 0: trend = "➖"
+        if daily_pnl == 0:
+            trend = "➖"
 
         # Risk Durumu
         risk_status = "GÜVENLİ"
-        if drawdown < -0.10: risk_status = "DİKKAT"
-        if drawdown < -0.20: risk_status = "KRİTİK"
-        if stats.get("circuit_breaker", False): risk_status = "STOP-LOSS (KİLİTLİ)"
+        if drawdown < -0.10:
+            risk_status = "DİKKAT"
+        if drawdown < -0.20:
+            risk_status = "KRİTİK"
+        if stats.get("circuit_breaker", False):
+            risk_status = "STOP-LOSS (KİLİTLİ)"
 
         msg = (
             f"<b>{trend} GÜNLÜK YÖNETİCİ ÖZETİ</b>\n"
