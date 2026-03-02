@@ -5,7 +5,6 @@ Dataset'leri ve .pth model dosyalarını versiyonlar.
 from __future__ import annotations
 
 import subprocess
-import sys
 from pathlib import Path
 from datetime import datetime
 
