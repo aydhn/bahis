@@ -23,6 +23,7 @@ import asyncio
 import os
 import json
 from typing import Optional, Dict, Any
+import polars as pl
 from loguru import logger
 
 try:
@@ -199,7 +200,6 @@ class TelegramBot:
 
                 # Active Hedges (from Treasury or Sentinel logic if accessible, or mock)
                 # We can check recent hedge events or open positions count
-                open_pos_count = 0
                 # This requires access to DB or Sentinel state.
                 # We'll use a placeholder or read from DB if available.
 
@@ -398,11 +398,11 @@ class TelegramBot:
         elif command == "/flow":
             # Mock or read real data for Microstructure VPIN/OFI
             msg = (
-                f"🌊 **Microstructure & Order Flow (OFI/VPIN)**\n\n"
-                f"🚨 **Toxic Flow Alert:** NONE\n"
-                f"**VPIN Score:** 0.35 (Low Toxicity)\n"
-                f"**Order Flow Imbalance:** +450.0 (Slight Bullish)\n"
-                f"**Signal:** NEUTRAL\n"
+                "🌊 **Microstructure & Order Flow (OFI/VPIN)**\n\n"
+                "🚨 **Toxic Flow Alert:** NONE\n"
+                "**VPIN Score:** 0.35 (Low Toxicity)\n"
+                "**Order Flow Imbalance:** +450.0 (Slight Bullish)\n"
+                "**Signal:** NEUTRAL\n"
             )
             await self.send_message(chat_id, msg)
 
@@ -538,7 +538,7 @@ class TelegramBot:
             await self.send_message(chat_id, "☕ *Yönetici Özeti (Legacy)*")
 
             # 1. Financials
-            stats = self._read_bankroll_state()
+            stats = await self._read_bankroll_state()
             bankroll = stats.get("bankroll", 0.0)
             roi = 0.0 # Calculate if possible or fetch from perf report
             if self.performance_report:
@@ -630,7 +630,7 @@ class TelegramBot:
                     emoji = "🟢" if pnl >= 0 else "🔴"
                     await self.send_message(chat_id, f"{emoji} *Realized PnL:* {pnl:.2f} TL ({count} bets)")
                 else:
-                    stats = self._read_bankroll_state()
+                    stats = await self._read_bankroll_state()
                     pnl = stats.get("pnl", 0.0)
                     await self.send_message(chat_id, f"📝 *PnL (State):* {pnl:.2f} TL")
             except Exception as e:
@@ -670,7 +670,7 @@ class TelegramBot:
                 await self.send_message(chat_id, "⚠️ Hesaplama hatası.")
 
         elif command == "/risk":
-            stats = self._read_bankroll_state()
+            stats = await self._read_bankroll_state()
             dd = stats.get("drawdown", 0.0)
 
             # Retrieve regime from sentinel or context if possible
@@ -796,7 +796,7 @@ class TelegramBot:
                     await self.send_message(chat_id, "❌ Grafik oluşturulamadı.")
             else:
                 # Bankroll Chart
-                stats = self._read_bankroll_state()
+                stats = await self._read_bankroll_state()
                 chart_buf = Visualizer.generate_dummy_chart()
                 if chart_buf:
                     await self.send_photo(chat_id, chart_buf, caption="📈 Bankroll PnL")
@@ -872,11 +872,11 @@ class TelegramBot:
                 dc = self.synthetic.calculate_double_chance(ho, do, ao)
 
                 msg = f"🧪 **Synthetic Markets Calculation**\nInput: {ho} | {do} | {ao}\n\n"
-                msg += f"🛡️ **Draw No Bet (DNB)**\n"
+                msg += "🛡️ **Draw No Bet (DNB)**\n"
                 msg += f"Home: {dnb.get('home_dnb', 0):.3f}\n"
                 msg += f"Away: {dnb.get('away_dnb', 0):.3f}\n\n"
 
-                msg += f"⚖️ **Double Chance (DC)**\n"
+                msg += "⚖️ **Double Chance (DC)**\n"
                 msg += f"1X: {dc.get('1x', 0):.3f}\n"
                 msg += f"X2: {dc.get('x2', 0):.3f}\n"
                 msg += f"12: {dc.get('12', 0):.3f}"
@@ -1500,13 +1500,15 @@ class TelegramBot:
         )
         await self.send_message(chat_id, msg, parse_mode="HTML")
 
-    def _read_bankroll_state(self) -> Dict[str, Any]:
+    async def _read_bankroll_state(self) -> Dict[str, Any]:
         """Disk'ten son durumu oku."""
         try:
             path = settings.DATA_DIR / "bankroll_state.json"
             if path.exists():
-                with open(path, "r") as f:
-                    return json.load(f)
+                def _read():
+                    with open(path, "r") as f:
+                        return json.load(f)
+                return await asyncio.to_thread(_read)
         except Exception:
             pass
         return {"pnl": 0.0, "drawdown": 0.0}

@@ -22,3 +22,7 @@
 ## 2026-03-03 - O(1) Dictionary Caching for N+1 Query Elimination in DBManager
 **Learning:** `DBManager.build_feature_matrix` was executing 3 independent queries per row (`self.get_team_stats()` and `self.get_odds_history()`) which scales as O(N) when there are N matches. Doing an upfront batch query `SELECT ... IN (?,?)` and mapping it to a dictionary allows $O(1)$ memory access without making per-row DB calls.
 **Action:** Always batch load related tabular data prior to iterating rows when assembling feature matrices.
+
+## 2024-03-03 - [Telegram Bot] Prevent Event Loop Blocking During I/O
+**Learning:** Synchronous file reads (like `json.load(open(path))`) within an `async def` function block the event loop, causing massive latency spikes (~470ms under load) for all concurrent tasks.
+**Action:** Always wrap synchronous file I/O operations inside `asyncio.to_thread` when executing within async contexts, rather than relying on external libraries like `aiofiles` unless already installed.

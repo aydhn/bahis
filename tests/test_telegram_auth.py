@@ -1,8 +1,14 @@
+from unittest.mock import patch
+import sys
+from unittest.mock import MagicMock
+sys.modules["scipy"] = MagicMock()
+sys.modules["scipy.stats"] = MagicMock()
+sys.modules["scipy.optimize"] = MagicMock()
+sys.modules["scipy.special"] = MagicMock()
+sys.modules["scipy.integrate"] = MagicMock()
 import unittest
 import asyncio
 import os
-import sys
-from unittest.mock import MagicMock, patch
 
 # Ensure src is in path
 sys.path.append(os.getcwd())
