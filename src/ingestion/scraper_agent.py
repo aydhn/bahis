@@ -8,9 +8,7 @@ from __future__ import annotations
 import asyncio
 import random
 import re
-import time
 from datetime import datetime
-from typing import Any
 
 from loguru import logger
 
@@ -45,10 +43,6 @@ except ImportError:
 from src.ingestion.api_hijacker import APIHijacker
 from src.ingestion.stealth_browser import StealthBrowser
 from src.core.mimic_engine import MimicEngine
-
-def _jitter(min_s: float = 1.0, max_s: float = 4.0):
-    """Rastgele bekleme süresi – bot tespitinden kaçınmak için."""
-    time.sleep(random.uniform(min_s, max_s))
 
 
 async def _async_jitter(min_s: float = 1.0, max_s: float = 4.0):
@@ -488,16 +482,8 @@ class ScraperAgent:
         self._transfermarkt = TransfermarktScraper(hijacker=self._hijacker)
 
         # Her scraper'a ayrı circuit breaker
-        from src.core.circuit_breaker import CircuitBreakerRegistry, CBConfig
+        from src.core.circuit_breaker import CircuitBreakerRegistry
         self._cb_registry = cb_registry or CircuitBreakerRegistry()
-        scraper_config = CBConfig(
-            failure_threshold=3,
-            recovery_timeout=3600.0,
-            half_open_max_calls=2,
-            success_threshold=2,
-            backoff_multiplier=1.5,
-            max_recovery_timeout=14400.0,
-        )
         self._cb_mackolik = self._cb_registry.get_or_create("scraper:mackolik", "scraper")
         self._cb_sofascore = self._cb_registry.get_or_create("scraper:sofascore", "scraper")
         self._cb_transfermarkt = self._cb_registry.get_or_create("scraper:transfermarkt", "scraper")
