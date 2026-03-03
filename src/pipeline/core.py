@@ -194,3 +194,58 @@ def create_shadow_pipeline(bus: EventBus = None) -> PipelineEngine:
     engine.add_stage(RiskStage())
 
     return engine
+
+class LightweightInferenceStage(PipelineStage):
+    """Lightweight inference simulation for Digital Twin."""
+    def __init__(self):
+        super().__init__("lightweight_inference")
+
+    async def execute(self, context: Dict[str, Any]) -> Dict[str, Any]:
+        match_data = context.get("match_data", {})
+        home_odds = match_data.get("home_odds", 2.0)
+
+        # Simulate a model prediction based on odds (favorites usually win)
+        implied_prob = 1.0 / home_odds
+        model_prob = implied_prob * 1.05  # Mild edge
+
+        decision = "HOME" if model_prob > 0.5 else "SKIP"
+
+        return {"decision": decision}
+
+class LightweightRiskStage(PipelineStage):
+    """Lightweight risk simulation for Digital Twin."""
+    def __init__(self):
+        super().__init__("lightweight_risk")
+
+    async def execute(self, context: Dict[str, Any]) -> Dict[str, Any]:
+        match_data = context.get("match_data", {})
+        decision = context.get("decision", "SKIP")
+
+        home_score = match_data.get("home_score", 1)  # Default mock
+        away_score = match_data.get("away_score", 0)
+
+        winner = "HOME"
+        if away_score > home_score:
+            winner = "AWAY"
+        elif away_score == home_score:
+            winner = "DRAW"
+
+        stake = 100.0  # Fixed unit for sim
+        pnl = 0.0
+        won = False
+
+        if decision == "HOME":
+            if winner == "HOME":
+                pnl = stake * (match_data.get("home_odds", 2.0) - 1)
+                won = True
+            else:
+                pnl = -stake
+
+        return {"result": winner, "pnl": pnl, "won": won}
+
+def create_lightweight_pipeline(bus: EventBus = None) -> PipelineEngine:
+    """Create a specialized lightweight pipeline for speed."""
+    engine = PipelineEngine(bus=bus)
+    engine.add_stage(LightweightInferenceStage())
+    engine.add_stage(LightweightRiskStage())
+    return engine
