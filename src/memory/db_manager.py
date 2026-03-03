@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 import duckdb
 import polars as pl
 from loguru import logger
+import statistics
 
 DB_PATH = Path(__file__).resolve().parents[2] / "data" / "bahis.duckdb"
 
@@ -263,15 +264,36 @@ class DBManager:
         if matches.is_empty():
             return matches
 
+        # O(1) Memory Caches to prevent N+1 Queries
+        teams = set(matches["home_team"].to_list()) | set(matches["away_team"].to_list())
+        teams = [t for t in teams if t]
+
+        match_ids = [m for m in matches["match_id"].to_list() if m]
+
+        # Batch load team stats
+        team_stats_cache = {}
+        if teams:
+            placeholders = ", ".join(["?"] * len(teams))
+            stats_df = self._con.execute(f"SELECT * FROM historical_stats WHERE team IN ({placeholders})", teams).pl()
+            for row in stats_df.iter_rows(named=True):
+                team_stats_cache[row["team"]] = row
+
+        # Batch load odds history
+        odds_cache = {}
+        if match_ids:
+            placeholders = ", ".join(["?"] * len(match_ids))
+            odds_df = self._con.execute(f"SELECT * FROM odds_history WHERE match_id IN ({placeholders}) ORDER BY timestamp", match_ids).pl()
+            for row in odds_df.iter_rows(named=True):
+                mid = row["match_id"]
+                if mid not in odds_cache:
+                    odds_cache[mid] = []
+                odds_cache[mid].append(row["odds"])
+
         features_rows = []
         for row in matches.iter_rows(named=True):
             mid = row["match_id"]
             home = row.get("home_team", "")
             away = row.get("away_team", "")
-
-            home_stats = self.get_team_stats(home)
-            away_stats = self.get_team_stats(away)
-            odds_hist = self.get_odds_history(mid)
 
             feat = {
                 "match_id": mid,
@@ -284,27 +306,28 @@ class DBManager:
                 "under25_odds": row.get("under25_odds", 0.0),
             }
 
-            if not home_stats.is_empty():
-                hs = home_stats.row(0, named=True)
-                feat["home_xg"] = hs.get("xg_for", 0.0)
-                feat["home_xga"] = hs.get("xg_against", 0.0)
-                feat["home_win_rate"] = hs.get("wins", 0) / max(hs.get("matches_played", 1), 1)
-                feat["home_possession"] = hs.get("possession_avg", 50.0)
+            hs = team_stats_cache.get(home)
+            if hs:
+                feat["home_xg"] = (hs.get("xg_for") or 0.0)
+                feat["home_xga"] = (hs.get("xg_against") or 0.0)
+                feat["home_win_rate"] = (hs.get("wins") or 0) / max((hs.get("matches_played") or 1), 1)
+                feat["home_possession"] = (hs.get("possession_avg") or 50.0)
             else:
                 feat.update({"home_xg": 0.0, "home_xga": 0.0, "home_win_rate": 0.0, "home_possession": 50.0})
 
-            if not away_stats.is_empty():
-                aws = away_stats.row(0, named=True)
-                feat["away_xg"] = aws.get("xg_for", 0.0)
-                feat["away_xga"] = aws.get("xg_against", 0.0)
-                feat["away_win_rate"] = aws.get("wins", 0) / max(aws.get("matches_played", 1), 1)
-                feat["away_possession"] = aws.get("possession_avg", 50.0)
+            aws = team_stats_cache.get(away)
+            if aws:
+                feat["away_xg"] = (aws.get("xg_for") or 0.0)
+                feat["away_xga"] = (aws.get("xg_against") or 0.0)
+                feat["away_win_rate"] = (aws.get("wins") or 0) / max((aws.get("matches_played") or 1), 1)
+                feat["away_possession"] = (aws.get("possession_avg") or 50.0)
             else:
                 feat.update({"away_xg": 0.0, "away_xga": 0.0, "away_win_rate": 0.0, "away_possession": 50.0})
 
             # Oran volatilitesi
-            if not odds_hist.is_empty() and odds_hist.height > 1:
-                feat["odds_volatility"] = odds_hist["odds"].std()
+            odds_list = odds_cache.get(mid, [])
+            if len(odds_list) > 1:
+                feat["odds_volatility"] = statistics.stdev(odds_list)
             else:
                 feat["odds_volatility"] = 0.0
 
@@ -312,7 +335,6 @@ class DBManager:
 
         return pl.DataFrame(features_rows)
 
-    # ── SQL sorgulama ──
     def query(self, sql: str, params: list | None = None) -> pl.DataFrame:
         if params:
             return self._con.execute(sql, params).pl()

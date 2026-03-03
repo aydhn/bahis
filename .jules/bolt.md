@@ -18,3 +18,7 @@
 ## $(date +%Y-%m-%d) - O(1) Cache Eviction using Python 3.7+ Dicts
 **Learning:** LRU and TTL caches tracking oldest entries via `min(dict, key=...)` create an O(N) performance bottleneck for large caches. In Python 3.7+, dictionaries strictly maintain insertion order, meaning the oldest un-evicted item is always the first one `next(iter(dict))`.
 **Action:** Always utilize dictionary insertion order for caches in modern Python. Delete and re-insert items to refresh their TTL/LRU position to the end. For max size eviction, use `del dict[next(iter(dict))]` for O(1) performance instead of O(N) `min()` scans.
+
+## 2026-03-03 - O(1) Dictionary Caching for N+1 Query Elimination in DBManager
+**Learning:** `DBManager.build_feature_matrix` was executing 3 independent queries per row (`self.get_team_stats()` and `self.get_odds_history()`) which scales as O(N) when there are N matches. Doing an upfront batch query `SELECT ... IN (?,?)` and mapping it to a dictionary allows $O(1)$ memory access without making per-row DB calls.
+**Action:** Always batch load related tabular data prior to iterating rows when assembling feature matrices.
