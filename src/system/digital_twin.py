@@ -16,7 +16,7 @@ from typing import Dict, Any, Optional
 from loguru import logger
 import polars as pl
 
-from src.pipeline.core import PipelineEngine, create_shadow_pipeline
+from src.pipeline.core import PipelineEngine, create_lightweight_pipeline
 from src.system.container import container
 from src.core.event_bus import Event
 
@@ -52,7 +52,7 @@ class DigitalTwin:
             # 1. Setup Shadow Pipeline (Reuse structure but isolate context)
             # We use a specialized lightweight pipeline for speed with only the core logic stages:
             # Features -> Physics -> Inference -> Ensemble -> Risk
-            self.pipeline = create_shadow_pipeline()
+            self.pipeline = create_lightweight_pipeline()
 
             # 2. Fetch Historical Data (The "Memory")
             db = container.get("db")
@@ -127,7 +127,10 @@ class DigitalTwin:
             logger.success(f"💤 Dream Complete. PnL: {report['virtual_pnl']} | ROI: {report['virtual_roi']:.2%}")
 
             # Report to Event Bus (StrategyEvolver might pick this up)
-            bus = container.get("bus")
+            try:
+                bus = container.get("bus")
+            except:
+                bus = None
             if bus:
                 await bus.emit(Event("dream_complete", report))
 
@@ -144,43 +147,15 @@ class DigitalTwin:
         Simulates a single match through the decision engine.
         Returns the virtual outcome (Win/Loss/PnL).
         """
-        # 1. Inference (Mocked or Real if components available)
-        # For the twin, we mainly want to test if the Risk Logic holds up against historical outcomes.
+        if not self.pipeline:
+            return {}
 
-        # True Outcome (from history)
-        # Assuming we have score or result. If not, we simulate.
-        home_score = match_data.get("home_score", 1) # Default mock
-        away_score = match_data.get("away_score", 0)
-
-        winner = "HOME"
-        if away_score > home_score: winner = "AWAY"
-        elif away_score == home_score: winner = "DRAW"
-
-        # 2. Virtual Decision
-        # Let's assume our model predicted HOME with some confidence
-        # In a real twin, we'd call InferenceStage.
-        # Here we simulate a model prediction based on odds (favorites usually win)
-        implied_prob = 1.0 / match_data.get("home_odds", 2.0)
-        model_prob = implied_prob * 1.05 # Mild edge
-
-        decision = "HOME" if model_prob > 0.5 else "SKIP"
-        stake = 100.0 # Fixed unit for sim
-
-        # 3. Calculate PnL
-        pnl = 0.0
-        won = False
-
-        if decision == "HOME":
-            if winner == "HOME":
-                pnl = stake * (match_data.get("home_odds", 2.0) - 1)
-                won = True
-            else:
-                pnl = -stake
+        res = await self.pipeline.run_once({"match_data": match_data})
 
         return {
             "match_id": match_data.get("match_id"),
-            "decision": decision,
-            "result": winner,
-            "pnl": pnl,
-            "won": won
+            "decision": res.get("decision", "SKIP"),
+            "result": res.get("result"),
+            "pnl": res.get("pnl", 0.0),
+            "won": res.get("won", False)
         }
