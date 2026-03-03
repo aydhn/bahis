@@ -263,6 +263,10 @@ def _render_webapp_html() -> str:
     margin-top: 6px;
     accent-color: var(--accent);
   }
+  .slider-group input[type="range"]:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
 
   .ranking-row {
     display: flex;
@@ -294,6 +298,10 @@ def _render_webapp_html() -> str:
   }
   .refresh-btn:active:not(:disabled) { opacity: 0.8; }
   .refresh-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .refresh-btn:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
 
   .loading { text-align: center; color: var(--dim); padding: 20px; }
 </style>
@@ -306,7 +314,7 @@ def _render_webapp_html() -> str:
 </div>
 
 <!-- Stats Grid -->
-<div class="stats-grid">
+<div class="stats-grid" aria-live="polite" aria-busy="false">
   <div class="stat-card" id="card-bankroll">
     <div class="value" id="bankroll">--</div>
     <div class="label">Kasa (TL)</div>
@@ -355,7 +363,7 @@ def _render_webapp_html() -> str:
 <!-- Active Bets -->
 <div class="section">
   <h2>Aktif Kuponlar</h2>
-  <ul class="bet-list" id="bet-list">
+  <ul class="bet-list" id="bet-list" aria-live="polite" aria-busy="false">
     <li class="loading">Yukleniyor...</li>
   </ul>
 </div>
@@ -363,7 +371,7 @@ def _render_webapp_html() -> str:
 <!-- Power Rankings -->
 <div class="section">
   <h2>Guc Siralamasi (Kalman)</h2>
-  <div id="rankings">
+  <div id="rankings" aria-live="polite" aria-busy="false">
     <div class="loading">Yukleniyor...</div>
   </div>
 </div>
@@ -502,11 +510,19 @@ document.getElementById('dd-slider').addEventListener('input', function() {
 
 async function refreshAll() {
   const btn = document.querySelector('.refresh-btn');
+  const statsGrid = document.querySelector('.stats-grid');
+  const betList = document.getElementById('bet-list');
+  const rankings = document.getElementById('rankings');
+
   if (btn) {
     btn.disabled = true;
     btn.setAttribute('aria-busy', 'true');
     btn.textContent = 'Yenileniyor...';
   }
+
+  if (statsGrid) statsGrid.setAttribute('aria-busy', 'true');
+  if (betList) betList.setAttribute('aria-busy', 'true');
+  if (rankings) rankings.setAttribute('aria-busy', 'true');
 
   try {
     await Promise.all([
@@ -521,6 +537,9 @@ async function refreshAll() {
       btn.setAttribute('aria-busy', 'false');
       btn.textContent = 'Yenile';
     }
+    if (statsGrid) statsGrid.setAttribute('aria-busy', 'false');
+    if (betList) betList.setAttribute('aria-busy', 'false');
+    if (rankings) rankings.setAttribute('aria-busy', 'false');
   }
 }
 
