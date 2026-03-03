@@ -176,3 +176,21 @@ def create_default_pipeline(bot_instance: Any = None, bus: EventBus = None) -> P
     engine.add_stage(ReportingStage(bot_instance=bot_instance))
 
     return engine
+
+
+def create_shadow_pipeline(bus: EventBus = None) -> PipelineEngine:
+    """Create a lightweight shadow pipeline for simulation/dream mode."""
+    from src.pipeline.stages.features import FeatureStage
+    from src.pipeline.stages.physics import PhysicsStage
+    from src.pipeline.stages.inference import InferenceStage
+    from src.pipeline.stages.ensemble import EnsembleStage
+    from src.pipeline.stages.risk import RiskStage
+
+    engine = PipelineEngine(bus=bus)
+    engine.add_stage(FeatureStage())
+    engine.add_stage(PhysicsStage())
+    engine.add_stage(InferenceStage())
+    engine.add_stage(EnsembleStage())
+    engine.add_stage(RiskStage())
+
+    return engine
