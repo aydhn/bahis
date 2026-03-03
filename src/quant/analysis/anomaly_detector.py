@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import numpy as np
 import polars as pl
-from datetime import datetime, timedelta
+from datetime import datetime
 from loguru import logger
 
 
@@ -92,13 +92,12 @@ class AnomalyDetector:
         all_alerts = []
 
         try:
-            matches = db.query("SELECT DISTINCT match_id FROM odds_history")
-            for row in matches.iter_rows(named=True):
-                mid = row.get("match_id", "")
-                if not mid:
-                    continue
-                history = db.get_odds_history(mid)
-                if not history.is_empty():
+            # Fetch all history in a single query to prevent N+1 queries
+            all_history = db.query("SELECT * FROM odds_history ORDER BY match_id, timestamp")
+
+            if not all_history.is_empty():
+                # Polars partition_by is extremely efficient for splitting dataframe by a column
+                for history in all_history.partition_by("match_id"):
                     alerts = self.detect_dropping_odds(history)
                     all_alerts.extend(alerts)
         except Exception as e:
@@ -116,7 +115,6 @@ class AnomalyDetector:
         odds = odds_history["odds"].to_numpy()
         returns = np.diff(odds) / (np.abs(odds[:-1]) + 1e-8)
 
-        trend = float(np.mean(returns))
         volatility = float(np.std(returns))
 
         # Ağırlıklı trend (son hareketler daha önemli)
