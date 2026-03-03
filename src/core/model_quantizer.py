@@ -4,8 +4,6 @@ Büyük modelleri küçülterek RAM kullanımını düşürür.
 """
 from __future__ import annotations
 
-import os
-from pathlib import Path
 
 import numpy as np
 from loguru import logger
