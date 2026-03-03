@@ -16,7 +16,7 @@ from typing import Dict, Any, Optional
 from loguru import logger
 import polars as pl
 
-from src.pipeline.core import PipelineEngine, create_default_pipeline
+from src.pipeline.core import PipelineEngine, create_shadow_pipeline
 from src.system.container import container
 from src.core.event_bus import Event
 
@@ -50,12 +50,9 @@ class DigitalTwin:
 
         try:
             # 1. Setup Shadow Pipeline (Reuse structure but isolate context)
-            # We use the default pipeline factory but we will mock the Ingestion/Execution stages
-            # For simplicity, we just use the core logic stages: Features -> Physics -> Inference -> Risk
-
-            # TODO: Create a specialized lightweight pipeline for speed
-            # For now, we reuse the robust pipeline but inject mock data directly.
-            self.pipeline = create_default_pipeline()
+            # We use a specialized lightweight pipeline for speed with only the core logic stages:
+            # Features -> Physics -> Inference -> Ensemble -> Risk
+            self.pipeline = create_shadow_pipeline()
 
             # 2. Fetch Historical Data (The "Memory")
             db = container.get("db")
