@@ -15,8 +15,6 @@ Teknoloji: matplotlib.animation + imageio
 from __future__ import annotations
 
 import io
-import tempfile
-from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -27,8 +25,8 @@ try:
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
-    from matplotlib import cm
-    from matplotlib.patches import Arc, Circle, Rectangle
+
+    from matplotlib.patches import Arc, Circle
     MPL_OK = True
 except ImportError:
     MPL_OK = False
@@ -412,7 +410,6 @@ class PlotAnimator:
             ax.set_facecolor("#0d1117")
 
             # Renk: kâr → yeşil, zarar → kırmızı
-            colors = ["#00ff88" if v >= initial else "#ff4444" for v in values]
             ax.fill_between(dates, initial, values, alpha=0.3,
                             color="#00ff88" if values[-1] >= initial else "#ff4444")
             ax.plot(dates, values, color="cyan", lw=2.5)
