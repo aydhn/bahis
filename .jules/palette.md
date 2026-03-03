@@ -1,3 +1,6 @@
 ## 2026-03-01 - Webapp Server Form Labels & ARIA button
 **Learning:** Telegram Web Apps running embedded JS/HTML can lack basic native accessibility controls like ARIA roles on loading buttons or semantic labeling on inputs. Because these elements look perfectly fine visually, they are easy to miss, but assistive devices rely heavily on `aria-busy` states for loading feedback and `for` attributes to identify range sliders correctly.
 **Action:** When inspecting manual HTML strings returned by web servers (like FastAPI apps rendering jinja or raw HTML), actively check for accessibility metadata (ARIA descriptors, `for` tags, `aria-live`) on any interactive elements, especially forms and async loading buttons.
+## 2024-03-03 - Dynamic State Accessibility in Embedded Web Apps
+**Learning:** Telegram Mini Apps and other embedded webviews often lack native focus indicators and screen reader context for asynchronous data loading. When updating DOM elements like scoreboards or active bets dynamically without full page reloads, screen readers lose track.
+**Action:** Always add `aria-live="polite"` to dynamically changing containers and toggle `aria-busy="true"/"false"` around asynchronous fetch operations. Explicitly add `:focus-visible` outlines to interactive elements (buttons, inputs) in the embedded CSS since they might be missing entirely.
