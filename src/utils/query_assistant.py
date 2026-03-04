@@ -203,14 +203,18 @@ Sadece SQL sorgusu döndür, açıklama ekleme. Tehlikeli (DROP, DELETE, UPDATE)
             sql = sql.replace("```sql", "").replace("```", "").strip()
             # Güvenlik kontrolü - DuckDB read_only mode still allows reading arbitrary files
             # via read_csv, read_parquet etc. Block these explicitly.
-            dangerous_kws = [
+            dangerous_exact = [
                 "DROP", "DELETE", "UPDATE", "INSERT", "ALTER", "CREATE",
-                "READ_CSV", "READ_PARQUET", "READ_JSON", "COPY",
-                "ATTACH", "DETACH", "PRAGMA", "CALL", "INSTALL", "LOAD", "SYSTEM"
+                "COPY", "ATTACH", "DETACH", "PRAGMA", "CALL", "INSTALL", "LOAD", "SYSTEM"
             ]
 
-            # Use regex with word boundaries to avoid matching substrings like "created_at"
-            pattern = re.compile(rf"\b({'|'.join(dangerous_kws)})\b", re.IGNORECASE)
+            # Use regex with word boundaries to avoid matching substrings like "created_at".
+            # Also block any function starting with "read_" (e.g., read_csv_auto, read_text)
+            pattern = re.compile(
+                rf"\b({'|'.join(dangerous_exact)})\b|\bread_\w*\b",
+                re.IGNORECASE
+            )
+
             if pattern.search(sql):
                 logger.warning(f"[Security] Blocked potentially dangerous SQL: {sql}")
                 return None
