@@ -4,3 +4,6 @@
 ## 2024-03-03 - Dynamic State Accessibility in Embedded Web Apps
 **Learning:** Telegram Mini Apps and other embedded webviews often lack native focus indicators and screen reader context for asynchronous data loading. When updating DOM elements like scoreboards or active bets dynamically without full page reloads, screen readers lose track.
 **Action:** Always add `aria-live="polite"` to dynamically changing containers and toggle `aria-busy="true"/"false"` around asynchronous fetch operations. Explicitly add `:focus-visible` outlines to interactive elements (buttons, inputs) in the embedded CSS since they might be missing entirely.
+## 2026-03-04 - Screen Reader Interpretation of Unicode Symbols
+**Learning:** Raw unicode symbols like `▲`, `▼`, and `●` are often read literally by screen readers (e.g., "Black up-pointing triangle"). This creates confusing audio experiences for users when evaluating status trends like power rankings. Simply inserting symbols visually is not accessible by default.
+**Action:** When using standalone unicode characters for status indicators, always wrap them in a span with `role="img"` and provide an explicit `aria-label` describing their meaning (e.g., "Yükselişte", "Düşüşte") so screen readers can parse the intent, and `title` for hover tooltips.
