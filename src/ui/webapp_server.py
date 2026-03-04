@@ -295,7 +295,9 @@ def _render_webapp_html() -> str:
     font-weight: 700;
     cursor: pointer;
     margin-top: 8px;
+    transition: filter 0.2s ease;
   }
+  .refresh-btn:hover:not(:disabled) { filter: brightness(1.1); }
   .refresh-btn:active:not(:disabled) { opacity: 0.8; }
   .refresh-btn:disabled { opacity: 0.5; cursor: not-allowed; }
   .refresh-btn:focus-visible {
@@ -415,7 +417,7 @@ async function loadBets() {
   const bets = await fetchJSON('/api/active-bets');
   const list = document.getElementById('bet-list');
   if (!bets || bets.length === 0) {
-    list.innerHTML = '<li class="bet-item"><span class="bet-detail">Aktif kupon yok</span></li>';
+    list.innerHTML = '<li class="bet-item" style="justify-content: center;"><span class="bet-detail">📭 Aktif kupon yok</span></li>';
     return;
   }
   list.innerHTML = bets.map(b => `
@@ -433,7 +435,7 @@ async function loadRankings() {
   const ranks = await fetchJSON('/api/power-rankings');
   const el = document.getElementById('rankings');
   if (!ranks || ranks.length === 0) {
-    el.innerHTML = '<div class="ranking-row"><span class="bet-detail">Veri yok</span></div>';
+    el.innerHTML = '<div class="ranking-row" style="justify-content: center;"><span class="bet-detail">📊 Veri yok</span></div>';
     return;
   }
   el.innerHTML = ranks.slice(0, 10).map(r => {
@@ -441,12 +443,14 @@ async function loadRankings() {
                        r.trend === 'falling' ? 'trend-down' : 'trend-stable';
     const arrow = r.trend === 'rising' ? '&#9650;' :
                   r.trend === 'falling' ? '&#9660;' : '&#9679;';
+    const ariaLabel = r.trend === 'rising' ? 'Yükselişte' :
+                      r.trend === 'falling' ? 'Düşüşte' : 'Durağan';
     return `
       <div class="ranking-row">
         <span class="rank-num">${r.rank}.</span>
         <span class="rank-team">${r.team}</span>
         <span class="rank-strength">${r.strength}</span>
-        <span class="rank-trend ${trendClass}">${arrow}</span>
+        <span class="rank-trend ${trendClass}" role="img" aria-label="${ariaLabel}" title="${ariaLabel}">${arrow}</span>
       </div>
     `;
   }).join('');
