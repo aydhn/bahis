@@ -26,3 +26,7 @@
 ## 2024-03-03 - [Telegram Bot] Prevent Event Loop Blocking During I/O
 **Learning:** Synchronous file reads (like `json.load(open(path))`) within an `async def` function block the event loop, causing massive latency spikes (~470ms under load) for all concurrent tasks.
 **Action:** Always wrap synchronous file I/O operations inside `asyncio.to_thread` when executing within async contexts, rather than relying on external libraries like `aiofiles` unless already installed.
+
+## 2026-03-03 - Nested Thread Pool Thrashing in Concurrent Async Contexts
+**Learning:** `EnsembleModel.predict` was using a `ThreadPoolExecutor` internally to parallelize running sub-models. However, this method is typically called inside `asyncio.to_thread` per-match (which means N matches x M models = N*M threads concurrently scaling up). The internal pool leads to heavy thread creation overhead and thrashing, reducing overall throughput.
+**Action:** Do not use nested thread pools when the outer execution loop is already concurrent/parallelized. Execute sub-tasks sequentially in the inner loop instead.
