@@ -4,8 +4,7 @@ ensemble.py – Quant Model Ensemble & Voting Mechanism.
 This module aggregates predictions from multiple quantitative models
 (Benter, Dixon-Coles, LSTM, Bayesian, Quantum) to produce a robust consensus probability.
 """
-from typing import Any, Dict, List, Optional
-import numpy as np
+from typing import Any, Dict, Optional
 import time
 from loguru import logger
 from src.core.interfaces import QuantModel
@@ -133,26 +132,23 @@ class EnsembleModel(QuantModel):
             self.model_health[name]["status"] = "HEALTHY"
             models_to_run.append((name, model))
 
-        import concurrent.futures
-
         # ensemble.predict is typically called inside asyncio.to_thread in InferenceStage,
         # so we are in a thread here, not in the async loop directly.
-        # We use a thread pool for parallel execution of sync predict methods.
-        with concurrent.futures.ThreadPoolExecutor(max_workers=len(models_to_run) or 1) as executor:
-            future_to_model = {executor.submit(model.predict, context): name for name, model in models_to_run}
-            for future in concurrent.futures.as_completed(future_to_model):
-                name = future_to_model[future]
-                try:
-                    res = future.result()
-                    if "error" in res:
-                        logger.warning(f"Model {name} failed: {res['error']}")
-                        self._record_failure(name)
-                    else:
-                        self._record_success(name)
-                        results[name] = res
-                except Exception as e:
-                    logger.error(f"Ensemble execution error ({name}): {e}")
+        # Since the outer call (_analyze_single_match) is already concurrent per match,
+        # using a thread pool here causes O(N*M) thread thrashing.
+        # We execute sequentially here for better performance under high concurrency.
+        for name, model in models_to_run:
+            try:
+                res = model.predict(context)
+                if "error" in res:
+                    logger.warning(f"Model {name} failed: {res['error']}")
                     self._record_failure(name)
+                else:
+                    self._record_success(name)
+                    results[name] = res
+            except Exception as e:
+                logger.error(f"Ensemble execution error ({name}): {e}")
+                self._record_failure(name)
 
         if not results:
             return {
