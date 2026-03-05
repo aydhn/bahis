@@ -29,8 +29,8 @@ from typing import Any
 from loguru import logger
 
 try:
-    import google.generativeai as genai
-    GEMINI_OK = True
+    # import google.generativeai as genai
+    GEMINI_OK = False
 except ImportError:
     GEMINI_OK = False
 
@@ -143,7 +143,7 @@ def _ask_gemini_sync(prompt: str, system: str) -> str:
     if not GEMINI_OK:
         return ""
     try:
-        model = genai.GenerativeModel("gemini-1.5-flash")
+        model = None # Gemini Disabled
         full = f"{system}\n\n{prompt}"
         response = model.generate_content(full)
         return response.text if response else ""

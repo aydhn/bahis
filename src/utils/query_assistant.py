@@ -38,8 +38,8 @@ except ImportError:
     LANGCHAIN_SQL_OK = False
 
 try:
-    import google.generativeai as genai
-    GEMINI_OK = True
+    # import google.generativeai as genai
+    GEMINI_OK = False
 except ImportError:
     GEMINI_OK = False
 
@@ -185,7 +185,7 @@ Sadece SQL sorgusu döndür, açıklama ekleme. Tehlikeli (DROP, DELETE, UPDATE)
         self._model = None
         if GEMINI_OK:
             try:
-                self._model = genai.GenerativeModel("gemini-pro")
+                self._model = None # Gemini Disabled
             except Exception:
                 pass
 

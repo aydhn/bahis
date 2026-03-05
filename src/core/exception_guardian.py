@@ -69,11 +69,20 @@ class ExceptionTaxonomy:
         ModuleNotFoundError: "import",
     }
 
+    _CACHE = {}
+
     @classmethod
     def classify(cls, exc: BaseException) -> str:
+        exc_type_val = type(exc)
+        if exc_type_val in cls._CACHE:
+            return cls._CACHE[exc_type_val]
+
         for exc_type, category in cls.CATEGORIES.items():
             if isinstance(exc, exc_type):
+                cls._CACHE[exc_type_val] = category
                 return category
+
+        cls._CACHE[exc_type_val] = "unknown"
         return "unknown"
 
     @classmethod
