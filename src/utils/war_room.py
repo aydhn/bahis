@@ -16,7 +16,7 @@ Akış:
   4. Final kararı çoğunluk oylaması ile belirlenir
   5. Tartışma Telegram'a gönderilir
 
-Teknoloji: LangChain + Ollama (yerel LLM) veya Gemini
+Teknoloji: LangChain + Ollama (yerel LLM)
 Fallback: Template-based persona responses
 """
 from __future__ import annotations
@@ -28,11 +28,7 @@ from typing import Any
 
 from loguru import logger
 
-try:
-    # import google.generativeai as genai
-    GEMINI_OK = False
-except ImportError:
-    GEMINI_OK = False
+
 
 try:
     import httpx
@@ -137,19 +133,6 @@ def _ask_ollama_sync(prompt: str, system: str,
         pass
     return ""
 
-
-def _ask_gemini_sync(prompt: str, system: str) -> str:
-    """Google Gemini API."""
-    if not GEMINI_OK:
-        return ""
-    try:
-        model = None # Gemini Disabled
-        full = f"{system}\n\n{prompt}"
-        response = model.generate_content(full)
-        return response.text if response else ""
-    except Exception:
-        pass
-    return ""
 
 
 def _template_response(agent_key: str, match_info: dict) -> str:
@@ -297,8 +280,6 @@ class WarRoom:
             response = _ask_ollama_sync(
                 prompt, profile["system_prompt"], self._ollama_model,
             )
-        if not response and self._backend in ("gemini", "auto"):
-            response = _ask_gemini_sync(prompt, profile["system_prompt"])
 
         if not response:
             response = _template_response(agent_key, match_info)

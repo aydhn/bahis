@@ -5,7 +5,7 @@ Sayısal veriler tamam, peki ya metinler?
 Teknik direktörün endişeli tonu, sakatlık haberleri, transfer dedikoduları…
 
 Teknoloji:
-  - Google Gemini Free Tier veya HuggingFace Inference API
+  - HuggingFace Inference API
   - RAG: Retrieval-Augmented Generation
   - Son 24 saat haber başlıkları + tweetler → LLM özeti
   - Çıktı: 0-1 arası Sentiment Skoru → ensemble_stacking.py'ye sinyal
@@ -60,7 +60,7 @@ class RAGResult:
     key_topics: list[str] = field(default_factory=list)
     confidence: float = 0.5
     n_sources: int = 0
-    method: str = ""               # gemini / huggingface / rule_based
+    method: str = ""               # huggingface / rule_based
 
 
 class NewsRAGAnalyzer:
@@ -72,8 +72,6 @@ class NewsRAGAnalyzer:
         print(result.sentiment_score)   # 0.72
         print(result.summary)           # "Icardi'nin sakatlığı endişe yaratıyor..."
     """
-
-    GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
     HF_URL = "https://api-inference.huggingface.co/models/"
 
     # Haber kaynakları
@@ -83,12 +81,10 @@ class NewsRAGAnalyzer:
         "mackolik": "https://www.mackolik.com/rss",
     }
 
-    def __init__(self, gemini_key: str = "",
-                 hf_token: str = "",
+    def __init__(self, hf_token: str = "",
                  hf_model: str = "facebook/bart-large-mnli",
                  ollama_url: str = "",
                  ollama_model: str = "llama3"):
-        self._gemini_key = gemini_key or os.getenv("GEMINI_API_KEY", "")
         self._hf_token = hf_token or os.getenv("HF_TOKEN", "")
         self._hf_model = hf_model
         self._ollama_url = ollama_url or os.getenv("OLLAMA_URL", "http://localhost:11434/api/generate")
@@ -96,7 +92,7 @@ class NewsRAGAnalyzer:
         self._cache: dict[str, tuple[float, RAGResult]] = {}
         self._cache_ttl = 3600.0  # 1 saat
         logger.debug(
-            f"NewsRAG başlatıldı (Ollama='✓', Gemini={'✓' if self._gemini_key else '✗'}, "
+            f"NewsRAG başlatıldı (Ollama='✓', "
             f"HF={'✓' if self._hf_token else '✗'})."
         )
 
@@ -266,12 +262,6 @@ class NewsRAGAnalyzer:
         if result:
             return result
 
-        # 2. Gemini yedek
-        if self._gemini_key:
-            result = await self._analyze_gemini(team, news)
-            if result:
-                return result
-
         # 3. HuggingFace yedek
         if self._hf_token:
             result = await self._analyze_huggingface(team, news)
@@ -327,46 +317,7 @@ class NewsRAGAnalyzer:
             logger.debug(f"[RAG] Ollama hatası: {e}. Ollama kapalı olabilir.")
             return None
 
-    async def _analyze_gemini(self, team: str,
-                               news: list[NewsItem]) -> RAGResult | None:
-        """Google Gemini ile sentiment analizi."""
-        if not HTTPX_OK:
-            return None
 
-        headlines = "\n".join(f"- {n.title}" for n in news[:10])
-        prompt = (
-            f"Aşağıdaki haber başlıkları {team} futbol takımı hakkındadır.\n\n"
-            f"{headlines}\n\n"
-            f"Lütfen şu soruları yanıtla:\n"
-            f"1. Genel atmosfer (0=çok negatif, 1=çok pozitif) → sadece sayı\n"
-            f"2. Anahtar konular (virgülle ayır, max 5)\n"
-            f"3. 2 cümlelik özet\n\n"
-            f"Format: SKOR|KONULAR|ÖZET"
-        )
-
-        try:
-            async with httpx.AsyncClient(timeout=30) as client:
-                resp = await client.post(
-                    f"{self.GEMINI_URL}?key={self._gemini_key}",
-                    json={
-                        "contents": [{"parts": [{"text": prompt}]}],
-                        "generationConfig": {"temperature": 0.3, "maxOutputTokens": 300},
-                    },
-                )
-                if resp.status_code != 200:
-                    return None
-
-                data = resp.json()
-                text = (
-                    data.get("candidates", [{}])[0]
-                    .get("content", {}).get("parts", [{}])[0]
-                    .get("text", "")
-                )
-
-                return self._parse_llm_response(team, text, news, "gemini")
-        except Exception as e:
-            logger.debug(f"[RAG] Gemini hatası: {e}")
-            return None
 
     async def _analyze_huggingface(self, team: str,
                                     news: list[NewsItem]) -> RAGResult | None:

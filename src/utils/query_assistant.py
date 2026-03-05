@@ -9,7 +9,7 @@ Bot: Bu cümleyi SQL'e çevirir → Çalıştırır → Sonucu özetler.
 
 Teknoloji:
   - LangChain SQL Database Chain
-  - Google Gemini API (Ücretsiz Tier) veya basit şablon eşleştirme
+  - basit şablon eşleştirme
   - DuckDB (ana veritabanı)
 
 Fallback: LLM yoksa regex + template bazlı SQL üreteci
@@ -37,11 +37,7 @@ try:
 except ImportError:
     LANGCHAIN_SQL_OK = False
 
-try:
-    # import google.generativeai as genai
-    GEMINI_OK = False
-except ImportError:
-    GEMINI_OK = False
+
 
 ROOT = Path(__file__).resolve().parent.parent.parent
 
@@ -54,7 +50,7 @@ class QueryResult:
     raw_result: Any = None
     formatted_answer: str = ""
     execution_time_ms: float = 0.0
-    method: str = ""              # gemini | langchain | template | error
+    method: str = ""              # langchain | template | error
     confidence: float = 0.0
     error: str = ""
 
@@ -166,65 +162,6 @@ class TemplateSQLGenerator:
 
 
 # ═══════════════════════════════════════════════
-#  GEMINI SQL ÜRETECİ
-# ═══════════════════════════════════════════════
-class GeminiSQLGenerator:
-    """Google Gemini ile doğal dil → SQL."""
-
-    SYSTEM_PROMPT = """Sen bir SQL uzmanısın. Kullanıcının Türkçe sorusunu DuckDB SQL sorgusuna çevir.
-
-Veritabanı şeması:
-- matches(date, home_team, away_team, home_goals, away_goals, league, season, venue, weather, referee)
-- players(name, team, position, rating, goals, assists, minutes_played)
-- odds(match_id, bookmaker, home_odds, draw_odds, away_odds, timestamp)
-- predictions(match_id, model, prob_home, prob_draw, prob_away, prediction, result)
-
-Sadece SQL sorgusu döndür, açıklama ekleme. Tehlikeli (DROP, DELETE, UPDATE) sorgu yazma."""
-
-    def __init__(self):
-        self._model = None
-        if GEMINI_OK:
-            try:
-                self._model = None # Gemini Disabled
-            except Exception:
-                pass
-
-    def generate(self, question: str) -> str | None:
-        """Gemini ile SQL üret."""
-        if not self._model:
-            return None
-
-        try:
-            response = self._model.generate_content(
-                f"{self.SYSTEM_PROMPT}\n\nSoru: {question}",
-            )
-            sql = response.text.strip()
-            # SQL temizle
-            sql = sql.replace("```sql", "").replace("```", "").strip()
-            # Güvenlik kontrolü - DuckDB read_only mode still allows reading arbitrary files
-            # via read_csv, read_parquet etc. Block these explicitly.
-            dangerous_exact = [
-                "DROP", "DELETE", "UPDATE", "INSERT", "ALTER", "CREATE",
-                "COPY", "ATTACH", "DETACH", "PRAGMA", "CALL", "INSTALL", "LOAD", "SYSTEM"
-            ]
-
-            # Use regex with word boundaries to avoid matching substrings like "created_at".
-            # Also block any function starting with "read_" (e.g., read_csv_auto, read_text)
-            pattern = re.compile(
-                rf"\b({'|'.join(dangerous_exact)})\b|\bread_\w*\b",
-                re.IGNORECASE
-            )
-
-            if pattern.search(sql):
-                logger.warning(f"[Security] Blocked potentially dangerous SQL: {sql}")
-                return None
-            return sql
-        except Exception as e:
-            logger.debug(f"[Query] Gemini hatası: {e}")
-            return None
-
-
-# ═══════════════════════════════════════════════
 #  QUERY ASSISTANT (Ana Sınıf)
 # ═══════════════════════════════════════════════
 class QueryAssistant:
@@ -242,7 +179,6 @@ class QueryAssistant:
     def __init__(self, db_path: str | None = None):
         self._db_path = db_path or str(ROOT / "data" / "betting.duckdb")
         self._template_gen = TemplateSQLGenerator()
-        self._gemini_gen = GeminiSQLGenerator()
         self._query_history: list[QueryResult] = []
         logger.debug("[Query] Assistant başlatıldı.")
 
@@ -250,23 +186,16 @@ class QueryAssistant:
         """Doğal dilde soru sor, SQL ile yanıtla."""
         result = QueryResult(question=question)
         start = time.perf_counter()
-
-        # 1) Gemini ile dene
-        sql = self._gemini_gen.generate(question)
+        # 1) Şablon ile dene
+        sql = self._template_gen.generate(question)
         if sql:
-            result.method = "gemini"
-            result.confidence = 0.85
+            result.method = "template"
+            result.confidence = 0.60
         else:
-            # 2) Şablon ile dene
-            sql = self._template_gen.generate(question)
-            if sql:
-                result.method = "template"
-                result.confidence = 0.60
-            else:
-                result.method = "error"
-                result.error = "Soru anlaşılamadı. Lütfen farklı ifade edin."
-                result.formatted_answer = result.error
-                return result
+            result.method = "error"
+            result.error = "Soru anlaşılamadı. Lütfen farklı ifade edin."
+            result.formatted_answer = result.error
+            return result
 
         result.sql = sql
 
