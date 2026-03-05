@@ -70,8 +70,8 @@ except ImportError:
     HTTPX_OK = False
 
 try:
-    import google.generativeai as genai
-    GEMINI_OK = True
+    # import google.generativeai as genai
+    GEMINI_OK = False
 except ImportError:
     GEMINI_OK = False
 
@@ -511,7 +511,7 @@ class GraphRAG:
         # Gemini
         if self._llm_backend in ("gemini", "auto") and GEMINI_OK:
             try:
-                model = genai.GenerativeModel("gemini-1.5-flash")
+                model = None # Gemini Disabled
                 response = model.generate_content(f"{system}\n\n{prompt}")
                 if response and response.text:
                     return response.text.strip()

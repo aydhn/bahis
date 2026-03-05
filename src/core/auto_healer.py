@@ -77,8 +77,8 @@ except ImportError:
     HTTPX_OK = False
 
 try:
-    import google.generativeai as genai
-    GEMINI_OK = True
+    # import google.generativeai as genai
+    GEMINI_OK = False
 except ImportError:
     GEMINI_OK = False
 
@@ -274,16 +274,7 @@ async def _ask_ollama(prompt: str, model: str = "deepseek-coder:6.7b"
 
 
 def _ask_gemini(prompt: str) -> str | None:
-    """Google Gemini API'ye sor."""
-    if not GEMINI_OK:
-        return None
-
-    try:
-        model = genai.GenerativeModel("gemini-1.5-flash")
-        response = model.generate_content(prompt)
-        return response.text if response else None
-    except Exception as e:
-        logger.debug(f"[Healer] Gemini hatası: {e}")
+    """Google Gemini API (Devre dışı bırakıldı - Ollama Fallback aktif)."""
     return None
 
 
