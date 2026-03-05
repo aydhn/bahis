@@ -1,6 +1,6 @@
 from typing import Any, Dict
 import asyncio
-from functools import lru_cache
+import functools
 from loguru import logger
 import polars as pl
 import numpy as np
@@ -116,7 +116,10 @@ class InferenceStage(PipelineStage):
             logger.warning("MultiTaskBackbone module missing.")
 
         # Bind lru_cache to instance method to prevent memory leak (holding self reference globally)
-        self._get_similar_matches = lru_cache(maxsize=1000)(self._get_similar_matches_impl)
+        self._get_similar_matches = functools.lru_cache(maxsize=1000)(self._get_similar_matches_impl)
+
+        # Bind lru_cache to instance method to prevent memory leak (holding self reference globally)
+
 
     def _get_similar_matches_impl(self, h_odd: float, d_odd: float, a_odd: float) -> Dict[str, Any]:
         """Cached wrapper for SimilarityEngine to prevent redundant calculations."""

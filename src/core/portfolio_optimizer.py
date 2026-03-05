@@ -283,8 +283,8 @@ class PortfolioOptimizer:
         try:
             from scipy.optimize import minimize
         except ImportError:
-            logger.warning("Scipy yüklü değil, heuristic metoda dönülüyor.")
-            return self._heuristic_adjust(stakes, corr, mask)
+            logger.warning("Scipy yüklü değil, Eigen Risk Parity metoduna dönülüyor.")
+            return self._eigen_risk_parity(stakes, corr, mask)
 
         n = len(stakes)
         indices = np.where(mask)[0]
@@ -335,6 +335,47 @@ class PortfolioOptimizer:
         adjusted[indices] = optimized_sub
 
         return adjusted
+
+
+    def _eigen_risk_parity(self, stakes: np.ndarray, corr: np.ndarray, mask: np.ndarray) -> np.ndarray:
+        """
+        Advanced Eigen Risk Parity for portfolio orthogonalization.
+        Extracts eigenvectors to find uncorrelated risk factors and scales stakes down
+        if they bunch up on a single dominant eigenvector (e.g., massive weekend league overlap).
+        """
+        indices = np.where(mask)[0]
+        if len(indices) < 2:
+            return stakes
+
+        sub_corr = corr[np.ix_(indices, indices)]
+        sub_stakes = stakes[indices]
+
+        try:
+            # Calculate eigenvalues and eigenvectors
+            eigenvals, eigenvecs = np.linalg.eigh(sub_corr)
+
+            # Risk contribution of each bet to the principal components
+            # We want to penalize bets that load heavily on the largest eigenvalues (systemic risk)
+            # Find the largest eigenvalue
+            max_eig_idx = np.argmax(eigenvals)
+            max_eig_val = eigenvals[max_eig_idx]
+
+            if max_eig_val > 1.5:  # High systemic correlation detected
+                dominant_vec = np.abs(eigenvecs[:, max_eig_idx])
+                # Penalize proportional to their loading on the dominant risk factor
+                penalty_factors = 1.0 - (dominant_vec * 0.5)
+                # Bound penalties to reasonable levels
+                penalty_factors = np.clip(penalty_factors, 0.3, 1.0)
+
+                sub_stakes = sub_stakes * penalty_factors
+
+            adjusted = stakes.copy()
+            adjusted[indices] = sub_stakes
+            return adjusted
+
+        except Exception as e:
+            logger.error(f"[Portfolio] Eigen Risk Parity failed: {e}")
+            return stakes
 
     def _heuristic_adjust(self, stakes: np.ndarray, corr: np.ndarray, mask: np.ndarray) -> np.ndarray:
         adjusted = stakes.copy()

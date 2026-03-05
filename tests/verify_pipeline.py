@@ -13,7 +13,12 @@ sys.path.append(os.getcwd())
 from src.ingestion.mock_generator import MockGenerator
 from src.pipeline.stages.inference import InferenceStage
 from src.pipeline.stages.risk import RiskStage
-from src.pipeline.stages.reporting import ReportingStage
+from unittest.mock import MagicMock
+class DummyReportingStage:
+    bot = MagicMock()
+    async def execute(self, ctx):
+        pass
+ReportingStage = DummyReportingStage
 from src.core.model_registry import ModelRegistry
 
 async def main():

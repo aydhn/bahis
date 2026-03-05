@@ -123,7 +123,7 @@ class EnsembleModel(QuantModel):
 
             # Dynamic Pruning: Skip models with weight near zero
             if active_weights.get(name, 0.0) < 0.05:
-                logger.debug(f"Pruning model {name} dynamically due to low weight ({active_weights.get(name):.3f})")
+                logger.debug(f"Pruning model {name} dynamically due to low weight ({active_weights.get(name, 0.0):.3f})")
                 self.model_health[name]["status"] = "PRUNED"
                 active_weights[name] = 0.0
                 continue
