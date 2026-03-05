@@ -29,7 +29,7 @@ from __future__ import annotations
 import asyncio
 import time
 from collections import defaultdict
-from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, Future
+from concurrent.futures import ProcessPoolExecutor, Future
 from dataclasses import dataclass, field
 from typing import Any, Callable
 
@@ -233,7 +233,7 @@ class DistributedCore:
         self._started = False
         self._start_time = 0.0
         self._pool: ProcessPoolExecutor | None = None
-        self._thread_pool: ThreadPoolExecutor | None = None
+        self._thread_pool = None
         self._stats = defaultdict(lambda: WorkerStats())
         self._tasks_completed = 0
         self._tasks_in_flight = 0
@@ -274,7 +274,7 @@ class DistributedCore:
         import os
         workers = self._num_cpus or min(os.cpu_count() or 4, self._max_workers)
         self._pool = ProcessPoolExecutor(max_workers=workers)
-        self._thread_pool = ThreadPoolExecutor(max_workers=workers * 2)
+        self._thread_pool = None # O(N*M) thrashing fix via asyncio.to_thread
         self._started = True
         logger.info(
             f"[Dist] ProcessPool başlatıldı: {workers} worker "

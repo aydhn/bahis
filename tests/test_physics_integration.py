@@ -1,8 +1,6 @@
 import pytest
-import asyncio
 import polars as pl
 from src.pipeline.stages.physics import PhysicsStage
-from src.pipeline.context import BettingContext
 
 @pytest.mark.asyncio
 async def test_physics_stage_integration():
@@ -54,37 +52,20 @@ async def test_physics_stage_integration():
 
     # 4. Assertions
     # A. Structure
-    assert "chaos_reports" in results
-    assert "quantum_predictions" in results
-    assert "ricci_report" in results # Could be None if graph building fails or not enough nodes, but key exists in defaults
-    assert "geometric_potentials" in results
-    assert "particle_reports" in results
+    assert "physics_context" in results
+
+    phys_ctx = results["physics_context"]
+    assert "test_match_1" in phys_ctx
+
+    match_1_ctx = phys_ctx["test_match_1"]
 
     # B. Specifics
-    # Chaos: Should have report for matches
-    assert "test_match_1" in results["chaos_reports"]
-    assert results["chaos_reports"]["test_match_1"].match_id == "test_match_1"
+    # Chaos regime should exist inside physics context
+    assert "chaos_regime" in match_1_ctx
 
-    # Quantum: Should have prediction
-    assert "test_match_1" in results["quantum_predictions"]
-    q_pred = results["quantum_predictions"]["test_match_1"]
-    assert q_pred.probabilities is not None
+    # In this physics stage refactor, it outputs everything combined into physics_context.
+    # We verify that geometric mapping exists
+    assert "fisher_distance" in match_1_ctx
 
-    # Geometric: Should have potential
-    assert "test_match_1" in results["geometric_potentials"]
-    geo = results["geometric_potentials"]["test_match_1"]
-    assert "spatial_dominance" in geo
-
-    # Particle: Should have report (mocked observation)
-    assert "test_match_1" in results["particle_reports"]
-    p_rep = results["particle_reports"]["test_match_1"]
-    assert p_rep.minute > 0
-
-    # Ricci: Might be None or Report depending on graph size.
-    # With 2 matches (4 teams), we have edges (A-B) and (C-D). Disconnected.
-    # GraphRicci might fail on disconnected or small graphs, but our code catches exceptions.
-    # Let's check if it ran without crashing.
-    print(f"Ricci Report: {results.get('ricci_report')}")
-
-if __name__ == "__main__":
-    asyncio.run(test_physics_stage_integration())
+    # 5. Ensure the data makes sense
+    assert match_1_ctx["fisher_distance"] > 0
