@@ -5,6 +5,7 @@ from loguru import logger
 from src.system.lifecycle import lifecycle
 from src.core.event_bus import EventBus, Event
 from src.core.auto_healer import SelfHealingEngine
+from src.extensions.alpha_generator import AlphaGenerator
 
 class PipelineStage(ABC):
     """Abstract base class for pipeline stages."""
@@ -51,6 +52,10 @@ class PipelineEngine:
 
             cycle += 1
             logger.info(f"═══ Pipeline Cycle #{cycle} ═══")
+            if cycle == 1 and self.bus:
+                alpha_gen = AlphaGenerator(self.bus)
+                asyncio.create_task(alpha_gen.start())
+
 
             # Reset context for each cycle, but keep some persistent state if needed
             # For now, we clear it or just pass the previous one?

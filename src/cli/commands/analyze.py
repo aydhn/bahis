@@ -1,6 +1,7 @@
 import typer
 import asyncio
 from loguru import logger
+from src.system.digital_twin import DigitalTwin
 from src.pipeline.core import create_default_pipeline
 from src.system.container import container
 from src.system.lifecycle import lifecycle
@@ -25,6 +26,13 @@ async def main_async(mode: str, headless: bool):
 
     # Build Pipeline (Enhanced with Ensemble & Reporting)
     engine = create_default_pipeline()
+
+    if mode == "backtest":
+        logger.info("Starting Dream Mode (Backtest)")
+        twin = DigitalTwin()
+        report = await twin.dream(n_matches=100)
+        logger.success(f"Dream Mode Report: {report}")
+        return
 
     # Run
     await engine.run()

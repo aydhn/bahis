@@ -18,6 +18,7 @@ lancedb
 pyarrow
 networkx
 pydantic
+pydantic-settings
 
 # --- ML / AI ---
 torch

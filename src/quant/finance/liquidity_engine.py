@@ -18,7 +18,6 @@ from __future__ import annotations
 
 from loguru import logger
 import math
-import numpy as np
 
 class LiquidityEngine:
     """
@@ -43,7 +42,7 @@ class LiquidityEngine:
     def __init__(self):
         logger.debug("LiquidityEngine initialized (LOB Simulation Active).")
 
-    def simulate_execution(self, stake: float, odds: float, league: str) -> tuple[float, float]:
+    def simulate_execution(self, stake: float, odds: float, league: str, match_minute: int = 0) -> tuple[float, float]:
         """
         Simulates "walking the book" to find the average execution price.
 
@@ -59,6 +58,9 @@ class LiquidityEngine:
             return odds, 0.0
 
         base_volume = self.LEAGUE_LIQUIDITY.get(league, self.LEAGUE_LIQUIDITY["Default"])
+        if match_minute > 75:
+            base_volume *= math.exp(-0.1 * (match_minute - 75))
+
 
         # LOB Model: Liquidity follows a power law or exponential decay away from the touch.
         # Simple Model: Linear density.
@@ -93,7 +95,7 @@ class LiquidityEngine:
 
         return avg_price, slippage_pct
 
-    def calculate_max_safe_stake(self, odds: float, edge: float, league: str) -> float:
+    def calculate_max_safe_stake(self, odds: float, edge: float, league: str, match_minute: int = 0) -> float:
         """
         Calculates the maximum stake that keeps execution price above Break-Even.
         Break-Even Price = 1 / Prob (where Edge = Prob*Odds - 1)
@@ -109,6 +111,9 @@ class LiquidityEngine:
         # Stake = TicksConsumed * DepthPerTick
 
         base_volume = self.LEAGUE_LIQUIDITY.get(league, self.LEAGUE_LIQUIDITY["Default"])
+        if match_minute > 75:
+            base_volume *= math.exp(-0.1 * (match_minute - 75))
+
         depth_per_tick = base_volume * 0.01
         tick_size = 0.01
 
@@ -123,7 +128,10 @@ class LiquidityEngine:
         volume = self.LEAGUE_LIQUIDITY.get(league, self.LEAGUE_LIQUIDITY["Default"])
         ratio = stake / volume
 
-        if ratio < 0.001: return "Invisible"
-        if ratio < 0.01: return "Low Impact"
-        if ratio < 0.05: return "Moderate Slip"
+        if ratio < 0.001:
+            return "Invisible"
+        if ratio < 0.01:
+            return "Low Impact"
+        if ratio < 0.05:
+            return "Moderate Slip"
         return "Market Mover (High Slip)"
