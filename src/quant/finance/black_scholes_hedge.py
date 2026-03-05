@@ -15,7 +15,6 @@ Concepts:
 from __future__ import annotations
 
 import math
-import numpy as np
 from scipy.stats import norm
 from loguru import logger
 from typing import Dict, Any
@@ -122,6 +121,7 @@ class BlackScholesHedge:
         # If current odds have drifted significantly higher, we might want to Stop Loss.
         action = "HOLD"
         reason = "Market is stable."
+        partial_fraction = 0.0
 
         if current_odds > original_odds * 1.5:
             action = "STOP_LOSS"
@@ -132,6 +132,7 @@ class BlackScholesHedge:
             if volatility > 0.4:
                 action = "GREEN_BOOK"
                 reason = "High volatility and favorable odds. Lock in profit."
+                partial_fraction = min(1.0, max(0.1, volatility * 2.0))
             else:
                 action = "HOLD_WINNING"
                 reason = "Favorable odds, low volatility. Let it ride."
@@ -143,5 +144,6 @@ class BlackScholesHedge:
             "target_value": round(target_value, 2),
             "estimated_offer": round(estimated_bookie_offer, 2),
             "volatility_premium": round(volatility_premium, 2),
-            "p_current": round(p_current, 3)
+            "p_current": round(p_current, 3),
+            "partial_fraction": round(partial_fraction, 2)
         }

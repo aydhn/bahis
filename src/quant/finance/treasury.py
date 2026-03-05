@@ -155,7 +155,7 @@ class TreasuryEngine:
 
         # Redistribute
         for bucket, ratio in new_alloc.items():
-            self.state.buckets[bucket] = total_available * ratio
+            self.state.buckets[bucket] = max(0.0, total_available * ratio)
 
         logger.success(f"Treasury: Rebalanced. New Buckets: {json.dumps(self.state.buckets, indent=2)}")
         self.save_state()
