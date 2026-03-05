@@ -20,6 +20,33 @@ class CEODashboard:
         self.boardroom = Boardroom()
         logger.debug("CEODashboard (God Mode) initialized.")
 
+
+    def enforce_strategic_vision(self, god_signal: Any):
+        """
+        Dynamically adjusts capital allocation based on the MarketGod signal.
+        A true CEO shifts capital where the edge is, aggressively or defensively.
+        """
+        if not god_signal:
+            return
+
+        sig = god_signal.signal_type
+        logger.info(f"CEODashboard: Enforcing strategic vision based on GodSignal: {sig}")
+
+        # Re-allocate treasury buckets
+        if sig == "BLACK_SWAN":
+            self.treasury.rebalance_buckets("crash")
+        elif sig == "CHAOTIC" or sig == "BEARISH":
+            self.treasury.rebalance_buckets("volatile")
+        elif sig == "BULLISH":
+             # Extremely aggressive
+             self.treasury.state.allocations = {"safe": 0.3, "aggressive": 0.6, "rnd": 0.1}
+             self.treasury.save_state()
+             logger.success("Treasury shifted to MAXIMUM AGGRESSION.")
+        elif sig == "FIX_DETECTED":
+             # High conviction, shift to safe/arb styles to exploit
+             self.treasury.state.allocations = {"safe": 0.8, "aggressive": 0.2, "rnd": 0.0}
+             self.treasury.save_state()
+
     def generate_report(self, context: Optional[Any]) -> str:
         """
         Generates the executive summary report.

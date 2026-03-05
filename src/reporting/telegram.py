@@ -17,6 +17,7 @@ import os
 from typing import Any, Dict, Optional
 
 from loguru import logger
+from src.extensions.ceo_dashboard import CEODashboard
 
 try:
     import httpx
@@ -129,6 +130,19 @@ class TelegramReporter:
             f"<i>Yarına hazırız.</i>"
         )
         return await self.send_message(msg)
+
+
+    async def send_godmode_report(self, context: Optional[Any] = None) -> bool:
+        """
+        Generates and sends the ultimate CEO 'God Mode' report.
+        """
+        try:
+            dashboard = CEODashboard()
+            report = dashboard.generate_report(context)
+            return await self.send_message(report, parse_mode="Markdown")
+        except Exception as e:
+            logger.error(f"[Telegram] GodMode Report failed: {e}")
+            return False
 
     async def send_executive_summary(self, stats: Dict[str, Any]) -> bool:
         """CEO için detaylı günlük özet (Executive Summary)."""

@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import numpy as np
 from loguru import logger
+from src.quant.finance.liquidity_engine import LiquidityEngine
 from src.quant.models.poisson_model import PoissonModel
 
 class BenterModel(PoissonModel):
@@ -25,7 +26,8 @@ class BenterModel(PoissonModel):
 
     def __init__(self, max_goals: int = 8):
         super().__init__(max_goals)
-        logger.info("BenterModel başlatıldı: Expert Adjustments aktif.")
+        self.liquidity_engine = LiquidityEngine()
+        logger.info("BenterModel başlatıldı: Expert Adjustments ve Liquidity simülasyonu aktif.")
 
     def apply_contextual_adjustments(self, home_xg: float, away_xg: float, context: dict) -> tuple[float, float]:
         """
@@ -82,7 +84,6 @@ class BenterModel(PoissonModel):
 
         current_prob = matrix[0][0]
         target_prob = min(current_prob + correction_factor, 1.0)
-        diff = target_prob - current_prob
 
         # Farkı diğer tüm hücrelerden orantılı çıkar
         # (1 - current_prob) toplam olasılıktan 'diff' kadar çalacağız.
@@ -124,15 +125,10 @@ class BenterModel(PoissonModel):
             "matrix_00": float(mat[0][0])
         }
 
-    def detect_value_bet(self, outcomes: dict, odds: dict, min_edge: float = 0.05, fractional_kelly: float = 0.5) -> list[dict]:
+    def detect_value_bet(self, outcomes: dict, odds: dict, min_edge: float = 0.05, fractional_kelly: float = 0.5, league: str = "Default") -> list[dict]:
         """
         Bahis fırsatlarını (Value Bets) tespit eder.
-
-        Args:
-            outcomes: calculate_benter_probabilities çıktısı.
-            odds: {"1": 2.10, "X": 3.20, "2": 3.50} formatında oranlar.
-            min_edge: Minimum beklenen getiri (varsayılan %5).
-            fractional_kelly: Kelly çarpanı (varsayılan 0.5 Half-Kelly, bankroll güvenliği için).
+        Bill Benter tarzı: Liquidity slippage hesaplayarak dinamik Kelly kesri uygular.
         """
         bets = []
 
@@ -140,53 +136,40 @@ class BenterModel(PoissonModel):
         uncertainty = outcomes.get("epistemic_uncertainty", 0.0)
         adjusted_min_edge = min_edge + (uncertainty * 0.1)  # Max %10 ek güvenlik marjı
 
-        # Home
-        if "1" in odds:
-            p = outcomes["prob_home"]
-            o = odds["1"]
-            edge = p * o - 1
-            if edge > adjusted_min_edge:
-                k_frac = (edge / (o - 1)) if o > 1 else 0
-                bets.append({
-                    "selection": "HOME",
-                    "probability": p,
-                    "odds": o,
-                    "edge": edge,
-                    "kelly_fraction": k_frac,
-                    "suggested_stake_fraction": k_frac * fractional_kelly
-                })
+        for key, selection, prob_key in [("1", "HOME", "prob_home"), ("X", "DRAW", "prob_draw"), ("2", "AWAY", "prob_away")]:
+            if key in odds:
+                p = outcomes.get(prob_key, 0.0)
+                o = odds[key]
+                edge = p * o - 1
 
-        # Draw
-        if "X" in odds:
-            p = outcomes["prob_draw"]
-            o = odds["X"]
-            edge = p * o - 1
-            if edge > adjusted_min_edge:
-                k_frac = (edge / (o - 1)) if o > 1 else 0
-                bets.append({
-                    "selection": "DRAW",
-                    "probability": p,
-                    "odds": o,
-                    "edge": edge,
-                    "kelly_fraction": k_frac,
-                    "suggested_stake_fraction": k_frac * fractional_kelly
-                })
+                # Check execution slippage on a standard sizing
+                # Simulate a standard 100 unit bet to see if edge holds
+                exec_price, slippage_pct = self.liquidity_engine.simulate_execution(stake=100.0, odds=o, league=league)
+                real_edge = (p * exec_price) - 1.0
 
-        # Away
-        if "2" in odds:
-            p = outcomes["prob_away"]
-            o = odds["2"]
-            edge = p * o - 1
-            if edge > adjusted_min_edge:
-                k_frac = (edge / (o - 1)) if o > 1 else 0
-                bets.append({
-                    "selection": "AWAY",
-                    "probability": p,
-                    "odds": o,
-                    "edge": edge,
-                    "kelly_fraction": k_frac,
-                    "suggested_stake_fraction": k_frac * fractional_kelly
-                })
+                if real_edge > adjusted_min_edge:
+                    # True Kelly: (Edge / (Odds - 1))
+                    k_frac = (real_edge / (exec_price - 1.0)) if exec_price > 1.0 else 0.0
 
-        bets.sort(key=lambda x: x["edge"], reverse=True)
+                    # Benter refinement: Dynamically adjust the fractional kelly based on real_edge depth
+                    # If real edge is huge (e.g., >10%), push closer to Full Kelly.
+                    dynamic_kelly = fractional_kelly
+                    if real_edge > 0.10:
+                        dynamic_kelly = min(0.8, fractional_kelly + (real_edge - 0.10) * 2)
+
+                    suggested_frac = k_frac * dynamic_kelly
+
+                    bets.append({
+                        "selection": selection,
+                        "probability": p,
+                        "odds": o,
+                        "exec_price": exec_price,
+                        "slippage_pct": slippage_pct,
+                        "edge": edge,
+                        "real_edge": real_edge,
+                        "kelly_fraction": k_frac,
+                        "suggested_stake_fraction": suggested_frac
+                    })
+
+        bets.sort(key=lambda x: x["real_edge"], reverse=True)
         return bets

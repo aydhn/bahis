@@ -41,6 +41,7 @@ from src.extensions.smart_money import SmartMoneyDetector
 
 # NEW: Boardroom
 from src.core.boardroom import Boardroom
+from src.extensions.market_god import MarketGod
 
 # Import Physics Reports for Type Hinting (Optional, but good for clarity)
 # Imports removed to avoid F401
@@ -90,6 +91,7 @@ class RiskControlTower:
         self.game_theory = GameTheoryEngine() # NEW
         self.smart_money = SmartMoneyDetector() # NEW
         self.boardroom = Boardroom() # NEW
+        self.market_god = MarketGod() # NEW
 
         logger.info("RiskControlTower initialized and ready for duty.")
 
@@ -479,6 +481,44 @@ class RiskControlTower:
         final_stake_pct = kelly_res.stake_pct
 
         # Black-Litterman Optimization will be done globally in RiskStage over all candidates
+
+
+        # --- 4.5 Market God Evaluation (NEW) ---
+        match_id = bet_candidate.get("match_id", "Unknown")
+
+        # Extract odds history from context if available, otherwise mock
+        vol_history = context.get("volatility_history", [0.05, 0.06, 0.05])
+
+        odds_data = {
+            "home": bet_candidate.get("odds", 2.0),
+            "draw": bet_candidate.get("draw_odds", 3.0),
+            "away": bet_candidate.get("away_odds", 4.0),
+            "asian_home": bet_candidate.get("asian_home", 2.0),
+            "asian_line": bet_candidate.get("asian_line", -0.5)
+        }
+
+        god_signal = self.market_god.consult(
+            match_id=match_id,
+            odds_data=odds_data,
+            volatility_history=vol_history
+        )
+
+        if god_signal.signal_type == "BLACK_SWAN":
+            decision.approved = False
+            decision.rejection_reason = f"Market God Veto: {god_signal.narrative}"
+            return decision
+
+        if god_signal.signal_type != "NEUTRAL":
+            decision.adjustments.append(f"Market God Signal ({god_signal.signal_type}): x{god_signal.suggested_multiplier:.2f} ({god_signal.narrative})")
+            final_stake_pct *= god_signal.suggested_multiplier
+
+        # Safely interact with Directive if present in context
+        directive = context.get("directive", None)
+        if directive:
+            if god_signal.signal_type == "BULLISH":
+                directive.posture = "EXPANSION"
+            elif god_signal.signal_type in ["CHAOTIC", "BEARISH"]:
+                directive.posture = "BUNKER"
 
         # --- 5. Physics Modulation ---
         # Apply advanced physics multipliers
