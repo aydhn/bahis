@@ -220,6 +220,11 @@ class QueryAssistant:
         if not DUCK_OK:
             return "DuckDB yüklü değil."
 
+        # Security: Strict Regex Blocklist to prevent arbitrary file read/writes
+        blocklist_pattern = r'(READ_CSV|READ_PARQUET|ATTACH|INSTALL|LOAD|COPY|PRAGMA|SYSTEM)'
+        if re.search(blocklist_pattern, sql, re.IGNORECASE):
+            raise ValueError("Güvenlik İhlali: İzin verilmeyen SQL komutu tespit edildi.")
+
         try:
             conn = duckdb.connect(self._db_path, read_only=True)
             result = conn.execute(sql).fetchall()

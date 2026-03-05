@@ -264,76 +264,99 @@ class DBManager:
         if matches.is_empty():
             return matches
 
-        # O(1) Memory Caches to prevent N+1 Queries
         teams = set(matches["home_team"].to_list()) | set(matches["away_team"].to_list())
         teams = [t for t in teams if t]
-
         match_ids = [m for m in matches["match_id"].to_list() if m]
 
         # Batch load team stats
-        team_stats_cache = {}
+        stats_df = pl.DataFrame()
         if teams:
             placeholders = ", ".join(["?"] * len(teams))
             stats_df = self._con.execute(f"SELECT * FROM historical_stats WHERE team IN ({placeholders})", teams).pl()
-            for row in stats_df.iter_rows(named=True):
-                team_stats_cache[row["team"]] = row
 
-        # Batch load odds history
-        odds_cache = {}
+        # Batch load odds history and calculate volatility
+        odds_df = pl.DataFrame()
         if match_ids:
             placeholders = ", ".join(["?"] * len(match_ids))
-            odds_df = self._con.execute(f"SELECT * FROM odds_history WHERE match_id IN ({placeholders}) ORDER BY timestamp", match_ids).pl()
-            for row in odds_df.iter_rows(named=True):
-                mid = row["match_id"]
-                if mid not in odds_cache:
-                    odds_cache[mid] = []
-                odds_cache[mid].append(row["odds"])
+            raw_odds = self._con.execute(f"SELECT * FROM odds_history WHERE match_id IN ({placeholders})", match_ids).pl()
+            if not raw_odds.is_empty():
+                odds_df = raw_odds.group_by("match_id").agg([
+                    pl.col("odds").std().fill_null(0.0).alias("odds_volatility")
+                ])
 
-        features_rows = []
-        for row in matches.iter_rows(named=True):
-            mid = row["match_id"]
-            home = row.get("home_team", "")
-            away = row.get("away_team", "")
+        # Fill missing columns in stats_df if empty
+        if stats_df.is_empty():
+            stats_df = pl.DataFrame({
+                "team": pl.Series(dtype=pl.Utf8),
+                "xg_for": pl.Series(dtype=pl.Float64),
+                "xg_against": pl.Series(dtype=pl.Float64),
+                "wins": pl.Series(dtype=pl.Int64),
+                "matches_played": pl.Series(dtype=pl.Int64),
+                "possession_avg": pl.Series(dtype=pl.Float64),
+            })
 
-            feat = {
-                "match_id": mid,
-                "home_team": home,
-                "away_team": away,
-                "home_odds": row.get("home_odds", 0.0),
-                "draw_odds": row.get("draw_odds", 0.0),
-                "away_odds": row.get("away_odds", 0.0),
-                "over25_odds": row.get("over25_odds", 0.0),
-                "under25_odds": row.get("under25_odds", 0.0),
-            }
+        # Calculate additional columns for stats_df
+        stats_df = stats_df.with_columns([
+            (pl.col("wins") / pl.max_horizontal(pl.col("matches_played"), 1)).fill_null(0.0).alias("win_rate")
+        ])
 
-            hs = team_stats_cache.get(home)
-            if hs:
-                feat["home_xg"] = (hs.get("xg_for") or 0.0)
-                feat["home_xga"] = (hs.get("xg_against") or 0.0)
-                feat["home_win_rate"] = (hs.get("wins") or 0) / max((hs.get("matches_played") or 1), 1)
-                feat["home_possession"] = (hs.get("possession_avg") or 50.0)
-            else:
-                feat.update({"home_xg": 0.0, "home_xga": 0.0, "home_win_rate": 0.0, "home_possession": 50.0})
+        # Prepare base features from matches
+        features = matches.select([
+            "match_id", "home_team", "away_team", "home_odds", "draw_odds",
+            "away_odds", "over25_odds", "under25_odds"
+        ]).with_columns([
+            pl.col("home_odds").fill_null(0.0),
+            pl.col("draw_odds").fill_null(0.0),
+            pl.col("away_odds").fill_null(0.0),
+            pl.col("over25_odds").fill_null(0.0),
+            pl.col("under25_odds").fill_null(0.0)
+        ])
 
-            aws = team_stats_cache.get(away)
-            if aws:
-                feat["away_xg"] = (aws.get("xg_for") or 0.0)
-                feat["away_xga"] = (aws.get("xg_against") or 0.0)
-                feat["away_win_rate"] = (aws.get("wins") or 0) / max((aws.get("matches_played") or 1), 1)
-                feat["away_possession"] = (aws.get("possession_avg") or 50.0)
-            else:
-                feat.update({"away_xg": 0.0, "away_xga": 0.0, "away_win_rate": 0.0, "away_possession": 50.0})
+        # Join home stats
+        home_stats = stats_df.rename({
+            "xg_for": "home_xg",
+            "xg_against": "home_xga",
+            "win_rate": "home_win_rate",
+            "possession_avg": "home_possession"
+        }).select(["team", "home_xg", "home_xga", "home_win_rate", "home_possession"])
 
-            # Oran volatilitesi
-            odds_list = odds_cache.get(mid, [])
-            if len(odds_list) > 1:
-                feat["odds_volatility"] = statistics.stdev(odds_list)
-            else:
-                feat["odds_volatility"] = 0.0
+        features = features.join(
+            home_stats, left_on="home_team", right_on="team", how="left"
+        ).with_columns([
+            pl.col("home_xg").fill_null(0.0),
+            pl.col("home_xga").fill_null(0.0),
+            pl.col("home_win_rate").fill_null(0.0),
+            pl.col("home_possession").fill_null(50.0)
+        ])
 
-            features_rows.append(feat)
+        # Join away stats
+        away_stats = stats_df.rename({
+            "xg_for": "away_xg",
+            "xg_against": "away_xga",
+            "win_rate": "away_win_rate",
+            "possession_avg": "away_possession"
+        }).select(["team", "away_xg", "away_xga", "away_win_rate", "away_possession"])
 
-        return pl.DataFrame(features_rows)
+        features = features.join(
+            away_stats, left_on="away_team", right_on="team", how="left"
+        ).with_columns([
+            pl.col("away_xg").fill_null(0.0),
+            pl.col("away_xga").fill_null(0.0),
+            pl.col("away_win_rate").fill_null(0.0),
+            pl.col("away_possession").fill_null(50.0)
+        ])
+
+        # Join odds volatility
+        if not odds_df.is_empty():
+            features = features.join(
+                odds_df.select(["match_id", "odds_volatility"]),
+                on="match_id", how="left"
+            ).with_columns(pl.col("odds_volatility").fill_null(0.0))
+        else:
+            features = features.with_columns(pl.lit(0.0).alias("odds_volatility"))
+
+        return features
+
 
     def query(self, sql: str, params: list | None = None) -> pl.DataFrame:
         if params:

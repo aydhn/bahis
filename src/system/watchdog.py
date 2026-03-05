@@ -37,7 +37,7 @@ def send_alert(message: str):
     except Exception as e:
         logger.error(f"Failed to send alert: {e}")
 
-def restart_system():
+async def await restart_system():
     """Kill and restart the main process."""
     logger.warning("Attempting system restart...")
 
@@ -46,7 +46,7 @@ def restart_system():
     # For now, we rely on pkill.
     try:
         subprocess.run(["pkill", "-f", MAIN_SCRIPT], check=False)
-        time.sleep(5)
+        await asyncio.sleep(5)
     except Exception as e:
         logger.error(f"Kill failed: {e}")
 
@@ -58,7 +58,7 @@ def restart_system():
     except Exception as e:
         send_alert(f"Failed to restart system: {e}")
 
-def run_watchdog():
+async def run_watchdog():
     logger.info("Watchdog started. Monitoring heartbeat...")
 
     while True:
@@ -74,7 +74,7 @@ def run_watchdog():
                     if delta > TIMEOUT_SECONDS:
                         logger.error(f"Heartbeat lost! Last beat was {delta:.1f}s ago.")
                         send_alert(f"System Freeze Detected! Last heartbeat: {delta:.0f}s ago.")
-                        restart_system()
+                        await restart_system()
                         # Reset heartbeat to avoid loop while starting
                         HEARTBEAT_FILE.write_text(str(time.time()))
                     else:
@@ -83,7 +83,8 @@ def run_watchdog():
         except Exception as e:
             logger.error(f"Watchdog error: {e}")
 
-        time.sleep(CHECK_INTERVAL)
+        await asyncio.sleep(CHECK_INTERVAL)
 
 if __name__ == "__main__":
-    run_watchdog()
+    import asyncio
+    asyncio.run(run_watchdog())

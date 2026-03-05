@@ -58,8 +58,10 @@ class TreasuryEngine:
         # Fixed logic: 50 units or 1% of total capital, whichever is smaller
         stake = min(50.0, self.state.total_capital * 0.01)
 
-        # Check absolute survival
-        if self.state.total_capital - self.state.locked_capital < stake:
+        # Check absolute survival (must keep 10% min liquidity)
+        available_liquid = self.state.total_capital - self.state.locked_capital
+        min_liquidity = self.state.total_capital * 0.10
+        if available_liquid - stake < min_liquidity:
             return 0.0
 
         return stake
