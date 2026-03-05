@@ -7,7 +7,7 @@ Bot hata aldığında (Exception), hatayı okuyup kendi kodunu
 
 Akış:
   1. Hata yakala (traceback + hatalı kaynak satırı)
-  2. Hata bağlamını LLM'e gönder (ollama / Gemini fallback)
+  2. Hata bağlamını LLM'e gönder (ollama)
   3. LLM'den düzeltilmiş kod bloğu (Patch) al
   4. Patch'i güvenlik kontrolünden geçir (AST parse)
   5. Geçici dosyaya yaz + test et
@@ -21,7 +21,7 @@ Güvenlik Kuralları:
   - Rollback mekanizması (orijinal yedeklenir)
   - Aynı hata 3 kez tamir edilemezse → manual alert
 
-Teknoloji: traceback + ast + ollama (yerel LLM) veya Gemini API
+Teknoloji: traceback + ast + ollama (yerel LLM)
 Fallback: Heuristic regex tabanlı düzeltmeler
 """
 from __future__ import annotations
@@ -76,11 +76,7 @@ try:
 except ImportError:
     HTTPX_OK = False
 
-try:
-    # import google.generativeai as genai
-    GEMINI_OK = False
-except ImportError:
-    GEMINI_OK = False
+
 
 
 # ═══════════════════════════════════════════════
@@ -97,7 +93,7 @@ class HealingAttempt:
     source_snippet: str = ""
     # Patch
     patch_code: str = ""
-    patch_source: str = ""       # "ollama" | "gemini" | "heuristic"
+    patch_source: str = ""       # "ollama" | "heuristic"
     patch_valid: bool = False
     patch_applied: bool = False
     # Test
@@ -273,9 +269,7 @@ async def _ask_ollama(prompt: str, model: str = "deepseek-coder:6.7b"
     return None
 
 
-def _ask_gemini(prompt: str) -> str | None:
-    """Google Gemini API (Devre dışı bırakıldı - Ollama Fallback aktif)."""
-    return None
+
 
 
 def _build_fix_prompt(ctx: dict) -> str:
@@ -518,14 +512,6 @@ class SelfHealingEngine:
         # Ollama (yerel)
         if self._backend in ("ollama", "auto"):
             response = await _ask_ollama(prompt, self.OLLAMA_MODEL)
-            if response:
-                code = _extract_code_from_response(response)
-                if code:
-                    return code
-
-        # Gemini (fallback)
-        if self._backend in ("gemini", "auto") and GEMINI_OK:
-            response = _ask_gemini(prompt)
             if response:
                 code = _extract_code_from_response(response)
                 if code:

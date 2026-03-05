@@ -69,11 +69,7 @@ try:
 except ImportError:
     HTTPX_OK = False
 
-try:
-    # import google.generativeai as genai
-    GEMINI_OK = False
-except ImportError:
-    GEMINI_OK = False
+
 
 OLLAMA_URL = "http://localhost:11434/api/generate"
 
@@ -505,16 +501,6 @@ class GraphRAG:
                     text = resp.json().get("response", "")
                     if text:
                         return text.strip()
-            except Exception:
-                pass
-
-        # Gemini
-        if self._llm_backend in ("gemini", "auto") and GEMINI_OK:
-            try:
-                model = None # Gemini Disabled
-                response = model.generate_content(f"{system}\n\n{prompt}")
-                if response and response.text:
-                    return response.text.strip()
             except Exception:
                 pass
 

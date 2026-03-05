@@ -160,28 +160,6 @@ class OrchestratorStats:
 # ═══════════════════════════════════════════════
 #  RETRY DEKORATÖRLERİ
 # ═══════════════════════════════════════════════
-def _retry_sync(fn: Callable, max_retries: int = 3,
-                backoff_base: float = 2.0,
-                task_name: str = "") -> tuple[Any, int]:
-    """Senkron fonksiyon için retry."""
-    last_err = None
-    for attempt in range(max_retries + 1):
-        try:
-            result = fn()
-            return result, attempt
-        except Exception as e:
-            last_err = e
-            if attempt < max_retries:
-                wait = backoff_base ** attempt
-                logger.warning(
-                    f"[Orchestrator] {task_name} hata (deneme {attempt + 1}/{max_retries + 1}): "
-                    f"{e.__class__.__name__}: {str(e)[:100]}. "
-                    f"{wait:.1f}s sonra tekrar…"
-                )
-                time.sleep(wait)
-    raise last_err  # type: ignore[misc]
-
-
 async def _retry_async(fn: Callable[..., Coroutine],
                        max_retries: int = 3,
                        backoff_base: float = 2.0,
@@ -573,14 +551,14 @@ class WorkflowOrchestrator:
                         return method(**context)
                     return method()
 
-                result, retries = await asyncio.get_event_loop().run_in_executor(
-                    None,
-                    lambda: _retry_sync(
-                        _call_sync,
-                        max_retries=task_def.max_retries,
-                        backoff_base=self._backoff,
-                        task_name=task_def.name,
-                    ),
+                async def _call_async():
+                    return await asyncio.to_thread(_call_sync)
+
+                result, retries = await _retry_async(
+                    _call_async,
+                    max_retries=task_def.max_retries,
+                    backoff_base=self._backoff,
+                    task_name=task_def.name,
                 )
 
             tr.status = "success"
