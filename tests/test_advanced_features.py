@@ -16,13 +16,14 @@ def test_similarity_engine():
     engine = SimilarityEngine(k=2)
     engine.mock_fit()
 
-    test_vec = np.random.rand(1, 5)
+    test_vec = np.random.rand(1, 3)
     results = engine.find_similar(test_vec)
 
-    assert isinstance(results, list)
-    if results:
-        assert "match_id" in results[0]
-        assert "similarity" in results[0]
+    assert isinstance(results, dict)
+    if results and "matches" in results:
+        assert len(results["matches"]) > 0
+        assert "match_id" in results["matches"][0]
+        assert "similarity" in results["matches"][0]
     print("SimilarityEngine OK.")
 
 def test_meta_labeler():
@@ -43,15 +44,15 @@ def test_volatility_modulator():
 
     # Simulate calm market
     for _ in range(10):
-        vm.update_returns(0.01) # 1% steady return
+        vm.update_returns(0.01, is_win=True) # 1% steady return
 
-    mult = vm.get_stake_multiplier()
+    mult = vm.get_kelly_fraction()
     assert mult > 0
     print(f"VolatilityModulator OK (Calm Multiplier: {mult}).")
 
     # Simulate chaos
-    vm.update_returns(-0.20) # 20% loss
-    mult_chaos = vm.get_stake_multiplier()
+    vm.update_returns(-0.20, is_win=False) # 20% loss
+    mult_chaos = vm.get_kelly_fraction()
     assert mult_chaos < mult
     print(f"VolatilityModulator OK (Chaos Multiplier: {mult_chaos}).")
 

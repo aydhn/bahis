@@ -76,6 +76,8 @@ class MarketGod:
         regime_risk = 0.0
         if self.hmm and volatility_history and len(volatility_history) > 10:
             pred = self.hmm.predict(np.array(volatility_history))
+            # EMA Online training
+            self.hmm.train(np.array(volatility_history))
             # If chaotic probability is high
             if pred.next_state_probs[2] > 0.6: # High Chaos
                 regime_risk = 1.0

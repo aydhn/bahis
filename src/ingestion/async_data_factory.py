@@ -101,10 +101,11 @@ class DataFactory:
             odds = self._extract_odds(item)
             normalized.update(odds)
 
-            if "home_odds" in odds:
-                steam_signal = self.smart_money.detect_steam(match_id, odds["home_odds"], time.time())
-                if steam_signal:
-                    logger.info(f"Steam Move Detected for {match_id}: {steam_signal}")
+            for odd_type in ["home_odds", "draw_odds", "away_odds"]:
+                if odd_type in odds:
+                    steam_signal = self.smart_money.detect_steam(f"{match_id}_{odd_type}", odds[odd_type], time.time())
+                    if steam_signal:
+                        logger.info(f"Steam Move Detected for {match_id} ({odd_type}): {steam_signal}")
 
             if normalized["home_team"] and normalized["away_team"]:
                 self._db.upsert_match(normalized)
