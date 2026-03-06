@@ -42,6 +42,9 @@ class PipelineEngine:
         heartbeat_file = Path("data/heartbeat.txt")
         if not heartbeat_file.parent.exists():
             heartbeat_file.parent.mkdir(parents=True, exist_ok=True)
+        if self.bus:
+            alpha_gen = AlphaGenerator(self.bus)
+            asyncio.create_task(alpha_gen.start())
 
         while not lifecycle.shutdown_event.is_set():
             # Update Heartbeat
@@ -52,9 +55,6 @@ class PipelineEngine:
 
             cycle += 1
             logger.info(f"═══ Pipeline Cycle #{cycle} ═══")
-            if cycle == 1 and self.bus:
-                alpha_gen = AlphaGenerator(self.bus)
-                asyncio.create_task(alpha_gen.start())
 
 
             # Reset context for each cycle, but keep some persistent state if needed

@@ -20,11 +20,15 @@ except ImportError:
     NUMBA_AVAILABLE = False
     logger.warning("Numba not found. Using pure NumPy fallback.")
     # Dummy decorator
-    def njit(func):
-        return func
+    def njit(*args, **kwargs):
+        def decorator(func):
+            return func
+        if len(args) == 1 and callable(args[0]):
+            return args[0]
+        return decorator
 
 
-@njit
+@njit(fastmath=True, nogil=True)
 def fast_kelly(p: float, b: float, fraction: float = 1.0) -> float:
     """
     Calculates Kelly Stake % for a single bet.
@@ -41,7 +45,7 @@ def fast_kelly(p: float, b: float, fraction: float = 1.0) -> float:
 
     return f * fraction
 
-@njit
+@njit(fastmath=True, nogil=True)
 def fast_kelly_batch(probs: np.ndarray, odds: np.ndarray, fraction: float = 1.0) -> np.ndarray:
     """
     Calculates Kelly Stake % for a batch of bets.
@@ -70,7 +74,7 @@ def fast_kelly_batch(probs: np.ndarray, odds: np.ndarray, fraction: float = 1.0)
 
     return stakes
 
-@njit
+@njit(fastmath=True, nogil=True)
 def fast_entropy(probs: np.ndarray) -> float:
     """
     Calculates Shannon Entropy in bits.
@@ -93,7 +97,7 @@ def fast_entropy(probs: np.ndarray) -> float:
 
     return entropy
 
-@njit
+@njit(fastmath=True, nogil=True)
 def fast_implied_prob(odds: np.ndarray) -> np.ndarray:
     """
     Converts decimal odds to implied probability (margin removed via normalization).
@@ -117,7 +121,7 @@ def fast_implied_prob(odds: np.ndarray) -> np.ndarray:
 
     return raw_probs
 
-@njit
+@njit(fastmath=True, nogil=True)
 def fast_entropy_scalar(p1: float, p2: float, p3: float) -> float:
     """
     Calculates Shannon Entropy in bits without array overhead.

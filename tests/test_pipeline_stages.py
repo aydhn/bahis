@@ -171,6 +171,17 @@ class TestNewPipeline(unittest.TestCase):
         context["ensemble_results"][0]["away_panicking"] = False
         context["ensemble_results"][0]["homology_org_diff"] = 0.0
 
+        # Mock TreasuryEngine to always approve to avoid integration failure
+        from src.quant.finance.treasury import TreasuryEngine
+        self.mock_treasury = MagicMock(spec=TreasuryEngine)
+        self.mock_treasury.request_capital.return_value = 100.0
+        # Add state to mock to prevent AttributeError
+        self.mock_treasury.state = MagicMock()
+        self.mock_treasury.state.daily_pnl = 10.0
+        self.mock_treasury.state.total_capital = 1000.0
+        container.register("treasury", self.mock_treasury)
+        stage.tower.treasury = self.mock_treasury
+
         # Run stage
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
