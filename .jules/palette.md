@@ -7,3 +7,7 @@
 ## 2026-03-04 - Screen Reader Interpretation of Unicode Symbols
 **Learning:** Raw unicode symbols like `▲`, `▼`, and `●` are often read literally by screen readers (e.g., "Black up-pointing triangle"). This creates confusing audio experiences for users when evaluating status trends like power rankings. Simply inserting symbols visually is not accessible by default.
 **Action:** When using standalone unicode characters for status indicators, always wrap them in a span with `role="img"` and provide an explicit `aria-label` describing their meaning (e.g., "Yükselişte", "Düşüşte") so screen readers can parse the intent, and `title` for hover tooltips.
+
+## 2024-05-24 - Data Density Management
+**Learning:** Users often feel overwhelmed by dense data tables in dashboards. Adding a simple toggle to filter for "actionable" items (like Value > 0) significantly reduces cognitive load without removing access to the full dataset.
+**Action:** When designing data-heavy interfaces, always include a "Focus Mode" or "Show Opportunities Only" filter by default.
