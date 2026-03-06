@@ -53,15 +53,7 @@ class DataFactory:
             except Exception as e:
                 logger.warning(f"Playwright başlatılamadı: {e}")
 
-    # ── API: The Odds API (ücretsiz tier) ──
-    async def _fetch_odds_api(self, api_key: str = "") -> list[dict]:
-        logger.info("Odds API disabled (Paid API). Using free local sources.")
-        return []
 
-    # ── API: Football-Data.org ──
-    async def _fetch_football_data(self, api_key: str = "") -> list[dict]:
-        logger.info("Football-Data API disabled (Paid API). Using free local sources.")
-        return []
 
     # ── Scraper: FlashScore ──
     async def _scrape_flashscore(self) -> list[dict]:
@@ -161,13 +153,12 @@ class DataFactory:
         while not shutdown.is_set():
             try:
                 tasks = [
-                    self._fetch_odds_api(),
-                    self._fetch_football_data(),
+                    self._scrape_flashscore()
                 ]
                 results = await asyncio.gather(*tasks, return_exceptions=True)
                 for i, res in enumerate(results):
                     if isinstance(res, list) and res:
-                        src = ["odds_api", "football_data"][i]
+                        src = ["flashscore"][i]
                         self._normalize_and_store(res, src)
                         logger.info(f"{src}: {len(res)} maç çekildi.")
             except Exception as e:

@@ -29,6 +29,11 @@ try:
 except ImportError:
     GameTheoryEngine = None
 
+try:
+    from src.extensions.behavioral_arbitrage import BehavioralArbitrage
+except ImportError:
+    BehavioralArbitrage = None
+
 @dataclass
 class GodSignal:
     """The divine verdict."""
@@ -47,11 +52,13 @@ class MarketGod:
         self.hmm = MarketRegimeHMM() if MarketRegimeHMM else None
         self.smart_money = SmartMoneyDetector() if SmartMoneyDetector else None
         self.game_theory = GameTheoryEngine() if GameTheoryEngine else None
+        self.behavioral_arb = BehavioralArbitrage() if BehavioralArbitrage else None
         logger.info("MarketGod initialized. Watching form the heavens.")
 
     def consult(self, match_id: str,
                 odds_data: Dict[str, float],
-                volatility_history: list[float] = None) -> GodSignal:
+                volatility_history: list[float] = None,
+                model_prob: float = 0.5) -> GodSignal:
         """
         Consult the Market God for a verdict on a specific match.
 
@@ -94,6 +101,19 @@ class MarketGod:
                 sm_score = -0.5 * sm_res.strength
                 reasons.append(f"Smart Money Selling Home (Strength {sm_res.strength:.2f})")
 
+        # Behavioral Arbitrage (Sentiment/Recency Bias)
+        arb_score = 0.0
+        if self.behavioral_arb and "home" in odds_data:
+            home_odds = odds_data.get("home", 2.0)
+            arb_res = self.behavioral_arb.detect_mispricing(match_id, home_odds, model_prob)
+
+            if arb_res.signal == "BEARISH":
+                arb_score = -0.5 * arb_res.sentiment_score
+                reasons.append(f"Behavioral Trap: Overvalued Fade ({arb_res.sentiment_score:.2f})")
+            elif arb_res.signal == "BULLISH":
+                arb_score = 0.5 * arb_res.sentiment_score
+                reasons.append(f"Behavioral Value: Undervalued Edge ({arb_res.sentiment_score:.2f})")
+
         # 3. Game Theory (Strategy) - "The Trap"
         # Check if the market is perfectly efficient (Nash Equilibrium).
         # If implied prob == naive prob, edge is zero.
@@ -115,7 +135,7 @@ class MarketGod:
             return signal
 
         # Aggregate Scores
-        total_score = sm_score
+        total_score = sm_score + arb_score
 
         # Black Swan Check
         if regime_risk > 0.8:
