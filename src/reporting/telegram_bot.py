@@ -534,40 +534,8 @@ class TelegramBot:
                 await self.send_message(chat_id, briefing)
 
         elif command == "/ceo":
-            # Executive Summary (Legacy - now similar to brief but more concise)
-            await self.send_message(chat_id, "☕ *Yönetici Özeti (Legacy)*")
-
-            # 1. Financials
-            stats = await self._read_bankroll_state()
-            bankroll = stats.get("bankroll", 0.0)
-            roi = 0.0 # Calculate if possible or fetch from perf report
-            if self.performance_report:
-                roi = self.performance_report.get("roi", 0.0)
-
-            fin_emoji = "🟢" if roi >= 0 else "🔴"
-
-            # 2. Risk Regime
-            regime = "NORMAL"
-            if self.context and self.context.ensemble_results:
-                 # Just take the first one as proxy
-                 first = self.context.ensemble_results[0]
-                 regime = first.get("regime_status", "NORMAL")
-
-            # 3. Top Opportunities
-            top_picks = "Fırsat Yok"
-            if self.context and hasattr(self.context, 'final_bets'):
-                bets = sorted(self.context.final_bets, key=lambda x: x.get('confidence', 0) * x.get('ev', 0), reverse=True)[:3]
-                if bets:
-                    top_picks = "\n".join([f"• {b['match_id']} ({b['selection']}) - Odds: {b['odds']}" for b in bets])
-
-            msg = (
-                f"🏛️ *CEO Dashboard*\n\n"
-                f"{fin_emoji} **Finansal**: {bankroll:.2f} TL (ROI: %{roi*100:.2f})\n"
-                f"🛡️ **Rejim**: {regime}\n\n"
-                f"💎 **Top Fırsatlar**:\n{top_picks}\n\n"
-                f"Sistem stabil."
-            )
-            await self.send_message(chat_id, msg)
+            report = self.ceo_dashboard.generate_report(self.context)
+            await self.send_message(chat_id, report)
 
         elif command == "/warroom":
             self.warroom_active = not self.warroom_active

@@ -8,6 +8,7 @@ from typing import Any, Dict, Optional
 import time
 from loguru import logger
 from src.core.interfaces import QuantModel
+from src.extensions.quantum_pricing_model import QuantumPricingModel
 from src.quant.adapters import BenterAdapter, LSTMAdapter, DixonColesAdapter, BayesianAdapter, QuantumAdapter
 from src.system.container import container
 from src.quant.analysis.syndicate_consensus import SyndicateConsensus
@@ -26,6 +27,7 @@ class EnsembleModel(QuantModel):
     def __init__(self):
         self.bayesian = BayesianAdapter()
         self.quantum = QuantumAdapter()
+        self.qpm = QuantumPricingModel()
         self.active_agent = container.get("active_agent")
 
         # Initialize models
@@ -34,16 +36,18 @@ class EnsembleModel(QuantModel):
             "lstm": LSTMAdapter(),
             "dixon_coles": DixonColesAdapter(),
             "bayesian": self.bayesian,
-            "quantum": self.quantum
+            "quantum": self.quantum,
+            "qpm": self.qpm
         }
 
         # Static weights if confidence is unavailable
         self.weights = {
-            "benter": 0.30,
-            "dixon_coles": 0.25,
+            "benter": 0.25,
+            "dixon_coles": 0.20,
             "lstm": 0.15,
             "bayesian": 0.15,
-            "quantum": 0.15
+            "quantum": 0.15,
+            "qpm": 0.10
         }
 
         self.syndicate = SyndicateConsensus()
