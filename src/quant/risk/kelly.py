@@ -5,8 +5,9 @@ This module implements a dynamic version of the Kelly Criterion that adjusts
 the betting fraction based on realized performance and market regime.
 """
 import numpy as np
-from typing import List, Dict, Optional
-from loguru import logger
+from typing import List, Dict
+from src.extensions.fast_math import fast_kelly
+
 
 class AdaptiveKelly:
     """
@@ -36,7 +37,6 @@ class AdaptiveKelly:
 
         # Update Drawdown
         # simplified PnL tracking for internal state
-        pnl = bet_result.get("pnl", 0.0)
         # We need actual bankroll tracking elsewhere, but here we can track relative performance
 
     def calculate_fraction(self, probability: float, odds: float, confidence: float = 1.0) -> float:
@@ -54,16 +54,13 @@ class AdaptiveKelly:
         if probability <= 0 or odds <= 1:
             return 0.0
 
-        # 1. Basic Kelly: f = (bp - q) / b = p - (1-p)/(b) where b = odds-1
-        b = odds - 1
-        q = 1 - probability
-        raw_kelly = (b * probability - q) / b
+        # 1. Basic Kelly via fast_math (Scalar for max speed)
+        raw_kelly = fast_kelly(probability, odds, fraction=1.0)
 
         if raw_kelly <= 0:
             return 0.0
 
         # 2. Apply Base Fraction (Safety)
-        # "Fractional Kelly" is standard industry practice (usually 0.25 - 0.5)
         safe_kelly = raw_kelly * self.base_fraction
 
         # 3. Apply Confidence & Calibration Adjustment

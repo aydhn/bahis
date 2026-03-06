@@ -22,11 +22,12 @@ Kill Switch:
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import Any
+from dataclasses import dataclass
 
 import numpy as np
 from loguru import logger
+from src.extensions.fast_math import fast_entropy
+
 
 try:
     from scipy.stats import entropy as scipy_entropy
@@ -80,7 +81,9 @@ def shannon_entropy(probs: np.ndarray, base: int = 2) -> float:
     # Normalize
     probs = probs / probs.sum()
 
-    if SCIPY_OK:
+    if base == 2:
+        return float(fast_entropy(probs))
+    elif SCIPY_OK:
         return float(scipy_entropy(probs, base=base))
 
     return float(-np.sum(probs * np.log2(probs)))

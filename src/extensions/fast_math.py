@@ -23,6 +23,24 @@ except ImportError:
     def njit(func):
         return func
 
+
+@njit
+def fast_kelly(p: float, b: float, fraction: float = 1.0) -> float:
+    """
+    Calculates Kelly Stake % for a single bet.
+    f = (p * b - 1.0) / (b - 1.0)
+    where b is decimal odds.
+    """
+    if b <= 1.0 or p <= 0.0:
+        return 0.0
+
+    f = (p * b - 1.0) / (b - 1.0)
+
+    if f < 0:
+        return 0.0
+
+    return f * fraction
+
 @njit
 def fast_kelly_batch(probs: np.ndarray, odds: np.ndarray, fraction: float = 1.0) -> np.ndarray:
     """

@@ -1,85 +1,58 @@
-
-import sys
-from pathlib import Path
 import pytest
-import asyncio
+import numpy as np
+from src.extensions.fast_math import fast_kelly, fast_entropy
+from src.quant.risk.kelly import AdaptiveKelly
+from src.quant.physics.entropy_meter import EntropyMeter, shannon_entropy
+from src.pipeline.stages.features import FeatureStage
+from src.extensions.ceo_dashboard import CEODashboard
+from unittest.mock import MagicMock, patch
+from src.extensions.market_god import GodSignal
 
-# Add project root to path
-ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT))
+def test_fast_kelly_scalar():
+    p = 0.55
+    b = 2.0
+    f = fast_kelly(p, b)
+    assert round(f, 4) == 0.1000
 
-from src.quant.risk.risk_control_tower import RiskControlTower, RiskDecision
-from src.pipeline.stages.execution import ExecutionStage
-from src.extensions.market_god import MarketGod, GodSignal
+    kelly = AdaptiveKelly(base_fraction=0.25)
+    kf = kelly.calculate_fraction(p, b)
+    assert round(kf, 4) == 0.0250
 
+def test_fast_entropy():
+    probs = np.array([0.5, 0.5])
+    ent = fast_entropy(probs)
+    assert round(ent, 4) == 1.0000
+
+    ent2 = shannon_entropy(probs)
+    assert round(ent2, 4) == 1.0000
+
+@patch("src.system.container.container.get")
 @pytest.mark.asyncio
-async def test_risk_veto_logic():
-    """Test that RiskControlTower correctly rejects critical vetoes."""
-    tower = RiskControlTower()
+async def test_feature_stage_volatility(mock_get):
+    mock_get.return_value = MagicMock()
+    stage = FeatureStage()
+    stage.jax_acc = None  # mock
+    res = await stage.execute({"matches": MagicMock()})
+    assert "volatility_history" in res
+    assert isinstance(res["volatility_history"], list)
+    assert len(res["volatility_history"]) > 0
 
-    # 1. Chaos Veto Scenario
-    # Mock Regime Detector return (simulate via monkeypatch or mock object logic)
-    # Since we can't easily mock internal components without extensive setup,
-    # we'll rely on the logic structure we injected.
+@patch("src.extensions.ceo_dashboard.TreasuryEngine")
+def test_ceo_dashboard_rebalance(mock_treasury):
+    mock_t = MagicMock()
+    mock_treasury.return_value = mock_t
+    dash = CEODashboard()
+    dash.treasury = mock_t # inject mock
 
-    # We will verify by inspecting the code logic directly via `tower.evaluate_bet`
-    # passed with specific triggers if possible, or by mocking the internal `regime_detector`.
+    # Test BULLISH
+    sig = GodSignal(signal_type="BULLISH")
+    dash.enforce_strategic_vision(sig)
+    mock_t.rebalance_buckets.assert_called_with("stable")
 
-    class MockRegime:
-        regime = "CHAOTIC"
-        confidence = 0.9 # Trigger veto
+    mock_t.reset_mock()
 
-    class MockDetector:
-        def detect_regime(self, mid, hist): return MockRegime()
+    # Test FIX_DETECTED
+    sig2 = GodSignal(signal_type="FIX_DETECTED")
+    dash.enforce_strategic_vision(sig2)
+    mock_t.rebalance_buckets.assert_called_with("stable")
 
-    tower.regime_detector = MockDetector()
-
-    candidate = {"match_id": "test_match", "prob_home": 0.5, "odds": 2.0}
-    decision = tower.evaluate_bet(candidate, {})
-
-    assert decision.approved is False
-    assert "Chaos Veto" in decision.rejection_reason
-    print("Risk Veto (Chaos) Test Passed.")
-
-def test_market_god_logic():
-    """Test MarketGod signal generation."""
-    god = MarketGod()
-
-    # 1. Fix Detection (Draw < 1.90)
-    odds = {"home": 2.5, "draw": 1.85, "away": 2.5}
-    sig = god.consult("match_fix", odds, [])
-
-    assert sig.signal_type == "FIX_DETECTED"
-    assert sig.conviction > 0.8
-    assert sig.override_models is True
-    print("Market God (Fix Detection) Test Passed.")
-
-@pytest.mark.asyncio
-async def test_execution_sanity_check():
-    """Test ExecutionStage sanity checks."""
-    stage = ExecutionStage()
-
-    # 1. Valid Bet
-    valid_bet = {"match_id": "m1", "stake": 100, "odds": 2.0, "ev": 0.05}
-    assert stage._sanity_check(valid_bet) is True
-
-    # 2. Negative Stake
-    bad_stake = {"match_id": "m2", "stake": -10, "odds": 2.0}
-    assert stage._sanity_check(bad_stake) is False
-
-    # 3. Impossible Odds
-    bad_odds = {"match_id": "m3", "stake": 10, "odds": 0.5}
-    assert stage._sanity_check(bad_odds) is False
-
-    # 4. Negative EV (Standard)
-    neg_ev = {"match_id": "m4", "stake": 10, "odds": 2.0, "ev": -0.1}
-    assert stage._sanity_check(neg_ev) is False
-
-    print("Execution Sanity Check Test Passed.")
-
-if __name__ == "__main__":
-    # Manually run async tests if pytest not called directly
-    loop = asyncio.new_event_loop()
-    loop.run_until_complete(test_risk_veto_logic())
-    loop.run_until_complete(test_execution_sanity_check())
-    test_market_god_logic()

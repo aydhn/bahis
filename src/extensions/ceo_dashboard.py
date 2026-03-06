@@ -41,11 +41,13 @@ class CEODashboard:
              # Extremely aggressive
              self.treasury.state.allocations = {"safe": 0.3, "aggressive": 0.6, "rnd": 0.1}
              self.treasury.save_state()
+             self.treasury.rebalance_buckets("stable")
              logger.success("Treasury shifted to MAXIMUM AGGRESSION.")
         elif sig == "FIX_DETECTED":
              # High conviction, shift to safe/arb styles to exploit
              self.treasury.state.allocations = {"safe": 0.8, "aggressive": 0.2, "rnd": 0.0}
              self.treasury.save_state()
+             self.treasury.rebalance_buckets("stable")
 
     def generate_report(self, context: Optional[Any]) -> str:
         """
