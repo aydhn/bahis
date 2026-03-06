@@ -121,9 +121,32 @@ class MarketRegimeHMM:
             description=f"Current: {labels[current_state]} -> Forecast: {labels[np.argmax(next_probs)]}"
         )
 
-    def train(self, observations: np.ndarray):
+    def train(self, observations: np.ndarray, alpha: float = 0.1):
         """
-        Stub for Baum-Welch training.
-        In production, this would update A, means, and vars based on history.
+        Online EMA training.
+        Dynamically updates the means and vars based on observations without full EM overhead.
         """
-        pass
+        if len(observations) == 0:
+            return
+
+        # Simple online update for means and variances based on the most likely state (Viterbi path)
+        T = len(observations)
+        if T < 2:
+            return
+
+        # Get current state predictions to assign observations
+        prediction = self.predict(observations)
+        curr_state = prediction.current_state
+
+        # Use EMA to update the mean and variance of the assigned state
+        for obs in observations:
+            # We assign all recent obs to the current state for a fast online update
+            # (In a real EM, we'd use responsibilities, but this is a high-speed heuristic)
+            diff = obs - self.means[curr_state]
+            self.means[curr_state] += alpha * diff
+            self.vars[curr_state] = (1 - alpha) * self.vars[curr_state] + alpha * (diff ** 2)
+
+            # Ensure variance doesn't collapse
+            self.vars[curr_state] = max(self.vars[curr_state], 1e-6)
+
+        logger.debug(f"HMM parameters updated (EMA). New Means: {self.means}")
