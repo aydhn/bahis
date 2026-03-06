@@ -57,9 +57,12 @@ class ReportingStage(PipelineStage):
 
         # 0.8 God Mode Report
         if context.get("send_summary", True):
-            report = self.ceo_dashboard.generate_report(ctx)
-            if report:
-                await self.bot.send_message(report)
+            if hasattr(self.bot, 'send_godmode_report'):
+                await self.bot.send_godmode_report(ctx)
+            else:
+                report = self.ceo_dashboard.generate_report(ctx)
+                if report:
+                    await self.bot.send_message(report)
 
         bets = context.get("final_bets", [])
 

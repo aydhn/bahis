@@ -116,3 +116,26 @@ def fast_implied_prob(odds: np.ndarray) -> np.ndarray:
         raw_probs[i] /= inv_sum
 
     return raw_probs
+
+@njit
+def fast_entropy_scalar(p1: float, p2: float, p3: float) -> float:
+    """
+    Calculates Shannon Entropy in bits without array overhead.
+    """
+    entropy = 0.0
+    s = p1 + p2 + p3
+
+    if s == 0:
+        return 0.0
+
+    if p1 > 0:
+        p = p1 / s
+        entropy -= p * np.log2(p)
+    if p2 > 0:
+        p = p2 / s
+        entropy -= p * np.log2(p)
+    if p3 > 0:
+        p = p3 / s
+        entropy -= p * np.log2(p)
+
+    return entropy

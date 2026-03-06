@@ -212,14 +212,13 @@ class EntropyMeter:
 
         # ── Maç entropi ──
         if model_probs:
-            probs = np.array([
+            # Optimization: avoiding Numba array overhead
+            from src.extensions.fast_math import fast_entropy_scalar
+            report.match_entropy = round(fast_entropy_scalar(
                 model_probs.get("prob_home", 0.33),
                 model_probs.get("prob_draw", 0.33),
-                model_probs.get("prob_away", 0.34),
-            ])
-            probs = np.maximum(probs, 1e-10)
-            probs = probs / probs.sum()
-            report.match_entropy = round(shannon_entropy(probs), 4)
+                model_probs.get("prob_away", 0.34)
+            ), 4)
 
         # ── Takım geçmiş entropileri ──
         if home_history:
