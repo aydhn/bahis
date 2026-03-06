@@ -55,43 +55,13 @@ class DataFactory:
 
     # ── API: The Odds API (ücretsiz tier) ──
     async def _fetch_odds_api(self, api_key: str = "") -> list[dict]:
-        await self._ensure_client()
-        if not api_key:
-            logger.debug("Odds API key yok – atlanıyor.")
-            return []
-        url = f"{self.SOURCES['the_odds_api']}/soccer_turkey_super_league/odds"
-        params = {
-            "apiKey": api_key,
-            "regions": "eu",
-            "markets": "h2h,totals",
-            "oddsFormat": "decimal",
-        }
-        try:
-            resp = await self._client.get(url, params=params)
-            resp.raise_for_status()
-            return resp.json()
-        except Exception as e:
-            logger.warning(f"Odds API hatası: {e}")
-            return []
+        logger.info("Odds API disabled (Paid API). Using free local sources.")
+        return []
 
     # ── API: Football-Data.org ──
     async def _fetch_football_data(self, api_key: str = "") -> list[dict]:
-        await self._ensure_client()
-        headers = {}
-        if api_key:
-            headers["X-Auth-Token"] = api_key
-        try:
-            resp = await self._client.get(
-                f"{self.SOURCES['football_data']}/competitions/TR1/matches",
-                headers=headers,
-                params={"status": "SCHEDULED"},
-            )
-            resp.raise_for_status()
-            data = resp.json()
-            return data.get("matches", [])
-        except Exception as e:
-            logger.warning(f"Football-Data hatası: {e}")
-            return []
+        logger.info("Football-Data API disabled (Paid API). Using free local sources.")
+        return []
 
     # ── Scraper: FlashScore ──
     async def _scrape_flashscore(self) -> list[dict]:

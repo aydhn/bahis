@@ -60,7 +60,7 @@ class TreasuryEngine:
 
         # Check absolute survival (must keep 10% min liquidity)
         available_liquid = self.state.total_capital - self.state.locked_capital
-        min_liquidity = self.state.total_capital * 0.10
+        min_liquidity = self.state.total_capital * 0.05
         if available_liquid - stake < min_liquidity:
             return 0.0
 
@@ -86,7 +86,7 @@ class TreasuryEngine:
         # 3. Liquidity Check
         # Ensure we don't lock 100% of capital
         available_liquid = self.state.total_capital - self.state.locked_capital
-        min_liquidity = self.state.total_capital * 0.10 # Keep 10% free
+        min_liquidity = self.state.total_capital * 0.05 # Keep 5% free
 
         max_approvable = available_liquid - min_liquidity
 

@@ -72,12 +72,12 @@ class TestTreasuryEngine:
         assert approved == 0.0
 
     def test_request_capital_liquidity_limit(self):
-        # 10% cash buffer required = 1000.0
+        # 5% cash buffer required = 500.0
         # Available liquid = 10000 - 8500 = 1500
-        # Max approvable = 1500 - 1000 = 500
+        # Max approvable = 1500 - 500 = 1000
         self.engine.state.locked_capital = 8500.0
         approved = self.engine.request_capital(1000.0, "safe")
-        assert approved == 500.0
+        assert approved == 1000.0
 
     def test_release_capital_win(self):
         self.engine.state.locked_capital = 100.0
