@@ -5,6 +5,8 @@ Birden fazla kaynaktan eş zamanlı oran ve maç verisi çeker.
 from __future__ import annotations
 
 import asyncio
+import time
+from src.extensions.smart_money import SmartMoneyDetector
 import re
 from datetime import datetime
 from typing import Any
@@ -31,6 +33,7 @@ class DataFactory:
         self._client: httpx.AsyncClient | None = None
         self._browser = None
         logger.debug("DataFactory başlatıldı.")
+        self.smart_money = SmartMoneyDetector()
 
     async def _ensure_client(self):
         if self._client is None or self._client.is_closed:
@@ -138,6 +141,11 @@ class DataFactory:
             # Oran bilgileri varsa ekle
             odds = self._extract_odds(item)
             normalized.update(odds)
+
+            if "home_odds" in odds:
+                steam_signal = self.smart_money.detect_steam(match_id, odds["home_odds"], time.time())
+                if steam_signal:
+                    logger.info(f"Steam Move Detected for {match_id}: {steam_signal}")
 
             if normalized["home_team"] and normalized["away_team"]:
                 self._db.upsert_match(normalized)
