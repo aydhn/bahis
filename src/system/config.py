@@ -18,7 +18,6 @@ class Settings(BaseSettings):
 
     # LLM
     LLM_BACKEND: str = "auto"
-    OPENAI_API_KEY: Optional[str] = None
 
     # Paths
     ROOT_DIR: Path = Path(__file__).parent.parent.parent
