@@ -9,10 +9,8 @@ import time
 from src.extensions.smart_money import SmartMoneyDetector
 import re
 from datetime import datetime
-from typing import Any
 
 import httpx
-import polars as pl
 from loguru import logger
 
 
@@ -21,7 +19,6 @@ class DataFactory:
 
     # Ücretsiz / açık API kaynakları
     SOURCES = {
-        "the_odds_api": "https://api.the-odds-api.com/v4/sports",
         "football_data": "https://api.football-data.org/v4",
         "flashscore_scrape": "https://www.flashscore.com.tr/",
     }

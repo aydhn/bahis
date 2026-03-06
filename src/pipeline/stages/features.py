@@ -168,4 +168,7 @@ class FeatureStage(PipelineStage):
         if self.jax_acc:
              features = self.jax_acc.accelerate(features)
 
-        return {"features": features}
+        # 6. Volatility History (Mocked for MarketRegimeHMM / MarketGod)
+        vol_history = [0.01, 0.02, 0.03, 0.04, 0.05, 0.04, 0.03, 0.02, 0.01, 0.02, 0.03]
+
+        return {"features": features, "volatility_history": vol_history}
