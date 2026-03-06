@@ -14,7 +14,7 @@ class MockIngestionStage(PipelineStage):
     async def execute(self, context):
         logger.info("Mock Ingestion Executing")
         matches = pl.DataFrame({
-            "home_team": ["TeamA"],
+            "match_id": ["TeamA_TeamB"], "home_team": ["TeamA"],
             "away_team": ["TeamB"],
             "home_odds": [2.0],
             "draw_odds": [3.0],
@@ -31,7 +31,7 @@ class MockEnsembleStage(PipelineStage):
         return {
             "ensemble_results": [{
                 "match_id": "TeamA_TeamB",
-                "prob_home": 0.85, # Stronger signal
+                "prob_home": 0.55, # Stronger signal
                 "confidence": 0.95,
                 "news_summary": "Team A has a new striker."
             }]

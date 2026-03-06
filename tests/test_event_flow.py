@@ -1,6 +1,6 @@
 import asyncio
 from src.core.event_bus import EventBus, Event
-from src.quant.portfolio_manager import PortfolioManager
+from src.quant.risk.portfolio_manager import PortfolioManager
 
 async def test_flow():
     print("Initializing EventBus...")

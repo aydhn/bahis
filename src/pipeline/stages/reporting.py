@@ -1,3 +1,4 @@
+from src.extensions.ceo_dashboard import CEODashboard
 from typing import Dict, Any, Optional
 import asyncio
 from loguru import logger
@@ -13,6 +14,7 @@ class ReportingStage(PipelineStage):
     def __init__(self, bot_instance: Optional[TelegramBot] = None):
         super().__init__("reporting")
         self.bot = bot_instance or TelegramBot()
+        self.ceo_dashboard = CEODashboard()
 
         # Botu başlat (Arka planda polling)
         # Eğer dışarıdan geldiyse (Sentinel), lifecycle dışarıda yönetilir.
@@ -46,6 +48,18 @@ class ReportingStage(PipelineStage):
                     logger.info(f"Performance Monitor ROI: {roi:.2%}")
             except Exception as e:
                 logger.error(f"Performance Monitor failed: {e}")
+
+
+        # 0.7 CEODashboard Enforce Strategic Vision
+        god_signal = context.get("god_signal")
+        if god_signal:
+            self.ceo_dashboard.enforce_strategic_vision(god_signal)
+
+        # 0.8 God Mode Report
+        if context.get("send_summary", True):
+            report = self.ceo_dashboard.generate_report(ctx)
+            if report:
+                await self.bot.send_message(report)
 
         bets = context.get("final_bets", [])
 
