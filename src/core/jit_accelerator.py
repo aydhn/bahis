@@ -68,7 +68,8 @@ def benchmark(func):
 
 # ── Kelly Kriteri (JIT) ──
 if NUMBA_OK:
-    @njit(cache=True)
+    # ⚡ Bolt: Added fastmath to relax strict IEEE-754 rules for max speed, nogil to allow true multi-threading.
+    @njit(cache=True, fastmath=True, nogil=True)
     def kelly_fraction_jit(prob: float, odds: float,
                            fraction: float = 0.25) -> float:
         """Kelly Kriteri – JIT derlenmiş (C++ hızında)."""
@@ -79,7 +80,8 @@ if NUMBA_OK:
         kelly = (b * prob - q) / b
         return max(0.0, kelly * fraction)
 
-    @njit(cache=True)
+    # ⚡ Bolt: Added fastmath to relax strict IEEE-754 rules for max speed, nogil to allow true multi-threading.
+    @njit(cache=True, fastmath=True, nogil=True)
     def kelly_batch_jit(probs: np.ndarray, odds: np.ndarray,
                         fraction: float = 0.25) -> np.ndarray:
         """Toplu Kelly – vektörize JIT."""
@@ -108,7 +110,8 @@ else:
 
 # ── Poisson Olasılık (JIT) ──
 if NUMBA_OK:
-    @njit(cache=True)
+    # ⚡ Bolt: Added fastmath to relax strict IEEE-754 rules for max speed, nogil to allow true multi-threading.
+    @njit(cache=True, fastmath=True, nogil=True)
     def poisson_pmf_jit(k: int, lam: float) -> float:
         """Poisson PMF – JIT."""
         if lam <= 0:
@@ -118,7 +121,8 @@ if NUMBA_OK:
             log_pmf -= np.log(float(i))
         return np.exp(log_pmf)
 
-    @njit(cache=True)
+    # ⚡ Bolt: Added fastmath to relax strict IEEE-754 rules for max speed, nogil to allow true multi-threading.
+    @njit(cache=True, fastmath=True, nogil=True)
     def poisson_match_probs_jit(home_xg: float, away_xg: float,
                                  max_goals: int = 8) -> np.ndarray:
         """Maç skor olasılık matrisi – JIT (Poisson)."""
@@ -128,7 +132,8 @@ if NUMBA_OK:
                 matrix[i, j] = poisson_pmf_jit(i, home_xg) * poisson_pmf_jit(j, away_xg)
         return matrix
 
-    @njit(cache=True)
+    # ⚡ Bolt: Added fastmath to relax strict IEEE-754 rules for max speed, nogil to allow true multi-threading.
+    @njit(cache=True, fastmath=True, nogil=True)
     def match_outcome_probs_jit(home_xg: float, away_xg: float) -> tuple:
         """1X2 olasılıkları – JIT."""
         matrix = poisson_match_probs_jit(home_xg, away_xg)
@@ -169,7 +174,8 @@ else:
 
 # ── Monte Carlo Simülasyon (JIT) ──
 if NUMBA_OK:
-    @njit(cache=True, parallel=True)
+    # ⚡ Bolt: Added fastmath to relax strict IEEE-754 rules for max speed, nogil to allow true multi-threading.
+    @njit(cache=True, parallel=True, fastmath=True, nogil=True)
     def monte_carlo_match_jit(home_xg: float, away_xg: float,
                                 n_sims: int = 50000) -> np.ndarray:
         """Monte Carlo maç simülasyonu – paralel JIT.
@@ -233,7 +239,8 @@ else:
 
 # ── Euclidean Distance Batch (JIT) ──
 if NUMBA_OK:
-    @njit(cache=True, parallel=True)
+    # ⚡ Bolt: Added fastmath to relax strict IEEE-754 rules for max speed, nogil to allow true multi-threading.
+    @njit(cache=True, parallel=True, fastmath=True, nogil=True)
     def euclidean_batch_jit(query: np.ndarray,
                              matrix: np.ndarray) -> np.ndarray:
         """Vektör-matris Euclidean mesafe – paralel JIT."""
@@ -254,7 +261,8 @@ else:
 
 # ── Shannon Entropy (JIT) ──
 if NUMBA_OK:
-    @njit(cache=True)
+    # ⚡ Bolt: Added fastmath to relax strict IEEE-754 rules for max speed, nogil to allow true multi-threading.
+    @njit(cache=True, fastmath=True, nogil=True)
     def shannon_entropy_jit(probs: np.ndarray) -> float:
         """Shannon Entropy – JIT (bit cinsinden)."""
         h = 0.0
@@ -270,7 +278,8 @@ else:
 
 # ── Kovaryans Matrisi (JIT) ──
 if NUMBA_OK:
-    @njit(cache=True)
+    # ⚡ Bolt: Added fastmath to relax strict IEEE-754 rules for max speed, nogil to allow true multi-threading.
+    @njit(cache=True, fastmath=True, nogil=True)
     def covariance_matrix_jit(data: np.ndarray) -> np.ndarray:
         """Kovaryans matrisi – JIT."""
         n, m = data.shape
