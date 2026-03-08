@@ -165,10 +165,6 @@ class ExecutionStage(PipelineStage):
                 logger.error(f"Failed to update bet status for hedge: {e}")
 
         # 2. Execute Hedge Bet (if needed)
-        # In a real system, we would place a counter-bet (Lay) here.
-        # details = hedge_signal.get("details", {})
-        # if details and "hedge_stake" in details:
-        #      place_bet(...)
 
         # 3. Notify
         if self.notifier:
