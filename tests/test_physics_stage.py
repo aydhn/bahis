@@ -1,3 +1,4 @@
+import pytest
 
 import asyncio
 import polars as pl
@@ -5,6 +6,7 @@ import numpy as np
 from src.pipeline.stages.physics import PhysicsStage
 from loguru import logger
 
+@pytest.mark.asyncio
 async def test_physics_stage():
     logger.info("Initializing PhysicsStage...")
     stage = PhysicsStage()

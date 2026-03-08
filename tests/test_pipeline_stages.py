@@ -1,6 +1,6 @@
 import unittest
 import asyncio
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 from src.pipeline.core import create_default_pipeline
 from src.system.container import container
 from src.core.regime_kelly import KellyDecision
@@ -41,7 +41,10 @@ class TestNewPipeline(unittest.TestCase):
         for name in expected_stages:
             self.assertIn(name, stage_names, f"Stage {name} missing from pipeline")
 
-    def test_risk_stage_integration(self):
+
+    @patch("src.quant.finance.stress_tester.PortfolioStressTester.check_portfolio_health")
+    def test_risk_stage_integration(self, mock_stress):
+        mock_stress.return_value = {"approved": True, "var_pct": 0.0, "reason": "Mocked"}
         """Test RiskStage consumes Ensemble results correctly."""
         from src.pipeline.stages.risk import RiskStage
         stage = RiskStage()

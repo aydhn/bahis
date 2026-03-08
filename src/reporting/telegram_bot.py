@@ -130,7 +130,11 @@ class TelegramBot:
         self.sensitivity_engine = SensitivityEngine() if SensitivityEngine else None
 
         # Extensions
-        self.smart_money = container.get('smart_money')
+        try:
+            from src.system.container import container
+            self.smart_money = container.get('smart_money')
+        except Exception:
+            self.smart_money = None
         self.regime_hmm = MarketRegimeHMM() if MarketRegimeHMM else None
 
         self.reflexivity_engine = ReflexivityEngine()

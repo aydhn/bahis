@@ -1,7 +1,11 @@
-import matplotlib
-matplotlib.use('Agg')  # Non-interactive backend
-import matplotlib.pyplot as plt
-import seaborn as sns
+try:
+    import matplotlib
+    matplotlib.use('Agg')  # Non-interactive backend
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+    VISUALS_ENABLED = True
+except ImportError:
+    VISUALS_ENABLED = False
 import numpy as np
 import io
 from typing import Optional, List

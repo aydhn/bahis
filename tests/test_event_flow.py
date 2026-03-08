@@ -1,7 +1,9 @@
+import pytest
 import asyncio
 from src.core.event_bus import EventBus, Event
 from src.quant.risk.portfolio_manager import PortfolioManager
 
+@pytest.mark.asyncio
 async def test_flow():
     print("Initializing EventBus...")
     bus = EventBus(persist=False) # Don't write to disk for test
