@@ -227,8 +227,8 @@ class TelegramAdmin:
                 stats = self._db.get_stats()
 
             text = (
-                f"🗄 <b>VERİTABANI</b>\n"
-                f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+                "🗄 <b>VERİTABANI</b>\n"
+                "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
             )
             for k, v in stats.items():
                 text += f"• <b>{k}:</b> {v}\n"

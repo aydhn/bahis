@@ -151,7 +151,7 @@ if NUMBA_OK:
         return home_win, draw, away_win
 else:
     def poisson_pmf_jit(k: int, lam: float) -> float:
-        from math import exp, log, factorial
+        from math import exp, factorial
         if lam <= 0:
             return 1.0 if k == 0 else 0.0
         return exp(-lam) * (lam ** k) / factorial(k)

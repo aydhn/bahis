@@ -1,7 +1,6 @@
 import numpy as np
-import polars as pl
 from sklearn.neighbors import NearestNeighbors
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 from loguru import logger
 from src.memory.db_manager import DBManager
 

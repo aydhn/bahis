@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import numpy as np
 import polars as pl
-from scipy import stats, optimize
+from scipy import stats
 from loguru import logger
 
 

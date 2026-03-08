@@ -121,9 +121,9 @@ class DashboardTUI:
         bar = "█" * bar_len + "░" * (10 - bar_len)
 
         lines.append(f"Risk: [{bar}]")
-        lines.append(f"DD Limit: 10%")
-        lines.append(f"Max Tekli: 5%")
-        lines.append(f"Max Toplam: 20%")
+        lines.append("DD Limit: 10%")
+        lines.append("Max Tekli: 5%")
+        lines.append("Max Toplam: 20%")
         lines.append("")
         lines.append(f"Döngü: {self._data['cycle']}")
 

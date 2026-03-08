@@ -28,7 +28,6 @@ Fallback: EWMA + basit rolling volatility
 """
 from __future__ import annotations
 
-import time
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -385,7 +384,7 @@ class VolatilityAnalyzer:
                 f"YÜKSELMİŞ: σ={r.current_volatility:.4f}. "
                 f"Kelly x{r.kelly_multiplier:.1f}. "
                 f"Dikkatli devam."
-                + (f" Rejim değişti!" if r.regime_change else "")
+                + (" Rejim değişti!" if r.regime_change else "")
             )
         return (
             f"SAKİN: σ={r.current_volatility:.4f}, "

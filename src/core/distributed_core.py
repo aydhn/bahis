@@ -30,10 +30,9 @@ import asyncio
 import time
 from collections import defaultdict
 from concurrent.futures import ProcessPoolExecutor, Future
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Callable
 
-import numpy as np
 from loguru import logger
 
 try:

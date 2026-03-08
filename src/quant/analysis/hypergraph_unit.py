@@ -16,7 +16,7 @@ Fallback: numpy + scipy (Laplacian calculation)
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, List, Optional, Tuple
+from typing import List, Tuple
 
 import numpy as np
 from loguru import logger

@@ -9,7 +9,7 @@ Mantık:
   - Haber/Sentiment (RAG) sinyallerini "veto" veya "boost" olarak kullanır.
   - Modellerin tarihsel başarısına göre ağırlıklandırma (ileride).
 """
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 import numpy as np
 from loguru import logger

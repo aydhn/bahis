@@ -9,7 +9,7 @@ It computes:
     at the top of the book.
 """
 import numpy as np
-from typing import List, Dict, Any
+from typing import List, Dict
 from dataclasses import dataclass
 from loguru import logger
 

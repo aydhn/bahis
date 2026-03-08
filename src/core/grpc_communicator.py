@@ -23,7 +23,6 @@ from __future__ import annotations
 
 import asyncio
 import time
-import struct
 from collections import defaultdict
 from dataclasses import dataclass, field, asdict
 from enum import Enum

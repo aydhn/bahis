@@ -8,7 +8,7 @@ Supports:
 - 2-way Surebets (e.g., Tennis, Basketball, or Football Over/Under)
 - 3-way Surebets (e.g., Football 1X2)
 """
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, Optional
 
 class ArbitrageScanner:
     """

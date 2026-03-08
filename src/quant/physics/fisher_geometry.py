@@ -30,7 +30,7 @@ Teknoloji: numpy + scipy (tam analitik implementasyon)
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 import numpy as np
 from loguru import logger

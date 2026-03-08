@@ -14,8 +14,7 @@ CLV < 0 → Piyasanın arkasındasın (uzun vadede kaybedersin)
 """
 from __future__ import annotations
 
-import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
 
 import numpy as np

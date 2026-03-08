@@ -97,6 +97,16 @@ class RiskStage(PipelineStage):
                 "game_theory_status": decision.get("game_theory_status", "NASH_EQUILIBRIUM")
             }
 
+            # Mock open_bets if not present to enable CoVaR/Stress testing
+            if "open_bets" not in context:
+                context["open_bets"] = [{
+                    "match_id": "locked_capital",
+                    "odds": 2.0,
+                    "prob_home": 0.5,
+                    "ev": 0.0,
+                    "stake_amount": self.tower.treasury.state.locked_capital
+                }]
+
             # --- DELEGATE TO TOWER ---
             # The Tower handles Cognitive, PreMortem, Kelly, Physics, Treasury.
             risk_decision = self.tower.evaluate_bet(bet_candidate, context)

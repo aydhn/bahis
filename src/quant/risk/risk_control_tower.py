@@ -11,6 +11,7 @@ Responsibilities:
   4. Decision Finalization (Approved Stake, Rationale)
 """
 from dataclasses import dataclass
+from src.system.container import container
 from typing import Dict, Any, Optional, List
 from loguru import logger
 
@@ -37,7 +38,6 @@ from src.core.systemic_risk_covar import SystemicRiskCoVaR
 import numpy as np
 
 # NEW: Smart Money
-from src.extensions.smart_money import SmartMoneyDetector
 
 # NEW: Boardroom
 from src.core.boardroom import Boardroom
@@ -89,7 +89,7 @@ class RiskControlTower:
         self.causal_reasoner = CausalReasoner()
         self.evt_analyzer = ExtremeValueAnalyzer() # NEW
         self.game_theory = GameTheoryEngine() # NEW
-        self.smart_money = SmartMoneyDetector() # NEW
+        self.smart_money = container.get('smart_money') # NEW
         self.boardroom = Boardroom() # NEW
         self.market_god = MarketGod() # NEW
 
@@ -500,7 +500,8 @@ class RiskControlTower:
         god_signal = self.market_god.consult(
             match_id=match_id,
             odds_data=odds_data,
-            volatility_history=vol_history
+            volatility_history=vol_history,
+            model_prob=bet_candidate.get("prob_home", 0.5)
         )
 
         if god_signal.signal_type == "BLACK_SWAN":

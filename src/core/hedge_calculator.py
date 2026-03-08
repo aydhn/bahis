@@ -22,9 +22,7 @@ Telegram: "🚨 HEDGE FIRSATI: X TL karşı bahse bas → maç ne biterse
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any
 
-import numpy as np
 from loguru import logger
 
 

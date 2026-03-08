@@ -5,7 +5,7 @@ Unlike statistical models that ask "What will happen?", Teleology asks "Why are 
 It detects game-theoretic scenarios like "Biscuit Games" (mutually beneficial draws)
 and motivation mismatches (Desperation vs. Mercenary).
 """
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 from loguru import logger
 import numpy as np
 

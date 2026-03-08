@@ -11,7 +11,7 @@ import time
 import threading
 import itertools
 from collections import deque
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Optional, Dict, List
 
 from loguru import logger

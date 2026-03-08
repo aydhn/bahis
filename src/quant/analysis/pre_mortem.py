@@ -16,7 +16,7 @@ Output:
   - Clean: Sorun yok.
 """
 from dataclasses import dataclass, field
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 from loguru import logger
 
 @dataclass

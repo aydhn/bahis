@@ -6,7 +6,6 @@ possession dominance leading to shots). Uses an ODE-inspired
 approach to detect if a team's edge is self-reinforcing.
 """
 from dataclasses import dataclass
-import numpy as np
 
 @dataclass
 class AutocatalyticReport:

@@ -20,7 +20,7 @@ Techniques:
     - Reverse Line Movement:
       Betting % is high on Team A (Public), but Line moves towards Team B (Sharps).
 """
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Dict, Optional, List
 import numpy as np
 from loguru import logger

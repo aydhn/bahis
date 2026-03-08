@@ -11,8 +11,7 @@ Usage:
     report = DailyBriefing.generate(context)
 """
 from datetime import datetime
-from typing import Dict, Any, List
-from loguru import logger
+from typing import Dict, Any
 
 class DailyBriefing:
     """

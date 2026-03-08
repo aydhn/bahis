@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import numpy as np
 from loguru import logger
-from typing import List, Set, Any, Dict
+from typing import List, Set
 
 class ConformalPredictor:
     """

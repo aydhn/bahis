@@ -6,7 +6,6 @@ If the implied probability exceeds the expected true probability significantly (
 it signals a fade (Bearish sentiment for value betting).
 """
 from dataclasses import dataclass
-from typing import Dict, Optional
 from loguru import logger
 
 @dataclass

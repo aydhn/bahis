@@ -10,7 +10,6 @@ from datetime import datetime, timedelta
 import duckdb
 import polars as pl
 from loguru import logger
-import statistics
 
 DB_PATH = Path(__file__).resolve().parents[2] / "data" / "bahis.duckdb"
 

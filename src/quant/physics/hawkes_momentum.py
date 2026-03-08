@@ -16,7 +16,7 @@ from __future__ import annotations
 import numpy as np
 from loguru import logger
 from dataclasses import dataclass
-from typing import List, Dict
+from typing import List
 
 @dataclass
 class HawkesParams:

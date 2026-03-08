@@ -8,7 +8,6 @@ import importlib
 import subprocess
 import sys
 from pathlib import Path
-from datetime import datetime
 
 from loguru import logger
 from rich.console import Console

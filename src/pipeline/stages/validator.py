@@ -1,4 +1,4 @@
-from typing import Dict, Any, List
+from typing import Dict, Any
 import polars as pl
 from loguru import logger
 from src.pipeline.core import PipelineStage

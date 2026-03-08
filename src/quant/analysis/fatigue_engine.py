@@ -31,7 +31,6 @@ Teknoloji: scikit-learn (regresyon), fizik formülleri
 """
 from __future__ import annotations
 
-import time
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -433,8 +432,8 @@ class FatigueEngine:
             )
         if r.counter_attack_risk:
             return (
-                f"KONTRA ATAK RİSKİ: Savunma yorgun, "
-                f"hızlı forvet avantajı var."
+                "KONTRA ATAK RİSKİ: Savunma yorgun, "
+                "hızlı forvet avantajı var."
             )
         return (
             f"Normal: Takım enerji={r.avg_stamina:.0f}%, "

@@ -4,7 +4,6 @@ kelly.py - Adaptive Kelly Criterion with Bankroll Heat Management.
 This module implements a dynamic version of the Kelly Criterion that adjusts
 the betting fraction based on realized performance and market regime.
 """
-import numpy as np
 from typing import List, Dict
 from src.extensions.fast_math import fast_kelly
 

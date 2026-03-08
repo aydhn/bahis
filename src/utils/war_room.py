@@ -21,10 +21,7 @@ Fallback: Template-based persona responses
 """
 from __future__ import annotations
 
-import random
-import time
 from dataclasses import dataclass, field
-from typing import Any
 
 from loguru import logger
 
@@ -340,7 +337,7 @@ class WarRoom:
         lines = [
             result.dialogue,
             "─" * 30,
-            f"🗳️ <b>OYLAMA:</b>",
+            "🗳️ <b>OYLAMA:</b>",
             f"  ✅ BET: {result.bet_count}",
             f"  ⏸️ HOLD: {result.hold_count}",
             f"  ❌ SKIP: {result.skip_count}",

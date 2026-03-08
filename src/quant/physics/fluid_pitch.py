@@ -23,8 +23,7 @@ Fallback: numpy konvolüsyon
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, field
-from typing import Any
+from dataclasses import dataclass
 
 import numpy as np
 from loguru import logger
@@ -169,7 +168,6 @@ def compute_pressure_map(players: list[PlayerState],
         # Basit box blur (numpy fallback)
         kernel_size = int(diffusion_sigma * 2) + 1
         kernel = np.ones((kernel_size, kernel_size)) / (kernel_size ** 2)
-        from numpy import convolve
         # 2D convolve basit yaklaşım
         for _ in range(2):
             home_field = _simple_blur(home_field, kernel_size)

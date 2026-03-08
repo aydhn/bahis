@@ -1,5 +1,4 @@
 import typer
-from loguru import logger
 from rich.console import Console
 
 app = typer.Typer()

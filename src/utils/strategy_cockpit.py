@@ -202,7 +202,7 @@ class StrategyCockpit:
 
         lines = [
             "🛩️ <b>STRATEGY COCKPIT</b>",
-            f"<code>━━━━━━━━━━━━━━━━━━━━━━━━</code>",
+            "<code>━━━━━━━━━━━━━━━━━━━━━━━━</code>",
             "",
             "💰 <b>KASA</b>",
             f"  Bakiye: <b>{data.bankroll:,.2f}</b>",

@@ -10,7 +10,8 @@ if a "Black Swan" is imminent, or if the market is purely efficient (Nash Equili
 It outputs a `GodSignal` that can veto or supercharge the entire pipeline.
 """
 from dataclasses import dataclass
-from typing import Dict, Any, Optional
+from src.system.container import container
+from typing import Dict
 from loguru import logger
 import numpy as np
 
@@ -50,7 +51,7 @@ class MarketGod:
 
     def __init__(self):
         self.hmm = MarketRegimeHMM() if MarketRegimeHMM else None
-        self.smart_money = SmartMoneyDetector() if SmartMoneyDetector else None
+        self.smart_money = container.get('smart_money')
         self.game_theory = GameTheoryEngine() if GameTheoryEngine else None
         self.behavioral_arb = BehavioralArbitrage() if BehavioralArbitrage else None
         logger.info("MarketGod initialized. Watching form the heavens.")
