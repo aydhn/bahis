@@ -188,16 +188,42 @@ class RiskStage(PipelineStage):
         optimized_results = self.portfolio_opt.optimize(approved_candidates, regime=global_regime)
 
         final_bets = []
+        # Check global God Signal from context if available
+        god_signal = context.get("god_signal")
+        is_black_swan = False
+        if god_signal:
+            if hasattr(god_signal, 'signal_type'):
+                is_black_swan = god_signal.signal_type == "BLACK_SWAN"
+            elif isinstance(god_signal, dict):
+                is_black_swan = god_signal.get("signal_type") == "BLACK_SWAN"
+            elif isinstance(god_signal, str):
+                is_black_swan = god_signal == "BLACK_SWAN"
+
+        if is_black_swan:
+            logger.warning("Market God declared BLACK_SWAN. Canceling all final stakes to preserve capital.")
+
         for res in optimized_results:
             match_id = res["match_id"]
             meta = bet_metadata.get(match_id, {})
             risk_dec = meta.get("risk_decision")
 
-            # Final check: Treasury has already approved the max stake in Tower.
-            # Portfolio Optimization might reduce it further for diversification.
-            # We trust the lower of the two.
-
             final_stake = res["stake_amount"] # From Portfolio Opt
+
+            # Apply Black Swan override
+            if is_black_swan:
+                final_stake = 0.0
+
+            # Apply God Multiplier from individual prediction if present
+            # We can find the original prediction to see if there's a match-specific god_multiplier
+            match_pred = next((d for d in ensemble_decisions if d.get("match_id") == match_id), None)
+            if match_pred and match_pred.get("god_multiplier", 1.0) != 1.0:
+                mult = match_pred.get("god_multiplier")
+                final_stake *= mult
+                logger.info(f"Applied God Multiplier ({mult}x) to {match_id} stake.")
+
+            # Skip if stake was zeroed out
+            if final_stake <= 0.0:
+                continue
             # Ensure it doesn't exceed what Treasury approved (should be enforced by stake_pct in candidate)
 
             # Generate Narrative

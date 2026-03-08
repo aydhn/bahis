@@ -77,8 +77,9 @@ class PortfolioStressTester:
                 # Assuming rust_engine can run faster simulations if we had a dedicated func.
                 # For now, just initialize it to ensure Rust/Numba is warm.
                 pass
-        except ImportError:
-            pass
+        except ImportError as e:
+            from loguru import logger
+            logger.debug(f"RustEngine not found, falling back: {e}")
 
         rng = np.random.default_rng()
         outcomes = rng.random((self.n_sims, len(portfolio))) < probs

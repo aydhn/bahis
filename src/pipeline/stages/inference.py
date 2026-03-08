@@ -115,8 +115,8 @@ class InferenceStage(PipelineStage):
             self.mtl_backbone = None
             logger.warning("MultiTaskBackbone module missing.")
 
-        # Bind lru_cache to instance method to prevent memory leak (holding self reference globally)
-        self._get_similar_matches = functools.lru_cache(maxsize=1000)(self._get_similar_matches_impl)
+        # Custom cache to prevent global self reference leaks
+        self._similarity_cache = {}
 
         # Bind lru_cache to instance method to prevent memory leak (holding self reference globally)
 
@@ -413,8 +413,11 @@ class InferenceStage(PipelineStage):
             d_odd = context.get("draw_odds", 3.0)
             a_odd = context.get("away_odds", 3.5)
 
-            # Use LRU cache to efficiently manage identical odds combinations
-            similar_res = self._get_similar_matches(round(h_odd, 2), round(d_odd, 2), round(a_odd, 2))
+            # Use custom dictionary cache to efficiently manage identical odds combinations without memory leaks
+            cache_key = (round(h_odd, 2), round(d_odd, 2), round(a_odd, 2))
+            if cache_key not in self._similarity_cache:
+                self._similarity_cache[cache_key] = self._get_similar_matches_impl(*cache_key)
+            similar_res = self._similarity_cache[cache_key]
 
             prediction["similar_matches"] = similar_res
 
@@ -512,6 +515,28 @@ class InferenceStage(PipelineStage):
 
             except Exception as e:
                 logger.warning(f"Market God is silent for {match_id}: {e}")
+
+        # 9.5 Behavioral Arbitrage (Sentiment / Bias Fade)
+        if self.behavioral_arb:
+            try:
+                home_odds = context.get("home_odds", 2.0)
+                model_prob = prediction.get("prob_home", 0.33)
+                arb_sig = self.behavioral_arb.detect_mispricing(match_id, home_odds, model_prob)
+
+                prediction["behavioral_signal"] = arb_sig.signal
+                prediction["behavioral_score"] = arb_sig.sentiment_score
+
+                # Apply Behavioral Fade/Value Boost
+                if arb_sig.signal == "BEARISH":
+                    # Fading the public. Lower confidence slightly since the public money is against us or it's a trap.
+                    # Or increase confidence if we strictly fade the public? Let's reduce confidence slightly to be safe.
+                    prediction["confidence"] *= 0.9
+                    prediction["god_narrative"] = prediction.get("god_narrative", "") + f" | Behavioral Bearish (-{arb_sig.sentiment_score:.2f})"
+                elif arb_sig.signal == "BULLISH":
+                    prediction["confidence"] = min(prediction.get("confidence", 0.5) * 1.1, 1.0)
+                    prediction["god_narrative"] = prediction.get("god_narrative", "") + f" | Behavioral Bullish (+{arb_sig.sentiment_score:.2f})"
+            except Exception as e:
+                logger.warning(f"Behavioral Arbitrage silent for {match_id}: {e}")
 
         # 10. Inject Risk Context and Epistemic Uncertainty
         prediction["regime_status"] = context.get("_regime_status", "NORMAL")
