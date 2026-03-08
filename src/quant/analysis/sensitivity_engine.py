@@ -19,7 +19,6 @@ Usage:
     greeks = engine.calculate_greeks(odds=2.0, prob=0.55, volatility=0.05)
 """
 from dataclasses import dataclass
-import numpy as np
 
 @dataclass
 class Greeks:

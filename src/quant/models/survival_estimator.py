@@ -23,9 +23,7 @@ Fallback: Manuel Kaplan-Meier + Nelson-Aalen (numpy)
 """
 from __future__ import annotations
 
-import time
 from dataclasses import dataclass, field
-from typing import Any
 
 import numpy as np
 from loguru import logger

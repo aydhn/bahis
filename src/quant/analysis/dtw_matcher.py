@@ -8,7 +8,7 @@ DTW is robust to time shifts (e.g., an odds drop happening 10 minutes earlier th
 
 import numpy as np
 from loguru import logger
-from typing import List, Dict, Optional
+from typing import List
 from dataclasses import dataclass
 
 @dataclass

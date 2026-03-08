@@ -24,7 +24,6 @@ Fallback: scipy.optimize (linear programming)
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any
 
 import numpy as np
 from loguru import logger

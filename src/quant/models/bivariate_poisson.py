@@ -15,7 +15,6 @@ Avantajı:
 """
 import numpy as np
 from scipy.special import factorial
-from loguru import logger
 
 class BivariatePoisson:
     """Bivariate Poisson Dağılımı Hesaplayıcısı."""

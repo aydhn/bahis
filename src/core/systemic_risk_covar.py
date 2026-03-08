@@ -5,7 +5,6 @@ Portföydeki maçlar arasındaki bulaşıcı riskleri ölçer.
 from __future__ import annotations
 
 import numpy as np
-from scipy import stats
 from loguru import logger
 
 

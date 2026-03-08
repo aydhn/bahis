@@ -6,8 +6,7 @@ If models disagree significantly, a "Debate" is triggered, and
 the final decision is weighted by each model's recent "Trust Score".
 """
 import numpy as np
-from loguru import logger
-from typing import Dict, Any, List, Tuple
+from typing import Dict, List
 from dataclasses import dataclass
 
 @dataclass

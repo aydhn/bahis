@@ -5,7 +5,7 @@ This module encapsulates the complex logic for adjusting betting stakes based on
 advanced physics engines (Chaos, Topology, Fractal, Ricci, etc.).
 It acts as a facade for the RiskStage, keeping the pipeline clean.
 """
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, Optional
 from loguru import logger
 
 class PhysicsRiskModulator:

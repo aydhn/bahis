@@ -5,8 +5,9 @@ Birden fazla kaynaktan eş zamanlı oran ve maç verisi çeker.
 from __future__ import annotations
 
 import asyncio
+from src.system.container import container
+
 import time
-from src.extensions.smart_money import SmartMoneyDetector
 import re
 from datetime import datetime
 
@@ -30,7 +31,7 @@ class DataFactory:
         self._client: httpx.AsyncClient | None = None
         self._browser = None
         logger.debug("DataFactory başlatıldı.")
-        self.smart_money = SmartMoneyDetector()
+        self.smart_money = container.get('smart_money')
 
     async def _ensure_client(self):
         if self._client is None or self._client.is_closed:

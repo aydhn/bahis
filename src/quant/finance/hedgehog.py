@@ -12,9 +12,7 @@ Concepts:
   - Arbitrage: Exploiting price differences between bookmakers (theoretical here).
   - Dynamic Hedging: Using VolatilityModulator to adjust hedge thresholds.
 """
-from typing import Dict, Optional, Tuple, Any, List
-from loguru import logger
-import numpy as np
+from typing import Dict, Optional, Any
 from src.quant.finance.black_scholes_hedge import BlackScholesHedge
 
 class ArbitrageScanner:

@@ -9,8 +9,7 @@ Prophecy Structure:
 - The Reality (Data Analysis)
 - The Verdict (Strategic Action)
 """
-from typing import Dict, Any, List
-from loguru import logger
+from typing import Dict, Any
 from datetime import datetime
 from src.quant.analysis.teleology import TeleologicalEngine
 

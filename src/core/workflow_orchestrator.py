@@ -46,9 +46,7 @@ Fallback: asyncio + manuel retry dekoratörü
 from __future__ import annotations
 
 import asyncio
-import functools
 import time
-import traceback
 from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime

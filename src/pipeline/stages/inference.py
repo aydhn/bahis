@@ -1,3 +1,4 @@
+from src.system.container import container
 from typing import Any, Dict
 import asyncio
 import functools
@@ -14,7 +15,6 @@ from src.quant.analysis.market_sentiment import MarketSentiment
 from src.quant.risk.volatility_modulator import VolatilityModulator
 from src.quant.analysis.reflexivity_engine import ReflexivityEngine
 from src.quant.meta_labeling import MetaLabeler
-from src.extensions.smart_money import SmartMoneyDetector
 from src.quant.analysis.game_theory_engine import GameTheoryEngine
 from src.quant.uncertainty.conformal import ConformalPredictor
 from src.quant.analysis.teleology import TeleologicalEngine
@@ -83,7 +83,7 @@ class InferenceStage(PipelineStage):
 
         # Market God (The Omniscient Strategist)
         self.market_god = MarketGod() if MarketGod else None
-        self.smart_money = SmartMoneyDetector()
+        self.smart_money = container.get('smart_money')
         self.game_theory = GameTheoryEngine()
 
         # Advanced Quant Engines (Level 43)

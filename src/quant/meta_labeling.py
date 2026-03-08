@@ -1,6 +1,5 @@
 import numpy as np
-import polars as pl
-from typing import Dict, Any, Optional, List
+from typing import Dict, Optional
 from loguru import logger
 from src.memory.db_manager import DBManager
 

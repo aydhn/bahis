@@ -1,7 +1,7 @@
 """
 adapters.py – Mevcut quant modellerini sisteme uyarlayan adapter katmanı.
 """
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 import numpy as np
 from loguru import logger
 from src.core.interfaces import QuantModel

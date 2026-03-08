@@ -5,7 +5,6 @@ Oyuncu konumlarını ve top hareketini frame-by-frame analiz eder.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from pathlib import Path
 
 import numpy as np
 from loguru import logger

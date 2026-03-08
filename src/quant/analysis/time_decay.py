@@ -10,8 +10,8 @@ Yüksek vol → Gol bahsi öner, Düşük vol → Taraf bahsi öner.
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from dataclasses import dataclass
+from datetime import datetime
 
 import numpy as np
 import polars as pl

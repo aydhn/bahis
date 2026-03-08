@@ -16,7 +16,6 @@ Kara Kutu → Şeffaf Kutu
 """
 from __future__ import annotations
 
-import io
 from typing import Any
 
 import numpy as np

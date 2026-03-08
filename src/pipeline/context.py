@@ -6,11 +6,9 @@ Loose dictionary yerine Pydantic model kullanarak type safety sağlar.
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
-from dataclasses import field
+from typing import Any, Dict, List
 
 from pydantic import BaseModel, Field, ConfigDict
-import polars as pl
 from loguru import logger
 
 # Lazy imports to avoid circular dependencies (Using TYPE_CHECKING pattern)

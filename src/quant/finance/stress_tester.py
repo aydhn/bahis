@@ -13,7 +13,6 @@ Metric:
   - Portfolio VaR (Value at Risk): "What is the worst case (95%) loss?"
 """
 import numpy as np
-from loguru import logger
 from typing import List, Dict, Any
 
 class PortfolioStressTester:

@@ -29,7 +29,7 @@ import random
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable
+from typing import Callable
 
 import numpy as np
 from loguru import logger

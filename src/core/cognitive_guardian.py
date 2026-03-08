@@ -1,5 +1,5 @@
 from collections import deque
-from typing import Dict, Any, List
+from typing import Dict, Any
 from loguru import logger
 import time
 

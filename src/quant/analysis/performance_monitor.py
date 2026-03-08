@@ -4,8 +4,6 @@ Bahis sonuçlarını kontrol eder, PnL hesaplar ve sistem sağlığını izler.
 """
 from __future__ import annotations
 
-import asyncio
-import polars as pl
 from loguru import logger
 from src.system.container import container
 from src.core.event_bus import Event

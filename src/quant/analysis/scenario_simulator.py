@@ -5,9 +5,8 @@ Provides deep statistical insight by simulating a match 10,000 times
 using the underlying probability distributions (Poisson/Negative Binomial).
 Used to calculate Value at Risk (VaR) and Probability of Ruin.
 """
-from typing import Dict, Any, List
+from typing import Dict, Any
 import numpy as np
-from loguru import logger
 from src.core.rust_engine import RustEngine
 
 class ScenarioSimulator:

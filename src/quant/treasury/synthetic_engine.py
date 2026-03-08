@@ -5,7 +5,7 @@ Calculates fair odds for synthetic markets (Draw No Bet, Double Chance)
 derived from the fundamental 1X2 probabilities. Used to find value
 when the main market is efficient but derivatives are mispriced.
 """
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 
 class SyntheticEngine:
     """

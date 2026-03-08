@@ -11,10 +11,9 @@ Sinyal:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, List, Dict, Optional, Tuple
+from typing import Any, List, Dict
 
 import numpy as np
-import polars as pl
 from loguru import logger
 
 try:

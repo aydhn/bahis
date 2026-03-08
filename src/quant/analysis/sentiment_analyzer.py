@@ -8,10 +8,8 @@ from __future__ import annotations
 
 import asyncio
 import re
-from datetime import datetime
 
 import numpy as np
-import polars as pl
 from loguru import logger
 
 try:

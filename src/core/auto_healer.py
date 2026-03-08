@@ -27,9 +27,7 @@ Fallback: Heuristic regex tabanlı düzeltmeler
 from __future__ import annotations
 
 import ast
-import copy
 import hashlib
-import json
 import re
 import shutil
 import sqlite3
@@ -37,7 +35,6 @@ import time
 import traceback
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
 
 from loguru import logger
 

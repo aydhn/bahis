@@ -5,7 +5,6 @@ PyTorch Geometric: sahayı grafik ağı olarak modeller, oyuncu koordinasyonunu 
 from __future__ import annotations
 
 import numpy as np
-import polars as pl
 from loguru import logger
 
 try:

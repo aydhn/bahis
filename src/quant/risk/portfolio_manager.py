@@ -4,7 +4,7 @@ portfolio_manager.py - Modern Portfolio Theory & Adaptive Kelly Optimization.
 This module treats individual bets as a "Portfolio" and maximizes the Sharpe Ratio
 while minimizing total risk, respecting Kelly Criterion constraints.
 """
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List
 from src.core.event_bus import EventBus, Event
 from src.quant.risk.kelly import AdaptiveKelly
 from loguru import logger

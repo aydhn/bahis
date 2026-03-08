@@ -6,7 +6,6 @@ as a measure of market uncertainty. High entropy (e.g., 33-33-33 split) indicate
 maximum uncertainty, where Kelly sizing should be reduced even if an edge exists.
 """
 import numpy as np
-from loguru import logger
 from src.quant.risk.kelly import AdaptiveKelly
 
 class EntropyKelly(AdaptiveKelly):
