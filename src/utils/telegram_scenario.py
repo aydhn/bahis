@@ -248,20 +248,19 @@ class ScenarioSimulator:
         # Açıklama oluştur
         explanation = self._generate_explanation(scenario, impact)
 
-        # Telegram formatı
-        telegram_text = self._format_telegram(
-            match_id, scenario, original, adjusted, impact,
-        )
-
-        return ScenarioResult(
+        result = ScenarioResult(
             scenario_id=scenario_id,
             scenario_label=f"{scenario.emoji} {scenario.label}",
             original=original,
             adjusted=adjusted,
             impact=impact,
             explanation=explanation,
-            telegram_text=telegram_text,
         )
+
+        # Telegram formatı
+        result.telegram_text = self._format_telegram(scenario, result)
+
+        return result
 
     def _apply_adjustments(self, features: dict,
                             adjustments: dict) -> dict:
@@ -350,9 +349,7 @@ class ScenarioSimulator:
 
         return "\n".join(lines)
 
-    def _format_telegram(self, match_id: str, scenario: Scenario,
-                          original: dict, adjusted: dict,
-                          impact: dict) -> str:
+    def _format_telegram(self, scenario: Scenario, result: ScenarioResult) -> str:
         """Telegram HTML mesaj formatı."""
         text = (
             f"{scenario.emoji} <b>SENARYO: {scenario.label}</b>\n"
@@ -363,23 +360,23 @@ class ScenarioSimulator:
         # Orijinal vs Düzeltilmiş
         text += "<b>Orijinal → Senaryo Sonrası:</b>\n"
         text += (
-            f"  Ev:  {original.get('prob_home', 0):.0%} → "
-            f"{adjusted.get('prob_home', 0):.0%}\n"
-            f"  Ber: {original.get('prob_draw', 0):.0%} → "
-            f"{adjusted.get('prob_draw', 0):.0%}\n"
-            f"  Dep: {original.get('prob_away', 0):.0%} → "
-            f"{adjusted.get('prob_away', 0):.0%}\n"
+            f"  Ev:  {result.original.get('prob_home', 0):.0%} → "
+            f"{result.adjusted.get('prob_home', 0):.0%}\n"
+            f"  Ber: {result.original.get('prob_draw', 0):.0%} → "
+            f"{result.adjusted.get('prob_draw', 0):.0%}\n"
+            f"  Dep: {result.original.get('prob_away', 0):.0%} → "
+            f"{result.adjusted.get('prob_away', 0):.0%}\n"
         )
 
-        if "over_25" in impact:
+        if "over_25" in result.impact:
             text += (
-                f"\n  Ü2.5: {original.get('over_25', 0):.0%} → "
-                f"{adjusted.get('over_25', 0):.0%}\n"
+                f"\n  Ü2.5: {result.original.get('over_25', 0):.0%} → "
+                f"{result.adjusted.get('over_25', 0):.0%}\n"
             )
 
         # En büyük etki
-        if impact:
-            biggest = max(impact.items(), key=lambda x: abs(x[1]["change"]))
+        if result.impact:
+            biggest = max(result.impact.items(), key=lambda x: abs(x[1]["change"]))
             metric_names = {
                 "prob_home": "Ev Sahibi", "prob_draw": "Beraberlik",
                 "prob_away": "Deplasman", "over_25": "Üst 2.5",
