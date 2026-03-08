@@ -29,7 +29,7 @@ sys.modules["ray"] = MagicMock()
 
 import unittest
 from unittest.mock import patch
-from concurrent.futures import Future
+from concurrent.futures import Future, ProcessPoolExecutor
 
 # Now import the module under test, but we need to mock its imports too
 with patch("src.core.distributed_core.RAY_OK", False):
@@ -43,6 +43,83 @@ class TestDistributedCore(unittest.TestCase):
 
     def tearDown(self):
         self.dist.shutdown()
+
+
+    def test_start_already_started(self):
+        """Test start returns immediately if already started."""
+        with patch("src.core.distributed_core.RAY_OK", False):
+            self.dist._started = True
+            result = self.dist.start()
+            self.assertTrue(result)
+            self.assertIsNone(self.dist._pool)
+
+    def test_start_ray_disabled_fallback(self):
+        """Test start creates ProcessPoolExecutor when RAY_OK is False."""
+        with patch("src.core.distributed_core.RAY_OK", False):
+            result = self.dist.start()
+            self.assertTrue(result)
+            self.assertTrue(self.dist._started)
+            self.assertIsNotNone(self.dist._pool)
+            self.assertEqual(self.dist._pool._max_workers, 1)
+
+    def test_start_ray_not_initialized(self):
+        """Test start initializes ray if RAY_OK is True and not initialized."""
+        with patch("src.core.distributed_core.RAY_OK", True), \
+             patch("src.core.distributed_core.ray") as mock_ray, \
+             patch("src.core.distributed_core.logger") as mock_logger:
+
+            mock_ray.is_initialized.return_value = False
+            mock_ray.cluster_resources.return_value = {"CPU": 1, "GPU": 0, "memory": 1000000000}
+
+            self.dist._num_gpus = 1
+
+            result = self.dist.start()
+
+            self.assertTrue(result)
+            self.assertTrue(self.dist._started)
+            mock_ray.init.assert_called_once_with(
+                ignore_reinit_error=True,
+                log_to_driver=False,
+                num_cpus=1,
+                num_gpus=1
+            )
+            mock_ray.cluster_resources.assert_called_once()
+            self.assertIsNone(self.dist._pool)
+
+    def test_start_ray_already_initialized(self):
+        """Test start doesn't initialize ray if already initialized."""
+        with patch("src.core.distributed_core.RAY_OK", True), \
+             patch("src.core.distributed_core.ray") as mock_ray, \
+             patch("src.core.distributed_core.logger") as mock_logger:
+
+            mock_ray.is_initialized.return_value = True
+            mock_ray.cluster_resources.return_value = {"CPU": 1, "GPU": 0, "memory": 1000000000}
+
+            result = self.dist.start()
+
+            self.assertTrue(result)
+            self.assertTrue(self.dist._started)
+            mock_ray.init.assert_not_called()
+            mock_ray.cluster_resources.assert_called_once()
+            self.assertIsNone(self.dist._pool)
+
+    def test_start_ray_exception_fallback(self):
+        """Test start falls back to ProcessPoolExecutor if ray init fails."""
+        with patch("src.core.distributed_core.RAY_OK", True), \
+             patch("src.core.distributed_core.ray") as mock_ray, \
+             patch("src.core.distributed_core.logger") as mock_logger:
+
+            mock_ray.is_initialized.return_value = False
+            mock_ray.init.side_effect = Exception("Ray init failed")
+
+            result = self.dist.start()
+
+            self.assertTrue(result)
+            self.assertTrue(self.dist._started)
+            self.assertIsNotNone(self.dist._pool)
+            self.assertEqual(self.dist._pool._max_workers, 1)
+            mock_logger.warning.assert_called_once()
+            self.assertIn("Ray başlatılamadı", mock_logger.warning.call_args[0][0])
 
     def test_submit_twin_fallback(self):
         """Test submit_twin using ProcessPoolExecutor fallback."""
