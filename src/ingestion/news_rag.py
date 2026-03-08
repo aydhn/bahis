@@ -72,7 +72,6 @@ class NewsRAGAnalyzer:
         print(result.sentiment_score)   # 0.72
         print(result.summary)           # "Icardi'nin sakatlığı endişe yaratıyor..."
     """
-    HF_URL = "https://api-inference.huggingface.co/models/"
 
     # Haber kaynakları
     NEWS_SOURCES = {
@@ -81,20 +80,12 @@ class NewsRAGAnalyzer:
         "mackolik": "https://www.mackolik.com/rss",
     }
 
-    def __init__(self, hf_token: str = "",
-                 hf_model: str = "facebook/bart-large-mnli",
-                 ollama_url: str = "",
-                 ollama_model: str = "llama3"):
-        self._hf_token = hf_token or os.getenv("HF_TOKEN", "")
-        self._hf_model = hf_model
+    def __init__(self, ollama_url: str = "", ollama_model: str = "llama3"):
         self._ollama_url = ollama_url or os.getenv("OLLAMA_URL", "http://localhost:11434/api/generate")
         self._ollama_model = ollama_model or os.getenv("OLLAMA_MODEL", "llama3")
         self._cache: dict[str, tuple[float, RAGResult]] = {}
         self._cache_ttl = 3600.0  # 1 saat
-        logger.debug(
-            f"NewsRAG başlatıldı (Ollama='✓', "
-            f"HF={'✓' if self._hf_token else '✗'})."
-        )
+        logger.debug("NewsRAG başlatıldı (Ollama='✓').")
 
     # ═══════════════════════════════════════════
     #  ANA ANALİZ
@@ -262,13 +253,7 @@ class NewsRAGAnalyzer:
         if result:
             return result
 
-        # 3. HuggingFace yedek
-        if self._hf_token:
-            result = await self._analyze_huggingface(team, news)
-            if result:
-                return result
-
-        # 4. Kural tabanlı fallback
+        # 2. Kural tabanlı fallback
         return self._analyze_rule_based(team, news)
 
     async def _analyze_ollama(self, team: str,
@@ -318,52 +303,6 @@ class NewsRAGAnalyzer:
             return None
 
 
-
-    async def _analyze_huggingface(self, team: str,
-                                    news: list[NewsItem]) -> RAGResult | None:
-        """HuggingFace Inference API ile sentiment."""
-        if not HTTPX_OK:
-            return None
-
-        headlines = ". ".join(n.title for n in news[:5])
-
-        try:
-            async with httpx.AsyncClient(timeout=30) as client:
-                resp = await client.post(
-                    f"{self.HF_URL}cardiffnlp/twitter-roberta-base-sentiment-latest",
-                    headers={"Authorization": f"Bearer {self._hf_token}"},
-                    json={"inputs": headlines[:500]},
-                )
-                if resp.status_code != 200:
-                    return None
-
-                data = resp.json()
-                if not data or not isinstance(data, list):
-                    return None
-
-                scores = data[0] if isinstance(data[0], list) else data
-                sentiment_map = {}
-                for item in scores:
-                    label = item.get("label", "").lower()
-                    score = item.get("score", 0)
-                    sentiment_map[label] = score
-
-                # positive, neutral, negative → 0-1 skor
-                pos = sentiment_map.get("positive", 0)
-                neg = sentiment_map.get("negative", 0)
-                sentiment = 0.5 + (pos - neg) * 0.5
-
-                return RAGResult(
-                    team=team,
-                    sentiment_score=float(max(0, min(1, sentiment))),
-                    summary=f"HF sentiment: pos={pos:.2f}, neg={neg:.2f}",
-                    confidence=0.6,
-                    n_sources=len(news),
-                    method="huggingface",
-                )
-        except Exception as e:
-            logger.debug(f"[RAG] HF hatası: {e}")
-            return None
 
     def _analyze_rule_based(self, team: str,
                              news: list[NewsItem]) -> RAGResult:
