@@ -1,42 +1,30 @@
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 import sys
-from unittest.mock import MagicMock
-sys.modules["scipy"] = MagicMock()
-sys.modules["scipy.stats"] = MagicMock()
-sys.modules["scipy.optimize"] = MagicMock()
-sys.modules["scipy.special"] = MagicMock()
-sys.modules["scipy.integrate"] = MagicMock()
 import unittest
 import asyncio
 import os
 
-# Ensure src is in path
-sys.path.append(os.getcwd())
+import numpy as np
+import scipy
+
+container_mock = MagicMock()
+container_module = MagicMock(container=container_mock)
+sys.modules['src.system.container'] = container_module
 
 class TestTelegramAuth(unittest.TestCase):
-    def setUp(self):
-        # Patch heavy dependencies
-        self.patchers = []
-        for mod in ['polars', 'numpy', 'matplotlib', 'matplotlib.pyplot',
-                    'src.reporting.visualizer', 'src.ingestion.voice_interrogator',
-                    'src.pipeline.context']:
-            p = patch.dict(sys.modules, {mod: MagicMock()})
-            p.start()
-            self.patchers.append(p)
-
-    def tearDown(self):
-        for p in self.patchers:
-            p.stop()
-
     @patch.dict(os.environ, {"TELEGRAM_TOKEN": "123:dummy", "TELEGRAM_CHAT_ID": "333333"})
     def test_authorization(self):
-        # Import config and modify settings
         from src.system.config import settings
-        # Save original value
         original_allowed = settings.TELEGRAM_ALLOWED_USERS
         settings.TELEGRAM_ALLOWED_USERS = "111111,222222"
 
+
         try:
+            import src.reporting.telegram_bot as tb
+            # Brutal mock container
+            tb.container = MagicMock()
+            tb.container.get.return_value = MagicMock()
+
             from src.reporting.telegram_bot import TelegramBot
 
             bot = TelegramBot()

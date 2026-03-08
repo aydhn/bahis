@@ -86,6 +86,9 @@ class DependencyContainer:
                  self._services["portfolio_opt"] = PortfolioOptimizer()
 
             elif name == "active_agent":
+                from src.core.active_inference_agent import ActiveInferenceAgent
+                self._services["active_agent"] = ActiveInferenceAgent()
+
             elif name == "smart_money":
                 from src.extensions.smart_money import SmartMoneyDetector
                 self._services["smart_money"] = SmartMoneyDetector()

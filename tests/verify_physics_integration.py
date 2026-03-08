@@ -1,3 +1,4 @@
+import pytest
 
 import asyncio
 import sys
@@ -45,7 +46,8 @@ async def verify_bot():
     assert hasattr(bot, 'handle_event')
     logger.info("TelegramBot initialized successfully.")
 
-async def main():
+@pytest.mark.asyncio
+async def test_main():
     try:
         await verify_physics_stage()
         await verify_risk_stage()
@@ -55,5 +57,3 @@ async def main():
         logger.error(f"Verification failed: {e}")
         sys.exit(1)
 
-if __name__ == "__main__":
-    asyncio.run(main())

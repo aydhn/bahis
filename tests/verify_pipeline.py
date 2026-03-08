@@ -1,3 +1,4 @@
+import pytest
 """
 verify_pipeline.py – Otonom Sistem Doğrulama Testi.
 """
@@ -21,7 +22,8 @@ class DummyReportingStage:
 ReportingStage = DummyReportingStage
 from src.core.model_registry import ModelRegistry
 
-async def main():
+@pytest.mark.asyncio
+async def test_main():
     logger.info("=== OTONOM SİSTEM DOĞRULAMA TESTİ BAŞLIYOR ===")
 
     # 1. Mock Data Generation (Autonomous Mode)
@@ -86,5 +88,3 @@ async def main():
 
     logger.info("\n=== TEST BAŞARIYLA TAMAMLANDI ===")
 
-if __name__ == "__main__":
-    asyncio.run(main())
