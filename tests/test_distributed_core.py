@@ -148,5 +148,62 @@ class TestDistributedCore(unittest.TestCase):
             self.assertEqual(result, expected_result)
             mock_remote_func.remote.assert_called_once_with(model_probs, market_odds, "test_match")
 
+
+    def test_shutdown_ray_success(self):
+        """Verify shutdown properly calls ray.shutdown when initialized."""
+        with patch("src.core.distributed_core.RAY_OK", True), \
+             patch("src.core.distributed_core.ray") as mock_ray:
+            mock_ray.is_initialized.return_value = True
+
+            dist = DistributedCore(num_cpus=1)
+            dist._started = True
+
+            # mock pools
+            dist._pool = MagicMock()
+            dist._thread_pool = MagicMock()
+
+            dist.shutdown()
+
+            mock_ray.shutdown.assert_called_once()
+            dist._pool.shutdown.assert_called_once_with(wait=False)
+            dist._thread_pool.shutdown.assert_called_once_with(wait=False)
+
+    def test_shutdown_ray_exception(self):
+        """Verify shutdown handles exceptions from ray.shutdown gracefully."""
+        with patch("src.core.distributed_core.RAY_OK", True), \
+             patch("src.core.distributed_core.ray") as mock_ray:
+            mock_ray.is_initialized.return_value = True
+            mock_ray.shutdown.side_effect = Exception("Ray shutdown failed")
+
+            dist = DistributedCore(num_cpus=1)
+            dist._started = True
+
+            # mock pools
+            dist._pool = MagicMock()
+            dist._thread_pool = MagicMock()
+
+            # Should not raise exception
+            dist.shutdown()
+
+            mock_ray.shutdown.assert_called_once()
+            dist._pool.shutdown.assert_called_once_with(wait=False)
+            dist._thread_pool.shutdown.assert_called_once_with(wait=False)
+
+    def test_shutdown_pools(self):
+        """Verify shutdown calls pool shutdown when Ray is not used."""
+        with patch("src.core.distributed_core.RAY_OK", False):
+            dist = DistributedCore(num_cpus=1)
+            dist._started = True
+
+            # mock pools
+            dist._pool = MagicMock()
+            dist._thread_pool = MagicMock()
+
+            dist.shutdown()
+
+            dist._pool.shutdown.assert_called_once_with(wait=False)
+            dist._thread_pool.shutdown.assert_called_once_with(wait=False)
+
 if __name__ == "__main__":
+
     unittest.main()
