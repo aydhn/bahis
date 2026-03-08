@@ -9,6 +9,7 @@ telegram_mini_app.py – Profesyonel Telegram bot entegrasyonu.
 from __future__ import annotations
 
 import asyncio
+import io
 import os
 import traceback
 from datetime import datetime
@@ -200,7 +201,7 @@ class TelegramNotifier:
         # Log dosyasının son satırlarını oku
         log_tail = ""
         if include_log_tail:
-            log_tail = self._read_log_tail(n_lines=10)
+            log_tail = await self._read_log_tail(n_lines=10)
 
         now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -292,7 +293,7 @@ class TelegramNotifier:
         return "█" * filled + "░" * (width - filled)
 
     @staticmethod
-    def _read_log_tail(n_lines: int = 10) -> str:
+    async def _read_log_tail(n_lines: int = 10) -> str:
         error_log = LOG_DIR / "error.log"
         main_log = LOG_DIR / "bahis.log"
 
@@ -300,7 +301,8 @@ class TelegramNotifier:
         if not target.exists():
             return "(Log dosyası bulunamadı)"
         try:
-            lines = target.read_text(encoding="utf-8", errors="replace").strip().splitlines()
+            content = await asyncio.to_thread(target.read_text, encoding="utf-8", errors="replace")
+            lines = content.strip().splitlines()
             tail = lines[-n_lines:] if len(lines) > n_lines else lines
             return "\n".join(tail)[:1000]
         except Exception:
@@ -616,9 +618,9 @@ class TelegramApp:
                     "📄 Log dosyası çok büyük (>50MB). Son 1000 satır gönderiliyor…",
                     parse_mode="HTML",
                 )
-                lines = error_log.read_text(encoding="utf-8", errors="replace").splitlines()
+                content = await asyncio.to_thread(error_log.read_text, encoding="utf-8", errors="replace")
+                lines = content.splitlines()
                 tail = "\n".join(lines[-1000:])
-                import io
                 buf = io.BytesIO(tail.encode("utf-8"))
                 buf.name = "error_tail.log"
                 await update.message.reply_document(
@@ -626,11 +628,13 @@ class TelegramApp:
                     caption="📄 error.log (son 1000 satır)",
                 )
             else:
-                with open(error_log, "rb") as f:
-                    await update.message.reply_document(
-                        document=f,
-                        caption=f"📄 error.log ({file_size/1024:.0f} KB)",
-                    )
+                data = await asyncio.to_thread(error_log.read_bytes)
+                buf = io.BytesIO(data)
+                buf.name = "error.log"
+                await update.message.reply_document(
+                    document=buf,
+                    caption=f"📄 error.log ({file_size/1024:.0f} KB)",
+                )
         except Exception as e:
             await update.message.reply_text(
                 f"❌ Log gönderim hatası: <code>{e}</code>",
