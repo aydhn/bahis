@@ -45,6 +45,18 @@ except ImportError:
 #  VERİ YAPILARI
 # ═══════════════════════════════════════════════
 @dataclass
+class DecisionContext:
+    """Model karar bağlamı."""
+    module: str
+    match_id: str
+    decision: str
+    confidence: float
+    reason: str = ""
+    inputs: dict | None = None
+    outputs: dict | None = None
+
+
+@dataclass
 class LogEntry:
     """Yapılandırılmış log kaydı."""
     timestamp: str = ""
@@ -156,7 +168,7 @@ class SuperLogger:
             result = poisson.predict(...)
 
         # Karar logu
-        sl.log_decision(
+        ctx = DecisionContext(
             module="ensemble",
             match_id="gs_fb",
             decision="BET",
@@ -165,6 +177,7 @@ class SuperLogger:
             inputs={"xG": 1.82, "form": 0.78},
             outputs={"prob_home": 0.55, "fair_odds": 1.82},
         )
+        sl.log_decision(ctx)
 
         # İstatistikler
         stats = sl.get_module_stats("quant.poisson")
@@ -307,30 +320,25 @@ class SuperLogger:
             ).debug(f"Tamamlandı ({elapsed:.1f}ms)")
             self._update_stats(module, elapsed, is_error=False)
 
-    def log_decision(self, module: str, match_id: str,
-                     decision: str, confidence: float,
-                     reason: str = "",
-                     inputs: dict | None = None,
-                     outputs: dict | None = None,
-                     **extra) -> None:
+    def log_decision(self, context: DecisionContext, **extra) -> None:
         """Karar audit trail logu.
 
         Her model kararı; gerekçesi, girdileri ve çıktıları ile
         birlikte kalıcı olarak kaydedilir.
         """
         lg = logger.bind(
-            module=module,
-            match_id=match_id,
-            input_summary=inputs or {},
-            output_summary=outputs or {},
-            decision=decision,
-            confidence=round(confidence, 4),
-            reason=reason,
+            module=context.module,
+            match_id=context.match_id,
+            input_summary=context.inputs or {},
+            output_summary=context.outputs or {},
+            decision=context.decision,
+            confidence=round(context.confidence, 4),
+            reason=context.reason,
             **extra,
         )
         lg.info(
-            f"KARAR: {decision} | Güven: {confidence:.1%} | "
-            f"Gerekçe: {reason}"
+            f"KARAR: {context.decision} | Güven: {context.confidence:.1%} | "
+            f"Gerekçe: {context.reason}"
         )
 
     def log_model_output(self, module: str, match_id: str,
