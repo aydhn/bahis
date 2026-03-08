@@ -311,12 +311,6 @@ class RiskControlTower:
                     # We will apply this multiplier later in modulation or manually here
                     # Let's add it as a modulation factor below
 
-        # --- 3.4 Causal Check (Spurious Correlation) ---
-        # If any major causal factor (e.g. Red Card) is active, ensure we account for it
-        # For now, we simulate a check. Real implementation would parse match_data.
-        # causal_effect = self.causal_reasoner.estimate_effect("recent_form", "outcome")
-        # if not causal_effect.is_significant: ... (Logic placeholder)
-
         # --- 3.4.5 Smart Money Check (Financial Capability) ---
         # "Follow the Money"
         # We need european odds (from bet_candidate) and Asian (if available in context)
