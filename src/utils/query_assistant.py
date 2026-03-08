@@ -30,12 +30,9 @@ try:
 except ImportError:
     DUCK_OK = False
 
-try:
-    from langchain_community.utilities import SQLDatabase
-    from langchain.chains import create_sql_query_chain
-    LANGCHAIN_SQL_OK = True
-except ImportError:
-    LANGCHAIN_SQL_OK = False
+import importlib.util
+
+LANGCHAIN_SQL_OK = importlib.util.find_spec("langchain") is not None
 
 
 
