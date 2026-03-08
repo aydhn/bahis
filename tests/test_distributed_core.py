@@ -281,6 +281,40 @@ class TestDistributedCore(unittest.TestCase):
             dist._pool.shutdown.assert_called_once_with(wait=False)
             dist._thread_pool.shutdown.assert_called_once_with(wait=False)
 
+
+    def test_submit_monte_carlo_fallback(self):
+        """Test submit_monte_carlo when Ray is not available."""
+        with patch("src.core.distributed_core.RAY_OK", False):
+            self.dist.start()
+
+            initial_tasks = self.dist._tasks_in_flight
+            result = self.dist.submit_monte_carlo(1.5, 1.2, 1000)
+
+            self.assertEqual(self.dist._tasks_in_flight, initial_tasks + 1)
+            self.assertIsNone(result)
+
+    def test_submit_monte_carlo_ray_path(self):
+        """Verify Ray execution path in submit_monte_carlo."""
+        with patch("src.core.distributed_core.RAY_OK", True), \
+             patch("src.core.distributed_core.ray") as mock_ray, \
+             patch("src.core.distributed_core._ray_run_monte_carlo") as mock_remote_func:
+
+            mock_ray.is_initialized.return_value = True
+
+            dist = DistributedCore(num_cpus=1)
+            dist._started = True
+
+            initial_tasks = dist._tasks_in_flight
+
+            expected_result = MagicMock()
+            mock_remote_func.remote.return_value = expected_result
+
+            result = dist.submit_monte_carlo(1.5, 1.2, 1000)
+
+            self.assertEqual(dist._tasks_in_flight, initial_tasks + 1)
+            self.assertEqual(result, expected_result)
+            mock_remote_func.remote.assert_called_once_with(1.5, 1.2, 1000)
+
 if __name__ == "__main__":
 
     unittest.main()
