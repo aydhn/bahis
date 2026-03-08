@@ -59,6 +59,18 @@ class Event:
         return asdict(self)
 
 
+@dataclass
+class EventFilter:
+    """Olay sorgulama için filtre nesnesi."""
+    event_type: str | None = None
+    match_id: str | None = None
+    source: str | None = None
+    start_ts: float | None = None
+    end_ts: float | None = None
+    cycle: int | None = None
+    limit: int = 1000
+
+
 # ═══════════════════════════════════════════════
 #  EVENT STORE (SQLite)
 # ═══════════════════════════════════════════════
@@ -153,33 +165,38 @@ class EventStore:
         except Exception as e:
             logger.debug(f"[EventStore] Toplu yazma hatası: {e}")
 
-    def query(self, event_type: str | None = None,
-              match_id: str | None = None,
-              start_ts: float | None = None,
-              end_ts: float | None = None,
-              limit: int = 1000) -> list[Event]:
+    def query(self, filter_obj: EventFilter | None = None,
+              **kwargs) -> list[Event]:
         """Olayları filtrele."""
         if not self._conn:
             return []
 
+        f = filter_obj or EventFilter(**kwargs)
+
         where = []
         params: list = []
 
-        if event_type:
+        if f.event_type:
             where.append("event_type = ?")
-            params.append(event_type)
-        if match_id:
+            params.append(f.event_type)
+        if f.match_id:
             where.append("match_id = ?")
-            params.append(match_id)
-        if start_ts is not None:
+            params.append(f.match_id)
+        if f.source:
+            where.append("source = ?")
+            params.append(f.source)
+        if f.start_ts is not None:
             where.append("timestamp >= ?")
-            params.append(start_ts)
-        if end_ts is not None:
+            params.append(f.start_ts)
+        if f.end_ts is not None:
             where.append("timestamp <= ?")
-            params.append(end_ts)
+            params.append(f.end_ts)
+        if f.cycle is not None:
+            where.append("cycle = ?")
+            params.append(f.cycle)
 
         clause = " AND ".join(where) if where else "1=1"
-        params.append(limit)
+        params.append(f.limit)
 
         rows = self._conn.execute(
             f"""SELECT event_id, event_type, source, match_id,
@@ -216,7 +233,7 @@ class EventStore:
 
     def get_match_timeline(self, match_id: str) -> list[Event]:
         """Bir maçın tüm olay zaman çizelgesi."""
-        return self.query(match_id=match_id, limit=10000)
+        return self.query(EventFilter(match_id=match_id, limit=10000))
 
     def close(self):
         if self._conn:
@@ -439,7 +456,9 @@ class ReplayEngine:
         if not self._bus.store:
             return {"status": "no_store"}
 
-        events = self._bus.store.query(start_ts=start_ts, end_ts=end_ts)
+        events = self._bus.store.query(
+            EventFilter(start_ts=start_ts, end_ts=end_ts)
+        )
         return await self.replay(events, speed=speed, real_time=True)
 
 
