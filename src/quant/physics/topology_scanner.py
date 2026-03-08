@@ -195,7 +195,8 @@ class TopologyScanner:
             try:
                 hull = ConvexHull(points)
                 state.convex_hull_area = round(float(hull.volume), 1)  # 2D'de volume = alan
-            except Exception:
+            except Exception as e:
+                logger.debug(f"[TDA] Area error: {e}")
                 state.convex_hull_area = state.width * state.depth * 0.5
 
         # Sıkılık: oyuncular arası ortalama mesafe
@@ -244,8 +245,8 @@ class TopologyScanner:
                 pe = PersistenceEntropy()
                 entropy = pe.fit_transform(diagrams)
                 state.persistence_entropy = round(float(entropy[0].mean()), 4)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"[TDA] Sub-analysis error: {e}")
 
         except Exception as e:
             logger.debug(f"[TDA] Analiz hatası: {e}")
@@ -298,8 +299,8 @@ class TopologyScanner:
                     large_triangles += 1
 
             state.h1_holes = large_triangles
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"[TDA] Betti error: {e}")
 
         # Persistence entropy tahmini
         if len(points) > 3:
