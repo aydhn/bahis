@@ -123,3 +123,50 @@ def test_quantize_torch_model_exception():
     assert quantizer._original_sizes["torch_model"] == original_size
     # Quantized size should not be recorded
     assert "torch_model" not in quantizer._quantized_sizes
+
+def test_savings_report():
+    quantizer = ModelQuantizer()
+    quantizer._original_sizes = {"model1": 10000000, "model2": 5000000}
+    quantizer._quantized_sizes = {"model1": 2500000, "model2": 1250000}
+
+    report = quantizer.savings_report()
+
+    assert report["original_mb"] == 15.0
+    assert report["quantized_mb"] == 3.75
+    assert report["saved_mb"] == 11.25
+    assert report["compression_ratio"] == 3750000 / 15000000
+
+def test_savings_report_empty():
+    quantizer = ModelQuantizer()
+    report = quantizer.savings_report()
+
+    assert report["original_mb"] == 0.0
+    assert report["quantized_mb"] == 0.0
+    assert report["saved_mb"] == 0.0
+    assert report["compression_ratio"] == 0.0
+
+def test_estimate_memory():
+    quantizer = ModelQuantizer()
+
+    # Test float32 (default)
+    result = quantizer.estimate_memory(1000000, dtype="float32")
+    assert result["params"] == 1000000
+    assert result["dtype"] == "float32"
+    assert result["memory_mb"] == 4.0
+    assert result["memory_gb"] == 4.0 / 1024
+
+    # Test float16
+    result = quantizer.estimate_memory(1000000, dtype="float16")
+    assert result["memory_mb"] == 2.0
+
+    # Test int8
+    result = quantizer.estimate_memory(1000000, dtype="int8")
+    assert result["memory_mb"] == 1.0
+
+    # Test int4
+    result = quantizer.estimate_memory(1000000, dtype="int4")
+    assert result["memory_mb"] == 0.5
+
+    # Test unknown dtype falls back to default 4 bytes
+    result = quantizer.estimate_memory(1000000, dtype="unknown")
+    assert result["memory_mb"] == 4.0
