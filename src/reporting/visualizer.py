@@ -9,7 +9,18 @@ except ImportError:
 import numpy as np
 import io
 from typing import Optional, List
+from dataclasses import dataclass
 from loguru import logger
+
+@dataclass
+class GodsEyeConfig:
+    """Configuration object holding scores for God's Eye Radar."""
+    value_score: float
+    physics_score: float
+    narrative_score: float
+    market_score: float
+    risk_score: float
+
 
 class Visualizer:
     """
@@ -74,11 +85,7 @@ class Visualizer:
     @staticmethod
     def generate_gods_eye_radar(
         match_id: str,
-        value_score: float,
-        physics_score: float,
-        narrative_score: float,
-        market_score: float,
-        risk_score: float
+        config: GodsEyeConfig
     ) -> Optional[io.BytesIO]:
         """
         Generates the 'God's Eye' Radar Chart covering 5 system pillars.
@@ -87,7 +94,7 @@ class Visualizer:
         try:
             # Labels and values
             labels = np.array(['Value (Kelly)', 'Physics (Chaos)', 'Narrative (Teleology)', 'Market (Smart Money)', 'Risk (Safety)'])
-            values = np.array([value_score, physics_score, narrative_score, market_score, risk_score])
+            values = np.array([config.value_score, config.physics_score, config.narrative_score, config.market_score, config.risk_score])
 
             # Close the loop
             angles = np.linspace(0, 2*np.pi, len(labels), endpoint=False)

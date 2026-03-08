@@ -48,7 +48,7 @@ from src.core.speed_cache import SpeedCache
 from src.utils.daily_briefing import DailyBriefing
 
 from src.system.config import settings
-from src.reporting.visualizer import Visualizer
+from src.reporting.visualizer import Visualizer, GodsEyeConfig
 from src.core.event_bus import Event
 from src.quant.analysis.narrative_generator import NarrativeGenerator
 
@@ -457,13 +457,16 @@ class TelegramBot:
             if hasattr(self.context, "physics_context") and match_id in self.context.physics_context:
                 physics_score = self.context.physics_context[match_id].get("holistic_confidence", 0.5)
 
-            buf = Visualizer.generate_gods_eye_radar(
-                match_id=match_id,
+            config = GodsEyeConfig(
                 value_score=value_score,
                 physics_score=physics_score,
                 narrative_score=narrative_score,
                 market_score=market_score,
                 risk_score=risk_score
+            )
+            buf = Visualizer.generate_gods_eye_radar(
+                match_id=match_id,
+                config=config
             )
 
             if buf:
