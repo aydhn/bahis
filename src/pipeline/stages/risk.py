@@ -9,11 +9,6 @@ from src.quant.risk.risk_control_tower import RiskControlTower
 from src.quant.analysis.narrative_engine import NarrativeEngine
 from src.pipeline.context import BettingContext
 
-try:
-    from src.quant.analysis.philosophical_engine import PhilosophicalEngine
-except ImportError:
-    PhilosophicalEngine = None
-
 class RiskStage(PipelineStage):
     """
     Refactored Risk Stage (Level 43).
