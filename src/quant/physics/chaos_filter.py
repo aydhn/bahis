@@ -37,13 +37,6 @@ except ImportError:
     NOLDS_OK = False
     logger.debug("nolds yüklü değil – manuel Lyapunov fallback.")
 
-try:
-    from scipy.spatial.distance import cdist
-    SCIPY_DIST_OK = True
-except ImportError:
-    SCIPY_DIST_OK = False
-
-
 # ═══════════════════════════════════════════════
 #  VERİ YAPILARI
 # ═══════════════════════════════════════════════
