@@ -46,6 +46,22 @@ except ImportError:
 #  VERİ YAPILARI
 # ═══════════════════════════════════════════════
 @dataclass
+class CockpitMetrics:
+    """Cockpit hesaplamaları için girdi metrikleri."""
+    bankroll: float = 0.0
+    peak: float = 0.0
+    daily_pnl: float = 0.0
+    weekly_pnl: float = 0.0
+    total_bets: int = 0
+    win_rate: float = 0.0
+    sharpe: float = 0.0
+    clv_avg: float = 0.0
+    active_bets: int = 0
+    pending_signals: int = 0
+    cycle: int = 0
+    alerts: list[str] | None = None
+
+@dataclass
 class CockpitData:
     """Cockpit görünümü için toplanan veriler."""
     # Sistem
@@ -93,11 +109,10 @@ class StrategyCockpit:
 
         # Veri topla
         data = cockpit.collect(
-            bankroll=10500, peak=11000,
+            metrics=CockpitMetrics(bankroll=10500, peak=11000, cycle=42),
             regime_kelly=regime_kelly,
             vol_analyzer=vol_analyzer,
             orchestrator=orchestrator,
-            cycle=42,
         )
 
         # Telegram mesajı oluştur
@@ -112,18 +127,11 @@ class StrategyCockpit:
 
         logger.debug("[Cockpit] Komuta merkezi başlatıldı.")
 
-    def collect(self, bankroll: float = 0, peak: float = 0,
-                  daily_pnl: float = 0, weekly_pnl: float = 0,
-                  total_bets: int = 0, win_rate: float = 0,
-                  sharpe: float = 0, clv_avg: float = 0,
-                  active_bets: int = 0, pending_signals: int = 0,
-                  cycle: int = 0,
+    def collect(self, metrics: CockpitMetrics | None = None,
                   regime_kelly: object = None,
                   vol_analyzer: object = None,
                   chaos_filter: object = None,
-                  orchestrator: object = None,
-                  alerts: list[str] | None = None,
-                  **kwargs) -> CockpitData:
+                  orchestrator: object = None) -> CockpitData:
         """Tüm modüllerden anlık veri topla."""
         data = CockpitData(timestamp=datetime.utcnow().isoformat())
 
@@ -137,26 +145,29 @@ class StrategyCockpit:
                 psutil.Process().memory_info().rss / (1024 * 1024), 1,
             )
 
+        if metrics is None:
+            metrics = CockpitMetrics()
+
         # Kasa
-        data.bankroll = round(bankroll, 2)
-        data.peak = round(peak, 2)
+        data.bankroll = round(metrics.bankroll, 2)
+        data.peak = round(metrics.peak, 2)
         data.drawdown_pct = round(
-            (bankroll - peak) / max(peak, 1) * 100, 2,
-        ) if peak > 0 else 0
-        data.daily_pnl = round(daily_pnl, 2)
-        data.weekly_pnl = round(weekly_pnl, 2)
+            (metrics.bankroll - metrics.peak) / max(metrics.peak, 1) * 100, 2,
+        ) if metrics.peak > 0 else 0
+        data.daily_pnl = round(metrics.daily_pnl, 2)
+        data.weekly_pnl = round(metrics.weekly_pnl, 2)
 
         # Performans
-        data.total_bets = total_bets
-        data.win_rate = round(win_rate, 4)
-        data.sharpe = round(sharpe, 4)
-        data.clv_avg = round(clv_avg, 4)
+        data.total_bets = metrics.total_bets
+        data.win_rate = round(metrics.win_rate, 4)
+        data.sharpe = round(metrics.sharpe, 4)
+        data.clv_avg = round(metrics.clv_avg, 4)
         data.roi_pct = round(
-            (bankroll - 10000) / 10000 * 100, 2,
-        ) if bankroll > 0 else 0
-        data.active_bets = active_bets
-        data.pending_signals = pending_signals
-        data.cycle = cycle
+            (metrics.bankroll - 10000) / 10000 * 100, 2,
+        ) if metrics.bankroll > 0 else 0
+        data.active_bets = metrics.active_bets
+        data.pending_signals = metrics.pending_signals
+        data.cycle = metrics.cycle
 
         # Risk rejimleri
         if regime_kelly and hasattr(regime_kelly, 'get_stats'):
@@ -169,7 +180,7 @@ class StrategyCockpit:
             else:
                 data.kelly_regime = "🟢 NORMAL"
             data.daily_exposure_pct = round(
-                rk_stats.get("daily_exposure", 0) / max(bankroll, 1) * 100, 1,
+                rk_stats.get("daily_exposure", 0) / max(metrics.bankroll, 1) * 100, 1,
             )
 
         if vol_analyzer and hasattr(vol_analyzer, '_last_regime'):
@@ -182,7 +193,7 @@ class StrategyCockpit:
             data.disabled_modules = len(o_stats.disabled_tasks)
 
         # Alerts
-        data.alerts = alerts or []
+        data.alerts = metrics.alerts or []
         if data.drawdown_pct < -15:
             data.alerts.append("⚠️ Ağır drawdown!")
         if data.cpu_pct > 90:
