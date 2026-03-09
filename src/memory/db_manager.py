@@ -157,29 +157,43 @@ class DBManager:
 
     def save_signals(self, signals: list[dict] | pl.DataFrame, cycle: int = 0):
         if isinstance(signals, pl.DataFrame):
+            if signals.is_empty():
+                return
             rows = signals.iter_rows(named=True)
         elif isinstance(signals, list):
+            if not signals:
+                return
             rows = signals
         else:
             return
+
         import uuid
+
+        params = []
         for s in rows:
-            sid = s.get("signal_id", str(uuid.uuid4())[:12])
-            self._con.execute(
+            sid = s.get("signal_id")
+            if not sid:
+                sid = str(uuid.uuid4())[:12]
+
+            params.append((
+                sid,
+                s.get("match_id", ""),
+                s.get("market", ""),
+                s.get("selection", ""),
+                s.get("odds", 0.0) or 0.0,
+                s.get("stake_pct", 0.0) or 0.0,
+                s.get("confidence", 0.0) or 0.0,
+                s.get("ev", 0.0) or 0.0,
+                cycle,
+            ))
+
+        if params:
+            self._con.executemany(
                 """INSERT OR REPLACE INTO signals
                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)""",
-                [
-                    sid,
-                    s.get("match_id", ""),
-                    s.get("market", ""),
-                    s.get("selection", ""),
-                    s.get("odds", 0.0),
-                    s.get("stake_pct", 0.0),
-                    s.get("confidence", 0.0),
-                    s.get("ev", 0.0),
-                    cycle,
-                ],
+                params
             )
+
         logger.info(f"{cycle}. döngü – sinyaller kaydedildi.")
 
     def insert_bet(self, bet: dict):
