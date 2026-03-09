@@ -125,145 +125,43 @@ class PhysicsStage(PipelineStage):
         super().__init__("physics")
 
         # --- Initialize Engines ---
+        self._init_chaos_and_fractals()
+        self._init_quantum_and_geometry()
+        self._init_topology_and_graph()
+        self._init_dynamics_and_flow()
 
-        # 1. Chaos & Fractals
-        if ChaosFilter:
+    def _safe_init(self, engine_class, *args, **kwargs):
+        if engine_class:
             try:
-                self.chaos_filter = ChaosFilter(emb_dim=3, lag=1)
+                return engine_class(*args, **kwargs)
             except Exception as e:
-                logger.error(f"Failed to init ChaosFilter: {e}")
-                self.chaos_filter = None
-        else:
-            self.chaos_filter = None
+                name = getattr(engine_class, "__name__", str(engine_class))
+                logger.error(f"Failed to init {name}: {e}")
+                return None
+        return None
 
-        if FractalAnalyzer:
-            try:
-                self.fractal_analyzer = FractalAnalyzer()
-            except Exception as e:
-                logger.error(f"Failed to init FractalAnalyzer: {e}")
-                self.fractal_analyzer = None
-        else:
-            self.fractal_analyzer = None
+    def _init_chaos_and_fractals(self):
+        self.chaos_filter = self._safe_init(ChaosFilter, emb_dim=3, lag=1)
+        self.fractal_analyzer = self._safe_init(FractalAnalyzer)
+        self.multifractal = self._safe_init(MultifractalAnalyzer)
+        self.hawkes_momentum = self._safe_init(HawkesMomentum)
 
-        if MultifractalAnalyzer:
-            try:
-                self.multifractal = MultifractalAnalyzer()
-            except Exception as e:
-                logger.error(f"Failed to init MultifractalAnalyzer: {e}")
-                self.multifractal = None
-        else:
-            self.multifractal = None
+    def _init_quantum_and_geometry(self):
+        self.quantum_brain = self._safe_init(QuantumBrain, n_qubits=4, n_layers=2)
+        self.ricci_analyzer = self._safe_init(RicciFlowAnalyzer, alpha=0.5)
+        self.fisher_geo = self._safe_init(FisherGeometry, anomaly_threshold=2.0)
+        self.geometric_intel = self._safe_init(GeometricIntelligence)
 
-        if HawkesMomentum:
-            try:
-                self.hawkes_momentum = HawkesMomentum()
-            except Exception as e:
-                logger.error(f"Failed to init HawkesMomentum: {e}")
-                self.hawkes_momentum = None
-        else:
-            self.hawkes_momentum = None
+    def _init_topology_and_graph(self):
+        self.topology_mapper = self._safe_init(TopologyMapper, n_cubes=5, overlap=0.2)
+        self.homology_scanner = self._safe_init(HomologyScanner, max_dim=1, max_edge=30.0)
+        self.gcn_graph = self._safe_init(GCNPitchGraph)
+        self.hypergraph = self._safe_init(HypergraphUnitAnalyzer)
 
-        # 2. Quantum & Geometry
-        if QuantumBrain:
-            try:
-                self.quantum_brain = QuantumBrain(n_qubits=4, n_layers=2)
-            except Exception as e:
-                logger.error(f"Failed to init QuantumBrain: {e}")
-                self.quantum_brain = None
-        else:
-            self.quantum_brain = None
-
-        if RicciFlowAnalyzer:
-            try:
-                self.ricci_analyzer = RicciFlowAnalyzer(alpha=0.5)
-            except Exception as e:
-                logger.error(f"Failed to init RicciFlowAnalyzer: {e}")
-                self.ricci_analyzer = None
-        else:
-            self.ricci_analyzer = None
-
-        if FisherGeometry:
-            try:
-                self.fisher_geo = FisherGeometry(anomaly_threshold=2.0)
-            except Exception as e:
-                logger.error(f"Failed to init FisherGeometry: {e}")
-                self.fisher_geo = None
-        else:
-            self.fisher_geo = None
-
-        if GeometricIntelligence:
-            try:
-                self.geometric_intel = GeometricIntelligence()
-            except Exception as e:
-                logger.error(f"Failed to init GeometricIntelligence: {e}")
-                self.geometric_intel = None
-        else:
-            self.geometric_intel = None
-
-        # 3. Topology & Graph
-        if TopologyMapper:
-            try:
-                self.topology_mapper = TopologyMapper(n_cubes=5, overlap=0.2)
-            except Exception as e:
-                logger.error(f"Failed to init TopologyMapper: {e}")
-                self.topology_mapper = None
-        else:
-            self.topology_mapper = None
-
-        if HomologyScanner:
-            try:
-                self.homology_scanner = HomologyScanner(max_dim=1, max_edge=30.0)
-            except Exception as e:
-                logger.error(f"Failed to init HomologyScanner: {e}")
-                self.homology_scanner = None
-        else:
-            self.homology_scanner = None
-
-        if GCNPitchGraph:
-            try:
-                self.gcn_graph = GCNPitchGraph()
-            except Exception as e:
-                logger.error(f"Failed to init GCNPitchGraph: {e}")
-                self.gcn_graph = None
-        else:
-            self.gcn_graph = None
-
-        if HypergraphUnitAnalyzer:
-            try:
-                self.hypergraph = HypergraphUnitAnalyzer()
-            except Exception as e:
-                logger.error(f"Failed to init HypergraphUnitAnalyzer: {e}")
-                self.hypergraph = None
-        else:
-            self.hypergraph = None
-
-        # 4. Dynamics & Flow
-        if ParticleStrengthTracker:
-            try:
-                self.particle_tracker = ParticleStrengthTracker(n_particles=1000)
-            except Exception as e:
-                logger.error(f"Failed to init ParticleStrengthTracker: {e}")
-                self.particle_tracker = None
-        else:
-            self.particle_tracker = None
-
-        if PathSignatureEngine:
-            try:
-                self.path_signature = PathSignatureEngine(depth=2)
-            except Exception as e:
-                logger.error(f"Failed to init PathSignatureEngine: {e}")
-                self.path_signature = None
-        else:
-            self.path_signature = None
-
-        if RenormalizationGroup:
-            try:
-                self.rg_flow = RenormalizationGroup()
-            except Exception as e:
-                logger.error(f"Failed to init RenormalizationGroup: {e}")
-                self.rg_flow = None
-        else:
-            self.rg_flow = None
+    def _init_dynamics_and_flow(self):
+        self.particle_tracker = self._safe_init(ParticleStrengthTracker, n_particles=1000)
+        self.path_signature = self._safe_init(PathSignatureEngine, depth=2)
+        self.rg_flow = self._safe_init(RenormalizationGroup)
 
     async def execute(self, context: Dict[str, Any]) -> Dict[str, Any]:
         """Run unified physics analysis on the current batch of matches."""
