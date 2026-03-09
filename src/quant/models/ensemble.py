@@ -58,16 +58,10 @@ class EnsembleModel(QuantModel):
             for name in self.models
         }
 
-    def predict(self, context: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Aggregates predictions with Physics Veto and Quantum Boost.
-        """
+    def _apply_chaos_veto(self, context: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         # --- 1. Physics Veto (Chaos Filter) ---
-        # If chaos is detected, we might reject the bet immediately or switch to contrarian mode.
         chaos_regime = context.get("chaos_regime", "unknown")
-
         if chaos_regime == "chaotic":
-            # If chaotic, return neutral/uncertain result
             logger.warning(f"Ensemble: Chaos Veto activated for {context.get('match_id')}")
             return {
                 "prob_home": 0.33, "prob_draw": 0.34, "prob_away": 0.33,
@@ -76,71 +70,59 @@ class EnsembleModel(QuantModel):
                 "veto": "chaos",
                 "details": {}
             }
+        return None
 
+    def _apply_dynamic_weights(self, context: Dict[str, Any]) -> None:
         # --- 2. Dynamic Weight Override (Strategy Evolver) ---
         if "ensemble_weights" in context:
             try:
                 dynamic_weights = context["ensemble_weights"]
-                # Normalize keys just in case
                 for k, v in dynamic_weights.items():
                     if k in self.weights:
                         self.weights[k] = float(v)
             except Exception as e:
                 logger.warning(f"Failed to apply dynamic weights: {e}")
 
+    def _apply_active_inference_weights(self) -> None:
         # --- 2.5 Active Inference Weight Adjustment ---
-        # Adjust weights based on precision (trust) from ActiveInferenceAgent
         if self.active_agent:
             try:
                 precision_weights = self.active_agent.get_precision_weights()
-                # Blend static/evolved weights with active precision weights
-                # Formula: new_weight = (static * 0.7) + (precision * 0.3)
                 for k, w in self.weights.items():
                     if k in precision_weights:
-                        # Map model names if necessary (e.g. benter -> poisson in agent)
-                        # Assuming 1-to-1 mapping or close enough
                         p_weight = precision_weights.get(k, precision_weights.get("default", 0.2))
                         self.weights[k] = (w * 0.7) + (p_weight * 0.3)
-                        # logger.debug(f"Ensemble: Adjusted {k} weight to {self.weights[k]:.3f} via Active Inference")
             except Exception as e:
                 logger.warning(f"Failed to apply active inference weights: {e}")
 
+    def _apply_quantum_boost(self, context: Dict[str, Any]) -> None:
         # --- 3. Quantum Boost ---
-        # If Quantum Brain is highly confident, boost its weight
         quantum_conf = context.get("quantum_conf", 0.0)
         if quantum_conf > 0.8:
             self.weights["quantum"] = self.weights.get("quantum", 0.15) * 2.0
             logger.info(f"Ensemble: Quantum Boost activated (Conf: {quantum_conf:.2f})")
 
-        # --- Execute Models & Health Check (Parallel/Pruned) ---
-        results = {}
-        active_weights = self.weights.copy()
-
+    def _determine_models_to_run(self, active_weights: Dict[str, float]) -> list:
         # Determine models to run
         models_to_run = []
         for name, model in self.models.items():
-            # Prune rotted models
             if self.model_health[name]["status"] == "ROTTED" or self.model_health[name]["errors"] >= 3:
                 logger.warning(f"Skipping rotted model: {name}")
                 active_weights[name] = 0.0
                 continue
 
-            # Dynamic Pruning: Skip models with weight near zero
             if active_weights.get(name, 0.0) < 0.05:
                 logger.debug(f"Pruning model {name} dynamically due to low weight ({active_weights.get(name, 0.0):.3f})")
                 self.model_health[name]["status"] = "PRUNED"
                 active_weights[name] = 0.0
                 continue
 
-            # Ensure status is healthy if not rotted
             self.model_health[name]["status"] = "HEALTHY"
             models_to_run.append((name, model))
+        return models_to_run
 
-        # ensemble.predict is typically called inside asyncio.to_thread in InferenceStage,
-        # so we are in a thread here, not in the async loop directly.
-        # Since the outer call (_analyze_single_match) is already concurrent per match,
-        # using a thread pool here causes O(N*M) thread thrashing.
-        # We execute sequentially here for better performance under high concurrency.
+    def _execute_models(self, models_to_run: list, context: Dict[str, Any]) -> Dict[str, Any]:
+        results = {}
         for name, model in models_to_run:
             try:
                 res = model.predict(context)
@@ -153,6 +135,31 @@ class EnsembleModel(QuantModel):
             except Exception as e:
                 logger.error(f"Ensemble execution error ({name}): {e}")
                 self._record_failure(name)
+        return results
+
+    def _normalize_weights(self, results: Dict[str, Any], active_weights: Dict[str, float]) -> Dict[str, float]:
+        # Normalize weights for active models
+        total_weight = sum(active_weights[k] for k in results.keys() if k in active_weights)
+        if total_weight > 0:
+            return {k: active_weights[k] / total_weight for k in results.keys() if k in active_weights}
+        return {k: 1.0 / len(results) for k in results.keys()}
+
+    def predict(self, context: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Aggregates predictions with Physics Veto and Quantum Boost.
+        """
+        veto = self._apply_chaos_veto(context)
+        if veto:
+            return veto
+
+        self._apply_dynamic_weights(context)
+        self._apply_active_inference_weights()
+        self._apply_quantum_boost(context)
+
+        active_weights = self.weights.copy()
+        models_to_run = self._determine_models_to_run(active_weights)
+
+        results = self._execute_models(models_to_run, context)
 
         if not results:
             return {
@@ -162,21 +169,14 @@ class EnsembleModel(QuantModel):
                 "details": results
             }
 
-        # Normalize weights for active models
-        total_weight = sum(active_weights[k] for k in results.keys() if k in active_weights)
-        if total_weight > 0:
-            normalized_weights = {k: active_weights[k] / total_weight for k in results.keys() if k in active_weights}
-        else:
-            normalized_weights = {k: 1.0 / len(results) for k in results.keys()}
+        normalized_weights = self._normalize_weights(results, active_weights)
 
         # --- 4. Syndicate Adjudication ---
-        # Delegate weighting and consensus logic to Syndicate
         verdict = self.syndicate.adjudicate(
             model_outputs=results,
             trust_scores=normalized_weights
         )
 
-        # Append health stats to details
         if isinstance(verdict.audit_log, list):
              verdict.audit_log.append(f"Model Health: {str(self.model_health)}")
         elif isinstance(verdict.audit_log, dict):
@@ -188,7 +188,7 @@ class EnsembleModel(QuantModel):
             "prob_draw": verdict.prob_draw,
             "prob_away": verdict.prob_away,
             "confidence": verdict.confidence,
-            "consensus_score": 1.0 - min(verdict.disagreement_level * 4.0, 1.0), # Map 0.25 std to 0 score
+            "consensus_score": 1.0 - min(verdict.disagreement_level * 4.0, 1.0),
             "verdict_text": verdict.verdict_text,
             "syndicate_audit": verdict.audit_log,
             "details": results
