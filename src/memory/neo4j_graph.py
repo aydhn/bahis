@@ -113,9 +113,12 @@ class Neo4jFootballGraph:
             name=name, league=league, country=country,
         )
 
-    def create_player(self, player_id: str, name: str,
-                      position: str = "", team: str = "",
-                      market_value: float = 0) -> bool:
+    def create_player(self, player_id: str, player_data: dict) -> bool:
+        name = player_data.get("name", "")
+        position = player_data.get("position", "")
+        team = player_data.get("team", "")
+        market_value = player_data.get("market_value", 0)
+
         ok = self._run_write(
             "MERGE (p:Player {id: $pid}) "
             "SET p.name = $name, p.position = $pos, p.market_value = $mv",
@@ -212,7 +215,12 @@ class Neo4jFootballGraph:
         pid = player.get("id", player.get("name", ""))
         if not pid:
             return
-        self.create_player(pid, player.get("name", pid), team=team)
+
+        player_data = player.copy()
+        player_data["team"] = team
+        player_data.setdefault("name", pid)
+
+        self.create_player(pid, player_data)
         self._run_write(
             "MATCH (p:Player {id: $pid}), (m:Match {id: $mid}) "
             "MERGE (p)-[:PLAYED_IN {"
