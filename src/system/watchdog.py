@@ -5,6 +5,7 @@ This service runs independently of the main application.
 It monitors the heartbeat file and restarts the system if it freezes.
 """
 import time
+import asyncio
 import os
 import sys
 import subprocess
@@ -37,7 +38,7 @@ def send_alert(message: str):
     except Exception as e:
         logger.error(f"Failed to send alert: {e}")
 
-async def await restart_system():
+async def restart_system():
     """Kill and restart the main process."""
     logger.warning("Attempting system restart...")
 
