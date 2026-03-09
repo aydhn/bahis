@@ -18,12 +18,9 @@ class AutoDocGenerator:
     """Kaynak koddan otomatik dokümantasyon üreten modül."""
 
     SCAN_DIRS = [
-        "src/ingestion",
-        "src/memory",
-        "src/quant",
-        "src/core",
-        "src/utils",
-        "src/ui",
+        f"src/{p.name}"
+        for p in sorted((ROOT / "src").iterdir())
+        if p.is_dir() and not p.name.startswith("__")
     ]
 
     def __init__(self):
