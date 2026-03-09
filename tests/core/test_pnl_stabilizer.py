@@ -207,3 +207,61 @@ def test_recent_return_near_zero_previous():
 
     # (10.0 - 0.0) / max(0.0, 1e-8) = 10.0 / 1e-8 = 1000000000.0
     assert stabilizer._recent_return() == 10.0 / 1e-8
+
+import sys
+import importlib
+from unittest.mock import patch
+
+def test_init_without_pid():
+    """Test initialization when PID is disabled."""
+    with patch("src.core.pnl_stabilizer.PID_AVAILABLE", False):
+        stabilizer = PnLStabilizer()
+        assert stabilizer._pid is None
+
+def test_import_error_handling():
+    """Test import error handling gracefully."""
+    # Temporarily remove simple_pid from sys.modules to simulate missing library
+    original_simple_pid = sys.modules.get('simple_pid')
+    sys.modules['simple_pid'] = None
+
+    try:
+        import src.core.pnl_stabilizer
+        importlib.reload(src.core.pnl_stabilizer)
+        assert src.core.pnl_stabilizer.PID_AVAILABLE is False
+    finally:
+        # Restore original module
+        if original_simple_pid is not None:
+            sys.modules['simple_pid'] = original_simple_pid
+        else:
+            del sys.modules['simple_pid']
+        # Reload to restore original state for other tests
+        importlib.reload(src.core.pnl_stabilizer)
+        assert src.core.pnl_stabilizer.PID_AVAILABLE is True
+
+def test_current_drawdown_peak_update():
+    """Test _current_drawdown updates peak when current > peak."""
+    stabilizer = PnLStabilizer()
+    stabilizer._history.append(150.0)
+    stabilizer._peak = 100.0  # Force peak to be lower than current
+
+    assert stabilizer._current_drawdown() == 0.0
+    assert stabilizer._peak == 150.0
+
+def test_stabilize_with_pid_active():
+    """Test stabilize when PID logic is active."""
+    stabilizer = PnLStabilizer()
+
+    class DummyPID:
+        def __call__(self, value):
+            return 1.8
+
+    stabilizer._pid = DummyPID()
+    stabilizer.record_pnl(100.0)
+    stabilizer.record_pnl(105.0)
+
+    bets = [{"selection": "home", "stake_pct": 5.0}]
+    stabilized = stabilizer.stabilize(bets)
+
+    assert len(stabilized) == 1
+    assert stabilized[0]["pid_multiplier"] == 1.8
+    assert stabilized[0]["stake_pct"] == 9.0  # 5.0 * 1.8

@@ -194,3 +194,4 @@ rust_engine/target/
 *.so
 *.dylib
 *.dll
+.coverage
