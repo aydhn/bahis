@@ -22,6 +22,7 @@ Komutlar:
 import asyncio
 import os
 import json
+import aiofiles
 from typing import Optional, Dict, Any
 import polars as pl
 from loguru import logger
@@ -1480,10 +1481,9 @@ class TelegramBot:
         try:
             path = settings.DATA_DIR / "bankroll_state.json"
             if path.exists():
-                def _read():
-                    with open(path, "r") as f:
-                        return json.load(f)
-                return await asyncio.to_thread(_read)
+                async with aiofiles.open(path, "r") as f:
+                    content = await f.read()
+                    return json.loads(content)
         except Exception:
             pass
         return {"pnl": 0.0, "drawdown": 0.0}
