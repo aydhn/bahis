@@ -152,6 +152,64 @@ class InferenceStage(PipelineStage):
             return {"ensemble_results": []}
 
         # --- Speed Upgrade: Zero-Copy Inference ---
+        mtl_predictions = await self._apply_mtl_inference(context, features)
+
+        # --- Data Drift Check (Transport Metric) ---
+        self._apply_data_drift_check(context, features)
+
+
+        # Physics Metrics from Context
+        quantum_predictions = context.get("quantum_predictions", {})
+        geometric_potentials = context.get("geometric_potentials", {})
+
+        tasks = []
+        # Optimize: Create feature map
+        feat_map = {row["match_id"]: row for row in features.iter_rows(named=True)}
+
+        for row in matches.iter_rows(named=True):
+            match_id = row["match_id"]
+            match_feat = feat_map.get(match_id, {})
+            full_context = {**row, **match_feat}
+
+            # Inject global regime info
+            full_context["_regime_status"] = regime_status
+            full_context["_kelly_fraction"] = kelly_fraction
+
+            # Inject Physics Metrics into Context for Ensemble
+            if match_id in quantum_predictions:
+                q_pred = quantum_predictions[match_id]
+                full_context["quantum_conf"] = q_pred.confidence
+                full_context["quantum_prob"] = q_pred.probabilities[0] # Home prob
+
+            if match_id in geometric_potentials:
+                geo_pot = geometric_potentials[match_id]
+                full_context["geometric_dominance"] = geo_pot.get("dominance", 0.0)
+
+            # Inject MTL Predictions
+            if match_id in mtl_predictions:
+                mtl_res = mtl_predictions[match_id]
+                full_context["mtl_prob_home"] = mtl_res.get("mtl_prob_home", 0.0)
+                full_context["mtl_expected_goals"] = mtl_res.get("mtl_expected_goals", 0.0)
+                full_context["mtl_expected_corners"] = mtl_res.get("mtl_expected_corners", 0.0)
+                full_context["epistemic_uncertainty"] = mtl_res.get("mtl_epistemic_uncertainty", 0.5)
+
+            tasks.append(self._analyze_single_match(full_context))
+
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        valid_results = []
+        for res in results:
+            if isinstance(res, dict):
+                valid_results.append(res)
+            elif isinstance(res, Exception):
+                logger.error(f"Match Analysis Error: {res}")
+
+        return {"ensemble_results": valid_results}
+
+
+
+    async def _apply_mtl_inference(self, context: Dict[str, Any], features: pl.DataFrame) -> Dict[str, Any]:
+        """Execute MTL Inference via Zero-Copy or Standard path."""
         shm_info = context.get("shm_info")
         mtl_predictions = {}
 
@@ -235,73 +293,27 @@ class InferenceStage(PipelineStage):
             except Exception as e:
                 logger.error(f"MTL inference failed: {e}")
 
-        # --- Data Drift Check (Transport Metric) ---
-        if self.transport and not features.is_empty():
-            try:
-                # Select only numeric features for drift detection
-                numeric_features = features.select(pl.col(pl.Float64, pl.Int64)).to_numpy()
 
-                # If reference is not set (first run), set it
-                if self.transport._monitor.reference_dist is None:
-                    self.transport.set_reference(numeric_features)
-                    logger.info("TransportMetric: Reference distribution set.")
-                else:
-                    drift_report = self.transport.check_drift(numeric_features)
-                    if drift_report.is_drifted:
-                        logger.warning(f"TransportMetric: DRIFT DETECTED ({drift_report.drift_severity}) W={drift_report.wasserstein_2:.4f}")
-                        # Inject drift info into context for RiskStage
-                        context["data_drift_report"] = drift_report
-            except Exception as e:
-                logger.error(f"TransportMetric check failed: {e}")
+        return mtl_predictions
 
+    def _apply_data_drift_check(self, context: Dict[str, Any], features: pl.DataFrame) -> None:
+        """Check for data drift using Transport Metric."""
+        try:
+            # Select only numeric features for drift detection
+            numeric_features = features.select(pl.col(pl.Float64, pl.Int64)).to_numpy()
 
-        # Physics Metrics from Context
-        quantum_predictions = context.get("quantum_predictions", {})
-        geometric_potentials = context.get("geometric_potentials", {})
-
-        tasks = []
-        # Optimize: Create feature map
-        feat_map = {row["match_id"]: row for row in features.iter_rows(named=True)}
-
-        for row in matches.iter_rows(named=True):
-            match_id = row["match_id"]
-            match_feat = feat_map.get(match_id, {})
-            full_context = {**row, **match_feat}
-
-            # Inject global regime info
-            full_context["_regime_status"] = regime_status
-            full_context["_kelly_fraction"] = kelly_fraction
-
-            # Inject Physics Metrics into Context for Ensemble
-            if match_id in quantum_predictions:
-                q_pred = quantum_predictions[match_id]
-                full_context["quantum_conf"] = q_pred.confidence
-                full_context["quantum_prob"] = q_pred.probabilities[0] # Home prob
-
-            if match_id in geometric_potentials:
-                geo_pot = geometric_potentials[match_id]
-                full_context["geometric_dominance"] = geo_pot.get("dominance", 0.0)
-
-            # Inject MTL Predictions
-            if match_id in mtl_predictions:
-                mtl_res = mtl_predictions[match_id]
-                full_context["mtl_prob_home"] = mtl_res.get("mtl_prob_home", 0.0)
-                full_context["mtl_expected_goals"] = mtl_res.get("mtl_expected_goals", 0.0)
-                full_context["mtl_expected_corners"] = mtl_res.get("mtl_expected_corners", 0.0)
-                full_context["epistemic_uncertainty"] = mtl_res.get("mtl_epistemic_uncertainty", 0.5)
-
-            tasks.append(self._analyze_single_match(full_context))
-
-        results = await asyncio.gather(*tasks, return_exceptions=True)
-
-        valid_results = []
-        for res in results:
-            if isinstance(res, dict):
-                valid_results.append(res)
-            elif isinstance(res, Exception):
-                logger.error(f"Match Analysis Error: {res}")
-
-        return {"ensemble_results": valid_results}
+            # If reference is not set (first run), set it
+            if self.transport._monitor.reference_dist is None:
+                self.transport.set_reference(numeric_features)
+                logger.info("TransportMetric: Reference distribution set.")
+            else:
+                drift_report = self.transport.check_drift(numeric_features)
+                if drift_report.is_drifted:
+                    logger.warning(f"TransportMetric: DRIFT DETECTED ({drift_report.drift_severity}) W={drift_report.wasserstein_2:.4f}")
+                    # Inject drift info into context for RiskStage
+                    context["data_drift_report"] = drift_report
+        except Exception as e:
+            logger.error(f"TransportMetric check failed: {e}")
 
 
     def _apply_market_sentiment(self, context: Dict[str, Any], prediction: Dict[str, Any], match_id: str) -> None:
