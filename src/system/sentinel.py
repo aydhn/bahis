@@ -151,6 +151,70 @@ class Sentinel:
         else:
             logger.warning(f"Sentinel: Unknown regime format in event: {regime}")
 
+    async def _execute_single_cycle(self, cycle_count: int):
+        """Execute a single cycle of the daemon loop."""
+        # 1. Sağlık Kontrolü
+        if not self._check_health():
+            logger.warning("Sentinel: Sistem sağlığı KRİTİK. Devre Kesici AÇIK. 5 dakika bekleniyor.")
+            if self.bot and self.bot.enabled:
+                 await self.bot.send_risk_alert("CIRCUIT BREAKER", "Sistem finansal koruma moduna geçti. İşlemler durduruldu.")
+            await asyncio.sleep(300)
+            return
+
+        # 1.4 HMM Regime Forecast
+        # Ideally update buffer with recent market volatility (from SpeedCache or Treasury)
+        # Simulating volatility update for demonstration
+        # In prod: self._volatility_buffer.append(self.treasury.get_recent_volatility())
+        if len(self._volatility_buffer) > 20:
+            pred = self.regime_hmm.predict(np.array(self._volatility_buffer[-20:]))
+            if pred.next_state_probs[2] > 0.5: # Probability of Chaos > 50%
+                logger.warning("Sentinel: HMM Forecasts CHAOS! Switching to BUNKER.")
+                # Force Architect to Bunker
+                # We can inject this into strategic directive via 'news_sentiment' or directly
+
+        # 1.5 Architect Consultation (Strategic Posture)
+        # We need access to state. Treasury is self.treasury.
+        # Regime is a bit harder as it's computed in RiskStage/Pipeline.
+        # Ideally Pipeline writes regime to a shared state or DB.
+        # For now, we assume Architect can pull basic state or use defaults.
+        strategic_directive = self.architect.consult(
+            treasury_status=self.treasury.state.__dict__,
+            regime_metrics=None, # Passed inside pipeline usually
+            news_sentiment=0.5 # Placeholder
+        )
+
+        # 2. Pipeline Döngüsü (Tek adım)
+        # Evolver'dan en iyi strateji ağırlıklarını al
+        best_dna = self.evolver.get_best_dna()
+        initial_ctx = {
+            "strategic_directive": strategic_directive
+        }
+        if best_dna:
+             # DNA'yı context'e enjekte et
+             dna_dict = best_dna.to_dict()
+             # Ensemble Weights'leri ayrıştır
+             weights = {
+                 "benter": dna_dict.get("ensemble_weight_poisson", 0.3),
+                 "lgbm": dna_dict.get("ensemble_weight_lgbm", 0.35),
+                 "lstm": dna_dict.get("ensemble_weight_lstm", 0.2),
+                 # Diğer modeller için mapping gerekebilir
+             }
+             initial_ctx["ensemble_weights"] = weights
+             initial_ctx["kelly_fraction"] = dna_dict.get("kelly_fraction", 0.25)
+
+        cycle_result = await self.pipeline.run_once(initial_context=initial_ctx)
+
+        # 2.5 Auto Risk Adjustment
+        if cycle_result and "performance_report" in cycle_result:
+            await self.auto_adjust_risk(cycle_result["performance_report"])
+
+        # 3. Evolver Check (Her 100 döngüde bir evrim)
+        if cycle_count % 100 == 0:
+            await self._run_evolution()
+
+        # 4. Bekleme
+        await asyncio.sleep(10)
+
     async def run(self):
         """Sistemi başlat."""
         logger.info("╔════════════════════════════════════════╗")
@@ -185,67 +249,7 @@ class Sentinel:
                 while self.running and not lifecycle.shutdown_event.is_set():
                     cycle_count += 1
 
-                    # 1. Sağlık Kontrolü
-                    if not self._check_health():
-                        logger.warning("Sentinel: Sistem sağlığı KRİTİK. Devre Kesici AÇIK. 5 dakika bekleniyor.")
-                        if self.bot and self.bot.enabled:
-                             await self.bot.send_risk_alert("CIRCUIT BREAKER", "Sistem finansal koruma moduna geçti. İşlemler durduruldu.")
-                        await asyncio.sleep(300)
-                        continue
-
-                    # 1.4 HMM Regime Forecast
-                    # Ideally update buffer with recent market volatility (from SpeedCache or Treasury)
-                    # Simulating volatility update for demonstration
-                    # In prod: self._volatility_buffer.append(self.treasury.get_recent_volatility())
-                    if len(self._volatility_buffer) > 20:
-                        pred = self.regime_hmm.predict(np.array(self._volatility_buffer[-20:]))
-                        if pred.next_state_probs[2] > 0.5: # Probability of Chaos > 50%
-                            logger.warning("Sentinel: HMM Forecasts CHAOS! Switching to BUNKER.")
-                            # Force Architect to Bunker
-                            # We can inject this into strategic directive via 'news_sentiment' or directly
-
-                    # 1.5 Architect Consultation (Strategic Posture)
-                    # We need access to state. Treasury is self.treasury.
-                    # Regime is a bit harder as it's computed in RiskStage/Pipeline.
-                    # Ideally Pipeline writes regime to a shared state or DB.
-                    # For now, we assume Architect can pull basic state or use defaults.
-                    strategic_directive = self.architect.consult(
-                        treasury_status=self.treasury.state.__dict__,
-                        regime_metrics=None, # Passed inside pipeline usually
-                        news_sentiment=0.5 # Placeholder
-                    )
-
-                    # 2. Pipeline Döngüsü (Tek adım)
-                    # Evolver'dan en iyi strateji ağırlıklarını al
-                    best_dna = self.evolver.get_best_dna()
-                    initial_ctx = {
-                        "strategic_directive": strategic_directive
-                    }
-                    if best_dna:
-                         # DNA'yı context'e enjekte et
-                         dna_dict = best_dna.to_dict()
-                         # Ensemble Weights'leri ayrıştır
-                         weights = {
-                             "benter": dna_dict.get("ensemble_weight_poisson", 0.3),
-                             "lgbm": dna_dict.get("ensemble_weight_lgbm", 0.35),
-                             "lstm": dna_dict.get("ensemble_weight_lstm", 0.2),
-                             # Diğer modeller için mapping gerekebilir
-                         }
-                         initial_ctx["ensemble_weights"] = weights
-                         initial_ctx["kelly_fraction"] = dna_dict.get("kelly_fraction", 0.25)
-
-                    cycle_result = await self.pipeline.run_once(initial_context=initial_ctx)
-
-                    # 2.5 Auto Risk Adjustment
-                    if cycle_result and "performance_report" in cycle_result:
-                        await self.auto_adjust_risk(cycle_result["performance_report"])
-
-                    # 3. Evolver Check (Her 100 döngüde bir evrim)
-                    if cycle_count % 100 == 0:
-                        await self._run_evolution()
-
-                    # 4. Bekleme
-                    await asyncio.sleep(10)
+                    await self._execute_single_cycle(cycle_count)
             else:
                 if self._check_health():
                     await self.pipeline.run_once()
