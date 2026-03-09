@@ -169,6 +169,7 @@ class JobScheduler:
         else:
             for task in self._fallback_tasks:
                 task.cancel()
+            self._fallback_tasks.clear()
 
     # ═══════════════════════════════════════════
     #  FALLBACK: APScheduler yoksa asyncio döngüsü
