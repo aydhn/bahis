@@ -186,14 +186,13 @@ class FeedbackStore:
                 (match_id,),
             ).fetchall()
 
-            updated = 0
+            updates = []
             for row_id, decision, reason in rows:
                 reward = compute_reward(decision, outcome, reason)
-                conn.execute(
-                    "UPDATE feedback SET outcome = ?, reward = ? WHERE id = ?",
-                    (outcome, reward, row_id),
-                )
-                updated += 1
+                updates.append((outcome, reward, row_id))
+
+            conn.executemany("UPDATE feedback SET outcome = ?, reward = ? WHERE id = ?", updates)
+            updated = len(updates)
 
             return updated
 
