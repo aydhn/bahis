@@ -139,6 +139,7 @@ playwright
 playwright-stealth
 httpx
 aiohttp
+aiofiles
 beautifulsoup4
 lxml
 fake-useragent
