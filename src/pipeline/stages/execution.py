@@ -1,6 +1,7 @@
 from typing import Dict, Any
 from loguru import logger
 import json
+import asyncio
 from src.pipeline.core import PipelineStage
 from src.system.container import container
 from src.system.config import settings
@@ -67,9 +68,11 @@ class ExecutionStage(PipelineStage):
                 try:
                     # Append to paper trades log (Legacy/Backup)
                     log_file = settings.DATA_DIR / "paper_trades.jsonl"
-                    log_file.parent.mkdir(parents=True, exist_ok=True)
-                    with open(log_file, "a") as f:
-                        f.write(json.dumps(bet) + "\n")
+                    def write_log():
+                        log_file.parent.mkdir(parents=True, exist_ok=True)
+                        with open(log_file, "a") as f:
+                            f.write(json.dumps(bet) + "\n")
+                    await asyncio.to_thread(write_log)
                 except Exception as e:
                     logger.error(f"Failed to save paper trade: {e}")
 
