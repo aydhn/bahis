@@ -7,6 +7,9 @@ telegram_mini_app.py – Profesyonel Telegram bot entegrasyonu.
 - İnteraktif butonlar ile eşik ayarı, sinyal onay/red
 """
 from __future__ import annotations
+from dataclasses import dataclass
+from typing import Any, Optional
+
 
 import asyncio
 import io
@@ -309,6 +312,20 @@ class TelegramNotifier:
             return "(Log okunamadı)"
 
 
+
+@dataclass
+class TelegramAppContext:
+    threshold_ctrl: Any = None
+    token: str = ""
+    chat_id: str = ""
+    notifier: Optional['TelegramNotifier'] = None
+    db: Any = None
+    cb_registry: Any = None
+    clv_tracker: Any = None
+    chart_sender: Any = None
+    hitl: Any = None
+    portfolio: Any = None
+
 class TelegramApp:
     """Telegram bot entegrasyonu – interaktif komutlar + bildirimler + rich media.
 
@@ -325,20 +342,36 @@ class TelegramApp:
       /help     – Komut listesi
     """
 
-    def __init__(self, threshold_ctrl=None, token: str = "",
-                 chat_id: str = "", notifier: TelegramNotifier | None = None,
-                 db=None, cb_registry=None, clv_tracker=None,
-                 chart_sender=None, hitl=None, portfolio=None):
-        self._token = token or os.getenv("TELEGRAM_BOT_TOKEN", "")
-        self._chat_id = chat_id or os.getenv("TELEGRAM_CHAT_ID", "")
-        self._threshold = threshold_ctrl
-        self._notifier = notifier or TelegramNotifier(self._token, self._chat_id)
-        self._db = db
-        self._cb_registry = cb_registry
-        self._clv = clv_tracker
-        self._chart = chart_sender
-        self._hitl = hitl           # HumanInTheLoop
-        self._portfolio = portfolio # PortfolioOptimizer
+    def __init__(self, *args, **kwargs):
+        # If the first argument is exactly a TelegramAppContext, use it directly.
+        if args and isinstance(args[0], TelegramAppContext):
+            self.context = args[0]
+        # Otherwise, if context is provided via kwargs, use that.
+        elif "context" in kwargs and isinstance(kwargs["context"], TelegramAppContext):
+            self.context = kwargs.pop("context")
+        else:
+            # Map legacy positional arguments to kwargs
+            param_names = [
+                "threshold_ctrl", "token", "chat_id", "notifier", "db",
+                "cb_registry", "clv_tracker", "chart_sender", "hitl", "portfolio"
+            ]
+            for i, val in enumerate(args):
+                if i < len(param_names):
+                    kwargs[param_names[i]] = val
+
+            self.context = TelegramAppContext(**kwargs)
+
+        ctx = self.context
+        self._token = ctx.token or os.getenv("TELEGRAM_BOT_TOKEN", "")
+        self._chat_id = ctx.chat_id or os.getenv("TELEGRAM_CHAT_ID", "")
+        self._threshold = ctx.threshold_ctrl
+        self._notifier = ctx.notifier or TelegramNotifier(self._token, self._chat_id)
+        self._db = ctx.db
+        self._cb_registry = ctx.cb_registry
+        self._clv = ctx.clv_tracker
+        self._chart = ctx.chart_sender
+        self._hitl = ctx.hitl           # HumanInTheLoop
+        self._portfolio = ctx.portfolio # PortfolioOptimizer
         self._bot = None
         self._app = None
         self.ceo_dashboard = CEODashboard()
