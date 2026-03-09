@@ -170,3 +170,43 @@ def test_estimate_memory():
     # Test unknown dtype falls back to default 4 bytes
     result = quantizer.estimate_memory(1000000, dtype="unknown")
     assert result["memory_mb"] == 4.0
+
+def test_quantize_numpy_int8():
+    quantizer = ModelQuantizer()
+    array = np.array([1, 2, 3], dtype=np.int32)
+    quantized = quantizer.quantize_numpy(array, dtype="int8")
+
+    assert quantized.dtype == np.int8
+    assert np.array_equal(array, quantized)
+
+def test_quantize_numpy_fallback():
+    quantizer = ModelQuantizer()
+    array = np.array([1.0, 2.0, 3.0], dtype=np.float32)
+    # Provide an unknown dtype, should fallback to float16
+    quantized = quantizer.quantize_numpy(array, dtype="unknown_dtype")
+
+    assert quantized.dtype == np.float16
+    assert np.allclose(array, quantized)
+
+def test_quantize_numpy_empty_array():
+    quantizer = ModelQuantizer()
+    array = np.array([], dtype=np.float32)
+    quantized = quantizer.quantize_numpy(array, dtype="float16")
+
+    assert quantized.dtype == np.float16
+    assert len(quantized) == 0
+
+@patch("src.core.model_quantizer.logger")
+def test_quantize_numpy_logging(mock_logger):
+    quantizer = ModelQuantizer()
+    # 1000 float32 elements = 4000 bytes
+    array = np.ones(1000, dtype=np.float32)
+    quantized = quantizer.quantize_numpy(array, dtype="float16")
+
+    # Check if logger.debug was called to report savings
+    mock_logger.debug.assert_called()
+    # 4000 bytes to 2000 bytes -> 50% savings
+    # original_bytes/1e6 = 0.0MB, new_bytes/1e6 = 0.0MB
+    args, kwargs = mock_logger.debug.call_args
+    assert "Quantize" in args[0]
+    assert "50% tasarruf" in args[0]
