@@ -226,6 +226,45 @@ class TestDistributedCore(unittest.TestCase):
             mock_remote_func.remote.assert_called_once_with(model_probs, market_odds, "test_match")
 
 
+
+    def test_submit_entropy_fallback(self):
+        """Test submit_entropy when Ray is not available."""
+        with patch("src.core.distributed_core.RAY_OK", False):
+            self.dist.start()
+
+            initial_tasks = self.dist._tasks_in_flight
+            model_probs = {"home": 0.5, "draw": 0.3, "away": 0.2}
+            market_odds = {"home": 2.0, "draw": 3.0, "away": 4.0}
+
+            result = self.dist.submit_entropy(model_probs, market_odds, "test_match")
+
+            self.assertEqual(self.dist._tasks_in_flight, initial_tasks + 1)
+            self.assertIsNone(result)
+
+    def test_submit_entropy_ray_path(self):
+        """Verify Ray execution path in submit_entropy."""
+        with patch("src.core.distributed_core.RAY_OK", True), \
+             patch("src.core.distributed_core.ray") as mock_ray, \
+             patch("src.core.distributed_core._ray_run_entropy") as mock_remote_func:
+
+            mock_ray.is_initialized.return_value = True
+
+            dist = DistributedCore(num_cpus=1)
+            dist._started = True
+
+            initial_tasks = dist._tasks_in_flight
+            model_probs = {"home": 0.5, "draw": 0.3, "away": 0.2}
+            market_odds = {"home": 2.0, "draw": 3.0, "away": 4.0}
+
+            expected_result = MagicMock()
+            mock_remote_func.remote.return_value = expected_result
+
+            result = dist.submit_entropy(model_probs, market_odds, "test_match")
+
+            self.assertEqual(dist._tasks_in_flight, initial_tasks + 1)
+            self.assertEqual(result, expected_result)
+            mock_remote_func.remote.assert_called_once_with(model_probs, market_odds, "test_match")
+
     def test_shutdown_ray_success(self):
         """Verify shutdown properly calls ray.shutdown when initialized."""
         with patch("src.core.distributed_core.RAY_OK", True), \
