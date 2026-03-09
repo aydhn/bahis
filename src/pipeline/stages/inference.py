@@ -303,29 +303,12 @@ class InferenceStage(PipelineStage):
 
         return {"ensemble_results": valid_results}
 
-    async def _analyze_single_match(self, context: Dict[str, Any]) -> Dict[str, Any]:
-        """Analyze a single match using Ensemble, RAG, Similarity, Meta-Labeling, and Teleology."""
-        match_id = context.get("match_id", "Unknown")
 
-        # 1. Ensemble Prediction (CPU Bound -> Thread)
-        prediction = await asyncio.to_thread(self.ensemble.predict, context)
-
-        # 2. Entropy Calculation
-        probs = [
-            prediction.get("prob_home", 0.0),
-            prediction.get("prob_draw", 0.0),
-            prediction.get("prob_away", 0.0)
-        ]
-        entropy = self.entropy_calc.calculate_entropy(probs)
-        prediction["entropy"] = entropy
-
-        # 3. Market Sentiment & Smart Money
+    def _apply_market_sentiment(self, context: Dict[str, Any], prediction: Dict[str, Any], match_id: str) -> None:
         try:
             sentiment = self.market_sentiment.analyze_sentiment(match_id)
             prediction["market_sentiment"] = sentiment
 
-            # Smart money integration
-            # Mock retrieving asian handicap data if we had it in context
             asian_hc = context.get("asian_handicap", None)
             public_money_pct = context.get("public_money_pct", None)
 
@@ -348,17 +331,14 @@ class InferenceStage(PipelineStage):
             logger.warning(f"Market Sentiment/Smart Money Error: {e}")
             prediction["market_sentiment"] = {}
 
-        # 3.5. Soros Reflexivity Engine
+    def _apply_advanced_physics(self, context: Dict[str, Any], prediction: Dict[str, Any], match_id: str) -> None:
         try:
-            # Simulate recent odds history for the engine if not available directly
             h_odd = context.get("home_odds", 2.0)
-            # A mock sequence representing recent drift (e.g. odds dropping slightly)
             mock_history = [h_odd * 1.05, h_odd * 1.02, h_odd * 1.01, h_odd]
             reflex_report = self.reflexivity_engine.analyze(mock_history, match_id=match_id)
             prediction["reflexivity_index"] = reflex_report.index
             prediction["reflexive_signal"] = reflex_report.signal
 
-            # 3.6 DTW Flash Crash Detection
             dtw_report = self.dtw_matcher.detect_flash_crash(mock_history)
             prediction["dtw_anomaly_score"] = dtw_report.anomaly_score
             prediction["dtw_is_crash"] = dtw_report.is_crash
@@ -370,13 +350,10 @@ class InferenceStage(PipelineStage):
             prediction["reflexive_signal"] = "NEUTRAL"
             prediction["dtw_anomaly_score"] = 0.0
 
-        # 3.7 Microstructure Engine (OFI & VPIN)
         try:
-            # Mock high frequency data for Microstructure
-            # In production, this would come from the context built by ZeroCopyBridge
             mock_volume = {
                 "volumes": [500.0, 1000.0, 200.0],
-                "directions": [1.0, 1.0, -1.0] # Mostly buying
+                "directions": [1.0, 1.0, -1.0]
             }
             mock_lob = {
                 "bid_sizes": [1000.0, 1500.0, 2000.0],
@@ -394,8 +371,7 @@ class InferenceStage(PipelineStage):
             prediction["vpin_score"] = 0.0
             prediction["is_toxic_flow"] = False
 
-        # 4. Teleological Analysis (Narrative & Motivation)
-        # Assuming context has some rank/points data (from Features stage)
+    def _apply_teleology(self, context: Dict[str, Any], prediction: Dict[str, Any], match_id: str) -> None:
         try:
             teleology = self.teleology_engine.analyze(context)
             prediction["teleology_score"] = teleology["teleology_score"]
@@ -405,15 +381,12 @@ class InferenceStage(PipelineStage):
             logger.warning(f"Teleology failed for {match_id}: {e}")
             prediction["teleology_score"] = 0.5
 
-        # 5. Pattern Matching (Similarity Engine)
+    def _apply_pattern_matching(self, context: Dict[str, Any], prediction: Dict[str, Any]) -> None:
         try:
-            # Construct feature vector based on ODDS (Market View)
-            # [home_odds, draw_odds, away_odds]
             h_odd = context.get("home_odds", 2.0)
             d_odd = context.get("draw_odds", 3.0)
             a_odd = context.get("away_odds", 3.5)
 
-            # Use custom dictionary cache to efficiently manage identical odds combinations without memory leaks
             cache_key = (round(h_odd, 2), round(d_odd, 2), round(a_odd, 2))
             if cache_key not in self._similarity_cache:
                 self._similarity_cache[cache_key] = self._get_similar_matches_impl(*cache_key)
@@ -421,20 +394,18 @@ class InferenceStage(PipelineStage):
 
             prediction["similar_matches"] = similar_res
 
-            # Smart Adjustment: If history says 80% Home Win, but model says 40%, flag it.
             hist_prob = similar_res.get("historical_probs", {}).get("prob_home", 0.0)
             prediction["historical_prob_home"] = hist_prob
 
         except Exception as e:
             logger.warning(f"Similarity search failed: {e}")
 
-        # 6. Meta-Labeling (Quality Check)
+    def _apply_meta_labeling(self, context: Dict[str, Any], prediction: Dict[str, Any], probs: list, entropy: float) -> None:
         try:
-            # We need Odds to assess quality properly.
             meta_features = {
                 "confidence": max(probs),
                 "entropy": entropy,
-                "odds": context.get("home_odds", 2.0), # Assuming Home bet for score calculation, simplified
+                "odds": context.get("home_odds", 2.0),
                 "ev": (max(probs) * context.get("home_odds", 2.0)) - 1.0
             }
             quality_score = self.meta_labeler.predict_score(meta_features)
@@ -443,34 +414,29 @@ class InferenceStage(PipelineStage):
             logger.warning(f"Meta-labeling failed: {e}")
             prediction["meta_quality_score"] = 0.5
 
-        # 7. Conformal Prediction (Certainty Set)
+    def _apply_conformal_prediction(self, prediction: Dict[str, Any]) -> None:
         try:
-            # Create a mock prob vector for conformal
             prob_vec = np.array([prediction.get("prob_home", 0.33),
                                  prediction.get("prob_draw", 0.33),
                                  prediction.get("prob_away", 0.33)])
-            # Since conformal.predict expects batch (N, 3), we wrap and unwrap
             pred_set = self.conformal.predict(prob_vec.reshape(1, -1))[0]
-            prediction["conformal_set"] = pred_set # Set of indices {0, 1, ...}
+            prediction["conformal_set"] = pred_set
             prediction["conformal_certainty"] = self.conformal.check_certainty(pred_set)
         except Exception as e:
             logger.warning(f"Conformal prediction failed: {e}")
             prediction["conformal_certainty"] = "UNKNOWN"
 
-        # 8. Game Theory Check (Strategic Defense)
+    def _apply_game_theory(self, context: Dict[str, Any], prediction: Dict[str, Any]) -> None:
         try:
-            # Construct a basic bettor vs bookie matrix
             home_odds = context.get("home_odds", 2.0)
             p = prediction.get("prob_home", 0.5)
 
-            # Row 1: Bet Home, Row 2: Pass
-            # Col 1: Bookie holds odds, Col 2: Bookie drops odds (by 5%)
             payoff_hold = p * home_odds - 1.0
             payoff_drop = p * (home_odds * 0.95) - 1.0
 
             matrix = np.array([
-                [payoff_hold, payoff_drop], # Bet
-                [0.0, 0.0]                  # Pass
+                [payoff_hold, payoff_drop],
+                [0.0, 0.0]
             ])
 
             nash_res = self.game_theory.solve_nash(matrix)
@@ -484,16 +450,14 @@ class InferenceStage(PipelineStage):
             logger.warning(f"Game Theory error: {e}")
             pass
 
-        # 9. Market God Consultation
+    def _apply_market_god(self, context: Dict[str, Any], prediction: Dict[str, Any], match_id: str) -> None:
         if self.market_god:
             try:
-                # Construct odds data from context
                 odds_data = {
                     "home": context.get("home_odds", 2.0),
                     "draw": context.get("draw_odds", 3.0),
                     "away": context.get("away_odds", 4.0)
                 }
-                # Volatility history ideally passed in context, using dummy or empty list
                 vol_hist = context.get("volatility_history", [])
 
                 god_sig = self.market_god.consult(match_id, odds_data, vol_hist)
@@ -503,21 +467,18 @@ class InferenceStage(PipelineStage):
                 prediction["god_narrative"] = god_sig.narrative
                 prediction["god_multiplier"] = god_sig.suggested_multiplier
 
-                # Apply God Multiplier to Confidence?
-                # If God says BULLISH, we boost model confidence.
                 if god_sig.signal_type == "BULLISH":
                     prediction["confidence"] = min(prediction.get("confidence", 0.5) * 1.2, 1.0)
                 elif god_sig.signal_type == "BEARISH":
                     prediction["confidence"] *= 0.8
                 elif god_sig.signal_type in ["BLACK_SWAN", "FIX_DETECTED"]:
-                    # Severe warning
                     prediction["god_veto"] = True
 
             except Exception as e:
                 logger.warning(f"Market God is silent for {match_id}: {e}")
 
-        # 9.5 Behavioral Arbitrage (Sentiment / Bias Fade)
-        if self.behavioral_arb:
+    def _apply_behavioral_arbitrage(self, context: Dict[str, Any], prediction: Dict[str, Any], match_id: str) -> None:
+        if hasattr(self, 'behavioral_arb') and self.behavioral_arb:
             try:
                 home_odds = context.get("home_odds", 2.0)
                 model_prob = prediction.get("prob_home", 0.33)
@@ -526,10 +487,7 @@ class InferenceStage(PipelineStage):
                 prediction["behavioral_signal"] = arb_sig.signal
                 prediction["behavioral_score"] = arb_sig.sentiment_score
 
-                # Apply Behavioral Fade/Value Boost
                 if arb_sig.signal == "BEARISH":
-                    # Fading the public. Lower confidence slightly since the public money is against us or it's a trap.
-                    # Or increase confidence if we strictly fade the public? Let's reduce confidence slightly to be safe.
                     prediction["confidence"] *= 0.9
                     prediction["god_narrative"] = prediction.get("god_narrative", "") + f" | Behavioral Bearish (-{arb_sig.sentiment_score:.2f})"
                 elif arb_sig.signal == "BULLISH":
@@ -537,6 +495,49 @@ class InferenceStage(PipelineStage):
                     prediction["god_narrative"] = prediction.get("god_narrative", "") + f" | Behavioral Bullish (+{arb_sig.sentiment_score:.2f})"
             except Exception as e:
                 logger.warning(f"Behavioral Arbitrage silent for {match_id}: {e}")
+
+    async def _analyze_single_match(self, context: Dict[str, Any]) -> Dict[str, Any]:
+        """Analyze a single match using Ensemble, RAG, Similarity, Meta-Labeling, and Teleology."""
+        match_id = context.get("match_id", "Unknown")
+
+        # 1. Ensemble Prediction (CPU Bound -> Thread)
+        prediction = await asyncio.to_thread(self.ensemble.predict, context)
+
+        # 2. Entropy Calculation
+        probs = [
+            prediction.get("prob_home", 0.0),
+            prediction.get("prob_draw", 0.0),
+            prediction.get("prob_away", 0.0)
+        ]
+        entropy = self.entropy_calc.calculate_entropy(probs)
+        prediction["entropy"] = entropy
+
+        # 3. Market Sentiment & Smart Money
+        self._apply_market_sentiment(context, prediction, match_id)
+
+        # 3.5, 3.6, 3.7. Advanced Physics & Microstructure
+        self._apply_advanced_physics(context, prediction, match_id)
+
+        # 4. Teleological Analysis (Narrative & Motivation)
+        self._apply_teleology(context, prediction, match_id)
+
+        # 5. Pattern Matching (Similarity Engine)
+        self._apply_pattern_matching(context, prediction)
+
+        # 6. Meta-Labeling (Quality Check)
+        self._apply_meta_labeling(context, prediction, probs, entropy)
+
+        # 7. Conformal Prediction (Certainty Set)
+        self._apply_conformal_prediction(prediction)
+
+        # 8. Game Theory Check (Strategic Defense)
+        self._apply_game_theory(context, prediction)
+
+        # 9. Market God Consultation
+        self._apply_market_god(context, prediction, match_id)
+
+        # 9.5 Behavioral Arbitrage (Sentiment / Bias Fade)
+        self._apply_behavioral_arbitrage(context, prediction, match_id)
 
         # 10. Inject Risk Context and Epistemic Uncertainty
         prediction["regime_status"] = context.get("_regime_status", "NORMAL")
