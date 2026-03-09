@@ -200,7 +200,7 @@ class PlotAnimator:
 
             buf = io.BytesIO()
             fig.savefig(buf, format="png", dpi=80,
-                        bbox_inches="tight", facecolor="#0d1117")
+                        facecolor="#0d1117")
             plt.close(fig)
             buf.seek(0)
             frames.append(imageio.v3.imread(buf))
@@ -237,12 +237,16 @@ class PlotAnimator:
         step = max(1, len(odds_timeline) // n_frames)
         frames = []
 
+        all_home = np.array([d.get("home", 0) for d in odds_timeline], dtype=np.float64)
+        all_draw = np.array([d.get("draw", 0) for d in odds_timeline], dtype=np.float64)
+        all_away = np.array([d.get("away", 0) for d in odds_timeline], dtype=np.float64)
+        all_times = np.arange(len(odds_timeline))
+
         for end_idx in range(2, len(odds_timeline), step):
-            subset = odds_timeline[:end_idx + 1]
-            times = list(range(len(subset)))
-            home_odds = [d.get("home", 0) for d in subset]
-            draw_odds = [d.get("draw", 0) for d in subset]
-            away_odds = [d.get("away", 0) for d in subset]
+            times = all_times[:end_idx + 1]
+            home_odds = all_home[:end_idx + 1]
+            draw_odds = all_draw[:end_idx + 1]
+            away_odds = all_away[:end_idx + 1]
 
             fig, ax = plt.subplots(figsize=(10, 5))
             fig.patch.set_facecolor("#0d1117")
@@ -269,7 +273,7 @@ class PlotAnimator:
 
             buf = io.BytesIO()
             fig.savefig(buf, format="png", dpi=80,
-                        bbox_inches="tight", facecolor="#0d1117")
+                        facecolor="#0d1117")
             plt.close(fig)
             buf.seek(0)
             frames.append(imageio.v3.imread(buf))
@@ -362,7 +366,7 @@ class PlotAnimator:
 
             buf = io.BytesIO()
             fig.savefig(buf, format="png", dpi=80,
-                        bbox_inches="tight", facecolor="#0d1117")
+                        facecolor="#0d1117")
             plt.close(fig)
             buf.seek(0)
             frames.append(imageio.v3.imread(buf))
@@ -399,10 +403,12 @@ class PlotAnimator:
         step = max(1, len(history) // n_frames)
         frames = []
 
+        all_values = np.array([d.get("bankroll", 10000) for d in history], dtype=np.float64)
+        all_dates = np.arange(len(history))
+
         for end_idx in range(2, len(history), step):
-            subset = history[:end_idx + 1]
-            dates = list(range(len(subset)))
-            values = [d.get("bankroll", 10000) for d in subset]
+            dates = all_dates[:end_idx + 1]
+            values = all_values[:end_idx + 1]
             initial = values[0]
 
             fig, ax = plt.subplots(figsize=(10, 5))
@@ -437,7 +443,7 @@ class PlotAnimator:
 
             buf = io.BytesIO()
             fig.savefig(buf, format="png", dpi=80,
-                        bbox_inches="tight", facecolor="#0d1117")
+                        facecolor="#0d1117")
             plt.close(fig)
             buf.seek(0)
             frames.append(imageio.v3.imread(buf))
