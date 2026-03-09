@@ -109,29 +109,13 @@ class PortfolioOptimizer:
         5. Likidite kontrolü yap
         6. Drawdown kontrolü uygula
         """
-        if not candidates:
+        if not candidates or not self._check_trading_state(regime):
             return []
-
-        # Drawdown kontrolünü güncelle
-        self._update_trading_mode()
-
-        if self._mode == TradingMode.FROZEN:
-            logger.warning("[Portfolio] FROZEN – tüm bahisler donduruldu.")
-            return []
-
-        # CRASH rejiminde ticaret durdurulabilir veya çok kısıtlı olabilir
-        if regime == "CRASH":
-            logger.warning("[Portfolio] CRASH rejimi tespit edildi. Güvenli mod - sadece minimum risk.")
-            if self._mode == TradingMode.LIVE:
-                 # CRASH modunda otomatik olarak REDUCED veya PAPER moda geçici geçiş mantığı eklenebilir
-                 pass
-
-        n = len(candidates)
 
         # 1. Korelasyon matrisi
         corr = self._build_correlation_matrix(candidates)
 
-        # 2. Her bahisin ham stake'i (Kelly)
+        # 2. Her bahisin ham stake'i (Kelly) ve EV'si
         raw_stakes = np.array([c.stake_pct for c in candidates])
         evs = np.array([c.ev for c in candidates])
 
@@ -152,6 +136,33 @@ class PortfolioOptimizer:
             adjusted_stakes = self._heuristic_adjust(raw_stakes, corr, positive_mask)
 
         # 4. Toplam risk sınırlaması (Rejime göre scale et)
+        adjusted_stakes = self._apply_risk_limits(adjusted_stakes, regime)
+
+        # 5. Drawdown moduna göre ek düzeltme
+        mode_multiplier = self._mode_multiplier()
+        adjusted_stakes *= mode_multiplier
+
+        # 6. Likidite kontrolü ve sonuçları oluştur
+        return self._build_results(candidates, raw_stakes, adjusted_stakes, positive_mask, regime)
+
+    def _check_trading_state(self, regime: str) -> bool:
+        """Trading durumunu (Drawdown ve Regime) kontrol eder."""
+        self._update_trading_mode()
+
+        if self._mode == TradingMode.FROZEN:
+            logger.warning("[Portfolio] FROZEN – tüm bahisler donduruldu.")
+            return False
+
+        if regime == "CRASH":
+            logger.warning("[Portfolio] CRASH rejimi tespit edildi. Güvenli mod - sadece minimum risk.")
+            if self._mode == TradingMode.LIVE:
+                 # CRASH modunda otomatik olarak REDUCED veya PAPER moda geçici geçiş mantığı eklenebilir
+                 pass
+
+        return True
+
+    def _apply_risk_limits(self, adjusted_stakes: np.ndarray, regime: str) -> np.ndarray:
+        """Piyasa rejimine göre portföyün toplam risk sınırlarını uygular."""
         regime_scale = self._get_regime_risk_factor(regime)
         current_max_risk = self._max_risk * regime_scale
 
@@ -160,18 +171,19 @@ class PortfolioOptimizer:
             scale = current_max_risk / total_risk
             adjusted_stakes *= scale
 
-        # 5. Drawdown moduna göre ek düzeltme
-        mode_multiplier = self._mode_multiplier()
-        adjusted_stakes *= mode_multiplier
+        return adjusted_stakes
 
-        # Sonuçları oluştur
+    def _build_results(self, candidates: list[PortfolioBet], raw_stakes: np.ndarray,
+                       adjusted_stakes: np.ndarray, positive_mask: np.ndarray, regime: str) -> list[dict]:
+        """Adayları sonuç sözlüklerine dönüştürür ve likidite sınırlarını uygular."""
         results = []
+        is_paper = self._mode == TradingMode.PAPER
+
         for i, bet in enumerate(candidates):
             if not positive_mask[i] or adjusted_stakes[i] < 0.001:
                 continue
 
             # Likidite Kontrolü: Max Safe Stake
-            # Edge approx EV for simple calculation
             max_safe_amount = self.liquidity_engine.calculate_max_safe_stake(
                 odds=bet.odds,
                 edge=bet.ev,
@@ -185,8 +197,6 @@ class PortfolioOptimizer:
 
             # Stake miktarı
             stake_amount = final_stake_pct * self._current_bankroll
-
-            is_paper = self._mode == TradingMode.PAPER
 
             results.append({
                 "match_id": bet.match_id,
