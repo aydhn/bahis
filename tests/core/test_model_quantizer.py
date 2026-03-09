@@ -210,3 +210,31 @@ def test_quantize_numpy_logging(mock_logger):
     args, kwargs = mock_logger.debug.call_args
     assert "Quantize" in args[0]
     assert "50% tasarruf" in args[0]
+
+def test_estimate_memory_edge_cases():
+    quantizer = ModelQuantizer()
+
+    # Zero parameters
+    result = quantizer.estimate_memory(0, dtype="float32")
+    assert result["params"] == 0
+    assert result["memory_mb"] == 0.0
+    assert result["memory_gb"] == 0.0
+
+    # Negative parameters (should handle mathematically)
+    result = quantizer.estimate_memory(-1000, dtype="float32")
+    assert result["params"] == -1000
+    assert result["memory_mb"] == -0.004
+    assert result["memory_gb"] == -0.004 / 1024
+
+    # Extremely large parameter count (e.g. 1 Trillion parameters)
+    large_params = 1_000_000_000_000
+    result = quantizer.estimate_memory(large_params, dtype="float16")
+    assert result["params"] == large_params
+    assert result["memory_mb"] == 2_000_000.0
+    assert result["memory_gb"] == 2_000_000.0 / 1024
+
+    # Minimal parameter count
+    result = quantizer.estimate_memory(1, dtype="int8")
+    assert result["params"] == 1
+    assert result["memory_mb"] == 1 / 1e6
+    assert result["memory_gb"] == (1 / 1e6) / 1024
