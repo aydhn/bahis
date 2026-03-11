@@ -529,6 +529,7 @@ class InferenceStage(PipelineStage):
         entropy = self.entropy_calc.calculate_entropy(probs)
         prediction["entropy"] = entropy
 
+
         # 3. Market Sentiment & Smart Money
         self._apply_market_sentiment(context, prediction, match_id)
 

@@ -110,7 +110,10 @@ class ArbitrageExecutionManager:
         new_implied = (1.0 / exec_home) + (1.0 / exec_away)
         if exec_draw > 0:
             new_implied += (1.0 / exec_draw)
-        if new_implied >= 1.0:
+
+        # Ensure we still have an edge after slippage (implied_prob < 1.0)
+        # Adding a small buffer (e.g. 0.999 instead of 1.0) to ensure actual profit after rounding
+        if new_implied >= 0.995:
             # Release capital back if we reject
             if treasury:
                 treasury.release_capital(allocated_capital, 0.0, strategy_type="safe")
