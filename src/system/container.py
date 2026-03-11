@@ -101,6 +101,24 @@ class DependencyContainer:
                 from src.quant.finance.treasury import TreasuryEngine
                 self._services["treasury"] = TreasuryEngine()
 
+            elif name == "market_god":
+                try:
+                    from src.extensions.market_god import MarketGod
+                    self._services["market_god"] = MarketGod()
+                except ImportError:
+                    self._services["market_god"] = None
+
+            elif name == "behavioral_arb":
+                try:
+                    from src.extensions.behavioral_arbitrage import BehavioralArbitrage
+                    self._services["behavioral_arb"] = BehavioralArbitrage()
+                except ImportError:
+                    self._services["behavioral_arb"] = None
+
+            elif name == "alpha_generator":
+                from src.extensions.alpha_generator import AlphaGenerator
+                self._services["alpha_generator"] = AlphaGenerator(self.get("event_bus"))
+
             # Add more services as needed...
 
 

@@ -87,9 +87,9 @@ class InferenceStage(PipelineStage):
         self.game_theory = GameTheoryEngine()
 
         # Market God (The Omniscient Strategist)
-        self.market_god = MarketGod() if MarketGod else None
+        self.market_god = container.get('market_god')
         self.smart_money = container.get('smart_money')
-        self.behavioral_arb = BehavioralArbitrage() if BehavioralArbitrage else None
+        self.behavioral_arb = container.get('behavioral_arb')
 
         # Advanced Quant Engines (Level 43)
         self.dtw_matcher = DTWMatcher()
