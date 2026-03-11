@@ -17,6 +17,7 @@ class TestHedgeHog(unittest.TestCase):
             'loguru': MagicMock(),
             'scipy': scipy_mock,
             'scipy.stats': scipy_stats,
+
             'scipy.special': scipy_special,
             'scipy.optimize': MagicMock(),
             'scipy.integrate': MagicMock(),
@@ -30,7 +31,7 @@ class TestHedgeHog(unittest.TestCase):
             'torch': MagicMock(),
             'cv2': MagicMock(),
             'pydantic_settings': MagicMock(),
-            'src.quant.finance.black_scholes_hedge': MagicMock(),
+
             'src.quant.models': MagicMock(),
             'src.quant.analysis': MagicMock(),
             'src.quant.physics': MagicMock(),

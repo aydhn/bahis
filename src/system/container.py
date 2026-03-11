@@ -104,7 +104,13 @@ class DependencyContainer:
 
 
 
+
+            elif name == "treasury":
+                from src.quant.finance.treasury import TreasuryEngine
+                self._services["treasury"] = TreasuryEngine()
+
             # Add more services as needed...
+
 
             else:
                 raise ValueError(f"Unknown service: {name}")
