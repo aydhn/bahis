@@ -138,7 +138,24 @@ class MarketGod:
             return signal
 
         # Aggregate Scores
-        total_score = sm_score + arb_score
+
+        # 4. Cross-Regime Correlation & Portfolio Exposure limit
+        # JP Morgan Rule: If the system is highly correlated to the general market and we enter
+        # high volatility, we forcibly reduce conviction.
+        correlation_penalty = 0.0
+        if regime_risk > 0.5 and volatility_history and len(volatility_history) > 10:
+            # Calculate a rolling standard deviation to estimate localized market stress
+            rolling_std = np.std(volatility_history[-10:])
+            # Normalize it assuming historical max std is around 0.15 for market
+            normalized_stress = min(rolling_std / 0.15, 1.0)
+
+            # If stress is high, we apply a mathematical penalty rather than a fake static one
+            if normalized_stress > 0.6:
+                correlation_penalty = 0.25 * normalized_stress
+                reasons.append(f"Regime Correlation Penalty (-{correlation_penalty:.2f}) due to market stress {normalized_stress:.2f}")
+
+        total_score = sm_score + arb_score - correlation_penalty
+
 
         # Black Swan Check
         if regime_risk > 0.8:

@@ -27,20 +27,11 @@ from typing import Optional, Dict, Any
 import polars as pl
 from loguru import logger
 
-try:
-    import httpx
-except ImportError:
-    httpx = None
+import httpx
 
-try:
-    from src.ingestion.voice_interrogator import VoiceInterrogator
-except ImportError:
-    VoiceInterrogator = None
+from src.ingestion.voice_interrogator import VoiceInterrogator
 
-try:
-    from src.pipeline.context import BettingContext
-except ImportError:
-    BettingContext = None
+from src.pipeline.context import BettingContext
 
 # New modules
 from src.quant.finance.treasury import TreasuryEngine
@@ -53,41 +44,20 @@ from src.reporting.visualizer import Visualizer, GodsEyeConfig
 from src.core.event_bus import Event
 from src.quant.analysis.narrative_generator import NarrativeGenerator
 
-try:
-    from src.quant.analysis.xai_explainer import XAIExplainer
-except ImportError:
-    XAIExplainer = None
+from src.quant.analysis.xai_explainer import XAIExplainer
 
-try:
-    from src.quant.analysis.scenario_simulator import ScenarioSimulator
-except ImportError:
-    ScenarioSimulator = None
+from src.quant.analysis.scenario_simulator import ScenarioSimulator
 
-try:
-    from src.quant.analysis.market_regime_detector import MarketRegimeDetector
-except ImportError:
-    MarketRegimeDetector = None
+from src.quant.analysis.market_regime_detector import MarketRegimeDetector
 
-try:
-    from src.quant.treasury.synthetic_engine import SyntheticEngine
-except ImportError:
-    SyntheticEngine = None
+from src.quant.treasury.synthetic_engine import SyntheticEngine
 
 # New Extensions
-try:
-    from src.extensions.smart_money import SmartMoneyDetector
-except ImportError:
-    SmartMoneyDetector = None
+from src.extensions.smart_money import SmartMoneyDetector
 
-try:
-    from src.extensions.regime_hmm import MarketRegimeHMM
-except ImportError:
-    MarketRegimeHMM = None
+from src.extensions.regime_hmm import MarketRegimeHMM
 
-try:
-    from src.quant.analysis.sensitivity_engine import SensitivityEngine
-except ImportError:
-    SensitivityEngine = None
+from src.quant.analysis.sensitivity_engine import SensitivityEngine
 
 from src.quant.finance.optimal_execution import OptimalExecutionModel
 from src.quant.analysis.dtw_matcher import DTWMatcher
