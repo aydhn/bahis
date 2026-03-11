@@ -324,8 +324,8 @@ class WaveletDenoiser:
                     report.dominant_frequency = "mid"
                 else:
                     report.dominant_frequency = "high"
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Exception caught: {e}")
 
         # Fake move tespiti
         if len(result.noise) > 0:

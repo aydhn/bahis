@@ -587,6 +587,6 @@ class CausalDiscovery:
                     "leaf_effects": dag.leaf_effects,
                     "method": dag.method,
                 }
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Exception caught: {e}")
         return {"edges": [], "root_causes": []}

@@ -99,8 +99,8 @@ class Neo4jFootballGraph:
             for c in constraints:
                 try:
                     session.run(c)
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug(f"Exception caught: {e}")
 
     # ═══════════════════════════════════════════
     #  DÜĞÜM OLUŞTURMA

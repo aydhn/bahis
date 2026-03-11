@@ -179,8 +179,8 @@ class BlindStrategyEngine:
                 enc = ts.ckks_vector(self._context, data)
                 self._enc_count += 1
                 return enc
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Exception caught: {e}")
 
         # Fallback: maskeleme
         arr = np.array(data, dtype=np.float64)
@@ -191,8 +191,8 @@ class BlindStrategyEngine:
         if TENSEAL_OK and hasattr(encrypted, "decrypt"):
             try:
                 return encrypted.decrypt()
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Exception caught: {e}")
 
         if isinstance(encrypted, np.ndarray):
             result = self._masked.unmask(encrypted, label)
@@ -233,8 +233,8 @@ class BlindStrategyEngine:
                 result.is_encrypted = True
                 result.encryption_scheme = "CKKS"
                 self._enc_count += 1
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Exception caught: {e}")
 
         result.plaintext_result = [round(f, 6) for f in kelly_fractions]
         result.compute_time_ms = round(

@@ -482,8 +482,8 @@ class DataSourceAggregator:
                         try:
                             self._db.upsert_match(item)
                             total += 1
-                        except Exception:
-                            pass
+                        except Exception as e:
+                            logger.debug(f"Exception caught: {e}")
             logger.success(f"[Agg] Toplam {total} maç veritabanına kaydedildi.")
 
         return results

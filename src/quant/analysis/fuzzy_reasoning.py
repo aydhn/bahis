@@ -230,8 +230,8 @@ class FuzzyReasoningEngine:
                 output = self._evaluate_skfuzzy(inputs)
                 output.method = "scikit-fuzzy"
                 return output
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Exception caught: {e}")
 
         # Manuel fallback
         output = self._evaluate_manual(inputs)

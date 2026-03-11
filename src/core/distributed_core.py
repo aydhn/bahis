@@ -286,8 +286,8 @@ class DistributedCore:
         if RAY_OK and ray.is_initialized():
             try:
                 ray.shutdown()
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Exception caught: {e}")
         if self._pool:
             self._pool.shutdown(wait=False)
         if self._thread_pool:

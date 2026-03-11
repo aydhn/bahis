@@ -315,8 +315,8 @@ class StealthBrowser:
             elif self._browser:
                 await self._browser.close()
                 self._browser = None
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Exception caught: {e}")
 
     @property
     def engine(self) -> str:

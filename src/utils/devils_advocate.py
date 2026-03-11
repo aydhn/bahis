@@ -65,8 +65,8 @@ class DevilsAdvocate:
                             "factor": factor_name,
                             "message": factor["message"],
                         })
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug(f"Exception caught: {e}")
 
             # Sürpriz riski
             surprise_score = self._surprise_risk(bet)

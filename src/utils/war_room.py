@@ -126,8 +126,8 @@ def _ask_ollama_sync(prompt: str, system: str,
         }, timeout=30.0)
         if resp.status_code == 200:
             return resp.json().get("response", "")
-    except Exception:
-        pass
+    except Exception as e:
+        logger.debug(f"Exception caught: {e}")
     return ""
 
 

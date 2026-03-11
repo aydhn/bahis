@@ -77,8 +77,8 @@ class SentimentAnalyzer:
             try:
                 blob = TextBlob(text)
                 scores.append(blob.sentiment.polarity)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Exception caught: {e}")
 
         # Türkçe keyword tabanlı analiz (her zaman çalışır)
         tr_score = self._turkish_sentiment(text)

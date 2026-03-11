@@ -612,8 +612,8 @@ class Sentinel:
                         if self.bot.token and ":" in self.bot.token:
                             try:
                                 chat_id = int(self.bot.token.split(":")[0])
-                            except Exception:
-                                pass
+                            except Exception as e:
+                                logger.debug(f"Exception caught: {e}")
 
                         if chat_id:
                             await self.bot.send_message(

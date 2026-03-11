@@ -138,8 +138,8 @@ class LineupMonitor:
             try:
                 df = self._db.get_upcoming_matches()
                 return df.to_dicts() if hasattr(df, "to_dicts") else []
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Exception caught: {e}")
         return []
 
     # ═══════════════════════════════════════════
@@ -283,8 +283,8 @@ class LineupMonitor:
         if self._db and hasattr(self._db, "save_lineup"):
             try:
                 self._db.save_lineup(event)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Exception caught: {e}")
 
         # Callback: bahis.py'yi tetikle → analizi yeniden hesaplat
         if self._on_lineup:

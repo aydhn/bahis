@@ -137,8 +137,8 @@ def wasserstein_nd(P: np.ndarray, Q: np.ndarray,
                 s_dist = w_dist
 
             return w_dist, s_dist
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Exception caught: {e}")
 
     # Scipy fallback (sadece 1D)
     if SCIPY_OK and P.ndim == 1:

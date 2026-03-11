@@ -250,8 +250,8 @@ class SyntheticTrainer:
                     metric.ks_pvalue = round(float(pval), 4)
                     metric.passed = pval > 0.05
                     ks_pvalues.append(pval)
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug(f"Exception caught: {e}")
 
             # Ortalama/std fark
             r_mean, s_mean = np.mean(real_col), np.mean(synth_col)
@@ -275,8 +275,8 @@ class SyntheticTrainer:
                 report.correlation_diff = round(
                     float(np.mean(np.abs(corr_real - corr_synth))), 4,
                 )
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Exception caught: {e}")
 
         # Genel kalite
         if ks_pvalues:

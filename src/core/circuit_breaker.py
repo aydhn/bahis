@@ -167,15 +167,15 @@ class CircuitBreaker:
             for cb in self._on_open_callbacks:
                 try:
                     cb(self.name, self._stats.last_error)
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug(f"Exception caught: {e}")
 
         if new_state == CBState.CLOSED:
             for cb in self._on_close_callbacks:
                 try:
                     cb(self.name)
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug(f"Exception caught: {e}")
 
     def _on_success(self):
         self._stats.successes += 1

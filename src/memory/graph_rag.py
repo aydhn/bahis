@@ -263,8 +263,8 @@ class GraphRAG:
                         self._qa_chain = GraphCypherQAChain.from_llm(
                             llm, graph=graph, verbose=False,
                         )
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logger.debug(f"Exception caught: {e}")
             except Exception:
                 self._driver = None
 
@@ -320,8 +320,8 @@ class GraphRAG:
                                 "MERGE (n)-[:ABOUT]->(t)",
                                 team=team, nid=news_id,
                             )
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug(f"Exception caught: {e}")
 
             # In-memory grafik
             if self._mem_graph is not None:
@@ -457,8 +457,8 @@ class GraphRAG:
             try:
                 result = self._qa_chain.invoke({"query": question})
                 return result.get("result", "")
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Exception caught: {e}")
 
         # LLM fallback
         context = self._build_context(team)
@@ -501,8 +501,8 @@ class GraphRAG:
                     text = resp.json().get("response", "")
                     if text:
                         return text.strip()
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Exception caught: {e}")
 
         return ""
 

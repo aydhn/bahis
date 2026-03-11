@@ -312,8 +312,8 @@ class EventBus:
                 result = handler(event)
                 if asyncio.iscoroutine(result):
                     await result
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Exception caught: {e}")
 
     def emit_sync(self, event: Event):
         """Senkron olay yayını (async olmayan bağlamlarda)."""
@@ -327,8 +327,8 @@ class EventBus:
         for handler in handlers:
             try:
                 handler(event)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Exception caught: {e}")
 
     def pause(self):
         """Olay akışını duraklat."""

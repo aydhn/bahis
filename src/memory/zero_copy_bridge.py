@@ -55,8 +55,8 @@ class ZeroCopyBridge:
             try:
                 shm.close()
                 shm.unlink()
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Exception caught: {e}")
         self._blocks.clear()
         logger.info("ZeroCopyBridge temizlendi.")
 

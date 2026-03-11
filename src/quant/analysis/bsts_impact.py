@@ -441,8 +441,8 @@ class BSTSImpactAnalyzer:
                         result.seasonality_strength = round(
                             float(np.std(valid_s) / max(np.std(arr), 1e-8)), 4,
                         )
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Exception caught: {e}")
 
         # Kırılma tespiti
         result.break_points = self.detect_breaks(arr)
