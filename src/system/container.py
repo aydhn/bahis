@@ -119,6 +119,30 @@ class DependencyContainer:
                 from src.extensions.alpha_generator import AlphaGenerator
                 self._services["alpha_generator"] = AlphaGenerator(self.get("event_bus"))
 
+            elif name == "auto_tuner":
+                from src.extensions.auto_tuner import AutoTuner
+                self._services["auto_tuner"] = AutoTuner()
+
+            elif name == "ceo_dashboard":
+                from src.extensions.ceo_dashboard import CEODashboard
+                self._services["ceo_dashboard"] = CEODashboard()
+
+            elif name == "kelly_benter":
+                from src.extensions.kelly_benter_optimizer import KellyBenterOptimizer
+                self._services["kelly_benter"] = KellyBenterOptimizer()
+
+            elif name == "philosophical_risk":
+                from src.extensions.philosophical_risk import PhilosophicalRiskEngine
+                self._services["philosophical_risk"] = PhilosophicalRiskEngine()
+
+            elif name == "quantum_pricing":
+                from src.extensions.quantum_pricing_model import QuantumPricingModel
+                self._services["quantum_pricing"] = QuantumPricingModel()
+
+            elif name == "regime_hmm":
+                from src.extensions.regime_hmm import MarketRegimeHMM
+                self._services["regime_hmm"] = MarketRegimeHMM()
+
             # Add more services as needed...
 
 
