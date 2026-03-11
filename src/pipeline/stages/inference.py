@@ -36,6 +36,11 @@ try:
 except ImportError:
     MarketGod = None
 
+try:
+    from src.extensions.behavioral_arbitrage import BehavioralArbitrage
+except ImportError:
+    BehavioralArbitrage = None
+
 from src.quant.analysis.dtw_matcher import DTWMatcher
 from src.quant.analysis.microstructure_engine import MicrostructureEngine
 
@@ -84,7 +89,7 @@ class InferenceStage(PipelineStage):
         # Market God (The Omniscient Strategist)
         self.market_god = MarketGod() if MarketGod else None
         self.smart_money = container.get('smart_money')
-        self.game_theory = GameTheoryEngine()
+        self.behavioral_arb = BehavioralArbitrage() if BehavioralArbitrage else None
 
         # Advanced Quant Engines (Level 43)
         self.dtw_matcher = DTWMatcher()

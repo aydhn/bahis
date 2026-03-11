@@ -61,12 +61,13 @@ async def test_api_hijacker_persistence(tmp_path):
 
         # Simulate discovery
         hijacker._discover_endpoint("http://api.test/v1/event/123", "test_source", 200, {"data": "test"})
+        await hijacker._save_endpoints_async()
+
 
         # Verify in memory
         assert "http://api.test/v1/event/*" in hijacker.discovered_endpoints
 
         # Trigger save (usually happens in loop, we call manually or verify file write)
-        await hijacker._save_endpoints_async()
 
         # Verify file exists
         assert endpoints_file.exists()
