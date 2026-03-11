@@ -320,8 +320,8 @@ class ArrowBridge:
         if ARROW_OK:
             try:
                 return df.to_arrow()
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Exception caught: {e}")
         return df
 
     @staticmethod
@@ -363,8 +363,8 @@ class ArrowBridge:
                 writer.write_table(data)
                 writer.close()
                 return sink.getvalue()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Exception caught: {e}")
         return data
 
 

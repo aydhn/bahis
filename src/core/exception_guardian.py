@@ -362,8 +362,8 @@ class ExceptionGuardian:
         if severity == "CRITICAL" and self._alert_cb and occurrence <= 3:
             try:
                 self._alert_cb(record)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Exception caught: {e}")
 
         if not suppress:
             raise

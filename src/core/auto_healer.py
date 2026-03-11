@@ -176,8 +176,8 @@ def extract_error_context(exc: Exception,
                 f"{i+1:4d}| {source_lines[i]}"
                 for i in range(start, end)
             )
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Exception caught: {e}")
 
     return {
         "error_type": type(exc).__name__,

@@ -146,8 +146,8 @@ def compute_var(shape: float, scale: float, threshold: float,
                 (p / exceed_rate) ** (-shape) - 1
             )
             return max(0.0, float(var_val))
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Exception caught: {e}")
 
     return threshold + scale * np.log(exceed_rate / max(p, 1e-10))
 
@@ -283,8 +283,8 @@ class EVTRiskManager:
                     else:
                         rl = thresh + sigma * np.log(period / exceed_rate)
                     setattr(report, attr, round(float(rl), 2))
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug(f"Exception caught: {e}")
 
         # ── Siyah Kuğu Olasılığı ──
         report.black_swan_prob = self._estimate_black_swan_prob(

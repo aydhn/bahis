@@ -310,8 +310,8 @@ class ProphetSeasonalityAnalyzer:
                 if overall_avg > 0 and not np.isnan(month_avg):
                     team_effect = (month_avg - overall_avg) / overall_avg
                     effect = team_effect * 0.7 + effect * 0.3
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Exception caught: {e}")
 
         is_negative = effect < self.NEGATIVE_THRESHOLD
         avoid = effect < self.AVOID_THRESHOLD

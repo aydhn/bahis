@@ -34,12 +34,12 @@ except ImportError:
 try:
     from src.extensions.market_god import MarketGod
 except ImportError:
-    MarketGod = None
+    MarketGod = None  # type: ignore
 
 try:
     from src.extensions.behavioral_arbitrage import BehavioralArbitrage
 except ImportError:
-    BehavioralArbitrage = None
+    BehavioralArbitrage = None  # type: ignore
 
 from src.quant.analysis.dtw_matcher import DTWMatcher
 from src.quant.analysis.microstructure_engine import MicrostructureEngine

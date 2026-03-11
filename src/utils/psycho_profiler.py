@@ -417,8 +417,8 @@ class PsychoProfiler:
         try:
             data = [asdict(d) for d in self._decisions[-1000:]]
             path.write_text(json.dumps(data, ensure_ascii=False, default=str))
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Exception caught: {e}")
 
     def _load_history(self):
         path = PROFILE_DIR / "decisions.json"
@@ -432,8 +432,8 @@ class PsychoProfiler:
                     if k in Decision.__dataclass_fields__
                 }))
             logger.info(f"[Psycho] {len(self._decisions)} karar yüklendi.")
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Exception caught: {e}")
 
     @property
     def total_decisions(self) -> int:

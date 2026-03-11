@@ -254,8 +254,8 @@ class TelegramBot:
                 })
                 if resp.status_code == 200:
                     return resp.json().get("result", {}).get("message_id")
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Exception caught: {e}")
         return None
 
     async def _edit_message(self, chat_id: int, message_id: int, text: str):
@@ -268,8 +268,8 @@ class TelegramBot:
                     "text": text,
                     "parse_mode": "Markdown"
                 })
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Exception caught: {e}")
 
     async def handle_event(self, event: Event):
         """Event Bus üzerinden gelen kritik olayları raporla."""
@@ -1339,8 +1339,8 @@ class TelegramBot:
                 if not row.is_empty():
                     home_xg = row["home_xg"][0] or 1.5
                     away_xg = row["away_xg"][0] or 1.2
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Exception caught: {e}")
 
         sim_res = self.simulator.simulate_match(home_xg, away_xg, match_id)
 
@@ -1484,6 +1484,6 @@ class TelegramBot:
                 async with aiofiles.open(path, "r") as f:
                     content = await f.read()
                     return json.loads(content)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Exception caught: {e}")
         return {"pnl": 0.0, "drawdown": 0.0}

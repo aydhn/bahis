@@ -237,8 +237,8 @@ class JobScheduler:
         if self._scheduler and APSCHEDULER_OK:
             try:
                 self._scheduler.remove_job(name)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Exception caught: {e}")
 
     def get_jobs(self) -> list[dict]:
         """Tüm zamanlanmış görevleri listeler."""

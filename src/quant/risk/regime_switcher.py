@@ -317,8 +317,8 @@ class RegimeSwitcher:
                     confidence=round(float(probs[-1, s]), 4),
                     goal_multiplier=GOAL_MULTIPLIERS.get(s, 1.0),
                 )
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Exception caught: {e}")
 
         states = self._decode_manual(obs)
         s = int(states[-1]) if len(states) > 0 else 1

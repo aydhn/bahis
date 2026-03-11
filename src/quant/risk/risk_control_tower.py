@@ -91,7 +91,7 @@ class RiskControlTower:
         self.game_theory = GameTheoryEngine() # NEW
         self.smart_money = container.get('smart_money') # NEW
         self.boardroom = Boardroom() # NEW
-        self.market_god = MarketGod() # NEW
+        self.market_god = MarketGod()  # type: ignore
 
         logger.info("RiskControlTower initialized and ready for duty.")
 

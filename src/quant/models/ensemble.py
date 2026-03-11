@@ -28,7 +28,7 @@ class EnsembleModel(QuantModel):
         self.bayesian = BayesianAdapter()
         self.quantum = QuantumAdapter()
         self.qpm = QuantumPricingModel()
-        self.active_agent = container.get("active_agent")
+        self.active_agent = container.get("active_agent")  # type: ignore
 
         # Initialize models
         self.models: Dict[str, QuantModel] = {

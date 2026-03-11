@@ -150,8 +150,8 @@ class SimpleSymbolicSearch:
                     try:
                         y_pred = func(X, best_params)
                         r2 = float(r2_score(y, y_pred))
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logger.debug(f"Exception caught: {e}")
 
                 complexity = len(template_str.split("+")) + len(template_str.split("*"))
 
@@ -316,8 +316,8 @@ class SymbolicDiscovery:
                 if index >= 0:
                     return self._model.predict(X, index=index)
                 return self._model.predict(X)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Exception caught: {e}")
 
         return np.zeros(len(X))
 

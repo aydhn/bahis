@@ -429,8 +429,8 @@ class SurvivalEstimator:
             try:
                 sf = self._km_fitter.predict(max(0, t))
                 return float(sf.iloc[0]) if hasattr(sf, 'iloc') else float(sf)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Exception caught: {e}")
 
         if self._km_times is not None and self._km_survival is not None:
             idx = np.searchsorted(self._km_times, t, side="right") - 1

@@ -142,8 +142,8 @@ class TelegramAdmin:
                 last_errors = lines[-5:] if lines else ["Hata yok"]
                 error_text = "\n".join(f"  <code>{l[:80]}</code>" for l in last_errors)
                 text += f"\n\n🚨 <b>Son Hatalar:</b>\n{error_text}"
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Exception caught: {e}")
 
         # Scheduler durumu
         if self._scheduler:
@@ -256,8 +256,8 @@ class TelegramAdmin:
                 if hasattr(self._cache, "cache_clear"):
                     self._cache.cache_clear()
                     cleared += 1
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Exception caught: {e}")
 
         await update.message.reply_text(f"🧹 Önbellek temizlendi ({cleared} katman).")
         self._log_command("clear_cache", update.effective_user.id)

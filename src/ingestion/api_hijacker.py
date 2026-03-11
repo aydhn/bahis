@@ -199,8 +199,8 @@ class APIHijacker:
                 for page in pages:
                     try:
                         await page.reload(timeout=15000)
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logger.debug(f"Exception caught: {e}")
                 logger.debug(
                     f"[Hijack] Durum: {self._stats['json_captured']} JSON, "
                     f"{self._stats['ws_frames']} WS, "
@@ -213,8 +213,8 @@ class APIHijacker:
         for page in pages:
             try:
                 await page.close()
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Exception caught: {e}")
         await browser.close()
         logger.info(
             f"[Hijack] Kapatıldı. Son durum: "
@@ -299,8 +299,8 @@ class APIHijacker:
                     f"[Hijack] 🎯 {source}: {url[:80]}… → {matches_found} maç"
                 )
 
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Exception caught: {e}")
 
     # ═══════════════════════════════════════════
     #  WEBSOCKET HANDLER
@@ -481,8 +481,8 @@ class APIHijacker:
             try:
                 self._db.upsert_match(match_data)
                 return True
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Exception caught: {e}")
         return False
 
     # ═══════════════════════════════════════════
@@ -510,8 +510,8 @@ class APIHijacker:
                     if resp.status_code == 200:
                         return resp.json()
 
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Exception caught: {e}")
         return None
 
     async def refresh_session(self, url: str):

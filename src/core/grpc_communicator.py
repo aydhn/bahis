@@ -85,8 +85,8 @@ class ServiceMessage:
                 data = msgpack.unpackb(raw, raw=False)
                 return cls(**{k: v for k, v in data.items()
                              if k in cls.__dataclass_fields__})
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Exception caught: {e}")
         data = json.loads(raw)
         return cls(**{k: v for k, v in data.items()
                      if k in cls.__dataclass_fields__})
@@ -171,8 +171,8 @@ class InProcessBus:
                     await callback(msg)
                 else:
                     callback(msg)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Exception caught: {e}")
 
     async def receive(self, channel: str,
                        timeout: float = 5.0) -> ServiceMessage | None:

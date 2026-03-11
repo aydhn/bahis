@@ -194,3 +194,4 @@ python-dotenv
 hypothesis
 pytest
 ruff
+requests>=2.31.0

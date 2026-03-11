@@ -280,8 +280,8 @@ class RustEngine:
                 elapsed = (time.perf_counter() - t0) * 1000
                 self._total_ms += elapsed
                 return {**result, "engine": "rust", "elapsed_ms": elapsed}
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Exception caught: {e}")
 
         if self._engine == "numba" and NUMBA_OK:
             hw, dw, aw, o25, mean_g, std_g = _mc_sim_numba(
@@ -321,8 +321,8 @@ class RustEngine:
                 result = np.array(_rust_mod.kelly_batch(p.tolist(), o.tolist()))
                 self._total_ms += (time.perf_counter() - t0) * 1000
                 return result
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Exception caught: {e}")
 
         if self._engine == "numba" and NUMBA_OK:
             result = _kelly_batch_numba(p, o)
@@ -349,8 +349,8 @@ class RustEngine:
                 ))
                 self._total_ms += (time.perf_counter() - t0) * 1000
                 return result
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Exception caught: {e}")
 
         if self._engine == "numba" and NUMBA_OK:
             result = _influence_field_numba(
@@ -377,8 +377,8 @@ class RustEngine:
                 ))
                 self._total_ms += (time.perf_counter() - t0) * 1000
                 return result
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Exception caught: {e}")
 
         result = A @ B
         self._total_ms += (time.perf_counter() - t0) * 1000

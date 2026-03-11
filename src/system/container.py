@@ -85,11 +85,6 @@ class DependencyContainer:
                  from src.core.portfolio_optimizer import PortfolioOptimizer
                  self._services["portfolio_opt"] = PortfolioOptimizer()
 
-            elif name == "active_agent":
-                from src.core.active_inference_agent import ActiveInferenceAgent
-                self._services["active_agent"] = ActiveInferenceAgent()
-
-
             elif name == "arb_executor":
                 from src.quant.finance.arbitrage_execution import ArbitrageExecutionManager
                 self._services["arb_executor"] = ArbitrageExecutionManager()
@@ -101,9 +96,6 @@ class DependencyContainer:
             elif name == "active_agent":
                 from src.core.active_inference_agent import ActiveInferenceAgent
                 self._services["active_agent"] = ActiveInferenceAgent()
-
-
-
 
             elif name == "treasury":
                 from src.quant.finance.treasury import TreasuryEngine
