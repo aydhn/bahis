@@ -49,6 +49,37 @@ class CEODashboard:
              self.treasury.save_state()
              self.treasury.rebalance_buckets("stable")
 
+
+    def calculate_greeks(self) -> dict:
+        """
+        Calculate synthetic Greeks based on the current treasury state allocations.
+        Delta = Net directional bias.
+        Gamma = Convexity (how fast allocation changes).
+        Vega = Sensitivity to Chaos (Regime).
+        """
+        if not hasattr(self, "treasury") or not self.treasury or not self.treasury.state:
+            return {"delta": 0.0, "gamma": 0.0, "vega": 0.0}
+
+        allocs = self.treasury.state.allocations
+        safe = allocs.get("safe", 0.5)
+        agg = allocs.get("aggressive", 0.3)
+        rnd = allocs.get("rnd", 0.2)
+
+        # Delta: Aggressive - Safe (Bias towards taking risk)
+        delta = agg - safe
+
+        # Gamma: High if aggressive > safe by a lot, indicating convex risk taking
+        gamma = agg * 1.5 if agg > safe else agg * 0.5
+
+        # Vega: RND allocation + safe baseline. High Vega means we are sensitive to exploring volatile markets
+        vega = rnd * 2.0 + safe * 0.1
+
+        return {
+            "delta": delta,
+            "gamma": gamma,
+            "vega": vega
+        }
+
     def generate_report(self, context: Optional[Any]) -> str:
         """
         Generates the executive summary report.
@@ -92,6 +123,11 @@ class CEODashboard:
         # Executive quote
         quote = "“The obstacle is the way.” — Marcus Aurelius"
 
+        greeks = self.calculate_greeks()
+        delta = greeks["delta"]
+        gamma = greeks["gamma"]
+        vega = greeks["vega"]
+
         report = (
             f"👁️ **GOD MODE: EXECUTIVE VISION** 👁️\n"
             f"━━━━━━━━━━━━━━━━━━━━━━━━━\n"
@@ -103,7 +139,10 @@ class CEODashboard:
             f"🏛️ **Boardroom Sentinel Consensus**\n"
             f"• **Alignment:** {consensus_str}\n"
             f"• **Status:** {'Active' if board_decision.approved else 'Cautious/Bunker'}\n\n"
-            f"📊 **Systemic Posture**\n"
+            f"📊 **Systemic Posture & Sensitivity (The Greeks)**\n"
+            f"• **Delta (Directional Exposure):** {delta:+.2f}\n"
+            f"• **Gamma (Convexity of Edge):** {gamma:+.2f}\n"
+            f"• **Vega (Volatility Sensitivity):** {vega:.2f}\n"
             f"All Quant & Physics models are scanning. Portfolio optimization is live.\n"
             f"Strict risk bounds enforced.\n\n"
             f"_{quote}_"
