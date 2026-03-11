@@ -7,6 +7,7 @@ while minimizing total risk, respecting Kelly Criterion constraints.
 from typing import Dict, Any, List
 from src.core.event_bus import EventBus, Event
 from src.quant.risk.kelly import AdaptiveKelly
+from src.extensions.kelly_benter_optimizer import KellyBenterOptimizer
 from loguru import logger
 import numpy as np
 from scipy.optimize import minimize
@@ -21,7 +22,7 @@ class PortfolioManager:
     def __init__(self, bus: EventBus):
         self.bus = bus
         self.current_opportunities: List[Dict[str, Any]] = []
-        self.kelly_manager = AdaptiveKelly(base_fraction=0.20, window_size=50)
+        self.kelly_manager = KellyBenterOptimizer(base_fraction=0.20, window_size=50)
 
         # Listen for events
         if self.bus:
