@@ -21,6 +21,14 @@ class RiskStage(PipelineStage):
         self.tower = RiskControlTower()
 
         self.portfolio_opt = container.get("portfolio_opt") or PortfolioOptimizer()
+
+        # Arbitrage Executor
+        try:
+            from src.quant.finance.arbitrage_execution import ArbitrageExecutionManager
+            self.arb_executor = container.get("arb_executor") or ArbitrageExecutionManager()
+        except ImportError:
+            self.arb_executor = None
+
         self.narrator = NarrativeEngine()
 
         # Legacy Support (Copula/EVT) if needed, but Tower should handle most.
@@ -182,7 +190,31 @@ class RiskStage(PipelineStage):
 
         optimized_results = self.portfolio_opt.optimize(approved_candidates, regime=global_regime)
 
+
         final_bets = []
+
+        # --- 1. Process Arbitrage Opportunities First ---
+        # If there's an arb scanner signal in the context, evaluate it
+        arb_signal = context.get("arbitrage_signal")
+        if arb_signal and hasattr(self, 'arb_executor') and self.arb_executor:
+            match_id = arb_signal.get("match_id", "Unknown")
+            plan = self.arb_executor.plan_execution(match_id, arb_signal)
+            if plan.approved:
+                logger.success(f"RiskStage: Approving Arbitrage for {match_id} (ROI: {plan.roi:.2%})")
+                for leg in plan.legs:
+                    final_bets.append({
+                        "match_id": match_id,
+                        "selection": leg.selection,
+                        "stake": leg.stake,
+                        "confidence": 1.0,
+                        "odds": leg.odds,
+                        "reason": f"Arbitrage (Bookie: {leg.bookie})",
+                        "narrative": f"Guaranteed Profit Arb Leg. Total ROI: {plan.roi:.2%}",
+                        "timestamp": "",
+                        "trading_mode": "LIVE",
+                        "is_paper": False,
+                        "is_arb": True
+                    })
         # Check global God Signal from context if available
         god_signal = context.get("god_signal")
         is_black_swan = False

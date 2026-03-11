@@ -185,6 +185,12 @@ class TestNewPipeline(unittest.TestCase):
         container.register("treasury", self.mock_treasury)
         stage.tower.treasury = self.mock_treasury
 
+        # Mock arb executor
+        self.mock_arb = MagicMock()
+        self.mock_arb.plan_execution.return_value = MagicMock(approved=False)
+        stage.arb_executor = self.mock_arb
+        container.register("arb_executor", self.mock_arb)
+
         # Run stage
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
