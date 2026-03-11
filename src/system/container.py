@@ -89,6 +89,11 @@ class DependencyContainer:
                 from src.core.active_inference_agent import ActiveInferenceAgent
                 self._services["active_agent"] = ActiveInferenceAgent()
 
+
+            elif name == "arb_executor":
+                from src.quant.finance.arbitrage_execution import ArbitrageExecutionManager
+                self._services["arb_executor"] = ArbitrageExecutionManager()
+
             elif name == "smart_money":
                 from src.extensions.smart_money import SmartMoneyDetector
                 self._services["smart_money"] = SmartMoneyDetector()
