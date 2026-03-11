@@ -70,9 +70,11 @@ class ArbitrageExecutionManager:
 
         # Extract odds
         try:
-            home_odds = arb_signal["home"]["odds"]
-            draw_odds = arb_signal.get("draw", {}).get("odds", None)
-            away_odds = arb_signal["away"]["odds"]
+            home_odds = arb_signal.get("home", {}).get("odds")
+            draw_odds = arb_signal.get("draw", {}).get("odds")
+            away_odds = arb_signal.get("away", {}).get("odds")
+            if home_odds is None or away_odds is None:
+                raise KeyError("Missing home or away odds")
         except KeyError:
             return ArbExecutionPlan(match_id, 0.0, 0.0, 0.0, [], False, "Missing odds data in signal")
 
@@ -133,12 +135,12 @@ class ArbitrageExecutionManager:
         roi = profit / allocated_capital if allocated_capital > 0 else 0.0
 
         legs = [
-            ArbLeg("HOME", exec_home, arb_signal["home"]["bookie"], round(stake_home, 2), round(stake_home * exec_home, 2)),
-            ArbLeg("AWAY", exec_away, arb_signal["away"]["bookie"], round(stake_away, 2), round(stake_away * exec_away, 2))
+            ArbLeg("HOME", exec_home, arb_signal.get("home", {}).get("bookie", "unknown"), round(stake_home, 2), round(stake_home * exec_home, 2)),
+            ArbLeg("AWAY", exec_away, arb_signal.get("away", {}).get("bookie", "unknown"), round(stake_away, 2), round(stake_away * exec_away, 2))
         ]
 
         if exec_draw > 0:
-            legs.append(ArbLeg("DRAW", exec_draw, arb_signal["draw"]["bookie"], round(stake_draw, 2), round(stake_draw * exec_draw, 2)))
+            legs.append(ArbLeg("DRAW", exec_draw, arb_signal.get("draw", {}).get("bookie", "unknown"), round(stake_draw, 2), round(stake_draw * exec_draw, 2)))
 
         logger.success(f"ArbitrageExecutionManager: Found executable arb for {match_id}. ROI: {roi:.4f}")
 

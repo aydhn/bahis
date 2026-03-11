@@ -53,7 +53,7 @@ class MarketGod:
         self.hmm = MarketRegimeHMM() if MarketRegimeHMM else None
         self.smart_money = container.get('smart_money')
         self.game_theory = GameTheoryEngine() if GameTheoryEngine else None
-        self.behavioral_arb = BehavioralArbitrage() if BehavioralArbitrage else None
+        self.behavioral_arb = container.get('behavioral_arb')
         logger.info("MarketGod initialized. Watching form the heavens.")
 
     def consult(self, match_id: str,
