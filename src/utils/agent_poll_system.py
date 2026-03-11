@@ -27,7 +27,7 @@ Teknoloji: python-telegram-bot (Polls / Quiz Mode)
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 from loguru import logger
@@ -146,7 +146,7 @@ class AgentPollSystem:
             ev_pct=match_info.get("ev", 0.0),
             kelly_pct=match_info.get("kelly", 0.0),
             model_prob=match_info.get("prob", 0.0),
-            timestamp=datetime.utcnow().isoformat(),
+            timestamp=datetime.now(timezone.utc).isoformat(),
         )
 
         # Ajan oylarını çıkar

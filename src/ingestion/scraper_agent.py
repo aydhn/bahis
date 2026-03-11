@@ -8,7 +8,7 @@ from __future__ import annotations
 import asyncio
 import random
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 
 from loguru import logger
 
@@ -572,7 +572,7 @@ class ScraperAgent:
                 "league": m.get("league", ""),
                 "home_team": m.get("home_team", ""),
                 "away_team": m.get("away_team", ""),
-                "kickoff": m.get("kickoff", datetime.utcnow().isoformat()),
+                "kickoff": m.get("kickoff", datetime.now(timezone.utc).isoformat()),
                 "status": m.get("status", "upcoming"),
                 "home_odds": m.get("home_odds", None),
                 "draw_odds": m.get("draw_odds", None),

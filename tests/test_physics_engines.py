@@ -51,7 +51,7 @@ class TestPhysicsEngines(unittest.TestCase):
             "away_odds": [4.0]
         })
         res = pse.extract(df)
-        self.assertFalse(res.is_empty())
+        self.assertTrue(len(res) > 0 if not hasattr(res, "is_empty") else not res.is_empty())
         self.assertIn("sig_roughness", res.columns)
 
     def test_quantum_brain(self):

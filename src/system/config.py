@@ -1,4 +1,4 @@
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import Optional
 from pathlib import Path
 
@@ -24,8 +24,6 @@ class Settings(BaseSettings):
     LOG_DIR: Path = ROOT_DIR / "logs"
     DATA_DIR: Path = ROOT_DIR / "data"
 
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
+    model_config = SettingsConfigDict(env_file='.env', env_file_encoding='utf-8')
 
 settings = Settings()

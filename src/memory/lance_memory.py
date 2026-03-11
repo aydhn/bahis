@@ -5,7 +5,7 @@ Metin, oran zaman serisi ve meta-veriyi vektör olarak saklar.
 from __future__ import annotations
 
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timezone
 
 import numpy as np
 from loguru import logger
@@ -35,7 +35,7 @@ class LanceMemory:
                         "text": "initialization",
                         "vector": np.zeros(384).tolist(),
                         "category": "system",
-                        "timestamp": datetime.utcnow().isoformat(),
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
                     }],
                 )
             self._table = self._db.open_table("embeddings")
@@ -65,7 +65,7 @@ class LanceMemory:
             "text": text,
             "vector": self._embed_text(text),
             "category": category,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }])
 
     def search(self, query: str, top_k: int = 5) -> list[dict]:

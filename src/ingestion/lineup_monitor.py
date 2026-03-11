@@ -15,7 +15,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 
 from loguru import logger
 
@@ -196,7 +196,7 @@ class LineupMonitor:
                     players=players,
                     formation=formation,
                     source="sofascore",
-                    timestamp=datetime.utcnow().isoformat(),
+                    timestamp=datetime.now(timezone.utc).isoformat(),
                     raw_hash=hashlib.md5(raw_str.encode()).hexdigest(),
                 )
         except Exception as e:
@@ -250,7 +250,7 @@ class LineupMonitor:
                     players=players,
                     formation=formation,
                     source="mackolik",
-                    timestamp=datetime.utcnow().isoformat(),
+                    timestamp=datetime.now(timezone.utc).isoformat(),
                     raw_hash=hashlib.md5(raw_str.encode()).hexdigest(),
                 )
         except Exception as e:

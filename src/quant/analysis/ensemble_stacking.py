@@ -24,7 +24,7 @@ Walk-Forward Validation:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 
 import numpy as np
 from loguru import logger
@@ -255,7 +255,7 @@ class EnsembleStacking:
         features, names = self._build_feature_vector(match_id)
         record = StackingRecord(
             match_id=match_id,
-            timestamp=datetime.utcnow().isoformat(),
+            timestamp=datetime.now(timezone.utc).isoformat(),
             features=features,
             feature_names=names,
             actual_result=actual_result,

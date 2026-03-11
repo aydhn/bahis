@@ -15,7 +15,7 @@ CLV < 0 → Piyasanın arkasındasın (uzun vadede kaybedersin)
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 
 import numpy as np
 from loguru import logger
@@ -57,7 +57,7 @@ class CLVTracker:
             selection=selection,
             entry_odds=entry_odds,
             edge_at_entry=ev,
-            timestamp=datetime.utcnow().isoformat(),
+            timestamp=datetime.now(timezone.utc).isoformat(),
         )
         self._records.append(record)
         logger.debug(f"CLV kayıt: {match_id} {selection} @{entry_odds:.2f}")

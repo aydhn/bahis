@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 
 import numpy as np
@@ -89,7 +89,7 @@ class HumanInTheLoop:
             stake_pct=stake_pct,
             model_prob=model_prob,
             model_prediction=model_prediction,
-            created_at=datetime.utcnow().isoformat(),
+            created_at=datetime.now(timezone.utc).isoformat(),
         )
         self._records[signal_id] = record
         return signal_id
@@ -139,7 +139,7 @@ class HumanInTheLoop:
             return
         rec.result = result
         rec.pnl = pnl
-        rec.resolved_at = datetime.utcnow().isoformat()
+        rec.resolved_at = datetime.now(timezone.utc).isoformat()
 
     def record_result_by_match(self, match_id: str, selection: str,
                                 result: str, pnl: float = 0.0):
@@ -148,7 +148,7 @@ class HumanInTheLoop:
             if rec.match_id == match_id and rec.selection == selection:
                 rec.result = result
                 rec.pnl = pnl
-                rec.resolved_at = datetime.utcnow().isoformat()
+                rec.resolved_at = datetime.now(timezone.utc).isoformat()
 
     # ═══════════════════════════════════════════
     #  İSTATİSTİKLER

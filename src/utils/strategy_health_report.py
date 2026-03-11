@@ -4,7 +4,7 @@ Sharpe Ratio, Drawdown, ROI ve modül performanslarını PDF'e dönüştürür.
 """
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 import numpy as np
@@ -29,7 +29,7 @@ class StrategyHealthReport:
         """Her döngüde güncelleme alır."""
         self._signals_history.extend(bets)
         record = {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "n_bets": len([b for b in bets if b.get("selection") != "skip"]),
             "avg_ev": np.mean([b.get("ev", 0) for b in bets]) if bets else 0,
             "avg_confidence": np.mean([b.get("confidence", 0) for b in bets]) if bets else 0,

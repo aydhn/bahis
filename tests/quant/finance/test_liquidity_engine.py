@@ -6,7 +6,7 @@ from unittest.mock import MagicMock
 sys.modules['scipy.stats'] = MagicMock()
 sys.modules['scipy.optimize'] = MagicMock()
 sys.modules['scipy.special'] = MagicMock()
-sys.modules['polars'] = MagicMock()
+
 sys.modules['numba'] = MagicMock()
 sys.modules['torch'] = MagicMock()
 sys.modules['torch.nn'] = MagicMock()
