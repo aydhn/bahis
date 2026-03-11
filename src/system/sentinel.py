@@ -36,6 +36,11 @@ from src.core.system_architect import SystemArchitect
 from src.ingestion.flash_monitor import FlashOddsMonitor
 from src.extensions.regime_hmm import MarketRegimeHMM
 import numpy as np
+try:
+    from src.extensions.auto_tuner import AutoTuner
+except ImportError:
+    AutoTuner = None
+
 
 class Sentinel:
     """
@@ -62,6 +67,7 @@ class Sentinel:
 
         # 0.2 System Architect (The Brain)
         self.architect = SystemArchitect()
+        self.auto_tuner = AutoTuner() if AutoTuner else None
 
         # 0.3 Market Regime Forecaster (HMM)
         self.regime_hmm = MarketRegimeHMM()
@@ -204,9 +210,32 @@ class Sentinel:
 
         cycle_result = await self.pipeline.run_once(initial_context=initial_ctx)
 
+
         # 2.5 Auto Risk Adjustment
         if cycle_result and "performance_report" in cycle_result:
             await self.auto_adjust_risk(cycle_result["performance_report"])
+
+        # 2.6 Dynamic Auto Tuning (Gradient Ascent on Kelly Fraction)
+        if self.auto_tuner and cycle_count % 10 == 0:
+            db = container.get("db")
+            if db:
+                try:
+                    recent_bets_df = db.get_settled_bets(limit=50)
+                    if not recent_bets_df.is_empty():
+                        recent_results = []
+                        for bet in recent_bets_df.iter_rows(named=True):
+                             recent_results.append({
+                                 "won": bet.get("status") == "won",
+                                 "odds": bet.get("odds", 2.0),
+                                 "stake": bet.get("stake", 100.0)
+                             })
+                        new_kelly = self.auto_tuner.update(recent_results)
+                        if self.risk_manager:
+                             self.risk_manager._base_fraction = new_kelly
+                             logger.debug(f"Sentinel: Auto-Tuner set Kelly Base Fraction to {new_kelly:.3f}")
+                except Exception as e:
+                    logger.warning(f"Auto-Tuner failed to read DB: {e}")
+
 
         # 3. Evolver Check (Her 100 döngüde bir evrim)
         if cycle_count % 100 == 0:
@@ -240,6 +269,9 @@ class Sentinel:
         if self.daemon_mode:
             asyncio.create_task(self._run_hedge_monitor())
             await self.flash_monitor.start()
+            alpha_gen = container.get("alpha_generator")
+            if alpha_gen:
+                asyncio.create_task(alpha_gen.start())
 
         # Pipeline döngüsü
         cycle_count = 0
