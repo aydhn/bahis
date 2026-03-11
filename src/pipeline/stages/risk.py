@@ -21,6 +21,8 @@ class RiskStage(PipelineStage):
         self.tower = RiskControlTower()
 
         self.portfolio_opt = container.get("portfolio_opt") or PortfolioOptimizer()
+        self.ceo_dashboard = container.get("ceo_dashboard")
+        self.philosophical_risk = container.get("philosophical_risk")
 
         # Arbitrage Executor
         try:

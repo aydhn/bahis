@@ -67,10 +67,10 @@ class Sentinel:
 
         # 0.2 System Architect (The Brain)
         self.architect = SystemArchitect()
-        self.auto_tuner = AutoTuner() if AutoTuner else None
+        self.auto_tuner = container.get('auto_tuner') if AutoTuner else None
 
         # 0.3 Market Regime Forecaster (HMM)
-        self.regime_hmm = MarketRegimeHMM()
+        self.regime_hmm = container.get('regime_hmm') or MarketRegimeHMM()
         self._volatility_buffer = []
 
         # 1. Bot Entegrasyonu

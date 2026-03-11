@@ -90,6 +90,7 @@ class InferenceStage(PipelineStage):
         self.market_god = container.get('market_god')
         self.smart_money = container.get('smart_money')
         self.behavioral_arb = container.get('behavioral_arb')
+        self.quantum_pricing = container.get('quantum_pricing')
 
         # Advanced Quant Engines (Level 43)
         self.dtw_matcher = DTWMatcher()
