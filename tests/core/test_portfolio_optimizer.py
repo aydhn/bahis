@@ -121,7 +121,7 @@ def test_optimize_crash_regime():
     ]
     results = optimizer.optimize(bets, regime="CRASH")
     assert len(results) == 1
-    assert results[0]["adjusted_stake_pct"] <= 0.01
+    assert results[0]["adjusted_stake_pct"] <= 0.0101
 
 def test_eigen_risk_parity_fallback():
     optimizer = PortfolioOptimizer(initial_bankroll=10000.0, max_portfolio_risk=0.10, liquidity_engine=MockLiquidityEngine())

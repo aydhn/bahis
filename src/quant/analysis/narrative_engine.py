@@ -7,7 +7,7 @@ Bill Benter'ın çalışma notları ile Wall Street raporlarının birleşimidir
 """
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 from src.quant.analysis.philosophical_engine import EpistemicReport
@@ -41,7 +41,7 @@ class NarrativeEngine:
 
         lines = [
             f"# {emoji} YATIRIM NOTU: {match_id}",
-            f"**Tarih:** {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}",
+            f"**Tarih:** {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}",
             f"**Seçim:** {selection} @ {odds:.2f}",
             f"**Pozisyon:** {stake:.2f} TL (Edge: %{edge*100:.2f})",
             "",

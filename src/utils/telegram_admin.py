@@ -23,7 +23,7 @@ import os
 import platform
 import sys
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -447,7 +447,7 @@ class TelegramAdmin:
         self._command_log.append({
             "command": cmd,
             "user": str(user_id),
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         })
         logger.info(f"[Admin] Komut: {cmd} (user={str(user_id)[:6]}…)")
 

@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 
 import numpy as np
 import polars as pl
@@ -59,7 +59,7 @@ class ExponentialTimeDecay:
 
     def weight_from_date(self, match_date: datetime, reference: datetime | None = None) -> float:
         """Tarih nesnesinden ağırlık hesapla."""
-        ref = reference or datetime.utcnow()
+        ref = reference or datetime.now(timezone.utc)
         days = (ref - match_date).total_seconds() / 86400
         return self.weight(days)
 
@@ -93,7 +93,7 @@ class ExponentialTimeDecay:
         if df.is_empty() or date_col not in df.columns:
             return df
 
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
 
         # days_ago hesapla
         try:

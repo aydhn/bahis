@@ -24,7 +24,7 @@ def test_standard_upsert(db_manager):
 
     # Verify insertion
     res = db_manager.get_match("test_1")
-    assert not res.is_empty()
+    assert len(res) > 0
     assert res["home_team"][0] == "Team A"
 
 def test_unknown_column_upsert(db_manager):
@@ -40,7 +40,7 @@ def test_unknown_column_upsert(db_manager):
 
     # Verify insertion
     res = db_manager.get_match("test_2")
-    assert not res.is_empty()
+    assert len(res) > 0
     # Check that unknown_col was ignored (implicit, since no error)
 
 def test_sql_injection_attempt(db_manager):
@@ -59,7 +59,7 @@ def test_sql_injection_attempt(db_manager):
     # Verify that the match was inserted (if match_id valid) OR handled gracefully
     # Since we only provided match_id and invalid key, match_id is inserted
     res = db_manager.get_match("test_3")
-    assert not res.is_empty()
+    assert len(res) > 0
 
     # Verify payload was NOT executed as column
     # We can't easily check internal SQL, but lack of error confirms syntax safety
@@ -70,4 +70,4 @@ def test_only_match_id(db_manager):
     db_manager.upsert_match(data)
 
     res = db_manager.get_match("test_4")
-    assert not res.is_empty()
+    assert len(res) > 0

@@ -402,8 +402,8 @@ class SuperLogger:
         if is_error:
             stats.errors += 1
 
-        from datetime import datetime
-        stats.last_entry_time = datetime.utcnow().isoformat()
+        from datetime import datetime, timezone
+        stats.last_entry_time = datetime.now(timezone.utc).isoformat()
 
     def get_module_stats(self, module: str) -> ModuleLogStats:
         return self._module_stats.get(

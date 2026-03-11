@@ -25,7 +25,7 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 
 from loguru import logger
 
@@ -133,7 +133,7 @@ class StrategyCockpit:
                   chaos_filter: object = None,
                   orchestrator: object = None) -> CockpitData:
         """Tüm modüllerden anlık veri topla."""
-        data = CockpitData(timestamp=datetime.utcnow().isoformat())
+        data = CockpitData(timestamp=datetime.now(timezone.utc).isoformat())
 
         # Sistem
         data.uptime_hours = round((time.time() - self._start) / 3600, 2)

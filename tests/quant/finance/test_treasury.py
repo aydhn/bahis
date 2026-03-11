@@ -5,7 +5,7 @@ from unittest.mock import MagicMock
 sys.modules['scipy.stats'] = MagicMock()
 sys.modules['scipy.optimize'] = MagicMock()
 sys.modules['scipy.special'] = MagicMock()
-sys.modules['polars'] = MagicMock()
+
 sys.modules['numba'] = MagicMock()
 sys.modules['torch'] = MagicMock()
 sys.modules['torch.nn'] = MagicMock()
@@ -16,9 +16,9 @@ sys.modules['cv2'] = MagicMock()
 # Mock out config to avoid environment errors in test runner
 class MockSettings:
     DATA_DIR = MagicMock()
-sys.modules['pydantic_settings'] = MagicMock()
-sys.modules['src.system.config'] = MagicMock()
-sys.modules['src.system.config'].settings = MockSettings()
+
+
+
 
 
 import pytest

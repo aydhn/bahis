@@ -378,7 +378,7 @@ class PortfolioOptimizer:
 
                 sub_stakes = sub_stakes * penalty_factors
 
-            adjusted = stakes.copy()
+            adjusted = np.array(stakes, dtype=float).copy()
             adjusted[indices] = sub_stakes
             return adjusted
 
@@ -387,7 +387,7 @@ class PortfolioOptimizer:
             return stakes
 
     def _heuristic_adjust(self, stakes: np.ndarray, corr: np.ndarray, mask: np.ndarray) -> np.ndarray:
-        adjusted = stakes.copy()
+        adjusted = np.array(stakes, dtype=float).copy()
         n = len(stakes)
         for i in range(n):
             if not mask[i]:

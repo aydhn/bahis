@@ -19,7 +19,7 @@ from __future__ import annotations
 import asyncio
 import json
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -287,7 +287,7 @@ class APIHijacker:
                 "source": source,
                 "status": response.status,
                 "data": body,
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
                 "size": len(str(body)),
             }
             self._captured.append(record)
@@ -316,7 +316,7 @@ class APIHijacker:
                 self._ws_messages.append({
                     "source": source,
                     "data": data,
-                    "timestamp": datetime.utcnow().isoformat(),
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
                 })
 
                 # Canlı skor güncellemesi?
@@ -343,7 +343,7 @@ class APIHijacker:
             self._discovered_endpoints[template] = {
                 "template": template,
                 "source": source,
-                "first_seen": datetime.utcnow().isoformat(),
+                "first_seen": datetime.now(timezone.utc).isoformat(),
                 "hit_count": 0,
                 "data_type": data_type,
                 "sample_url": url,
@@ -447,7 +447,7 @@ class APIHijacker:
             "kickoff": (
                 item.get("startTimestamp") or
                 item.get("DT") or item.get("date") or
-                datetime.utcnow().isoformat()
+                datetime.now(timezone.utc).isoformat()
             ),
             "status": (
                 item.get("status", {}).get("description", "upcoming")

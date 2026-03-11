@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import numpy as np
 import polars as pl
-from datetime import datetime
+from datetime import datetime, timezone
 from loguru import logger
 
 
@@ -59,7 +59,7 @@ class AnomalyDetector:
                     "type": "DROPPING_ODDS",
                     "severity": self._classify_severity(z_score),
                     "smart_money_signal": True,
-                    "timestamp": datetime.utcnow().isoformat(),
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
                 }
                 alerts.append(alert)
                 logger.warning(
@@ -80,7 +80,7 @@ class AnomalyDetector:
                     "type": "STEAM_MOVE",
                     "severity": self._classify_severity(z_score),
                     "smart_money_signal": False,
-                    "timestamp": datetime.utcnow().isoformat(),
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
                 }
                 alerts.append(alert)
 

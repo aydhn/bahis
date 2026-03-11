@@ -9,7 +9,7 @@ from src.system.container import container
 
 import time
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 
 import httpx
 from loguru import logger
@@ -121,7 +121,7 @@ class DataFactory:
         utc_date = item.get("utcDate", item.get("commence_time", ""))
         if utc_date:
             return utc_date
-        return datetime.utcnow().isoformat()
+        return datetime.now(timezone.utc).isoformat()
 
     def _extract_odds(self, item: dict) -> dict:
         odds = {}

@@ -1,3 +1,8 @@
+import multiprocessing as mp
+try:
+    mp.set_start_method('forkserver')
+except RuntimeError:
+    pass
 import sys
 from unittest.mock import MagicMock
 

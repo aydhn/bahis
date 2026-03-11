@@ -5,7 +5,7 @@ Tüm maç, oran ve sinyal verisini yönetir.
 from __future__ import annotations
 
 from pathlib import Path
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 
 import duckdb
 import polars as pl
@@ -146,8 +146,28 @@ class DBManager:
         self._con.execute(sql, list(valid_data.values()))
 
     def upsert_matches_bulk(self, df: pl.DataFrame):
-        for row in df.iter_rows(named=True):
-            self.upsert_match(row)
+        if df.is_empty():
+            return
+
+        # Select only allowed columns to prevent errors
+        valid_cols = [c for c in df.columns if c in self.ALLOWED_MATCH_COLUMNS]
+        df_valid = df.select(valid_cols)
+
+        updates = ", ".join(f"{k} = EXCLUDED.{k}" for k in valid_cols if k != "match_id")
+        conflict_clause = f"DO UPDATE SET {updates}" if updates else "DO NOTHING"
+
+        # Register Polars DataFrame in DuckDB and execute bulk insert
+        try:
+            self._con.register('df_view', df_valid)
+            cols = ", ".join(valid_cols)
+            sql = f"""
+                INSERT INTO matches ({cols})
+                SELECT {cols} FROM df_view
+                ON CONFLICT (match_id) {conflict_clause}
+            """
+            self._con.execute(sql)
+        finally:
+            self._con.unregister('df_view')
 
     def insert_odds_tick(self, match_id: str, bookmaker: str, market: str, selection: str, odds: float):
         self._con.execute(
@@ -225,7 +245,7 @@ class DBManager:
 
     # ── Sorgulamalar ──
     def get_upcoming_matches(self, hours_ahead: int = 48) -> pl.DataFrame:
-        cutoff = (datetime.utcnow() + timedelta(hours=hours_ahead)).isoformat()
+        cutoff = (datetime.now(timezone.utc) + timedelta(hours=hours_ahead)).isoformat()
         result = self._con.execute(
             "SELECT * FROM matches WHERE status = 'upcoming' AND kickoff <= ? ORDER BY kickoff",
             [cutoff],

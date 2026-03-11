@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import subprocess
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timezone
 
 from loguru import logger
 
@@ -73,7 +73,7 @@ class DVCManager:
         tag = tag or f"snapshot_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
         manifest = {
             "tag": tag,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "files": [],
         }
         for f in self._data_dir.rglob("*"):

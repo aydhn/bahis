@@ -49,7 +49,7 @@ import asyncio
 import time
 from collections import defaultdict
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Callable, Coroutine
 
@@ -505,7 +505,7 @@ class WorkflowOrchestrator:
         tr = TaskResult(
             name=task_def.name,
             stage=task_def.stage.value,
-            timestamp=datetime.utcnow().isoformat(),
+            timestamp=datetime.now(timezone.utc).isoformat(),
         )
 
         # Devre dışı mı?
@@ -656,7 +656,7 @@ class WorkflowOrchestrator:
         """
         flow_result = FlowResult(
             flow_name="quant_betting_pipeline",
-            timestamp=datetime.utcnow().isoformat(),
+            timestamp=datetime.now(timezone.utc).isoformat(),
         )
         t0 = time.perf_counter()
 

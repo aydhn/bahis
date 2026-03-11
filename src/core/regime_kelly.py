@@ -30,7 +30,7 @@ import json
 import time
 from collections import deque
 from dataclasses import dataclass, field, asdict
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 import numpy as np
@@ -214,7 +214,7 @@ class RegimeKelly:
         """Rejim-farkında Kelly hesaplama."""
         decision = KellyDecision(
             match_id=match_id,
-            timestamp=datetime.utcnow().isoformat(),
+            timestamp=datetime.now(timezone.utc).isoformat(),
             probability=probability,
             odds=odds,
             regime=regime or self.current_regime,
