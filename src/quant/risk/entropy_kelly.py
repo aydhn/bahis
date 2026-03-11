@@ -26,20 +26,20 @@ class EntropyKelly(AdaptiveKelly):
 
     def calculate_entropy(self, probs: list[float]) -> float:
         """
-        Calculates normalized Shannon Entropy for a set of probabilities.
+        Calculates normalized Shannon Entropy for a set of probabilities using fast_math.
         H(X) = - sum(p * log2(p))
         Normalized = H(X) / log2(N)
         """
-        # Filter zero/negative probs to avoid log error
+        from src.extensions.fast_math import fast_entropy
+
         valid_probs = [p for p in probs if p > 0.0]
         if not valid_probs:
             return 1.0 # Max uncertainty
 
-        # Normalize to sum to 1.0 (just in case)
         total = sum(valid_probs)
-        normalized_probs = [p/total for p in valid_probs]
+        normalized_probs = np.array([p/total for p in valid_probs], dtype=np.float64)
 
-        entropy = -sum(p * np.log2(p) for p in normalized_probs)
+        entropy = fast_entropy(normalized_probs)
 
         # Max entropy for N outcomes is log2(N)
         max_entropy = np.log2(len(probs))
