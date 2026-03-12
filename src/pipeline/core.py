@@ -2,10 +2,11 @@ import asyncio
 from abc import ABC, abstractmethod
 from typing import Any, Dict
 from loguru import logger
+from src.system.container import container
 from src.system.lifecycle import lifecycle
 from src.core.event_bus import EventBus, Event
 from src.core.auto_healer import SelfHealingEngine
-from src.extensions.alpha_generator import AlphaGenerator
+
 
 class PipelineStage(ABC):
     """Abstract base class for pipeline stages."""
@@ -42,10 +43,6 @@ class PipelineEngine:
         heartbeat_file = Path("data/heartbeat.txt")
         if not heartbeat_file.parent.exists():
             heartbeat_file.parent.mkdir(parents=True, exist_ok=True)
-        if self.bus:
-            alpha_gen = AlphaGenerator(self.bus)
-            asyncio.create_task(alpha_gen.start())
-
         while not lifecycle.shutdown_event.is_set():
             # Update Heartbeat
             try:
