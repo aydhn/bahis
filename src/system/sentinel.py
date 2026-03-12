@@ -559,7 +559,7 @@ class Sentinel:
         try:
             signals_df = db.get_signals()
         except Exception as e:
-            logger.debug(f"Exception caught: {e}")
+            logger.error(f"Exception caught: {e}")
             signals_df = None
 
         results_for_evolver = []
