@@ -334,7 +334,8 @@ class ArrowBridge:
             return table.to_pandas().values
         try:
             return table.to_numpy()
-        except Exception:
+        except Exception as e:
+            logger.debug(f"Exception caught: {e}")
             return np.array([])
 
     @staticmethod

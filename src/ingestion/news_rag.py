@@ -237,7 +237,8 @@ class NewsRAGAnalyzer:
                         team_mentioned=team,
                     ))
             return items
-        except Exception:
+        except Exception as e:
+            logger.debug(f"Exception caught: {e}")
             return []
 
     # ═══════════════════════════════════════════
@@ -372,7 +373,8 @@ class NewsRAGAnalyzer:
                 n_sources=len(news),
                 method=method,
             )
-        except Exception:
+        except Exception as e:
+            logger.debug(f"Exception caught: {e}")
             return RAGResult(
                 team=team,
                 sentiment_score=0.5,

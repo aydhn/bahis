@@ -324,7 +324,8 @@ class QuantumAnnealer:
             return self._build_solution(
                 np.array(state), candidates, energy, "simanneal",
             )
-        except Exception:
+        except Exception as e:
+            logger.debug(f"Exception caught: {e}")
             return self._optimize_manual(candidates, max_bets, max_risk)
 
     def _optimize_scipy(self, candidates: list[BetCandidate],
@@ -349,7 +350,8 @@ class QuantumAnnealer:
             return self._build_solution(
                 best, candidates, result.fun, "scipy_dual_annealing",
             )
-        except Exception:
+        except Exception as e:
+            logger.debug(f"Exception caught: {e}")
             return self._optimize_manual(candidates, max_bets, max_risk)
 
     def _build_solution(self, selection: np.ndarray,

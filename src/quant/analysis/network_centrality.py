@@ -198,31 +198,36 @@ class PassNetworkAnalyzer:
         # PageRank
         try:
             pr = nx.pagerank(G, weight="weight", alpha=0.85)
-        except Exception:
+        except Exception as e:
+            logger.debug(f"Exception caught: {e}")
             pr = {n: 1.0 / G.number_of_nodes() for n in G.nodes}
 
         # Betweenness Centrality
         try:
             bc = nx.betweenness_centrality(G, weight="weight", normalized=True)
-        except Exception:
+        except Exception as e:
+            logger.debug(f"Exception caught: {e}")
             bc = {n: 0.0 for n in G.nodes}
 
         # Degree Centrality (ağırlıklı)
         try:
             dc = nx.degree_centrality(G)
-        except Exception:
+        except Exception as e:
+            logger.debug(f"Exception caught: {e}")
             dc = {n: 0.0 for n in G.nodes}
 
         # Closeness Centrality
         try:
             cc = nx.closeness_centrality(G)
-        except Exception:
+        except Exception as e:
+            logger.debug(f"Exception caught: {e}")
             cc = {n: 0.0 for n in G.nodes}
 
         # Eigenvector Centrality
         try:
             ec = nx.eigenvector_centrality(G, weight="weight", max_iter=500)
-        except Exception:
+        except Exception as e:
+            logger.debug(f"Exception caught: {e}")
             ec = {n: 0.0 for n in G.nodes}
 
         # Composite score

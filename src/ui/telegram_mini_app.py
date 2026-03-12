@@ -308,7 +308,8 @@ class TelegramNotifier:
             lines = content.strip().splitlines()
             tail = lines[-n_lines:] if len(lines) > n_lines else lines
             return "\n".join(tail)[:1000]
-        except Exception:
+        except Exception as e:
+            logger.debug(f"Exception caught: {e}")
             return "(Log okunamadı)"
 
 

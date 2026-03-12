@@ -558,7 +558,8 @@ class Sentinel:
         # 2. Sinyallerle birleştir (Prob ve EV bilgisi için)
         try:
             signals_df = db.get_signals()
-        except Exception:
+        except Exception as e:
+            logger.debug(f"Exception caught: {e}")
             signals_df = None
 
         results_for_evolver = []

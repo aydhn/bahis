@@ -150,7 +150,8 @@ def estimate_hawkes_params(events: np.ndarray,
             params.mu = float(learner.baseline[0])
             params.alpha = float(learner.adjacency[0, 0])
             params.beta = float(learner.decays[0, 0]) if hasattr(learner, "decays") else 1.0
-        except Exception:
+        except Exception as e:
+            logger.debug(f"Exception caught: {e}")
             params = _estimate_manual(events, T)
     elif SCIPY_OK:
         params = _estimate_manual(events, T)
@@ -193,7 +194,8 @@ def _estimate_manual(events: np.ndarray, T: float) -> HawkesParams:
             params.beta = round(float(result.x[2]), 6)
         else:
             params.mu = round(mu0, 6)
-    except Exception:
+    except Exception as e:
+        logger.debug(f"Exception caught: {e}")
         params.mu = round(n / max(T, 1), 6)
 
     return params

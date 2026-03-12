@@ -258,7 +258,8 @@ class GRPCService:
             return None
         try:
             return grpc_aio.insecure_channel(f"{self._host}:{self._port}")
-        except Exception:
+        except Exception as e:
+            logger.debug(f"Exception caught: {e}")
             return None
 
 

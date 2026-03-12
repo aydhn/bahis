@@ -79,7 +79,8 @@ class DataFactory:
                             "time": match_time,
                             "source": "flashscore",
                         })
-                except Exception:
+                except Exception as e:
+                    logger.debug(f"Exception caught: {e}")
                     continue
             await page.close()
         except Exception as e:

@@ -149,7 +149,8 @@ def ollivier_ricci_curvature(G: Any, u: Any, v: Any,
     # Ağ mesafesi
     try:
         d_uv = nx.shortest_path_length(G, u, v)
-    except Exception:
+    except Exception as e:
+        logger.debug(f"Exception caught: {e}")
         d_uv = 1
 
     if d_uv == 0:
@@ -227,7 +228,8 @@ class RicciFlowAnalyzer:
                     for u, v in G.edges()
                 }
                 report.method = "GraphRicciCurvature"
-            except Exception:
+            except Exception as e:
+                logger.debug(f"Exception caught: {e}")
                 curvatures = compute_all_curvatures(G, self._alpha)
                 report.method = "manual_ollivier"
         else:

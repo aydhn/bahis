@@ -357,7 +357,8 @@ class EnsembleStacking:
 
                 accuracies.append(acc)
                 log_losses.append(ll)
-            except Exception:
+            except Exception as e:
+                logger.debug(f"Exception caught: {e}")
                 continue
 
         result = {

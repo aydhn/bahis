@@ -52,7 +52,8 @@ def random_ua() -> str:
     try:
         from fake_useragent import UserAgent
         return UserAgent().random
-    except Exception:
+    except Exception as e:
+        logger.debug(f"Exception caught: {e}")
         return random.choice(_UA_POOL)
 
 

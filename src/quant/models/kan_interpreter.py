@@ -134,7 +134,8 @@ class KANInterpreter:
         try:
             n_params = sum(p.numel() for p in self._model.parameters())
             return float(np.log10(n_params + 1))
-        except Exception:
+        except Exception as e:
+            logger.debug(f"Exception caught: {e}")
             return 3.0
 
     def symbolic_formula(self) -> str:
@@ -145,5 +146,6 @@ class KANInterpreter:
             self._model.auto_symbolic()
             formula = self._model.symbolic_formula()
             return str(formula)
-        except Exception:
+        except Exception as e:
+            logger.debug(f"Exception caught: {e}")
             return "Sembolik formül çıkarılamadı."

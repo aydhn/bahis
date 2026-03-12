@@ -170,7 +170,8 @@ def bootstrap_predictions(X: np.ndarray, y: np.ndarray,
                 elif probs.shape[1] > n_classes:
                     probs = probs[:, :n_classes]
                 all_probs.append(probs)
-        except Exception:
+        except Exception as e:
+            logger.debug(f"Exception caught: {e}")
             continue
 
     if not all_probs:
@@ -249,7 +250,8 @@ class UncertaintySeparator:
                         )
                     m.fit(X_boot, y_boot)
                     self._models.append(m)
-                except Exception:
+                except Exception as e:
+                    logger.debug(f"Exception caught: {e}")
                     continue
 
         self._fitted = bool(self._models)
@@ -278,7 +280,8 @@ class UncertaintySeparator:
                         padded[:, :p.shape[1]] = p
                         p = padded
                     probs_list.append(p[0])
-                except Exception:
+                except Exception as e:
+                    logger.debug(f"Exception caught: {e}")
                     continue
             probs_samples = np.array(probs_list)
             report.method = "deep_ensemble"

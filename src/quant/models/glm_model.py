@@ -252,7 +252,8 @@ class GLMGoalPredictor:
         try:
             mu = self._model.predict(X_const)
             return float(max(mu[0], 0.1))
-        except Exception:
+        except Exception as e:
+            logger.debug(f"Exception caught: {e}")
             return self._predict_heuristic(features)
 
     def _predict_heuristic(self, features: dict) -> float:

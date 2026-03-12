@@ -64,7 +64,8 @@ class DigitalTwin:
             query = "SELECT * FROM matches WHERE status = 'FINISHED' ORDER BY RANDOM() LIMIT ?"
             try:
                 historical_matches = db.query(query, [n_matches])
-            except Exception:
+            except Exception as e:
+                logger.debug(f"Exception caught: {e}")
                 # Fallback mock
                 historical_matches = pl.DataFrame({
                     "match_id": [f"dream_{i}" for i in range(n_matches)],

@@ -95,7 +95,8 @@ class XAIExplainer:
                 # LightGBM / XGBoost → TreeExplainer (hızlı)
                 self._explainer = shap.TreeExplainer(model)
                 logger.info("[XAI] TreeExplainer aktif.")
-            except Exception:
+            except Exception as e:
+                logger.debug(f"Exception caught: {e}")
                 try:
                     # Genel model → KernelExplainer (yavaş ama evrensel)
                     if X_train is not None:
@@ -287,7 +288,8 @@ class XAIExplainer:
                 feature_names=self._feature_names,
                 matplotlib=True, show=False,
             )
-        except Exception:
+        except Exception as e:
+            logger.debug(f"Exception caught: {e}")
             return None
 
     def _plot_bar_fallback(self, features: Any, title: str) -> Any:

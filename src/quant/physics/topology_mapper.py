@@ -399,7 +399,8 @@ class TopologyMapper:
                     report.cluster_label = "high_risk"
                 else:
                     report.cluster_label = "normal"
-            except Exception:
+            except Exception as e:
+                logger.debug(f"Exception caught: {e}")
                 report.cluster_label = "unknown"
         else:
             report.cluster_label = "unknown"

@@ -16,13 +16,15 @@ class ReportingStage(PipelineStage):
         self.bot = bot_instance
         try:
             self.ceo_dashboard = CEODashboard()
-        except Exception:
+        except Exception as e:
+            logger.debug(f"Exception caught: {e}")
             self.ceo_dashboard = None
 
         if self.bot is None:
             try:
                 self.bot = TelegramBot()
-            except Exception:
+            except Exception as e:
+                logger.debug(f"Exception caught: {e}")
                 self.bot = None
 
         # Botu başlat (Arka planda polling)

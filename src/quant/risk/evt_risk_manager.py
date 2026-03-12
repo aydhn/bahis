@@ -113,7 +113,8 @@ def fit_gpd(data: np.ndarray, threshold_quantile: float = 0.90
             "exceedances": len(exceedances),
             "method": "gpd_mle",
         }
-    except Exception:
+    except Exception as e:
+        logger.debug(f"Exception caught: {e}")
         # Moment yöntemi fallback
         mean_exc = float(np.mean(exceedances))
         var_exc = float(np.var(exceedances))
