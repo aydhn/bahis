@@ -270,7 +270,8 @@ class CausalReasoner:
                 result.p_value = float(getattr(refute, "refutation_result", {}).get(
                     "p_value", 0.05,
                 ))
-            except Exception:
+            except Exception as e:
+                logger.debug(f"Exception caught: {e}")
                 result.p_value = 0.05
 
             result.is_significant = result.p_value < self._alpha
@@ -536,7 +537,8 @@ class CausalReasoner:
                 for c, e in self._causal_graph.edges
             )
             return f"digraph {{{edges_str}}}"
-        except Exception:
+        except Exception as e:
+            logger.debug(f"Exception caught: {e}")
             return None
 
     def _interpret(self, effect: CausalEffect) -> str:

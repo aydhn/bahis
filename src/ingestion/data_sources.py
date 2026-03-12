@@ -357,7 +357,8 @@ class SofascoreHiddenAPI:
                 if resp.status_code != 200:
                     return {}
                 return resp.json()
-        except Exception:
+        except Exception as e:
+            logger.debug(f"Exception caught: {e}")
             return {}
 
     async def get_match_odds(self, event_id: int) -> dict:
@@ -370,7 +371,8 @@ class SofascoreHiddenAPI:
                 if resp.status_code != 200:
                     return {}
                 return resp.json()
-        except Exception:
+        except Exception as e:
+            logger.debug(f"Exception caught: {e}")
             return {}
 
     async def get_h2h(self, event_id: int) -> list[dict]:
@@ -384,7 +386,8 @@ class SofascoreHiddenAPI:
                     return []
                 data = resp.json()
                 return self._parse_events(data.get("events", []))
-        except Exception:
+        except Exception as e:
+            logger.debug(f"Exception caught: {e}")
             return []
 
     def _parse_events(self, events: list) -> list[dict]:

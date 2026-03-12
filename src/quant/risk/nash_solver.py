@@ -196,7 +196,8 @@ class NashGameSolver:
                         result.game_value = float(
                             best_eq[0] @ bettor_pay @ best_eq[1]
                         )
-                except Exception:
+                except Exception as e:
+                    logger.debug(f"Exception caught: {e}")
                     return self._minimax_heuristic(bettor_pay)
 
             # Exploitability hesapla

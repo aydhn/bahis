@@ -111,7 +111,8 @@ class JumpDiffusionModel:
                 "sigma_j": sigma_j,
                 "sigma": sigma_d,
             }
-        except Exception:
+        except Exception as e:
+            logger.debug(f"Exception caught: {e}")
             return {"lambda": 0.1, "mu_j": 0.0, "sigma_j": 0.05, "sigma": 0.02}
 
     def _default_params(self) -> dict:

@@ -192,7 +192,8 @@ class SmartCache:
             return None
         try:
             return pickle.loads(path.read_bytes())
-        except Exception:
+        except Exception as e:
+            logger.debug(f"Exception caught: {e}")
             path.unlink(missing_ok=True)
             return None
 

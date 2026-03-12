@@ -246,7 +246,8 @@ class RegimeSwitcher:
                 states = self._model.predict(obs)
                 probs = self._model.predict_proba(obs)
                 report.method = "hmmlearn"
-            except Exception:
+            except Exception as e:
+                logger.debug(f"Exception caught: {e}")
                 states = self._decode_manual(obs)
                 probs = self._manual_probs(obs, states)
                 report.method = "manual_viterbi"

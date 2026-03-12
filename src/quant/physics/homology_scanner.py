@@ -269,7 +269,8 @@ class HomologyScanner:
                 )
                 pairs = self._parse_ripser(result)
                 report.method = "ripser"
-            except Exception:
+            except Exception as e:
+                logger.debug(f"Exception caught: {e}")
                 pairs = manual_persistence(
                     augmented, self._max_dim, self._max_edge,
                 )

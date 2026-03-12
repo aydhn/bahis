@@ -104,7 +104,8 @@ class TelegramBot:
         try:
             from src.system.container import container
             self.smart_money = container.get('smart_money')
-        except Exception:
+        except Exception as e:
+            logger.debug(f"Exception caught: {e}")
             self.smart_money = None
         self.regime_hmm = MarketRegimeHMM() if MarketRegimeHMM else None
 
@@ -514,7 +515,13 @@ class TelegramBot:
         elif command == "/ceo":
             report = self.ceo_dashboard.generate_report(self.context)
             await self.send_message(chat_id, report)
-
+        elif command == "/godmode":
+            greeks = self.ceo_dashboard.calculate_greeks()
+            msg = "⚡ **GOD MODE (Portfolio Greeks)** ⚡\n" + \
+                  f"Δ (Delta - Directional Bias): `{greeks.get('delta', 0.0):.2f}`\n" + \
+                  f"Γ (Gamma - Convexity): `{greeks.get('gamma', 0.0):.2f}`\n" + \
+                  f"ν (Vega - Volatility Exposure): `{greeks.get('vega', 0.0):.2f}`"
+            await self.send_message(chat_id, msg)
         elif command == "/warroom":
             self.warroom_active = not self.warroom_active
             if self.warroom_active:

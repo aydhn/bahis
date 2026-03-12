@@ -244,7 +244,8 @@ class ChaosFilter:
                     nolds.lyap_r(data, emb_dim=self._emb_dim, lag=self._lag)
                 ), 6)
                 report.method = "nolds"
-            except Exception:
+            except Exception as e:
+                logger.debug(f"Exception caught: {e}")
                 params.max_lyapunov = round(
                     rosenstein_lyapunov(data, self._emb_dim, self._lag), 6,
                 )
@@ -261,7 +262,8 @@ class ChaosFilter:
                 params.correlation_dim = round(float(
                     nolds.corr_dim(data, emb_dim=self._emb_dim)
                 ), 4)
-            except Exception:
+            except Exception as e:
+                logger.debug(f"Exception caught: {e}")
                 params.correlation_dim = 0.0
         else:
             params.correlation_dim = 0.0
@@ -272,7 +274,8 @@ class ChaosFilter:
                 params.sample_entropy = round(float(
                     nolds.sampen(data, emb_dim=2)
                 ), 4)
-            except Exception:
+            except Exception as e:
+                logger.debug(f"Exception caught: {e}")
                 params.sample_entropy = round(
                     sample_entropy_manual(data), 4,
                 )
@@ -287,14 +290,16 @@ class ChaosFilter:
                 params.hurst_exponent = round(float(
                     nolds.hurst_rs(data)
                 ), 4)
-            except Exception:
+            except Exception as e:
+                logger.debug(f"Exception caught: {e}")
                 params.hurst_exponent = 0.5
 
         # DFA
         if NOLDS_OK:
             try:
                 params.dfa = round(float(nolds.dfa(data)), 4)
-            except Exception:
+            except Exception as e:
+                logger.debug(f"Exception caught: {e}")
                 params.dfa = 0.5
 
         report.params = params

@@ -277,7 +277,8 @@ class FractalAnalyzer:
                 result.hurst = round(float(h), 4)
                 result.confidence = round(float(c), 4) if c else 0.5
                 result.method = "hurst_library"
-            except Exception:
+            except Exception as e:
+                logger.debug(f"Exception caught: {e}")
                 method = "rs"
 
         if method == "rs":

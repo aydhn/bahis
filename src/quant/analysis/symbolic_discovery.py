@@ -134,7 +134,8 @@ class SimpleSymbolicSearch:
                     if loss < best_loss:
                         best_loss = loss
                         best_params = params.tolist()
-                except Exception:
+                except Exception as e:
+                    logger.debug(f"Exception caught: {e}")
                     continue
 
             if best_loss < float("inf"):
@@ -279,7 +280,8 @@ class SymbolicDiscovery:
                         formula.r2 / max(formula.complexity, 1), 4,
                     )
                     report.pareto_front.append(formula)
-                except Exception:
+                except Exception as e:
+                    logger.debug(f"Exception caught: {e}")
                     continue
 
             if report.pareto_front:

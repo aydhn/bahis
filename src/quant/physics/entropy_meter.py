@@ -66,11 +66,6 @@ def shannon_entropy(probs: np.ndarray, base: int = 2) -> float:
     """Shannon Entropy hesapla (bit cinsinden).
 
     H(X) = -Σ p(x) log₂ p(x)
-
-    Örnekler:
-        [1.0, 0.0, 0.0] → 0.0 bit (kesin sonuç)
-        [0.5, 0.5, 0.0] → 1.0 bit (yazı-tura)
-        [0.33, 0.33, 0.34] → 1.58 bit (max belirsizlik)
     """
     probs = np.array(probs, dtype=np.float64)
     probs = probs[probs > 1e-12]
@@ -78,16 +73,19 @@ def shannon_entropy(probs: np.ndarray, base: int = 2) -> float:
     if len(probs) == 0:
         return 0.0
 
-    # Normalize
     probs = probs / probs.sum()
 
+    # Maksimum Hız - Zero Errors: Always use Numba JIT fast_entropy for log2
     if base == 2:
         return float(fast_entropy(probs))
-    elif SCIPY_OK:
-        return float(scipy_entropy(probs, base=base))
-
-    return float(-np.sum(probs * np.log2(probs)))
-
+    else:
+        # Fallback to standard for other bases
+        if SCIPY_OK:
+            return float(scipy_entropy(probs, base=base))
+        e = -np.sum(probs * np.log(probs))
+        if base is not None:
+            e /= np.log(base)
+        return float(e)
 
 def kl_divergence(p: np.ndarray, q: np.ndarray) -> float:
     """KL-Divergence: D_KL(P || Q).

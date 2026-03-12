@@ -266,7 +266,8 @@ class BlindStrategyEngine:
                 result.is_encrypted = True
                 result.encryption_scheme = "CKKS"
                 self._enc_count += 1
-            except Exception:
+            except Exception as e:
+                logger.debug(f"Exception caught: {e}")
                 score = float(feat @ w)
                 result.plaintext_result = [round(score, 6)]
         else:

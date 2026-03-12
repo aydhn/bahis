@@ -342,21 +342,24 @@ class SurvivalEstimator:
             params.median_survival = float(
                 self._km_fitter.median_survival_time_
             )
-        except Exception:
+        except Exception as e:
+            logger.debug(f"Exception caught: {e}")
             params.median_survival = 45.0
 
         # S(t) – sağkalım olasılığı
         try:
             sf = self._km_fitter.predict(t)
             params.survival_prob = round(float(sf.iloc[0]) if hasattr(sf, 'iloc') else float(sf), 4)
-        except Exception:
+        except Exception as e:
+            logger.debug(f"Exception caught: {e}")
             params.survival_prob = max(0, 1 - t / 90)
 
         # H(t) – kümülatif tehlike
         try:
             ch = self._na_fitter.predict(t)
             params.cumulative_hazard = round(float(ch.iloc[0]) if hasattr(ch, 'iloc') else float(ch), 4)
-        except Exception:
+        except Exception as e:
+            logger.debug(f"Exception caught: {e}")
             params.cumulative_hazard = -np.log(max(params.survival_prob, 1e-6))
 
         # h(t) – anlık tehlike (H(t) türevi yaklaşımı)
@@ -366,7 +369,8 @@ class SurvivalEstimator:
             h_prev = float(ch_prev.iloc[0]) if hasattr(ch_prev, 'iloc') else float(ch_prev)
             h_curr = float(ch_curr.iloc[0]) if hasattr(ch_curr, 'iloc') else float(ch_curr)
             params.current_hazard = round(max(0, (h_curr - h_prev) / 5), 6)
-        except Exception:
+        except Exception as e:
+            logger.debug(f"Exception caught: {e}")
             params.current_hazard = 0.0
 
         # Tehlike eğimi (son 10 dk ile önceki 10 dk karşılaştırması)
@@ -380,7 +384,8 @@ class SurvivalEstimator:
             slope_prev = h10 - h20
             if slope_prev > 0:
                 params.hazard_slope = round(slope_recent / slope_prev, 2)
-        except Exception:
+        except Exception as e:
+            logger.debug(f"Exception caught: {e}")
             params.hazard_slope = 1.0
 
         # Baskı indexi (pressure) artıyorsa tehlikeyi çarpanla

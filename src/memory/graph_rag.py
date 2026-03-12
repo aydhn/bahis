@@ -265,7 +265,8 @@ class GraphRAG:
                         )
                     except Exception as e:
                         logger.debug(f"Exception caught: {e}")
-            except Exception:
+            except Exception as e:
+                logger.debug(f"Exception caught: {e}")
                 self._driver = None
 
     def ingest_news(self, news_items: list[dict],

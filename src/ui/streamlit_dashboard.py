@@ -6,6 +6,7 @@ Canlı Radar, Value Finder ve Kasa Eğrisi görselleştirmesi.
 
 from __future__ import annotations
 
+from loguru import logger
 import sys
 from pathlib import Path
 from datetime import datetime

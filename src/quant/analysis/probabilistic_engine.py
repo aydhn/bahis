@@ -408,7 +408,8 @@ class ProbabilisticEngine:
             pred = self._compute_predictions(home_rate, away_rate, pred)
             pred.method = "pymc_posterior"
 
-        except Exception:
+        except Exception as e:
+            logger.debug(f"Exception caught: {e}")
             pred = self._predict_fallback(home, away, pred)
 
         return pred

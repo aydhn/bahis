@@ -1,3 +1,4 @@
+from loguru import logger
 """
 stress_tester.py – Portfolio Stress Testing & Crash Simulation.
 

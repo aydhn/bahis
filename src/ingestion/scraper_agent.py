@@ -190,7 +190,8 @@ class MackolikScraper(BaseScraper):
                         "source": "mackolik",
                         "league": self._extract_league(row),
                     })
-            except Exception:
+            except Exception as e:
+                logger.debug(f"Exception caught: {e}")
                 continue
 
         logger.info(f"[Mackolik] {len(matches)} maç çekildi.")
@@ -223,7 +224,8 @@ class MackolikScraper(BaseScraper):
                             "away_odds": self._parse_odd(odds_els[2].get_text(strip=True)),
                             "source": "mackolik_iddaa",
                         })
-            except Exception:
+            except Exception as e:
+                logger.debug(f"Exception caught: {e}")
                 continue
 
         logger.info(f"[Mackolik] {len(odds_data)} oran çekildi.")
@@ -413,7 +415,8 @@ class TransfermarktScraper(BaseScraper):
                     }
                     result["players"].append(player)
                     result["total_value"] += player["market_value"]
-            except Exception:
+            except Exception as e:
+                logger.debug(f"Exception caught: {e}")
                 continue
 
         logger.info(f"[Transfermarkt] {team_slug}: {len(result['players'])} oyuncu çekildi.")
@@ -442,7 +445,8 @@ class TransfermarktScraper(BaseScraper):
                         "reason": reason_el.get_text(strip=True) if reason_el else "Bilinmeyen",
                         "since": since_el.get_text(strip=True) if since_el else "",
                     })
-            except Exception:
+            except Exception as e:
+                logger.debug(f"Exception caught: {e}")
                 continue
 
         logger.info(f"[Transfermarkt] {team_slug}: {len(injuries)} sakatlık çekildi.")

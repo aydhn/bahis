@@ -133,7 +133,8 @@ def wasserstein_nd(P: np.ndarray, Q: np.ndarray,
             # Sinkhorn (hızlı yaklaşık)
             try:
                 s_dist = float(ot.sinkhorn2(a, b, M, reg=reg)[0])
-            except Exception:
+            except Exception as e:
+                logger.debug(f"Exception caught: {e}")
                 s_dist = w_dist
 
             return w_dist, s_dist

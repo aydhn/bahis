@@ -99,7 +99,8 @@ class InferenceStage(PipelineStage):
         # RAG Analyzer (Optional)
         try:
             self.rag = NewsRAGAnalyzer()
-        except Exception:
+        except Exception as e:
+            logger.debug(f"Exception caught: {e}")
             self.rag = None
 
         # Transport Metric (Drift Detection)
