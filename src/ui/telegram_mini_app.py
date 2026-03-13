@@ -19,6 +19,8 @@ from datetime import datetime
 from pathlib import Path
 
 from loguru import logger
+from src.core.boardroom import Boardroom
+from src.system.container import container
 
 from src.extensions.ceo_dashboard import CEODashboard
 
@@ -409,6 +411,8 @@ class TelegramApp:
                 "hitl": self._cmd_hitl_stats,
                 "portfoy": self._cmd_portfolio,
                 "vision": self._cmd_vision,
+                "godmode": self._cmd_godmode,
+                "boardroom": self._cmd_boardroom,
             }
             for cmd, handler in commands.items():
                 self._app.add_handler(CommandHandler(cmd, handler))
@@ -461,12 +465,57 @@ class TelegramApp:
         await update.message.reply_text(text, parse_mode="HTML")
 
     async def _cmd_vision(self, update, context):
-        report = self.ceo_dashboard.generate_report(None)
+        try:
+            ceo_dash = container.get('ceo_dashboard')
+            report = ceo_dash.generate_report(None)
+        except Exception:
+            report = '⚠️ CEO Dashboard Not Found'
         await update.message.reply_text(report, parse_mode="Markdown")
 
-    # ═══════════════════════════════════════════
-    #  /durum – Anlık kasa + sistem
-    # ═══════════════════════════════════════════
+    async def _cmd_godmode(self, update, context):
+        try:
+            ceo_dash = container.get("ceo_dashboard")
+            greeks = ceo_dash.calculate_greeks()
+            msg = (
+                "⚡ **GOD MODE (Portfolio Greeks)** ⚡\n"
+                f"Δ (Delta - Directional Bias): `{greeks.get('delta', 0.0):.2f}`\n"
+                f"Γ (Gamma - Convexity): `{greeks.get('gamma', 0.0):.2f}`\n"
+                f"ν (Vega - Volatility Exposure): `{greeks.get('vega', 0.0):.2f}`"
+            )
+            await update.message.reply_text(msg, parse_mode="Markdown")
+        except Exception as e:
+            logger.error(f"Godmode error: {e}")
+            await update.message.reply_text(f"⚠️ Hata: {e}")
+
+    async def _cmd_boardroom(self, update, context):
+        try:
+            boardroom = Boardroom()
+            board_ctx = {
+                "ev": 0.05,
+                "teleology_score": 0.5,
+                "drawdown": 0.0,
+                "volatility": 0.05,
+                "confidence": 0.5,
+                "entropy": 0.5
+            }
+            decision = boardroom.convene(board_ctx)
+            status = '🟢 ACTIVE' if decision.approved else '🔴 BUNKER'
+
+            msg = (
+                "🏛️ **BOARDROOM CONSENSUS** 🏛️\n"
+                "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                f"**Score:** `{decision.consensus_score:.2f}/1.00`\n"
+                f"**Status:** {status}\n\n"
+                f"**Minutes:**\n"
+            )
+            for role, vote in decision.votes.items():
+                msg += f"- *{role.title()}*: {'✅' if vote else '❌'}\n"
+
+            await update.message.reply_text(msg, parse_mode="Markdown")
+        except Exception as e:
+            logger.error(f"Boardroom error: {e}")
+            await update.message.reply_text(f"⚠️ Hata: {e}")
+
     async def _cmd_durum(self, update, context):
         now = datetime.now().strftime("%H:%M:%S")
         try:
