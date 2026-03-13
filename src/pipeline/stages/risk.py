@@ -22,6 +22,7 @@ class RiskStage(PipelineStage):
 
         self.portfolio_opt = container.get("portfolio_opt") or PortfolioOptimizer()
         self.ceo_dashboard = container.get("ceo_dashboard")
+        self.macro_correlation = container.get("macro_correlation")
         self.philosophical_risk = container.get("philosophical_risk")
 
         # Arbitrage Executor
@@ -290,6 +291,14 @@ class RiskStage(PipelineStage):
                 ctx.narratives[match_id] = narrative
 
         # Update Context
+        # Apply Macro Correlation Systemic Penalty (Weekend Favorite Collapse Protection)
+        if hasattr(self, 'macro_correlation') and self.macro_correlation:
+            sys_modifier = self.macro_correlation.calculate_systemic_modifier(final_bets)
+            if sys_modifier < 1.0:
+                for bet in final_bets:
+                    bet["stake"] *= sys_modifier
+                    bet["reason"] += f" [MacroCorrelation Penalty: {sys_modifier:.2f}x]"
+
         if ctx:
             ctx.final_bets = final_bets
 

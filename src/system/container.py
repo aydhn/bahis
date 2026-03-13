@@ -156,6 +156,10 @@ class DependencyContainer:
                 from src.extensions.bayesian_updater import BayesianOddsUpdater
                 self._services["bayesian_updater"] = BayesianOddsUpdater()
 
+            elif name == "macro_correlation":
+                from src.extensions.macro_correlation import MacroCorrelationEngine
+                self._services["macro_correlation"] = MacroCorrelationEngine()
+
             elif name == "regime_hmm":
 
                 from src.extensions.regime_hmm import MarketRegimeHMM
