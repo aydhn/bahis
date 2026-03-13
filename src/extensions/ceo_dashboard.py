@@ -24,12 +24,14 @@ class CEODashboard:
 
         try:
             self.philosophical_risk = PhilosophicalRiskEngine()
-        except Exception:
+        except Exception as e:
+            logger.debug(f"PhilosophicalRiskEngine failed to initialize: {e}")
             self.philosophical_risk = None
 
         try:
             self.causal_reasoner = CausalReasoner()
-        except Exception:
+        except Exception as e:
+            logger.debug(f"CausalReasoner failed to initialize: {e}")
             self.causal_reasoner = None
 
         logger.debug("CEODashboard (God Mode) initialized.")

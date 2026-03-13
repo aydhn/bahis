@@ -1,4 +1,5 @@
 from src.system.container import container
+from src.extensions.quantum_pricing_model import QuantumPricingModel
 from typing import Any, Dict
 import asyncio
 import functools
@@ -328,6 +329,22 @@ class InferenceStage(PipelineStage):
         try:
             sentiment = self.market_sentiment.analyze_sentiment(match_id)
             prediction["market_sentiment"] = sentiment
+
+        except Exception as e:
+            logger.debug(f"Exception caught while analyzing market sentiment: {e}")
+
+        try:
+            if hasattr(self, 'quantum_pricing') and self.quantum_pricing:
+                q_probs = self.quantum_pricing.calculate_amplitudes(
+                    home_odds=prediction.get('home_odds', 2.0),
+                    away_odds=prediction.get('away_odds', 3.0),
+                    volatility=0.05
+                )
+                prediction['quantum_prob_home'] = q_probs['home_prob']
+                prediction['quantum_prob_away'] = q_probs['away_prob']
+        except Exception as e:
+            logger.debug(f"Exception caught in QuantumPricing integration: {e}")
+
 
             asian_hc = context.get("asian_handicap", None)
             public_money_pct = context.get("public_money_pct", None)
