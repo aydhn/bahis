@@ -155,6 +155,17 @@ class CEODashboard:
         if self.causal_reasoner:
              causal_str = "Monitoring hidden confounders..."
 
+                # Smart Money greeks = self.calculate_greeks() Market God
+        from src.system.container import container
+        smart_money = container.get("smart_money")
+        market_god = container.get("market_god")
+        sm_summary = "No Steam Detected"
+        if smart_money and smart_money.history:
+            sm_summary = f"{len(smart_money.history)} active steam events"
+        god_summary = "God is silent"
+        if market_god:
+             god_summary = "God mode active"
+
         greeks = self.calculate_greeks()
         delta = greeks["delta"]
         gamma = greeks["gamma"]
@@ -175,7 +186,9 @@ class CEODashboard:
             f"• **Gamma (Convexity):** {gamma:+.2f}\n"
             f"• **Vega (Vol Sensitivity):** {vega:.2f}\n\n"
             f"🧠 **Philosophical State:** {phil_state}\n"
-            f"🔗 **Causal Intel:** {causal_str}\n\n"
+            f"🔗 **Causal Intel:** {causal_str}\n" \
+            f"💸 **Smart Money Flow:** {sm_summary}\n" \
+            f"⚡ **Market God Analysis:** {god_summary}\n\n"
             f"_{quote}_"
         )
         return report
