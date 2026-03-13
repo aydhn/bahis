@@ -123,6 +123,10 @@ class DependencyContainer:
                 from src.extensions.auto_tuner import AutoTuner
                 self._services["auto_tuner"] = AutoTuner()
 
+            elif name == "sentiment_alpha":
+                from src.extensions.sentiment_alpha import SentimentAlphaEngine
+                self._services["sentiment_alpha"] = SentimentAlphaEngine()
+
             elif name == "ceo_dashboard":
                 from src.extensions.ceo_dashboard import CEODashboard
                 self._services["ceo_dashboard"] = CEODashboard()

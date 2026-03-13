@@ -89,6 +89,7 @@ class InferenceStage(PipelineStage):
         # Market God (The Omniscient Strategist)
         self.market_god = container.get('market_god')
         self.smart_money = container.get('smart_money')
+        self.sentiment_alpha = container.get('sentiment_alpha')
         self.behavioral_arb = container.get('behavioral_arb')
         self.quantum_pricing = container.get('quantum_pricing')
 
@@ -496,6 +497,30 @@ class InferenceStage(PipelineStage):
             except Exception as e:
                 logger.warning(f"Market God is silent for {match_id}: {e}")
 
+    def _apply_sentiment_alpha(self, context: Dict[str, Any], prediction: Dict[str, Any], match_id: str) -> None:
+        if hasattr(self, 'sentiment_alpha') and self.sentiment_alpha:
+            try:
+                home_odds = context.get("home_odds", 2.0)
+                model_prob = prediction.get("prob_home", 0.33)
+
+                # Assume neutral public bias if not available in context
+                public_bias = context.get("public_bias_home", 0.5)
+
+                alpha_sig = self.sentiment_alpha.evaluate_alpha(match_id, home_odds, public_bias, model_prob)
+
+                prediction["sentiment_alpha_signal"] = alpha_sig.signal
+                prediction["sentiment_alpha_score"] = alpha_sig.alpha_score
+
+                if alpha_sig.signal == "BEARISH":
+                    prediction["confidence"] = prediction.get("confidence", 0.5) * 0.95
+                    prediction["god_narrative"] = prediction.get("god_narrative", "") + f" | Sentiment Alpha: BEARISH ({alpha_sig.alpha_score:.2f})"
+                elif alpha_sig.signal == "BULLISH":
+                    prediction["confidence"] = min(prediction.get("confidence", 0.5) * 1.05, 1.0)
+                    prediction["god_narrative"] = prediction.get("god_narrative", "") + f" | Sentiment Alpha: BULLISH ({alpha_sig.alpha_score:.2f})"
+
+            except Exception as e:
+                logger.warning(f"Sentiment Alpha silent for {match_id}: {e}")
+
     def _apply_behavioral_arbitrage(self, context: Dict[str, Any], prediction: Dict[str, Any], match_id: str) -> None:
         if hasattr(self, 'behavioral_arb') and self.behavioral_arb:
             try:
@@ -558,6 +583,9 @@ class InferenceStage(PipelineStage):
 
         # 9.5 Behavioral Arbitrage (Sentiment / Bias Fade)
         self._apply_behavioral_arbitrage(context, prediction, match_id)
+
+        # 9.6 Sentiment Alpha (Macro Social Momentum Edge)
+        self._apply_sentiment_alpha(context, prediction, match_id)
 
         # 10. Inject Risk Context and Epistemic Uncertainty
         prediction["regime_status"] = context.get("_regime_status", "NORMAL")
