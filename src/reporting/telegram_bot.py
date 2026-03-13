@@ -385,8 +385,10 @@ class TelegramBot:
         command = parts[0].lower()
         args = parts[1:] if len(parts) > 1 else []
 
-        if command == "/start":
-            await self.send_message(chat_id, "🤖 *Otonom Quant Bot Devrede.*\nKomutlar: /status, /strategy, /ceo, /brief, /warroom, /pnl, /risk, /brain, /explain, /analyze, /physics, /treasury, /oracle, /set_risk, /force, /shutdown, /hedge, /synthetic, /memo, /smartmoney, /forecast, /boardroom, /greeks, /radar, /reflexivity, /alloc, /flow, /execution, /vision")
+        if command == "/godmode":
+            await self._handle_godmode(chat_id)
+        elif command == "/start":
+            await self.send_message(chat_id, "🤖 *Otonom Quant Bot Devrede.*\nKomutlar: /status, /strategy, /ceo, /brief, /warroom, /pnl, /risk, /brain, /explain, /analyze, /physics, /treasury, /oracle, /set_risk, /force, /shutdown, /hedge, /synthetic, /memo, /smartmoney, /forecast, /boardroom, /greeks, /radar, /reflexivity, /alloc, /flow, /execution, /vision, /godmode")
 
         elif command == "/report":
             await self._handle_report(chat_id)
@@ -1509,3 +1511,18 @@ class TelegramBot:
         except Exception as e:
             logger.debug(f"Exception caught: {e}")
         return {"pnl": 0.0, "drawdown": 0.0}
+
+    async def _handle_godmode(self, chat_id: int):
+        """CEO Dashboard uzerinden yonetim raporunu gosterir."""
+        from src.system.container import container
+        ceo_dashboard = container.get("ceo_dashboard")
+        if not ceo_dashboard:
+            await self.send_message(chat_id, "⚠️ CEODashboard modulune erisilemiyor.")
+            return
+        try:
+            report = ceo_dashboard.generate_report(getattr(self, 'context', None))
+            await self.send_message(chat_id, report)
+        except Exception as e:
+            from loguru import logger
+            logger.debug(f"Exception caught in /godmode: {e}")
+            await self.send_message(chat_id, f"❌ GodMode hatasi: {e}")

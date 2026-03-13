@@ -106,14 +106,14 @@ class DependencyContainer:
                     from src.extensions.market_god import MarketGod
                     self._services["market_god"] = MarketGod()
                 except ImportError:
-                    self._services["market_god"] = None
+                    self._services["market_god"] = None  # type: ignore
 
             elif name == "behavioral_arb":
                 try:
                     from src.extensions.behavioral_arbitrage import BehavioralArbitrage
                     self._services["behavioral_arb"] = BehavioralArbitrage()
                 except ImportError:
-                    self._services["behavioral_arb"] = None
+                    self._services["behavioral_arb"] = None  # type: ignore
 
             elif name == "alpha_generator":
                 from src.extensions.alpha_generator import AlphaGenerator

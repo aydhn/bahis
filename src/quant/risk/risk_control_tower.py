@@ -64,7 +64,10 @@ class RiskControlTower:
 
     def __init__(self):
         # 1. Core Risk Engine
-        self.kelly = RegimeKelly()
+        from src.extensions.kelly_benter_optimizer import KellyBenterOptimizer
+        from src.system.container import container
+        self.kelly = container.get('kelly_benter') or KellyBenterOptimizer()
+        self.regime_kelly = RegimeKelly()
 
         # 2. Gatekeepers
         self.guardian = CognitiveGuardian()
@@ -460,7 +463,16 @@ class RiskControlTower:
         elif regime.regime == "STABLE":
             kelly_regime.volatility_regime = "calm"
 
-        kelly_res = self.kelly.calculate(
+        # Benter Kelly Overwrite:
+        try:
+            prob_val = bet_candidate.get('prob_home', 0.0)
+            odds_val = bet_candidate.get('odds', 0.0)
+            conf_val = bet_candidate.get('confidence', 0.5)
+            benter_fraction = self.kelly.calculate_fraction(p=prob_val, b=odds_val, confidence=conf_val)
+        except Exception as e:
+            logger.debug(f"Exception caught during Benter Kelly: {e}")
+            benter_fraction = 0.0
+        kelly_res = self.regime_kelly.calculate(
             probability=bet_candidate.get("prob_home", 0.0), # Assuming Home bet for now
             odds=bet_candidate.get("odds", 0.0),
             match_id=match_id,
@@ -472,7 +484,8 @@ class RiskControlTower:
             decision.rejection_reason = f"Kelly Rejected: {kelly_res.rejection_reason}"
             return decision
 
-        final_stake_pct = kelly_res.stake_pct
+        if isinstance(benter_fraction, (int, float)) and benter_fraction > 0.0: final_stake_pct = benter_fraction * 0.5  # Blend
+        else: final_stake_pct = kelly_res.stake_pct
 
         # Black-Litterman Optimization will be done globally in RiskStage over all candidates
 

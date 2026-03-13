@@ -22,6 +22,12 @@ class TestNewPipeline(unittest.TestCase):
         self.mock_kelly.load_state.return_value = True
         self.mock_kelly.save_state.return_value = None
         container.register("regime_kelly", self.mock_kelly)
+        self.mock_kelly_benter = MagicMock()
+        self.mock_kelly_benter.calculate_fraction.return_value = 0.05
+        container.register("kelly_benter", self.mock_kelly_benter)
+        self.mock_kelly_benter = MagicMock()
+        self.mock_kelly_benter.calculate_fraction.return_value = 0.05
+        container.register("kelly_benter", self.mock_kelly_benter)
 
     def test_pipeline_creation(self):
         """Test that default pipeline includes all new stages."""
