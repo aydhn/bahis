@@ -171,9 +171,12 @@ class DependencyContainer:
                     self._services["rl_agent"] = None
 
             elif name == "regime_hmm":
-
                 from src.extensions.regime_hmm import MarketRegimeHMM
                 self._services["regime_hmm"] = MarketRegimeHMM()
+
+            elif name == "boardroom":
+                from src.core.boardroom import Boardroom
+                self._services["boardroom"] = Boardroom()
 
             # Add more services as needed...
 

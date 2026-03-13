@@ -348,7 +348,7 @@ class InferenceStage(PipelineStage):
         except Exception as e:
             logger.debug(f"Exception caught in QuantumPricing integration: {e}")
 
-
+        try:
             asian_hc = context.get("asian_handicap", None)
             public_money_pct = context.get("public_money_pct", None)
 
