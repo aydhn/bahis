@@ -540,6 +540,21 @@ class InferenceStage(PipelineStage):
 
             except Exception as e:
                 logger.warning(f"Sentiment Alpha silent for {match_id}: {e}")
+    def _apply_smart_money(self, context: Dict[str, Any], prediction: Dict[str, Any], match_id: str) -> None:
+        if hasattr(self, "smart_money") and self.smart_money:
+            try:
+                eu_odds = {"home": context.get("home_odds", 2.0), "draw": context.get("draw_odds", 3.0), "away": context.get("away_odds", 4.0)}
+                ah_odds = context.get("asian_handicap", None)
+                public_pct = context.get("public_bias_home", None)
+                sm_sig = self.smart_money.analyze(match_id, eu_odds, ah_odds, public_pct)
+                prediction["smart_money_signal"] = sm_sig.signal
+                prediction["smart_money_strength"] = sm_sig.strength
+                if sm_sig.signal == "BULLISH":
+                    prediction["confidence"] = min(prediction.get("confidence", 0.5) * (1.0 + 0.2 * sm_sig.strength), 1.0)
+                elif sm_sig.signal == "BEARISH":
+                    prediction["confidence"] *= max(0.5, 1.0 - 0.2 * sm_sig.strength)
+            except Exception as e:
+                logger.warning(f"Smart Money silent for {match_id}: {e}")
 
     def _apply_behavioral_arbitrage(self, context: Dict[str, Any], prediction: Dict[str, Any], match_id: str) -> None:
         if hasattr(self, 'behavioral_arb') and self.behavioral_arb:
@@ -664,6 +679,8 @@ class InferenceStage(PipelineStage):
         # 9.5 Behavioral Arbitrage (Sentiment / Bias Fade)
         self._apply_behavioral_arbitrage(context, prediction, match_id)
 
+        # 9.5.5 Smart Money
+        self._apply_smart_money(context, prediction, match_id)
 
         # 9.6 Sentiment Alpha (Macro Social Momentum Edge)
         self._apply_sentiment_alpha(context, prediction, match_id)

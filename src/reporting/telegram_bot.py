@@ -188,6 +188,12 @@ class TelegramBot:
 
                 # Philosophical & Causal State
                 phil_state = "AEQUANIMITAS"
+                sm_summary = "No Steam Detected"
+                god_summary = "God is silent"
+                if getattr(self, "smart_money", None) and self.smart_money.history:
+                    sm_summary = f"{len(self.smart_money.history)} active steam events"
+                if getattr(self, "market_god", None):
+                    god_summary = "God mode active"
                 causal_str = "Monitoring confounders..."
 
                 if getattr(self, 'ceo_dashboard', None):
@@ -204,7 +210,9 @@ class TelegramBot:
                     f"⚡ **Cycle:** #{cycle}  |  🕒 {asyncio.get_event_loop().time():.0f}\n"
                     f"🛡️ **Regime:** {regime}\n"
                     f"🧠 **Philo State:** {phil_state}\n"
-                    f"🔗 **Causal Intel:** {causal_str}\n"
+                    f"🔗 **Causal Intel:** {causal_str}\n" \
+                    f"💸 **Smart Money Flow:** {sm_summary}\n" \
+                    f"⚡ **Market God Analysis:** {god_summary}\n"
                     f"━━━━━━━━━━━━━━━━━━━━━━━━━\n"
                     f"💰 **Financials**\n"
                     f"• Capital: {total_cap:.2f}\n"
@@ -1102,7 +1110,8 @@ class TelegramBot:
                     await self.send_message(chat_id, f"🤔 Anlaşılamadı: *{result.get('raw')}*")
 
     async def _handle_smartmoney(self, chat_id: int):
-        smart_money_attr = getattr(self, 'smart_money', None)
+        from src.system.container import container
+        smart_money_attr = container.get("smart_money")
         if not smart_money_attr:
             await self.send_message(chat_id, "❌ Smart Money Detector modülü yüklü değil.")
             return
