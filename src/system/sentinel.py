@@ -54,6 +54,11 @@ class Sentinel:
         # 0. Event Bus (Merkezi Sinir Sistemi)
         self.bus = EventBus()
         self.portfolio_manager = PortfolioManager(self.bus)
+        # 0.05 Dynamic Hedging (Financial Engine)
+        from src.extensions.dynamic_hedging import DynamicHedgingEngine
+        self.hedging_engine = DynamicHedgingEngine(self.bus, None) # Treasury attached later if needed
+        self.bus.subscribe("odds_tick", self.hedging_engine.handle_odds_tick)
+
 
         # 0.1 Flash Reaction (Odds Stream Listener)
         self.speed_cache = SpeedCache()
@@ -268,6 +273,9 @@ class Sentinel:
         # Start Background Services
         if self.daemon_mode:
             asyncio.create_task(self._run_hedge_monitor())
+            opp_scanner = container.get("opportunity_scanner")
+            if opp_scanner:
+                asyncio.create_task(opp_scanner.scan())
             await self.flash_monitor.start()
             alpha_gen = container.get("alpha_generator")
             if alpha_gen:
