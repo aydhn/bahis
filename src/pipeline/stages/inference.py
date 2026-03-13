@@ -90,6 +90,8 @@ class InferenceStage(PipelineStage):
         # Market God (The Omniscient Strategist)
         self.market_god = container.get('market_god')
         self.smart_money = container.get('smart_money')
+        self.philosophical_risk = container.get('philosophical_risk')
+        self.auto_tuner = container.get('auto_tuner')
         self.sentiment_alpha = container.get('sentiment_alpha')
         self.behavioral_arb = container.get('behavioral_arb')
         self.quantum_pricing = container.get('quantum_pricing')
@@ -557,7 +559,44 @@ class InferenceStage(PipelineStage):
             except Exception as e:
                 logger.warning(f"Behavioral Arbitrage silent for {match_id}: {e}")
 
+
+    def _apply_philosophical_risk(self, context: Dict[str, Any], prediction: Dict[str, Any], match_id: str) -> None:
+        if hasattr(self, 'philosophical_risk') and self.philosophical_risk:
+            try:
+                # We extract recent PnL loosely if available
+                recent_pnl = context.get("recent_pnl", [0.0])
+                win_rate = context.get("rolling_win_rate", 0.5)
+                drawdown = context.get("current_drawdown", 0.0)
+
+                phil_state = self.philosophical_risk.assess_state(recent_pnl, win_rate, drawdown)
+
+                prediction["philosophical_state"] = phil_state.state
+                prediction["philosophical_edge_modifier"] = phil_state.edge_modifier
+
+                # Modulate confidence based on philosophical state (AEQUANIMITAS vs HUBRIS)
+                prediction["confidence"] = prediction.get("confidence", 0.5) * phil_state.edge_modifier
+                prediction["god_narrative"] = prediction.get("god_narrative", "") + f" | Phil: {phil_state.state}"
+
+            except Exception as e:
+                logger.warning(f"Philosophical Risk engine silent for {match_id}: {e}")
+
+    def _apply_auto_tuner(self, context: Dict[str, Any], prediction: Dict[str, Any], match_id: str) -> None:
+        if hasattr(self, 'auto_tuner') and self.auto_tuner:
+            try:
+                # Update with rolling results if passed in context, otherwise just get current params
+                recent_results = context.get("recent_results", [])
+
+                if recent_results:
+                    self.auto_tuner.update(recent_results)
+
+                params = self.auto_tuner.get_current_params()
+                prediction["auto_tuned_kelly_fraction"] = params.get("kelly_fraction", 0.25)
+
+            except Exception as e:
+                logger.warning(f"AutoTuner silent for {match_id}: {e}")
+
     async def _analyze_single_match(self, context: Dict[str, Any]) -> Dict[str, Any]:
+
         """Analyze a single match using Ensemble, RAG, Similarity, Meta-Labeling, and Teleology."""
         match_id = context.get("match_id", "Unknown")
 
@@ -601,8 +640,16 @@ class InferenceStage(PipelineStage):
         # 9.5 Behavioral Arbitrage (Sentiment / Bias Fade)
         self._apply_behavioral_arbitrage(context, prediction, match_id)
 
+
         # 9.6 Sentiment Alpha (Macro Social Momentum Edge)
         self._apply_sentiment_alpha(context, prediction, match_id)
+
+        # 9.7 Philosophical Risk (Stoic Edge Modulation)
+        self._apply_philosophical_risk(context, prediction, match_id)
+
+        # 9.8 AutoTuner Parameters
+        self._apply_auto_tuner(context, prediction, match_id)
+
 
         # 10. Inject Risk Context and Epistemic Uncertainty
         prediction["regime_status"] = context.get("_regime_status", "NORMAL")
