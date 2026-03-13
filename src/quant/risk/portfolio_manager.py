@@ -116,7 +116,8 @@ class PortfolioManager:
             k_cap = self.kelly_manager.calculate_fraction(p, o, confidence=conf)
             kelly_caps.append(k_cap)
             if isinstance(opp, dict):
-                opp["kelly_cap"] = k_cap
+                if 'kelly_cap' not in opp:
+                    opp["kelly_cap"] = k_cap
 
         returns = np.array(returns)
         stds = np.array(stds)

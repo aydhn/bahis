@@ -24,7 +24,11 @@ class CEODashboard:
         if not self.treasury:
             from src.quant.finance.treasury import TreasuryEngine
             self.treasury = TreasuryEngine()
-        self.boardroom = container.get("boardroom") or Boardroom()
+
+        try:
+            self.boardroom = container.get("boardroom")
+        except Exception:
+            self.boardroom = Boardroom()
 
         try:
             self.philosophical_risk = container.get("philosophical_risk") or PhilosophicalRiskEngine()
