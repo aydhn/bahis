@@ -22,7 +22,8 @@ class PortfolioManager:
     def __init__(self, bus: EventBus):
         self.bus = bus
         self.current_opportunities: List[Dict[str, Any]] = []
-        self.kelly_manager = KellyBenterOptimizer(base_fraction=0.20, window_size=50)
+        from src.system.container import container
+        self.kelly_manager = container.get("kelly_benter")
 
         # Listen for events
         if self.bus:
@@ -115,7 +116,7 @@ class PortfolioManager:
             k_cap = self.kelly_manager.calculate_fraction(p, o, confidence=conf)
             kelly_caps.append(k_cap)
             if isinstance(opp, dict):
-                opp["kelly_cap"] = k_cap # Store for logging
+                opp["kelly_cap"] = k_cap
 
         returns = np.array(returns)
         stds = np.array(stds)
