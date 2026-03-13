@@ -1,3 +1,5 @@
+from src.quant.analysis.causal_reasoner import CausalReasoner
+from src.extensions.philosophical_risk import PhilosophicalRiskEngine
 """
 ceo_dashboard.py – "God Mode / CEO Vision" Aggregator.
 
@@ -15,11 +17,22 @@ from src.core.boardroom import Boardroom
 class CEODashboard:
     """Aggregates system vitals and generates a high-level strategic executive summary."""
 
+
     def __init__(self):
         self.treasury = TreasuryEngine()
         self.boardroom = Boardroom()
-        logger.debug("CEODashboard (God Mode) initialized.")
 
+        try:
+            self.philosophical_risk = PhilosophicalRiskEngine()
+        except Exception:
+            self.philosophical_risk = None
+
+        try:
+            self.causal_reasoner = CausalReasoner()
+        except Exception:
+            self.causal_reasoner = None
+
+        logger.debug("CEODashboard (God Mode) initialized.")
 
     def enforce_strategic_vision(self, god_signal: Any):
         """
@@ -103,14 +116,13 @@ class CEODashboard:
             if hasattr(context, 'ensemble_results') and context.ensemble_results:
                 regime = context.ensemble_results[0].get("regime_status", regime)
             elif hasattr(context, 'volatility_reports') and context.volatility_reports:
-                # Get the first available volatility report regime
                 first_vol = next(iter(context.volatility_reports.values()), None)
                 if first_vol:
                      regime = first_vol.regime
 
         # Simulate a quick Boardroom consensus for the overall market
         board_ctx = {
-            "ev": 0.05, # Neutral EV for overall market
+            "ev": 0.05,
             "teleology_score": 0.5,
             "drawdown": (locked_cap / total_cap) if total_cap > 0 else 0.0,
             "volatility": 0.05,
@@ -120,8 +132,18 @@ class CEODashboard:
         board_decision = self.boardroom.convene(board_ctx)
         consensus_str = f"{board_decision.consensus_score:.2f}/1.00"
 
-        # Executive quote
+        # Philosophical Insight
+        phil_state = "AEQUANIMITAS"
         quote = "“The obstacle is the way.” — Marcus Aurelius"
+        if self.philosophical_risk:
+             insight = self.philosophical_risk.assess_state([daily_pnl], 0.55, 0.0) # Mock current
+             phil_state = insight.state
+             if insight.stoic_quote: quote = insight.stoic_quote
+
+        # Causal Insight (if available)
+        causal_str = "No major causal anomalies detected."
+        if self.causal_reasoner:
+             causal_str = "Monitoring hidden confounders..."
 
         greeks = self.calculate_greeks()
         delta = greeks["delta"]
@@ -137,14 +159,13 @@ class CEODashboard:
             f"• **Locked Capital:** {locked_cap:.2f} ₺\n"
             f"• **Daily PnL:** {pnl_emoji} {daily_pnl:+.2f} ₺ (ROI: {roi:+.2f}%)\n\n"
             f"🏛️ **Boardroom Sentinel Consensus**\n"
-            f"• **Alignment:** {consensus_str}\n"
-            f"• **Status:** {'Active' if board_decision.approved else 'Cautious/Bunker'}\n\n"
+            f"• **Alignment:** {consensus_str} | **Status:** {'Active' if board_decision.approved else 'Bunker'}\n\n"
             f"📊 **Systemic Posture & Sensitivity (The Greeks)**\n"
-            f"• **Delta (Directional Exposure):** {delta:+.2f}\n"
-            f"• **Gamma (Convexity of Edge):** {gamma:+.2f}\n"
-            f"• **Vega (Volatility Sensitivity):** {vega:.2f}\n"
-            f"All Quant & Physics models are scanning. Portfolio optimization is live.\n"
-            f"Strict risk bounds enforced.\n\n"
+            f"• **Delta (Directional):** {delta:+.2f}\n"
+            f"• **Gamma (Convexity):** {gamma:+.2f}\n"
+            f"• **Vega (Vol Sensitivity):** {vega:.2f}\n\n"
+            f"🧠 **Philosophical State:** {phil_state}\n"
+            f"🔗 **Causal Intel:** {causal_str}\n\n"
             f"_{quote}_"
         )
         return report

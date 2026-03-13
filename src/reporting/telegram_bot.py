@@ -179,11 +179,25 @@ class TelegramBot:
                 # This requires access to DB or Sentinel state.
                 # We'll use a placeholder or read from DB if available.
 
+                # Philosophical & Causal State
+                phil_state = "AEQUANIMITAS"
+                causal_str = "Monitoring confounders..."
+
+                if getattr(self, 'ceo_dashboard', None):
+                     if hasattr(self.ceo_dashboard, 'philosophical_risk') and self.ceo_dashboard.philosophical_risk:
+                         insight = self.ceo_dashboard.philosophical_risk.assess_state([daily_pnl], 0.55, 0.0)
+                         phil_state = insight.state
+
+                     if hasattr(self.ceo_dashboard, 'causal_reasoner') and self.ceo_dashboard.causal_reasoner:
+                         causal_str = "Causal Graph Active"
+
                 dashboard = (
                     f"🚨 **EXECUTIVE WAR ROOM** 🚨\n"
                     f"━━━━━━━━━━━━━━━━━━━━━━━━━\n"
                     f"⚡ **Cycle:** #{cycle}  |  🕒 {asyncio.get_event_loop().time():.0f}\n"
                     f"🛡️ **Regime:** {regime}\n"
+                    f"🧠 **Philo State:** {phil_state}\n"
+                    f"🔗 **Causal Intel:** {causal_str}\n"
                     f"━━━━━━━━━━━━━━━━━━━━━━━━━\n"
                     f"💰 **Financials**\n"
                     f"• Capital: {total_cap:.2f}\n"
