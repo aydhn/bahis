@@ -358,14 +358,15 @@ class InferenceStage(PipelineStage):
                 "away": context.get("away_odds", 4.0)
             }
 
-            sm_sig = self.smart_money.analyze(match_id, euro_odds, asian_hc, public_money_pct)
-            prediction["smart_money_signal"] = sm_sig.signal
-            prediction["smart_money_strength"] = sm_sig.strength
+            if hasattr(self, 'smart_money') and self.smart_money:
+                sm_sig = self.smart_money.analyze(match_id, euro_odds, asian_hc, public_money_pct)
+                prediction["smart_money_signal"] = sm_sig.signal
+                prediction["smart_money_strength"] = sm_sig.strength
 
-            if sm_sig.signal == "BULLISH":
-                 prediction["confidence"] *= (1.0 + sm_sig.strength * 0.2)
-            elif sm_sig.signal == "BEARISH":
-                 prediction["confidence"] *= (1.0 - sm_sig.strength * 0.2)
+                if sm_sig.signal == "BULLISH":
+                    prediction["confidence"] *= (1.0 + sm_sig.strength * 0.2)
+                elif sm_sig.signal == "BEARISH":
+                    prediction["confidence"] *= (1.0 - sm_sig.strength * 0.2)
 
         except Exception as e:
             logger.warning(f"Market Sentiment/Smart Money Error: {e}")

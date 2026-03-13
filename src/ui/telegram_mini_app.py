@@ -605,11 +605,16 @@ class TelegramApp:
     #  /report
     # ═══════════════════════════════════════════
     async def _cmd_report(self, update, context):
-        await update.message.reply_text(
-            "📋 <b>RAPOR</b>\n\n"
-            "<i>Günlük PnL, ROI ve Sharpe bilgileri hazırlanıyor…</i>",
-            parse_mode="HTML",
-        )
+        try:
+            from src.system.container import container
+            ceo_dash = container.get('ceo_dashboard')
+            if ceo_dash:
+                report = ceo_dash.generate_report(None)
+                await update.message.reply_text(report, parse_mode="Markdown")
+            else:
+                await update.message.reply_text("CEO Dashboard hazır değil.")
+        except Exception as e:
+            await update.message.reply_text(f"Hata: {e}")
 
     # ═══════════════════════════════════════════
     #  /clv – CLV trend özeti

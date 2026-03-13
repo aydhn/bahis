@@ -165,6 +165,23 @@ class Sentinel:
         else:
             logger.warning(f"Sentinel: Unknown regime format in event: {regime}")
 
+
+
+    async def _on_alpha_signal(self, event):
+        """Handle Alpha signals emitted by AlphaGenerator."""
+        data = event.data
+        msg = f"🐺 **ALPHA DETECTED** 🐺\nType: {data.get('type')}\nConf: {data.get('confidence', 0)*100:.1f}%\nMetric: {data.get('metric_value')}\nAction: {data.get('action')}"
+        logger.success(msg)
+        if hasattr(self, 'bot') and self.bot and self.bot._ready:
+            try:
+                # We can use send or send_message if defined
+                if hasattr(self.bot, 'send'):
+                    await self.bot.send(msg)
+                elif hasattr(self.bot, 'send_message'):
+                    await self.bot.send_message(self.bot._chat_id, msg)
+            except Exception as e:
+                logger.error(f"Error sending alpha alert: {e}")
+
     async def _execute_single_cycle(self, cycle_count: int):
         """Execute a single cycle of the daemon loop."""
         # 1. Sağlık Kontrolü
@@ -283,6 +300,9 @@ class Sentinel:
             alpha_gen = container.get("alpha_generator")
             if alpha_gen:
                 asyncio.create_task(alpha_gen.start())
+
+            # Subscribe to alpha signals
+            self.bus.subscribe("alpha_signal", self._on_alpha_signal)
 
         # Pipeline döngüsü
         cycle_count = 0
