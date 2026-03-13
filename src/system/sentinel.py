@@ -384,7 +384,7 @@ class Sentinel:
             # FAST TRACK: Sniper Execution
             # If significant value drop, trigger execution directly, bypassing the heavy pipeline.
             # We assume a fixed small stake for sniper entries or quick liquidity grab.
-            if z_score < -3.0: # Very strong signal
+            if z_score < -3.0 or data.get('reason') == 'Sudden odds drop detected by scanner':
                 if self.execution_stage:
                     sniper_order = {
                         "match_id": match_id,

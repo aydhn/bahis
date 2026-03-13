@@ -73,7 +73,10 @@ async def test_api_hijacker_persistence(tmp_path):
         assert endpoints_file.exists()
 
         # Create new instance, check load
-        hijacker2 = APIHijacker()
+        with patch("src.ingestion.api_hijacker.DATA_DIR", data_dir), \
+             patch("src.ingestion.api_hijacker.ENDPOINTS_FILE", endpoints_file):
+            hijacker._save_endpoints()
+            hijacker2 = APIHijacker()
         assert "http://api.test/v1/event/*" in hijacker2.discovered_endpoints
 
 @pytest.mark.asyncio
