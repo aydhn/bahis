@@ -468,7 +468,8 @@ class TelegramApp:
         try:
             ceo_dash = container.get('ceo_dashboard')
             report = ceo_dash.generate_report(None)
-        except Exception:
+        except Exception as e:
+            logger.error(f"Exception in Telegram Mini App: {e}")
             report = '⚠️ CEO Dashboard Not Found'
         await update.message.reply_text(report, parse_mode="Markdown")
 

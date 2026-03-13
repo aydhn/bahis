@@ -116,7 +116,14 @@ class TelegramBot:
         self.dtw_matcher = DTWMatcher()
         self.microstructure = MicrostructureEngine()
 
-        self.ceo_dashboard = CEODashboard()
+
+        try:
+            from src.system.container import container
+            self.ceo_dashboard = getattr(container, "get")('ceo_dashboard')
+        except Exception as e:
+            logger.debug(f"Exception caught: {e}")
+            self.ceo_dashboard = None
+
 
         if not self.enabled:
             logger.warning("TelegramBot devre dışı: Token veya httpx eksik.")
@@ -385,6 +392,9 @@ class TelegramBot:
             await self._handle_report(chat_id)
 
         elif command == "/vision":
+            if not self.ceo_dashboard:
+                await self.send_message(chat_id, "⚠️ CEODashboard unavailable.")
+                return
             report = self.ceo_dashboard.generate_report(self.context)
             await self.send_message(chat_id, report)
 
@@ -533,11 +543,14 @@ class TelegramBot:
             report = self.ceo_dashboard.generate_report(self.context)
             await self.send_message(chat_id, report)
         elif command == "/godmode":
+            if not self.ceo_dashboard:
+                await self.send_message(chat_id, "⚠️ CEODashboard unavailable.")
+                return
             greeks = self.ceo_dashboard.calculate_greeks()
-            msg = "⚡ **GOD MODE (Portfolio Greeks)** ⚡\n" + \
-                  f"Δ (Delta - Directional Bias): `{greeks.get('delta', 0.0):.2f}`\n" + \
-                  f"Γ (Gamma - Convexity): `{greeks.get('gamma', 0.0):.2f}`\n" + \
-                  f"ν (Vega - Volatility Exposure): `{greeks.get('vega', 0.0):.2f}`"
+            msg = "⚡ **GOD MODE (Portfolio Greeks)** ⚡\n"
+            msg += f"Δ (Delta - Directional Bias): `{greeks.get('delta', 0.0):.2f}`\n"
+            msg += f"Γ (Gamma - Convexity): `{greeks.get('gamma', 0.0):.2f}`\n"
+            msg += f"ν (Vega - Volatility Exposure): `{greeks.get('vega', 0.0):.2f}`"
             await self.send_message(chat_id, msg)
         elif command == "/warroom":
             self.warroom_active = not self.warroom_active
