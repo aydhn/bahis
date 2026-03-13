@@ -48,6 +48,8 @@ class TestNewPipeline(unittest.TestCase):
         """Test RiskStage consumes Ensemble results correctly."""
         from src.pipeline.stages.risk import RiskStage
         stage = RiskStage()
+        if hasattr(stage, 'macro_correlation') and isinstance(stage.macro_correlation, MagicMock):
+            stage.macro_correlation.calculate_systemic_modifier.return_value = 1.0
 
         context = {
             "ensemble_results": [
