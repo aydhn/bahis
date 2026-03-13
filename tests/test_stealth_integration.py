@@ -62,6 +62,8 @@ async def test_api_hijacker_persistence(tmp_path):
         # Simulate discovery
         hijacker._discover_endpoint("http://api.test/v1/event/123", "test_source", 200, {"data": "test"})
         await hijacker._save_endpoints_async()
+        import asyncio
+        await asyncio.sleep(0.1)
 
 
         # Verify in memory
