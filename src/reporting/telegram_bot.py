@@ -381,6 +381,9 @@ class TelegramBot:
         if command == "/start":
             await self.send_message(chat_id, "🤖 *Otonom Quant Bot Devrede.*\nKomutlar: /status, /strategy, /ceo, /brief, /warroom, /pnl, /risk, /brain, /explain, /analyze, /physics, /treasury, /oracle, /set_risk, /force, /shutdown, /hedge, /synthetic, /memo, /smartmoney, /forecast, /boardroom, /greeks, /radar, /reflexivity, /alloc, /flow, /execution, /vision")
 
+        elif command == "/report":
+            await self._handle_report(chat_id)
+
         elif command == "/vision":
             report = self.ceo_dashboard.generate_report(self.context)
             await self.send_message(chat_id, report)
@@ -1220,6 +1223,21 @@ class TelegramBot:
         )
 
         await self.send_message(chat_id, msg)
+
+
+    async def _handle_report(self, chat_id: int):
+        """Sistem saglik ve PnL raporunu getir."""
+        if not hasattr(self, 'sentinel') or not self.sentinel or not hasattr(self.sentinel, 'treasury') or not self.sentinel.treasury:
+            await self.send_message(chat_id, "⚠️ Treasury veya Sentinel aktif degil.")
+            return
+
+        try:
+            status_str = self.sentinel.treasury.get_status()
+            await self.send_message(chat_id, f"🏢 *CEO REPORT*\n\n{status_str}")
+        except Exception as e:
+            from loguru import logger
+            logger.debug(f"Exception caught in _handle_report: {e}")
+            await self.send_message(chat_id, "Rapor alinirken hata olustu.")
 
     async def _handle_analyze(self, chat_id: int, args: list):
         """Belirli bir maçın analizini getir."""

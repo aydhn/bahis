@@ -143,7 +143,21 @@ class DependencyContainer:
                 from src.extensions.quantum_pricing_model import QuantumPricingModel
                 self._services["quantum_pricing"] = QuantumPricingModel()
 
+            elif name == "dynamic_hedging":
+                from src.extensions.dynamic_hedging import DynamicHedgingEngine
+                # Dependencies injected manually in Sentinel
+                self._services["dynamic_hedging"] = DynamicHedgingEngine(None, None)
+
+            elif name == "opportunity_scanner":
+                from src.extensions.opportunity_scanner import OpportunityScanner
+                self._services["opportunity_scanner"] = OpportunityScanner(self.get("event_bus"))
+
+            elif name == "bayesian_updater":
+                from src.extensions.bayesian_updater import BayesianOddsUpdater
+                self._services["bayesian_updater"] = BayesianOddsUpdater()
+
             elif name == "regime_hmm":
+
                 from src.extensions.regime_hmm import MarketRegimeHMM
                 self._services["regime_hmm"] = MarketRegimeHMM()
 
