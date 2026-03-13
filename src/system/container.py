@@ -160,6 +160,16 @@ class DependencyContainer:
                 from src.extensions.macro_correlation import MacroCorrelationEngine
                 self._services["macro_correlation"] = MacroCorrelationEngine()
 
+            elif name == "rl_agent":
+                try:
+                    from src.quant.models.rl_trader import RLBettingAgent
+                    agent = RLBettingAgent()
+                    agent.load() # Try to load pre-trained if exists
+                    self._services["rl_agent"] = agent
+                except ImportError:
+                    logger.warning("RLBettingAgent missing dependencies. RL overlay disabled.")
+                    self._services["rl_agent"] = None
+
             elif name == "regime_hmm":
 
                 from src.extensions.regime_hmm import MarketRegimeHMM

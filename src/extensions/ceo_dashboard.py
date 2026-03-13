@@ -19,17 +19,21 @@ class CEODashboard:
 
 
     def __init__(self):
-        self.treasury = TreasuryEngine()
-        self.boardroom = Boardroom()
+        from src.system.container import container
+        self.treasury = container.get("treasury")
+        if not self.treasury:
+            from src.quant.finance.treasury import TreasuryEngine
+            self.treasury = TreasuryEngine()
+        self.boardroom = container.get("boardroom") or Boardroom()
 
         try:
-            self.philosophical_risk = PhilosophicalRiskEngine()
+            self.philosophical_risk = container.get("philosophical_risk") or PhilosophicalRiskEngine()
         except Exception as e:
             logger.debug(f"PhilosophicalRiskEngine failed to initialize: {e}")
             self.philosophical_risk = None
 
         try:
-            self.causal_reasoner = CausalReasoner()
+            self.causal_reasoner = container.get("causal_reasoner") or CausalReasoner()
         except Exception as e:
             logger.debug(f"CausalReasoner failed to initialize: {e}")
             self.causal_reasoner = None

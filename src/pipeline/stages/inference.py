@@ -89,6 +89,7 @@ class InferenceStage(PipelineStage):
 
         # Market God (The Omniscient Strategist)
         self.market_god = container.get('market_god')
+        self.bayesian_updater = container.get('bayesian_updater')
         self.smart_money = container.get('smart_money')
         self.philosophical_risk = container.get('philosophical_risk')
         self.auto_tuner = container.get('auto_tuner')
@@ -595,6 +596,29 @@ class InferenceStage(PipelineStage):
             except Exception as e:
                 logger.warning(f"AutoTuner silent for {match_id}: {e}")
 
+    def _apply_bayesian_update(self, context: Dict[str, Any], prediction: Dict[str, Any], match_id: str) -> None:
+        if hasattr(self, 'bayesian_updater') and self.bayesian_updater:
+            try:
+                # If we have live events from context (e.g. goals, red cards)
+                live_home_goals = context.get("live_home_goals")
+                live_away_goals = context.get("live_away_goals")
+
+                if live_home_goals is not None or live_away_goals is not None:
+                    prior_home = prediction.get("prob_home", 0.33)
+                    # Simple heuristic for likelihoods based on goals
+                    lh = 0.5 + (live_home_goals or 0) * 0.1 - (live_away_goals or 0) * 0.1
+                    la = 0.5 + (live_away_goals or 0) * 0.1 - (live_home_goals or 0) * 0.1
+
+                    lh = min(max(lh, 0.1), 0.9)
+                    la = min(max(la, 0.1), 0.9)
+
+                    post_home = self.bayesian_updater.update_probability(prior_home, lh, la)
+                    prediction["prob_home"] = post_home
+                    prediction["bayesian_adjusted"] = True
+                    prediction["god_narrative"] = prediction.get("god_narrative", "") + f" | Bayes Live Adjusted: {prior_home:.2f}->{post_home:.2f}"
+            except Exception as e:
+                logger.warning(f"Bayesian Updater silent for {match_id}: {e}")
+
     async def _analyze_single_match(self, context: Dict[str, Any]) -> Dict[str, Any]:
 
         """Analyze a single match using Ensemble, RAG, Similarity, Meta-Labeling, and Teleology."""
@@ -649,6 +673,9 @@ class InferenceStage(PipelineStage):
 
         # 9.8 AutoTuner Parameters
         self._apply_auto_tuner(context, prediction, match_id)
+
+        # 9.9 Bayesian Live Adjustment
+        self._apply_bayesian_update(context, prediction, match_id)
 
 
         # 10. Inject Risk Context and Epistemic Uncertainty
