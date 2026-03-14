@@ -489,11 +489,20 @@ class TelegramApp:
 
     async def _cmd_vision(self, update, context):
         try:
-            ceo_dash = container.get('ceo_dashboard')
-            report = ceo_dash.generate_report(None)
+            ceo_dash = getattr(self, "ceo_dashboard", None)
+            if not ceo_dash:
+                ceo_dash = container.get("ceo_dashboard")
+                self.ceo_dashboard = ceo_dash
+
+            if ceo_dash:
+                ceo_dash.market_god = getattr(self, "market_god", None) or container.get("market_god")
+                ceo_dash.smart_money = getattr(self, "smart_money", None) or container.get("smart_money")
+                report = ceo_dash.generate_report(None)
+            else:
+                report = '⚠️ CEO Dashboard Not Found'
         except Exception as e:
             logger.error(f"Exception in Telegram Mini App: {e}")
-            report = '⚠️ CEO Dashboard Not Found'
+            report = '⚠️ Error generating vision report'
         await update.message.reply_text(report, parse_mode="Markdown")
 
     async def _cmd_godmode(self, update, context):
@@ -504,6 +513,8 @@ class TelegramApp:
                 self.ceo_dashboard = ceo_dash
 
             if ceo_dash:
+                ceo_dash.market_god = getattr(self, "market_god", None) or container.get("market_god")
+                ceo_dash.smart_money = getattr(self, "smart_money", None) or container.get("smart_money")
                 greeks = ceo_dash.calculate_greeks()
                 msg = (
                     "⚡ **GOD MODE (Portfolio Greeks)** ⚡\n"

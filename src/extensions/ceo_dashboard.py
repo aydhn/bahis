@@ -27,7 +27,8 @@ class CEODashboard:
 
         try:
             self.boardroom = container.get("boardroom")
-        except Exception:
+        except Exception as e:
+            logger.debug(f"Boardroom failed to initialize: {e}")
             self.boardroom = Boardroom()
 
         try:
