@@ -201,7 +201,7 @@ class RiskStage(PipelineStage):
         arb_signal = context.get("arbitrage_signal")
         if arb_signal and hasattr(self, 'arb_executor') and self.arb_executor:
             match_id = arb_signal.get("match_id", "Unknown")
-            plan = self.arb_executor.plan_execution(match_id, arb_signal)
+            plan = self.arb_executor.plan_execution(match_id, arb_signal, apply_leverage=True)
             if plan.approved:
                 logger.success(f"RiskStage: Approving Arbitrage for {match_id} (ROI: {plan.roi:.2%})")
                 for leg in plan.legs:
