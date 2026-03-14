@@ -19,7 +19,7 @@ import signal
 from typing import Any, Dict
 from loguru import logger
 
-from src.reporting.telegram_bot import TelegramBot
+from src.ui.telegram_mini_app import TelegramApp as TelegramBot
 from src.pipeline.core import create_default_pipeline, PipelineEngine
 from src.pipeline.stages.execution import ExecutionStage
 from src.system.lifecycle import lifecycle
@@ -284,7 +284,8 @@ class Sentinel:
 
         # Botu başlat
         if self.bot.enabled:
-            asyncio.create_task(self.bot.start())
+            shutdown_event = asyncio.Event()
+            asyncio.create_task(self.bot.start(shutdown_event))
             await self.bot.send_message(
                 int(self.bot.token.split(":")[0]) if self.bot.token else 0, # Fallback ID
                 "🚀 *Sentinel Başlatıldı.*"

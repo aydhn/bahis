@@ -3,7 +3,7 @@ from typing import Dict, Any, Optional
 import asyncio
 from loguru import logger
 from src.pipeline.core import PipelineStage
-from src.reporting.telegram_bot import TelegramBot
+from src.ui.telegram_mini_app import TelegramApp as TelegramBot
 
 class ReportingStage(PipelineStage):
     """
@@ -29,7 +29,8 @@ class ReportingStage(PipelineStage):
 
         # Botu başlat (Arka planda polling)
         if self.bot and getattr(self.bot, 'enabled', False):
-            asyncio.create_task(self.bot.start())
+            shutdown_event = asyncio.Event()
+            asyncio.create_task(self.bot.start(shutdown_event))
 
         # Autonomous Performance Monitor
         try:
