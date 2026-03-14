@@ -42,6 +42,18 @@ class CEODashboard:
             logger.debug(f"CausalReasoner failed to initialize: {e}")
             self.causal_reasoner = None
 
+        try:
+            self.smart_money = container.get("smart_money")
+        except Exception as e:
+            logger.debug(f"SmartMoneyDetector failed to initialize: {e}")
+            self.smart_money = None
+
+        try:
+            self.market_god = container.get("market_god")
+        except Exception as e:
+            logger.debug(f"MarketGod failed to initialize: {e}")
+            self.market_god = None
+
         logger.debug("CEODashboard (God Mode) initialized.")
 
     def enforce_strategic_vision(self, god_signal: Any):
@@ -155,15 +167,12 @@ class CEODashboard:
         if self.causal_reasoner:
              causal_str = "Monitoring hidden confounders..."
 
-                # Smart Money greeks = self.calculate_greeks() Market God
-        from src.system.container import container
-        smart_money = container.get("smart_money")
-        market_god = container.get("market_god")
+        # Smart Money & Market God
         sm_summary = "No Steam Detected"
-        if smart_money and smart_money.history:
-            sm_summary = f"{len(smart_money.history)} active steam events"
+        if hasattr(self, "smart_money") and self.smart_money and hasattr(self.smart_money, "history") and self.smart_money.history:
+            sm_summary = f"{len(self.smart_money.history)} active steam events"
         god_summary = "God is silent"
-        if market_god:
+        if hasattr(self, "market_god") and self.market_god:
              god_summary = "God mode active"
 
         greeks = self.calculate_greeks()

@@ -419,6 +419,8 @@ class TelegramApp:
                 "hitl": self._cmd_hitl_stats,
                 "portfoy": self._cmd_portfolio,
                 "vision": self._cmd_vision,
+                "ceo": self._cmd_vision,
+                "warroom": self._cmd_vision,
                 "godmode": self._cmd_godmode,
                 "boardroom": self._cmd_boardroom,
             }
@@ -614,13 +616,11 @@ class TelegramApp:
     # ═══════════════════════════════════════════
     async def _cmd_report(self, update, context):
         try:
-            from src.system.container import container
-            ceo_dash = container.get('ceo_dashboard')
-            if ceo_dash:
-                report = ceo_dash.generate_report(None)
-                await update.message.reply_text(report, parse_mode="Markdown")
+            if hasattr(self, 'sentinel') and hasattr(self.sentinel, 'treasury') and self.sentinel.treasury:
+                report = self.sentinel.treasury.get_status()
+                await update.message.reply_text(f"🏦 **TREASURY REPORT**\n\n{report}", parse_mode="Markdown")
             else:
-                await update.message.reply_text("CEO Dashboard hazır değil.")
+                await update.message.reply_text("Treasury modülü hazır değil.")
         except Exception as e:
             await update.message.reply_text(f"Hata: {e}")
 
