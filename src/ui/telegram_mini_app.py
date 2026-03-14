@@ -23,6 +23,8 @@ from src.core.boardroom import Boardroom
 from src.system.container import container
 
 from src.extensions.ceo_dashboard import CEODashboard
+from src.extensions.smart_money import SmartMoneyDetector
+from src.extensions.market_god import MarketGod
 
 # Sabitler
 LOG_DIR = Path(__file__).resolve().parents[2] / "logs"
@@ -380,6 +382,18 @@ class TelegramApp:
         self.sentinel = None
         self.enabled = True
         self.ceo_dashboard = CEODashboard()
+        self.smart_money = getattr(container, 'get', lambda x: None)('smart_money')
+        if not self.smart_money:
+            self.smart_money = SmartMoneyDetector()
+
+        self.market_god = getattr(container, 'get', lambda x: None)('market_god')
+        if not self.market_god:
+            self.market_god = MarketGod()
+
+        # Inject into dashboard
+        self.ceo_dashboard.smart_money = self.smart_money
+        self.ceo_dashboard.market_god = self.market_god
+
         logger.debug("TelegramApp başlatıldı.")
 
     def set_sentinel(self, sentinel):

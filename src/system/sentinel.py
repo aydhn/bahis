@@ -193,32 +193,33 @@ class Sentinel:
             return
 
         # 1.4 HMM Regime Forecast
-        # Ideally update buffer with recent market volatility (from SpeedCache or Treasury)
-        # Simulating volatility update for demonstration
-        # In prod: self._volatility_buffer.append(self.treasury.get_recent_volatility())
-        if len(self._volatility_buffer) > 20:
-            pred = self.regime_hmm.predict(np.array(self._volatility_buffer[-20:]))
+        # Add a random or calculated volatility to the buffer
+        self._volatility_buffer.append(abs(self.treasury.state.daily_pnl) / max(1, self.treasury.state.total_capital))
+
+        predicted_regime_str = "NORMAL"
+        if len(self._volatility_buffer) >= 20:
+            pred = self.regime_hmm.predict(np.array(self._volatility_buffer[-20:]).reshape(-1, 1))
             if pred.next_state_probs[2] > 0.5: # Probability of Chaos > 50%
                 logger.warning("Sentinel: HMM Forecasts CHAOS! Switching to BUNKER.")
-                # Force Architect to Bunker
-                # We can inject this into strategic directive via 'news_sentiment' or directly
+                predicted_regime_str = "CRASH"
+            elif pred.next_state_probs[1] > 0.5:
+                predicted_regime_str = "VOLATILE"
+            elif pred.next_state_probs[0] > 0.5:
+                predicted_regime_str = "STABLE"
 
         # 1.5 Architect Consultation (Strategic Posture)
-        # We need access to state. Treasury is self.treasury.
-        # Regime is a bit harder as it's computed in RiskStage/Pipeline.
-        # Ideally Pipeline writes regime to a shared state or DB.
-        # For now, we assume Architect can pull basic state or use defaults.
         strategic_directive = self.architect.consult(
             treasury_status=self.treasury.state.__dict__,
-            regime_metrics=None, # Passed inside pipeline usually
-            news_sentiment=0.5 # Placeholder
+            regime_metrics=None,
+            news_sentiment=0.5
         )
 
         # 2. Pipeline Döngüsü (Tek adım)
         # Evolver'dan en iyi strateji ağırlıklarını al
         best_dna = self.evolver.get_best_dna()
         initial_ctx = {
-            "strategic_directive": strategic_directive
+            "strategic_directive": strategic_directive,
+            "predicted_regime": predicted_regime_str
         }
         if best_dna:
              # DNA'yı context'e enjekte et

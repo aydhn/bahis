@@ -169,11 +169,18 @@ class CEODashboard:
 
         # Smart Money & Market God
         sm_summary = "No Steam Detected"
-        if hasattr(self, "smart_money") and self.smart_money and hasattr(self.smart_money, "history") and self.smart_money.history:
-            sm_summary = f"{len(self.smart_money.history)} active steam events"
+        if hasattr(self, "smart_money") and self.smart_money:
+            try:
+                if hasattr(self.smart_money, "history") and self.smart_money.history:
+                    sm_summary = f"{len(self.smart_money.history)} active steam events"
+                elif hasattr(self.smart_money, "detect_steam"):
+                    sm_summary = "Smart Money scanner active."
+            except Exception as e:
+                sm_summary = f"SM Scanner Error: {str(e)[:20]}"
+
         god_summary = "God is silent"
         if hasattr(self, "market_god") and self.market_god:
-             god_summary = "God mode active"
+             god_summary = "God mode active, reading global flow"
 
         greeks = self.calculate_greeks()
         delta = greeks["delta"]
