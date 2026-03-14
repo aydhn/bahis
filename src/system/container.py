@@ -174,6 +174,13 @@ class DependencyContainer:
                 from src.extensions.regime_hmm import MarketRegimeHMM
                 self._services["regime_hmm"] = MarketRegimeHMM()
 
+            elif name == "causal_reasoner":
+                try:
+                    from src.quant.analysis.causal_reasoner import CausalReasoner
+                    self._services["causal_reasoner"] = CausalReasoner()
+                except ImportError:
+                    self._services["causal_reasoner"] = None
+
             elif name == "boardroom":
                 from src.core.boardroom import Boardroom
                 self._services["boardroom"] = Boardroom()

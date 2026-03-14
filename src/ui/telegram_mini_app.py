@@ -377,8 +377,14 @@ class TelegramApp:
         self._portfolio = ctx.portfolio # PortfolioOptimizer
         self._bot = None
         self._app = None
+        self._ready = False
+        self.sentinel = None
+        self.enabled = True
         self.ceo_dashboard = CEODashboard()
         logger.debug("TelegramApp başlatıldı.")
+
+    def set_sentinel(self, sentinel):
+        self.sentinel = sentinel
 
     @property
     def notifier(self) -> TelegramNotifier:
@@ -910,3 +916,19 @@ class TelegramApp:
     # ═══════════════════════════════════════════
     async def send_signal(self, chat_id: int | str, signal: dict):
         await self._notifier.send_value_alert(signal)
+
+    # ═══════════════════════════════════════════
+    #  /shutdown - Kapatma
+    # ═══════════════════════════════════════════
+    async def _cmd_shutdown(self, update, context):
+        from src.system.config import settings
+        user_id = str(update.effective_user.id)
+        allowed_users = [u.strip() for u in settings.TELEGRAM_ALLOWED_USERS.split(',') if u.strip()]
+
+        if allowed_users and user_id not in allowed_users:
+            await update.message.reply_text("⛔ Yetkisiz.", parse_mode="HTML")
+            return
+
+        await update.message.reply_text("🔴 Sistem kapatılıyor...", parse_mode="HTML")
+        if getattr(self, "sentinel", None) and hasattr(self.sentinel, "shutdown"):
+            self.sentinel.shutdown()

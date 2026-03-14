@@ -1,4 +1,4 @@
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, AsyncMock
 import sys
 import unittest
 import asyncio
@@ -18,14 +18,12 @@ class TestTelegramAuth(unittest.TestCase):
         original_allowed = settings.TELEGRAM_ALLOWED_USERS
         settings.TELEGRAM_ALLOWED_USERS = "111111,222222"
 
-
         try:
-            import src.reporting.telegram_bot as tb
-            # Brutal mock container
+            import src.ui.telegram_mini_app as tb
             tb.container = MagicMock()
             tb.container.get.return_value = MagicMock()
 
-            from src.reporting.telegram_bot import TelegramBot
+            from src.ui.telegram_mini_app import TelegramApp as TelegramBot
 
             bot = TelegramBot()
             sentinel_mock = MagicMock()
@@ -34,22 +32,19 @@ class TestTelegramAuth(unittest.TestCase):
             cases = [
                 (111111, True, "Allowed User 1"),
                 (222222, True, "Allowed User 2"),
-                (333333, True, "Legacy Admin"),
+                (333333, False, "Legacy Admin"),
                 (444444, False, "Unauthorized User"),
             ]
 
             async def run_cases():
                 for chat_id, expected, name in cases:
                     sentinel_mock.reset_mock()
-                    update = {
-                        "update_id": 1,
-                        "message": {
-                            "chat": {"id": chat_id},
-                            "text": "/shutdown"
-                        }
-                    }
 
-                    await bot._handle_update(update)
+                    mock_update = MagicMock()
+                    mock_update.effective_user.id = chat_id
+                    mock_update.message.reply_text = AsyncMock()
+
+                    await bot._cmd_shutdown(mock_update, None)
 
                     if expected:
                         self.assertTrue(sentinel_mock.shutdown.called, f"{name} failed to authorize")
