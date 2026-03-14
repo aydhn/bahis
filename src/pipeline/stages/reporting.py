@@ -30,7 +30,11 @@ class ReportingStage(PipelineStage):
         # Botu başlat (Arka planda polling)
         if self.bot and getattr(self.bot, 'enabled', False):
             shutdown_event = asyncio.Event()
-            asyncio.create_task(self.bot.start(shutdown_event))
+            try:
+                loop = asyncio.get_running_loop()
+                loop.create_task(self.bot.start(shutdown_event))
+            except RuntimeError:
+                pass
 
         # Autonomous Performance Monitor
         try:

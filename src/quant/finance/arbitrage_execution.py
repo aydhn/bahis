@@ -45,10 +45,10 @@ class ArbitrageExecutionManager:
 
     def __init__(self):
         self.liquidity = LiquidityEngine()
+        self.treasury = container.get('treasury')
         logger.info("ArbitrageExecutionManager initialized. Maximizing risk-free yield.")
 
-    def _get_treasury(self) -> Optional[TreasuryEngine]:
-        return container.get("treasury")
+
 
     def plan_execution(self, match_id: str, arb_signal: Dict[str, Any], max_total_stake: float = 1000.0, apply_leverage: bool = False) -> ArbExecutionPlan:
         """
@@ -81,7 +81,7 @@ class ArbitrageExecutionManager:
             return ArbExecutionPlan(match_id, 0.0, 0.0, 0.0, [], False, "Missing odds data in signal")
 
         # 1. Request capital from Treasury
-        treasury = self._get_treasury()
+        treasury = self.treasury
 
         # Aggressive Leverage: If edge is huge (implied_prob < 0.95), we ask for up to 3x the max_stake
         requested_capital = max_total_stake
