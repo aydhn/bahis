@@ -391,6 +391,8 @@ class TelegramApp:
         return self._notifier
 
     async def start(self, shutdown: asyncio.Event):
+        # Start bot when running within valid event loop
+
         if not self._token:
             logger.info("Telegram token yok – bot demo modunda.")
             await self._demo_mode(shutdown)
