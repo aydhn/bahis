@@ -55,9 +55,9 @@ class Sentinel:
         self.bus = EventBus()
         self.portfolio_manager = PortfolioManager(self.bus)
         # 0.05 Dynamic Hedging (Financial Engine)
-        from src.extensions.dynamic_hedging import DynamicHedgingEngine
-        self.hedging_engine = DynamicHedgingEngine(self.bus, None) # Treasury attached later if needed
-        self.bus.subscribe("odds_tick", self.hedging_engine.handle_odds_tick)
+        self.hedging_engine = container.get('dynamic_hedging')
+        if self.hedging_engine:
+            self.bus.subscribe("odds_tick", self.hedging_engine.handle_odds_tick)
 
 
         # 0.1 Flash Reaction (Odds Stream Listener)
@@ -80,6 +80,7 @@ class Sentinel:
             from src.extensions.regime_hmm import MarketRegimeHMM
             self.regime_hmm = MarketRegimeHMM()
         self._volatility_buffer = []
+        self._alpha_signals = []
 
         # 1. Bot Entegrasyonu
         self.bot = TelegramBot()
