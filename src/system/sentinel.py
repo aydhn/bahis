@@ -171,8 +171,19 @@ class Sentinel:
     async def _on_alpha_signal(self, event):
         """Handle Alpha signals emitted by AlphaGenerator."""
         data = event.data
-        msg = f"🐺 **ALPHA DETECTED** 🐺\nType: {data.get('type')}\nConf: {data.get('confidence', 0)*100:.1f}%\nMetric: {data.get('metric_value')}\nAction: {data.get('action')}"
+        msg = f"""🐺 **ALPHA DETECTED** 🐺
+Type: {data.get('type')}
+Conf: {data.get('confidence', 0)*100:.1f}%
+Metric: {data.get('metric_value')}
+Action: {data.get('action')}"""
         logger.success(msg)
+
+        # Buffer alpha signals natively into pipeline context execution
+        self._alpha_signals.append({
+            "match_id": data.get("match_id", "GLOBAL_ANOMALY"),
+            "signal": data
+        })
+
         if hasattr(self, 'bot') and self.bot and self.bot._ready:
             try:
                 # We can use send or send_message if defined
@@ -220,8 +231,11 @@ class Sentinel:
         best_dna = self.evolver.get_best_dna()
         initial_ctx = {
             "strategic_directive": strategic_directive,
-            "predicted_regime": predicted_regime_str
+            "predicted_regime": predicted_regime_str,
+            "alpha_opportunities": self._alpha_signals.copy()
         }
+        self._alpha_signals.clear()
+
         if best_dna:
              # DNA'yı context'e enjekte et
              dna_dict = best_dna.to_dict()

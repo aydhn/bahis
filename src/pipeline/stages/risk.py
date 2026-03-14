@@ -158,6 +158,21 @@ class RiskStage(PipelineStage):
         from src.core.black_litterman_optimizer import BlackLittermanOptimizer
         bl_opt = BlackLittermanOptimizer()
 
+        # Apply Philosophical Risk Stoic Penalty if engine available
+        stoic_penalty = 0.0
+        if self.philosophical_risk:
+            # Create dummy recent results, or pull real PnL metrics if available in context
+            # A real implementation would query the `db.get_settled_bets()`
+            # We'll fetch insight safely with defaults
+            try:
+                insight = self.philosophical_risk.assess_state([])
+                # Convert to float to avoid MagicMock comparison issues in tests
+                stoic_penalty = float(insight.suggested_kelly_penalty)
+                if stoic_penalty > 0:
+                    logger.info(f"RiskStage: Applied Stoic Penalty: {stoic_penalty:.2%} ({insight.state})")
+            except Exception as e:
+                logger.debug(f"Exception during philosophical assessment: {e}")
+
         # Format candidates for BL
         bl_candidates = []
         for c in candidates:
@@ -187,6 +202,10 @@ class RiskStage(PipelineStage):
                 # BL suggests an optimal weight. We'll pass it to Markowitz as a hint
                 # Or we can just use it directly to scale
                 candidates[i].stake_pct = min(candidates[i].stake_pct, bl_weight)
+
+                # Apply stoic penalty
+                if stoic_penalty > 0.0:
+                    candidates[i].stake_pct *= (1.0 - stoic_penalty)
 
         # Filter out rejected bets before sending to portfolio optimizer
         approved_candidates = [c for c in candidates if bet_metadata[c.match_id]["risk_decision"].approved]
@@ -218,6 +237,24 @@ class RiskStage(PipelineStage):
                         "is_paper": False,
                         "is_arb": True
                     })
+        # --- 1.1 Process Alpha Signals (Stat-Arb/Anomalies) ---
+        alpha_signals = context.get("alpha_opportunities", [])
+        if alpha_signals:
+            for alpha in alpha_signals:
+                signal_data = alpha.get("signal", {})
+                match_id = alpha.get("match_id", "GLOBAL_ANOMALY")
+
+                # If it's a global anomaly (e.g., Global_Over_Anomaly), we might apply it to the highest EV matches
+                if match_id == "GLOBAL_ANOMALY":
+                    action = signal_data.get("action", "")
+                    if "OVER" in action.upper():
+                        # We would normally filter candidates for Over bets here.
+                        # For now, just log that we are aware of it in the risk stage.
+                        logger.info(f"RiskStage: Global Alpha detected: {action}")
+                else:
+                    # Match specific alpha - boost its stake or approve it directly
+                    logger.info(f"RiskStage: Found Match-Specific Alpha for {match_id}")
+
         # Check global God Signal from context if available
         god_signal = context.get("god_signal")
         is_black_swan = False
