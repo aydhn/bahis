@@ -126,8 +126,7 @@ class TelegramNotifier:
     # ═══════════════════════════════════════════
     #  VALUE MAÇ BİLDİRİMİ
     # ═══════════════════════════════════════════
-    async def send_value_alert(self, signal: dict,
-                              signal_id: str = "") -> bool:
+    async def send_value_alert(self, signal: dict, signal_id: str = "") -> bool:
         """Value maç bildirimi – interaktif butonlu (Human-in-the-Loop)."""
         ev = signal.get("ev", 0)
         conf = signal.get("confidence", 0)

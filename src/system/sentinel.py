@@ -178,7 +178,7 @@ class Sentinel:
                 if hasattr(self.bot, 'send'):
                     await self.bot.send(msg)
                 elif hasattr(self.bot, 'send_message'):
-                        await self.bot.send_message(self.bot._chat_id, msg)
+                    await self.bot.send_message(self.bot._chat_id, msg)
             except Exception as e:
                 logger.error(f"Error sending alpha alert: {e}")
 
@@ -188,7 +188,7 @@ class Sentinel:
         if not self._check_health():
             logger.warning("Sentinel: Sistem sağlığı KRİTİK. Devre Kesici AÇIK. 5 dakika bekleniyor.")
             if self.bot and self.bot.enabled:
-                 await self.bot.send_risk_alert("CIRCUIT BREAKER", "Sistem finansal koruma moduna geçti. İşlemler durduruldu.")
+                 await self.bot.send("⚠️ <b>CIRCUIT BREAKER</b>\nSistem finansal koruma moduna geçti. İşlemler durduruldu.")
             await asyncio.sleep(300)
             return
 
@@ -289,10 +289,7 @@ class Sentinel:
                 asyncio.create_task(self.bot.start(shutdown_event))
             except RuntimeError:
                 logger.warning("Event loop not running yet. Bot start delayed.")
-                await self.bot.send_message(
-                int(self.bot.token.split(":")[0]) if self.bot.token else 0, # Fallback ID
-                "🚀 *Sentinel Başlatıldı.*"
-            )
+                await self.bot.send("🚀 *Sentinel Başlatıldı.*", str(self.bot.token.split(":")[0]) if self.bot.token else None)
 
         # Start Background Services
         if self.daemon_mode:
@@ -387,10 +384,7 @@ class Sentinel:
                  new_mode = "NORMAL"
 
         if new_mode and self.bot:
-                 await self.bot.send_message(
-                 int(self.bot.token.split(":")[0]) if self.bot.token else 0,
-                 f"🤖 *Otonom Risk Ayarı*\nROI: %{roi*100:.2f}\nYeni Mod: *{new_mode}*"
-             )
+                 await self.bot.send(f"🤖 *Otonom Risk Ayarı*\nROI: %{roi*100:.2f}\nYeni Mod: *{new_mode}*", str(self.bot.token.split(":")[0]) if self.bot.token else None)
 
     async def _handle_flash_reaction_with_hedging(self, event: Any):
         """
@@ -480,10 +474,7 @@ class Sentinel:
                     await self.bus.emit(Event("hedge_order", data=event_data))
 
                     if self.bot and self.bot.enabled:
-                        await self.bot.send_risk_alert(
-                            f"⚡ SNIPER HEDGE: {hedge_signal['action']}",
-                            f"Match: {match_id}\nFlash Move Z-Score: {z_score:.2f}\nAction: {hedge_signal['reason']}"
-                        )
+                        await self.bot.send(f"⚡ <b>SNIPER HEDGE: {hedge_signal['action']}</b>\nMatch: {match_id}\nFlash Move Z-Score: {z_score:.2f}\nAction: {hedge_signal['reason']}")
 
     async def _run_hedge_monitor(self):
         """
@@ -557,10 +548,7 @@ class Sentinel:
 
                             # Notify User immediately via Bot if critical
                             if self.bot and self.bot.enabled:
-                                await self.bot.send_risk_alert(
-                                    f"HEDGE SIGNAL: {hedge_signal['action']}",
-                                    f"Match: {match_id}\nReason: {hedge_signal['reason']}"
-                                )
+                                await self.bot.send(f"⚠️ <b>HEDGE SIGNAL: {hedge_signal['action']}</b>\nMatch: {match_id}\nReason: {hedge_signal['reason']}")
 
                 # Sleep to prevent tight loop
                 await asyncio.sleep(10)
@@ -684,13 +672,7 @@ class Sentinel:
                                 logger.debug(f"Exception caught: {e}")
 
                         if chat_id:
-                                await self.bot.send_message(
-                                chat_id,
-                                f"🧬 **Strateji Evrimi**\n"
-                                f"Gen: #{report.generation}\n"
-                                f"Fitness: {report.best_fitness:.4f}\n"
-                                f"İyileşme: {', '.join(report.improvements)}"
-                            )
+                                await self.bot.send(f"🧬 **Strateji Evrimi**\nGen: #{report.generation}\nFitness: {report.best_fitness:.4f}\nİyileşme: {', '.join(report.improvements)}", str(chat_id))
             except Exception as e:
                 logger.error(f"Sentinel: Evrim sırasında hata: {e}")
         else:
