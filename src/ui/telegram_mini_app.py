@@ -498,14 +498,21 @@ class TelegramApp:
 
     async def _cmd_godmode(self, update, context):
         try:
-            ceo_dash = container.get("ceo_dashboard")
-            greeks = ceo_dash.calculate_greeks()
-            msg = (
-                "⚡ **GOD MODE (Portfolio Greeks)** ⚡\n"
-                f"Δ (Delta - Directional Bias): `{greeks.get('delta', 0.0):.2f}`\n"
-                f"Γ (Gamma - Convexity): `{greeks.get('gamma', 0.0):.2f}`\n"
-                f"ν (Vega - Volatility Exposure): `{greeks.get('vega', 0.0):.2f}`"
-            )
+            ceo_dash = getattr(self, "ceo_dashboard", None)
+            if not ceo_dash:
+                ceo_dash = container.get("ceo_dashboard")
+                self.ceo_dashboard = ceo_dash
+
+            if ceo_dash:
+                greeks = ceo_dash.calculate_greeks()
+                msg = (
+                    "⚡ **GOD MODE (Portfolio Greeks)** ⚡\n"
+                    f"Δ (Delta - Directional Bias): `{greeks.get('delta', 0.0):.2f}`\n"
+                    f"Γ (Gamma - Convexity): `{greeks.get('gamma', 0.0):.2f}`\n"
+                    f"ν (Vega - Volatility Exposure): `{greeks.get('vega', 0.0):.2f}`"
+                )
+            else:
+                msg = "⚠️ CEO Dashboard aktif değil."
             await update.message.reply_text(msg, parse_mode="Markdown")
         except Exception as e:
             logger.error(f"Godmode error: {e}")
@@ -755,11 +762,25 @@ class TelegramApp:
     #  /volatility
     # ═══════════════════════════════════════════
     async def _cmd_volatility(self, update, context):
-        text = (
-            "📈 <b>TAKIM VOLATİLİTE ENDEKSİ</b>\n"
-            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
-            "<i>Volatilite verileri yükleniyor…</i>"
-        )
+        try:
+            ceo_dash = getattr(self, "ceo_dashboard", None)
+            if not ceo_dash:
+                ceo_dash = container.get("ceo_dashboard")
+                self.ceo_dashboard = ceo_dash
+
+            if ceo_dash:
+                greeks = ceo_dash.calculate_greeks()
+                text = (
+                    "📈 <b>PORTFÖY VOLATİLİTE ENDEKSİ (VIX)</b>\n"
+                    "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+                    f"ν (Vega - Volatility Exposure): {greeks.get('vega', 0.0):.2f}\n"
+                    f"Δ (Delta - Directional Bias): {greeks.get('delta', 0.0):.2f}\n"
+                    f"Γ (Gamma - Convexity): {greeks.get('gamma', 0.0):.2f}\n"
+                )
+            else:
+                text = "⚠️ <i>CEO Dashboard aktif değil. Volatilite verisi alınamıyor.</i>"
+        except Exception as e:
+            text = f"❌ Hata: {e}"
         await update.message.reply_text(text, parse_mode="HTML")
 
     # ═══════════════════════════════════════════

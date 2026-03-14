@@ -25,6 +25,7 @@ from enum import Enum
 
 import numpy as np
 from loguru import logger
+from src.system.container import container
 
 from src.quant.finance.liquidity_engine import LiquidityEngine
 
@@ -116,7 +117,18 @@ class PortfolioOptimizer:
         corr = self._build_correlation_matrix(candidates)
 
         # 2. Her bahisin ham stake'i (Kelly) ve EV'si
-        raw_stakes = np.array([c.stake_pct for c in candidates])
+        kelly_benter = container.get('kelly_benter')
+        raw_stakes_list = []
+        for c in candidates:
+            if kelly_benter:
+                # KellyBenterOptimizer incorporates dynamic exposure caps
+                conf = getattr(c, 'confidence', 0.5)
+                # To preserve Kelly Criterion math properly when applying Benter's confidence bounds, the fractions should be linearly multiplied with confidence weights
+                fraction = kelly_benter.calculate_fraction(c.prob_model, c.odds, conf)
+                raw_stakes_list.append(fraction)
+            else:
+                raw_stakes_list.append(c.stake_pct)
+        raw_stakes = np.array(raw_stakes_list)
         evs = np.array([c.ev for c in candidates])
 
         # Sadece pozitif EV olan bahisleri al
