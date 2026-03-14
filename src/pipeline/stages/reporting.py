@@ -47,8 +47,6 @@ class ReportingStage(PipelineStage):
     async def execute(self, context: Dict[str, Any]) -> Dict[str, Any]:
         # 0. Context'i Bot'a aktar (Shared Memory)
         ctx = context.get("ctx")
-        if ctx:
-            self.bot.set_context(ctx)
 
         # 0.5 Run Performance Monitor (Autonomous Feedback Loop)
         if self.monitor:
@@ -56,7 +54,6 @@ class ReportingStage(PipelineStage):
                 perf_report = await self.monitor.update_results()
                 if perf_report:
                     context["performance_report"] = perf_report
-                    self.bot.set_performance_report(perf_report)
                     # Alerts are handled via EventBus in monitor, but let's log ROI
                     roi = perf_report.get("roi", 0.0)
                     logger.info(f"Performance Monitor ROI: {roi:.2%}")
@@ -71,23 +68,20 @@ class ReportingStage(PipelineStage):
 
         # 0.8 God Mode Report
         if context.get("send_summary", True):
-            if hasattr(self.bot, 'send_godmode_report'):
-                await self.bot.send_godmode_report(ctx)
-            else:
-                report = self.ceo_dashboard.generate_report(ctx)
-                if report:
-                    await self.bot.send_message(report)
+            report = self.ceo_dashboard.generate_report(ctx)
+            if report:
+                await self.bot.send(report)
 
         bets = context.get("final_bets", [])
 
         # 1. Bahis Sinyalleri
         for bet in bets:
-            await self.bot.send_bet_signal(bet)
+            await self.bot.send_value_alert(bet)
 
         # 2. Risk Uyarıları (Pipeline generated)
         risk_alerts = context.get("risk_alerts", [])
         for alert in risk_alerts:
-            await self.bot.send_risk_alert(alert.get("type"), alert.get("msg"))
+            await self.bot.send(f'⚠️ RISK ALERT: {alert.get("type")} - {alert.get("msg")}')
 
         # 3. Executive Summary (Opsiyonel)
         if context.get("send_summary", False):

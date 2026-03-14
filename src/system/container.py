@@ -120,45 +120,72 @@ class DependencyContainer:
                 self._services["alpha_generator"] = AlphaGenerator(self.get("event_bus"))
 
             elif name == "auto_tuner":
-                from src.extensions.auto_tuner import AutoTuner
-                self._services["auto_tuner"] = AutoTuner()
+                try:
+                    from src.extensions.auto_tuner import AutoTuner
+                    self._services["auto_tuner"] = AutoTuner()
+                except ImportError:
+                    self._services["auto_tuner"] = None  # type: ignore
 
             elif name == "sentiment_alpha":
-                from src.extensions.sentiment_alpha import SentimentAlphaEngine
-                self._services["sentiment_alpha"] = SentimentAlphaEngine()
+                try:
+                    from src.extensions.sentiment_alpha import SentimentAlphaEngine
+                    self._services["sentiment_alpha"] = SentimentAlphaEngine()
+                except ImportError:
+                    self._services["sentiment_alpha"] = None  # type: ignore
 
             elif name == "ceo_dashboard":
                 from src.extensions.ceo_dashboard import CEODashboard
                 self._services["ceo_dashboard"] = CEODashboard()
 
             elif name == "kelly_benter":
-                from src.extensions.kelly_benter_optimizer import KellyBenterOptimizer
-                self._services["kelly_benter"] = KellyBenterOptimizer()
+                try:
+                    from src.extensions.kelly_benter_optimizer import KellyBenterOptimizer
+                    self._services["kelly_benter"] = KellyBenterOptimizer()
+                except ImportError:
+                    self._services["kelly_benter"] = None  # type: ignore
 
             elif name == "philosophical_risk":
-                from src.extensions.philosophical_risk import PhilosophicalRiskEngine
-                self._services["philosophical_risk"] = PhilosophicalRiskEngine()
+                try:
+                    from src.extensions.philosophical_risk import PhilosophicalRiskEngine
+                    self._services["philosophical_risk"] = PhilosophicalRiskEngine()
+                except ImportError:
+                    self._services["philosophical_risk"] = None  # type: ignore
 
             elif name == "quantum_pricing":
-                from src.extensions.quantum_pricing_model import QuantumPricingModel
-                self._services["quantum_pricing"] = QuantumPricingModel()
+                try:
+                    from src.extensions.quantum_pricing_model import QuantumPricingModel
+                    self._services["quantum_pricing"] = QuantumPricingModel()
+                except ImportError:
+                    self._services["quantum_pricing"] = None  # type: ignore
 
             elif name == "dynamic_hedging":
-                from src.extensions.dynamic_hedging import DynamicHedgingEngine
-                # Dependencies injected manually in Sentinel
-                self._services["dynamic_hedging"] = DynamicHedgingEngine(None, None)
+                try:
+                    from src.extensions.dynamic_hedging import DynamicHedgingEngine
+                    # Dependencies injected manually in Sentinel
+                    self._services["dynamic_hedging"] = DynamicHedgingEngine(None, None)
+                except ImportError:
+                    self._services["dynamic_hedging"] = None  # type: ignore
 
             elif name == "opportunity_scanner":
-                from src.extensions.opportunity_scanner import OpportunityScanner
-                self._services["opportunity_scanner"] = OpportunityScanner(self.get("event_bus"))
+                try:
+                    from src.extensions.opportunity_scanner import OpportunityScanner
+                    self._services["opportunity_scanner"] = OpportunityScanner(self.get("event_bus"))
+                except ImportError:
+                    self._services["opportunity_scanner"] = None  # type: ignore
 
             elif name == "bayesian_updater":
-                from src.extensions.bayesian_updater import BayesianOddsUpdater
-                self._services["bayesian_updater"] = BayesianOddsUpdater()
+                try:
+                    from src.extensions.bayesian_updater import BayesianOddsUpdater
+                    self._services["bayesian_updater"] = BayesianOddsUpdater()
+                except ImportError:
+                    self._services["bayesian_updater"] = None  # type: ignore
 
             elif name == "macro_correlation":
-                from src.extensions.macro_correlation import MacroCorrelationEngine
-                self._services["macro_correlation"] = MacroCorrelationEngine()
+                try:
+                    from src.extensions.macro_correlation import MacroCorrelationEngine
+                    self._services["macro_correlation"] = MacroCorrelationEngine()
+                except ImportError:
+                    self._services["macro_correlation"] = None  # type: ignore
 
             elif name == "rl_agent":
                 try:
@@ -171,8 +198,11 @@ class DependencyContainer:
                     self._services["rl_agent"] = None
 
             elif name == "regime_hmm":
-                from src.extensions.regime_hmm import MarketRegimeHMM
-                self._services["regime_hmm"] = MarketRegimeHMM()
+                try:
+                    from src.extensions.regime_hmm import MarketRegimeHMM
+                    self._services["regime_hmm"] = MarketRegimeHMM()
+                except ImportError:
+                    self._services["regime_hmm"] = None  # type: ignore
 
             elif name == "causal_reasoner":
                 try:
