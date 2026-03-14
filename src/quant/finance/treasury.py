@@ -22,6 +22,7 @@ from typing import Dict, Any, Optional
 
 from loguru import logger
 from src.system.config import settings
+from src.system.container import container
 
 @dataclass
 class TreasuryState:
@@ -65,6 +66,15 @@ class TreasuryEngine:
             return 0.0
 
         return stake
+
+    def get_auto_tuner_params(self) -> dict:
+        """
+        Fetch the optimal dynamic parameters like kelly_fraction from AutoTuner
+        """
+        auto_tuner = container.get("auto_tuner")
+        if auto_tuner:
+            return auto_tuner.get_current_params()
+        return {"kelly_fraction": 0.25}
 
     def request_capital(self, amount: float, strategy_type: str = "safe") -> float:
         """

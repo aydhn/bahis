@@ -26,6 +26,7 @@ from enum import Enum
 import numpy as np
 from loguru import logger
 from src.system.container import container
+from src.extensions.fast_math import fast_entropy
 
 from src.quant.finance.liquidity_engine import LiquidityEngine
 
@@ -136,6 +137,15 @@ class PortfolioOptimizer:
         if not positive_mask.any():
             logger.info("[Portfolio] Pozitif EV yok – bahis yok.")
             return []
+
+        # Calculate fast entropy of probabilities to log portfolio complexity
+        try:
+            probs_array = np.array([c.prob_model for c in candidates], dtype=np.float64)
+            if len(probs_array) > 0:
+                p_entropy = fast_entropy(probs_array)
+                logger.info(f"Portfolio Optimization running. Candidates: {len(candidates)}, Entropy: {p_entropy:.4f}")
+        except Exception as e:
+            logger.debug(f"Exception caught during fast_entropy calculation: {e}")
 
         # 3. Korelasyon düzeltmesi (Rejime duyarlı)
         risk_aversion = self._get_risk_aversion(regime)

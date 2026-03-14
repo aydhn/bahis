@@ -696,6 +696,19 @@ class InferenceStage(PipelineStage):
         self._apply_bayesian_update(context, prediction, match_id)
 
 
+        # Inject Alpha Opportunities
+        alpha_opps = context.get("alpha_opportunities", [])
+        if alpha_opps:
+            for opp in alpha_opps:
+                if opp.get("match_id") == "GLOBAL_ANOMALY":
+                    # For global anomalies, adjust the confidence or probability globally
+                    # Since this is a match-specific function, we just add it to the narrative
+                    prediction["god_narrative"] = prediction.get("god_narrative", "") + f" | GLOBAL ALPHA: {opp.get('signal', {}).get('type')}"
+                elif opp.get("match_id") == match_id:
+                    # Match specific anomaly
+                    prediction["alpha_signal"] = opp.get("signal")
+                    prediction["god_narrative"] = prediction.get("god_narrative", "") + f" | MATCH ALPHA: {opp.get('signal', {}).get('type')}"
+
         # 10. Inject Risk Context and Epistemic Uncertainty
         prediction["regime_status"] = context.get("_regime_status", "NORMAL")
         prediction["kelly_fraction"] = context.get("_kelly_fraction", 1.0)
