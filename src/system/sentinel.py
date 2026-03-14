@@ -178,7 +178,7 @@ class Sentinel:
                 if hasattr(self.bot, 'send'):
                     await self.bot.send(msg)
                 elif hasattr(self.bot, 'send_message'):
-                    await self.bot.send_message(self.bot._chat_id, msg)
+                        await self.bot.send_message(self.bot._chat_id, msg)
             except Exception as e:
                 logger.error(f"Error sending alpha alert: {e}")
 
@@ -285,8 +285,11 @@ class Sentinel:
         # Botu başlat
         if self.bot.enabled:
             shutdown_event = asyncio.Event()
-            asyncio.create_task(self.bot.start(shutdown_event))
-            await self.bot.send_message(
+            try:
+                asyncio.create_task(self.bot.start(shutdown_event))
+            except RuntimeError:
+                logger.warning("Event loop not running yet. Bot start delayed.")
+                await self.bot.send_message(
                 int(self.bot.token.split(":")[0]) if self.bot.token else 0, # Fallback ID
                 "🚀 *Sentinel Başlatıldı.*"
             )
@@ -384,7 +387,7 @@ class Sentinel:
                  new_mode = "NORMAL"
 
         if new_mode and self.bot:
-             await self.bot.send_message(
+                 await self.bot.send_message(
                  int(self.bot.token.split(":")[0]) if self.bot.token else 0,
                  f"🤖 *Otonom Risk Ayarı*\nROI: %{roi*100:.2f}\nYeni Mod: *{new_mode}*"
              )
@@ -681,7 +684,7 @@ class Sentinel:
                                 logger.debug(f"Exception caught: {e}")
 
                         if chat_id:
-                            await self.bot.send_message(
+                                await self.bot.send_message(
                                 chat_id,
                                 f"🧬 **Strateji Evrimi**\n"
                                 f"Gen: #{report.generation}\n"
