@@ -6,7 +6,7 @@ to manage the psychological and mathematical risk of the algorithmic system.
 Provides insights to the CEO Dashboard to temper irrational exuberance or panic.
 """
 from dataclasses import dataclass
-from typing import Dict, Any, List
+from typing import Dict, List
 import numpy as np
 from loguru import logger
 
