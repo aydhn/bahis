@@ -5,7 +5,7 @@ Runs asynchronously in the background, checking API streams or DB for
 suddenly mispriced lines (e.g., injuries announced).
 """
 import asyncio
-from typing import Dict, Any, Optional
+from typing import Dict, Optional
 from loguru import logger
 from src.core.event_bus import EventBus, Event
 
