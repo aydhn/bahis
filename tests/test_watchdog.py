@@ -14,26 +14,29 @@ import src.system.watchdog as watchdog
 # Ensure TELEGRAM_TOKEN and TELEGRAM_CHAT_ID are available for testing send_alert
 @patch('src.system.watchdog.TELEGRAM_TOKEN', 'fake_token')
 @patch('src.system.watchdog.TELEGRAM_CHAT_ID', 'fake_chat_id')
-@patch('src.system.watchdog.requests.post')
+@patch('src.system.watchdog.httpx.AsyncClient.post')
 @patch('src.system.watchdog.logger')
-def test_send_alert_success(mock_logger, mock_post):
-    send_alert("Test message")
+@pytest.mark.asyncio
+async def test_send_alert_success(mock_logger, mock_post):
+    await send_alert("Test message")
     mock_post.assert_called_once()
     mock_logger.error.assert_not_called()
 
 @patch('src.system.watchdog.TELEGRAM_TOKEN', 'fake_token')
 @patch('src.system.watchdog.TELEGRAM_CHAT_ID', 'fake_chat_id')
-@patch('src.system.watchdog.requests.post', side_effect=Exception("Network error"))
+@patch('src.system.watchdog.httpx.AsyncClient.post', side_effect=Exception("Network error"))
 @patch('src.system.watchdog.logger')
-def test_send_alert_failure(mock_logger, mock_post):
-    send_alert("Test message")
+@pytest.mark.asyncio
+async def test_send_alert_failure(mock_logger, mock_post):
+    await send_alert("Test message")
     mock_post.assert_called_once()
     mock_logger.error.assert_called_with("Failed to send alert: Network error")
 
 @patch('src.system.watchdog.TELEGRAM_TOKEN', None)
 @patch('src.system.watchdog.logger')
-def test_send_alert_no_token(mock_logger):
-    send_alert("Test message")
+@pytest.mark.asyncio
+async def test_send_alert_no_token(mock_logger):
+    await send_alert("Test message")
     mock_logger.warning.assert_called_with("Telegram not configured. Alert: Test message")
 
 @pytest.mark.asyncio
