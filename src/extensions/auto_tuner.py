@@ -6,7 +6,6 @@ hyper-parameters (like the base Kelly Fraction and Risk thresholds) based on
 recent rolling win rates and edge capture.
 """
 from typing import Dict, List, Any
-import numpy as np
 from loguru import logger
 from dataclasses import dataclass
 
