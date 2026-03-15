@@ -4,7 +4,7 @@ bayesian_updater.py - Bayesian Odds Updater.
 Adjusts the prior probability of a match outcome based on live events
 (goals, red cards, xG momentum) using Bayes' theorem.
 """
-from typing import Dict, Any, Optional
+from typing import Dict, Optional
 from loguru import logger
 
 class BayesianOddsUpdater:
