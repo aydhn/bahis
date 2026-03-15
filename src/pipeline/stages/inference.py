@@ -2,7 +2,6 @@ from src.system.container import container
 from src.extensions.quantum_pricing_model import QuantumPricingModel
 from typing import Any, Dict
 import asyncio
-import functools
 from loguru import logger
 import polars as pl
 import numpy as np
