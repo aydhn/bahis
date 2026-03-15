@@ -5,7 +5,6 @@ Combines Bill Benter's confidence principles with strict fund-manager risk guard
 to calculate precise capital allocations.
 """
 from typing import Dict, Any, List
-import numpy as np
 from loguru import logger
 from scipy.optimize import minimize
 from src.quant.risk.kelly import AdaptiveKelly
