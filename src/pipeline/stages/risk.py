@@ -165,7 +165,7 @@ class RiskStage(PipelineStage):
             # A real implementation would query the `db.get_settled_bets()`
             # We'll fetch insight safely with defaults
             try:
-                insight = self.philosophical_risk.assess_state([])
+                insight = self.philosophical_risk.assess_state([], 0.5, 0.0)
                 # Convert to float to avoid MagicMock comparison issues in tests
                 stoic_penalty = float(insight.suggested_kelly_penalty)
                 if stoic_penalty > 0:
