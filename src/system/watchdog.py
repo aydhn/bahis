@@ -9,7 +9,7 @@ import asyncio
 import os
 import sys
 import subprocess
-import requests
+import httpx
 from pathlib import Path
 from loguru import logger
 
@@ -21,7 +21,7 @@ MAIN_SCRIPT = "bahis.py"
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 
-def send_alert(message: str):
+async def send_alert(message: str):
     """Send critical alert via Telegram (Direct API)."""
     if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
         logger.warning(f"Telegram not configured. Alert: {message}")
@@ -34,7 +34,8 @@ def send_alert(message: str):
         "parse_mode": "Markdown"
     }
     try:
-        requests.post(url, json=payload, timeout=5)
+        async with httpx.AsyncClient() as client:
+            await client.post(url, json=payload, timeout=5.0)
     except Exception as e:
         logger.error(f"Failed to send alert: {e}")
 
@@ -55,9 +56,9 @@ async def restart_system():
     try:
         # Assuming we are in the root directory
         subprocess.Popen([sys.executable, MAIN_SCRIPT])
-        send_alert("System restarted successfully after freeze detection.")
+        await send_alert("System restarted successfully after freeze detection.")
     except Exception as e:
-        send_alert(f"Failed to restart system: {e}")
+        await send_alert(f"Failed to restart system: {e}")
 
 async def run_watchdog():
     logger.info("Watchdog started. Monitoring heartbeat...")
@@ -74,7 +75,7 @@ async def run_watchdog():
 
                     if delta > TIMEOUT_SECONDS:
                         logger.error(f"Heartbeat lost! Last beat was {delta:.1f}s ago.")
-                        send_alert(f"System Freeze Detected! Last heartbeat: {delta:.0f}s ago.")
+                        await send_alert(f"System Freeze Detected! Last heartbeat: {delta:.0f}s ago.")
                         await restart_system()
                         # Reset heartbeat to avoid loop while starting
                         HEARTBEAT_FILE.write_text(str(time.time()))
