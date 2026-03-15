@@ -204,6 +204,13 @@ class DependencyContainer:
                 except ImportError:
                     self._services["regime_hmm"] = None  # type: ignore
 
+            elif name == "fast_math":
+                try:
+                    import src.extensions.fast_math as fast_math
+                    self._services["fast_math"] = fast_math
+                except ImportError:
+                    self._services["fast_math"] = None  # type: ignore
+
             elif name == "causal_reasoner":
                 try:
                     from src.quant.analysis.causal_reasoner import CausalReasoner
