@@ -6,7 +6,6 @@ and team narrative hype. A philosophical addition to behavioral arbitrage.
 """
 from dataclasses import dataclass
 from loguru import logger
-import numpy as np
 
 @dataclass
 class SentimentAlphaSignal:
