@@ -81,6 +81,8 @@ if STREAMLIT_AVAILABLE:
         ["Dashboard", "Value Finder", "Maç Analizi", "Kasa Eğrisi", "Canlı Radar", "Anomali Tespiti"],
     )
 
+    use_demo = st.sidebar.checkbox("Demo Modu", value=False, help="Canlı veri yerine rastgele üretilmiş test verisi kullan")
+
     # ═══════════════════════════════════════════════════
     # DASHBOARD
     # ═══════════════════════════════════════════════════
@@ -122,6 +124,21 @@ if STREAMLIT_AVAILABLE:
 
         db = get_db()
         matches = db.get_upcoming_matches()
+
+        # Demo Modu aktifse demo veri üret
+        if use_demo:
+            import polars as pl
+            matches = pl.DataFrame({
+                "match_id": ["m1", "m2", "m3", "m4", "m5"],
+                "home_team": ["Galatasaray", "Fenerbahçe", "Beşiktaş", "Trabzonspor", "Başakşehir"],
+                "away_team": ["Antalyaspor", "Adana Demir", "Kasımpaşa", "Rizespor", "Sivasspor"],
+                "home_odds": [1.45, 1.85, 2.10, 1.60, 2.40],
+                "draw_odds": [4.50, 3.60, 3.40, 3.80, 3.20],
+                "away_odds": [7.00, 4.20, 3.10, 5.50, 2.90],
+                "home_xg": [2.1, 1.8, 1.4, 1.9, 1.1],
+                "away_xg": [0.6, 0.9, 1.2, 0.7, 1.3],
+            })
+            st.warning("⚠️ DEMO MODU: Gösterilen veriler rastgele üretilmiştir.")
 
         if not matches.is_empty():
             poisson = get_poisson()
@@ -178,7 +195,23 @@ if STREAMLIT_AVAILABLE:
                         return "background-color: #ff8888; color: black"
                 return ""
 
-            styled = df.style.applymap(color_ev, subset=["EV 1", "EV X", "EV 2"])
+            # ── UX Geliştirmesi: Açıklama ──
+            with st.expander("ℹ️ Tabloyu nasıl okumalı?"):
+                st.markdown("""
+                **EV (Expected Value):** Beklenen Değer. Uzun vadede bu bahisten beklenen kâr yüzdesi.
+                * Formül: `(Olasılık x Oran) - 1`
+                * **> %2**: Değerli Bahis (Value Bet) ✅
+                * **< %0**: Uzun vadede kaybettirir ❌
+
+                **Model Oranı (Fair Odds):** Modelin hesapladığı gerçek oran. Bahis bürosunun oranından düşükse avantaj sizdedir.
+                """)
+
+            styled = (df.style
+                .applymap(color_ev, subset=["EV 1", "EV X", "EV 2"])
+                .format("{:.1%}", subset=["EV 1", "EV X", "EV 2"])
+                .format("{:.2f}", subset=["Model 1", "Model X", "Model 2"])
+                .format("{:.2f}", subset=["İddaa 1", "İddaa X", "İddaa 2"])
+            )
             st.dataframe(styled, use_container_width=True, hide_index=True)
 
             # Value bahisleri filtrele
@@ -198,9 +231,9 @@ if STREAMLIT_AVAILABLE:
 
         col1, col2 = st.columns(2)
         with col1:
-            home_xg = st.slider("Ev Sahibi xG", 0.5, 3.5, 1.4, 0.1)
+            home_xg = st.slider("Ev Sahibi xG", 0.5, 3.5, 1.4, 0.1, help="Beklenen Gol (xG) tahmini")
         with col2:
-            away_xg = st.slider("Deplasman xG", 0.5, 3.5, 1.1, 0.1)
+            away_xg = st.slider("Deplasman xG", 0.5, 3.5, 1.1, 0.1, help="Beklenen Gol (xG) tahmini")
 
         poisson = get_poisson()
         mc = get_monte_carlo()
