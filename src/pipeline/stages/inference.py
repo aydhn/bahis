@@ -1,5 +1,4 @@
 from src.system.container import container
-from src.extensions.quantum_pricing_model import QuantumPricingModel
 from typing import Any, Dict
 import asyncio
 from loguru import logger
