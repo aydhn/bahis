@@ -398,6 +398,10 @@ class TelegramApp:
 
     def set_sentinel(self, sentinel):
         self.sentinel = sentinel
+        self.ceo_dashboard = getattr(self, "ceo_dashboard", None) or container.get("ceo_dashboard")
+        if self.ceo_dashboard:
+            self.ceo_dashboard.smart_money = container.get("smart_money")
+            self.ceo_dashboard.market_god = container.get("market_god")
 
     @property
     def notifier(self) -> TelegramNotifier:
@@ -628,6 +632,7 @@ class TelegramApp:
 
             await update.message.reply_text(text, parse_mode="HTML")
         except Exception as e:
+            logger.debug(f"Exception caught: {e}")
             await update.message.reply_text(f"❌ Fikstur hatası: {e}", parse_mode="HTML")
 
     # ═══════════════════════════════════════════
@@ -653,6 +658,7 @@ class TelegramApp:
             else:
                 await update.message.reply_text("Treasury modülü hazır değil.")
         except Exception as e:
+            logger.debug(f"Exception caught: {e}")
             await update.message.reply_text(f"Hata: {e}")
 
     # ═══════════════════════════════════════════
@@ -764,6 +770,7 @@ class TelegramApp:
                     caption=f"📄 error.log ({file_size/1024:.0f} KB)",
                 )
         except Exception as e:
+            logger.debug(f"Exception caught: {e}")
             await update.message.reply_text(
                 f"❌ Log gönderim hatası: <code>{e}</code>",
                 parse_mode="HTML",
@@ -791,6 +798,7 @@ class TelegramApp:
             else:
                 text = "⚠️ <i>CEO Dashboard aktif değil. Volatilite verisi alınamıyor.</i>"
         except Exception as e:
+            logger.debug(f"Exception caught: {e}")
             text = f"❌ Hata: {e}"
         await update.message.reply_text(text, parse_mode="HTML")
 

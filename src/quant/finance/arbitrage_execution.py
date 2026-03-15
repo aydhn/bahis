@@ -50,7 +50,7 @@ class ArbitrageExecutionManager:
 
 
 
-    def plan_execution(self, match_id: str, arb_signal: Dict[str, Any], max_total_stake: float = 1000.0, apply_leverage: bool = False) -> ArbExecutionPlan:
+    def plan_execution(self, match_id: str, arb_signal: Dict[str, Any], max_total_stake: float = 1000.0, apply_leverage: bool = True) -> ArbExecutionPlan:
         """
         Creates a balanced betting plan for an arbitrage opportunity.
 
