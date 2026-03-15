@@ -58,7 +58,7 @@ class KellyBenterOptimizer:
         base_f = edge / (b - 1.0)
 
         # Benter's adjustment: Scale by confidence and applying strict guardrails
-        benter_f = self.adaptive_kelly.calculate_fraction(p, b, confidence) * confidence
+        benter_f = self.adaptive_kelly.calculate_fraction(p, b, 1.0) * confidence
 
         # Apply a non-linear confidence boost for high conviction (Aggressive Yield)
         if confidence > 0.8 and edge > 0.05:

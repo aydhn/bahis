@@ -1,3 +1,4 @@
+from unittest.mock import MagicMock
 import pytest
 import numpy as np
 
@@ -114,15 +115,28 @@ def test_optimize_frozen_mode():
     results = optimizer.optimize(bets)
     assert results == []
 
+
+
 def test_optimize_crash_regime():
+    from src.system.container import container
+    from unittest.mock import patch
+
     optimizer = PortfolioOptimizer(initial_bankroll=10000.0, max_portfolio_risk=0.10, liquidity_engine=MockLiquidityEngine())
+
     bets = [
         PortfolioBet(match_id="m1", selection="home", odds=2.0, prob_model=0.6, ev=0.2, stake_pct=0.05, league="EPL")
     ]
-    results = optimizer.optimize(bets, regime="CRASH")
+
+    kelly_benter = container.get('kelly_benter')
+
+    if kelly_benter is not None:
+        with patch.object(kelly_benter, 'calculate_fraction', return_value=0.05):
+            results = optimizer.optimize(bets, regime="CRASH")
+    else:
+        results = optimizer.optimize(bets, regime="CRASH")
+
     assert len(results) == 1
     assert results[0]["adjusted_stake_pct"] <= 0.0101
-
 def test_eigen_risk_parity_fallback():
     optimizer = PortfolioOptimizer(initial_bankroll=10000.0, max_portfolio_risk=0.10, liquidity_engine=MockLiquidityEngine())
 

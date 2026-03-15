@@ -177,6 +177,7 @@ class CEODashboard:
                 elif hasattr(self.smart_money, "detect_steam"):
                     sm_summary = "Smart Money scanner active."
             except Exception as e:
+                logger.debug(f"Exception caught: {e}")
                 sm_summary = f"SM Scanner Error: {str(e)[:20]}"
 
         god_summary = "God is silent"
