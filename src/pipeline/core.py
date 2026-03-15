@@ -2,7 +2,7 @@ import asyncio
 from abc import ABC, abstractmethod
 from typing import Any, Dict
 from loguru import logger
-from src.system.container import container
+
 from src.system.lifecycle import lifecycle
 from src.core.event_bus import EventBus, Event
 from src.core.auto_healer import SelfHealingEngine
