@@ -27,6 +27,7 @@ Fallback: asyncio.Queue + asyncio.Task tabanlı mini-stream
 from __future__ import annotations
 
 import asyncio
+import importlib.util
 import time
 from collections import defaultdict
 from dataclasses import dataclass, field
@@ -40,11 +41,7 @@ try:
 except ImportError:
     BYTEWAX_OK = False
 
-try:
-    import faust as _faust
-    FAUST_OK = True
-except ImportError:
-    FAUST_OK = False
+FAUST_OK = importlib.util.find_spec("faust") is not None
 
 if not BYTEWAX_OK and not FAUST_OK:
     logger.debug("bytewax/faust yüklü değil – asyncio stream fallback.")
