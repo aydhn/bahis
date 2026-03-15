@@ -125,7 +125,7 @@ class PortfolioOptimizer:
                 # KellyBenterOptimizer incorporates dynamic exposure caps
                 conf = getattr(c, 'confidence', 0.5)
                 # To preserve Kelly Criterion math properly when applying Benter's confidence bounds, the fractions should be linearly multiplied with confidence weights
-                fraction = kelly_benter.calculate_fraction(c.prob_model, c.odds, conf)
+                fraction = kelly_benter.calculate_fraction(c.prob_model, c.odds, conf) * conf
                 raw_stakes_list.append(fraction)
             else:
                 raw_stakes_list.append(c.stake_pct)

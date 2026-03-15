@@ -498,7 +498,14 @@ class TelegramApp:
                 ceo_dash = container.get("ceo_dashboard")
                 self.ceo_dashboard = ceo_dash
 
+            # Ensure market_god and smart_money are attached
             if ceo_dash:
+                if not getattr(self, "market_god", None):
+                    self.market_god = container.get("market_god")
+                if not getattr(self, "smart_money", None):
+                    self.smart_money = container.get("smart_money")
+                ceo_dash.market_god = self.market_god
+                ceo_dash.smart_money = self.smart_money
                 ceo_dash.market_god = getattr(self, "market_god", None) or container.get("market_god")
                 ceo_dash.smart_money = getattr(self, "smart_money", None) or container.get("smart_money")
                 report = ceo_dash.generate_report(None)
@@ -516,7 +523,14 @@ class TelegramApp:
                 ceo_dash = container.get("ceo_dashboard")
                 self.ceo_dashboard = ceo_dash
 
+            # Ensure market_god and smart_money are attached
             if ceo_dash:
+                if not getattr(self, "market_god", None):
+                    self.market_god = container.get("market_god")
+                if not getattr(self, "smart_money", None):
+                    self.smart_money = container.get("smart_money")
+                ceo_dash.market_god = self.market_god
+                ceo_dash.smart_money = self.smart_money
                 ceo_dash.market_god = getattr(self, "market_god", None) or container.get("market_god")
                 ceo_dash.smart_money = getattr(self, "smart_money", None) or container.get("smart_money")
                 greeks = ceo_dash.calculate_greeks()
@@ -786,7 +800,14 @@ class TelegramApp:
                 ceo_dash = container.get("ceo_dashboard")
                 self.ceo_dashboard = ceo_dash
 
+            # Ensure market_god and smart_money are attached
             if ceo_dash:
+                if not getattr(self, "market_god", None):
+                    self.market_god = container.get("market_god")
+                if not getattr(self, "smart_money", None):
+                    self.smart_money = container.get("smart_money")
+                ceo_dash.market_god = self.market_god
+                ceo_dash.smart_money = self.smart_money
                 greeks = ceo_dash.calculate_greeks()
                 text = (
                     "📈 <b>PORTFÖY VOLATİLİTE ENDEKSİ (VIX)</b>\n"
