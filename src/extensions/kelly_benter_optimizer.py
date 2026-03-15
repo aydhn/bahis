@@ -6,7 +6,6 @@ to calculate precise capital allocations.
 """
 from typing import Dict, Any, List
 from loguru import logger
-from scipy.optimize import minimize
 from src.quant.risk.kelly import AdaptiveKelly
 
 
@@ -53,8 +52,6 @@ class KellyBenterOptimizer:
         if edge <= 0.0:
             return 0.0
 
-        # Base Kelly fraction
-        base_f = edge / (b - 1.0)
 
         # Benter's adjustment: Scale by confidence and applying strict guardrails
         benter_f = self.adaptive_kelly.calculate_fraction(p, b, 1.0) * confidence
