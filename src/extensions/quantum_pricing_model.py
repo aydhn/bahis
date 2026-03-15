@@ -1,3 +1,4 @@
+from loguru import logger
 import math
 from src.core.interfaces import QuantModel
 from typing import Dict, Any

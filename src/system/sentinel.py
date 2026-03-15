@@ -298,6 +298,10 @@ Action: {data.get('action')}"""
 
         self.running = True
 
+        alpha_gen = container.get('alpha_generator')
+        if alpha_gen:
+            asyncio.create_task(alpha_gen.start())
+
         # Botu başlat
         if self.bot.enabled:
             shutdown_event = asyncio.Event()
@@ -314,10 +318,6 @@ Action: {data.get('action')}"""
             if opp_scanner:
                 asyncio.create_task(opp_scanner.scan())
             await self.flash_monitor.start()
-            alpha_gen = container.get("alpha_generator")
-            if alpha_gen:
-                asyncio.create_task(alpha_gen.start())
-
             # Subscribe to alpha signals
             self.bus.subscribe("alpha_signal", self._on_alpha_signal)
 

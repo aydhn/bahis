@@ -673,50 +673,95 @@ class InferenceStage(PipelineStage):
 
 
         # 3. Market Sentiment & Smart Money
-        self._apply_market_sentiment(context, prediction, match_id)
+        try:
+            self._apply_market_sentiment(context, prediction, match_id)
+        except Exception as e:
+            logger.debug(f"Exception caught during self._apply_market_sentiment: {e}")
 
         # 3.1 Quantum Pricing Model
-        self._apply_quantum_pricing(context, prediction, match_id)
+        try:
+            self._apply_quantum_pricing(context, prediction, match_id)
+        except Exception as e:
+            logger.debug(f"Exception caught during self._apply_quantum_pricing: {e}")
 
 
         # 3.5, 3.6, 3.7. Advanced Physics & Microstructure
-        self._apply_advanced_physics(context, prediction, match_id)
+        try:
+            self._apply_advanced_physics(context, prediction, match_id)
+        except Exception as e:
+            logger.debug(f"Exception caught during self._apply_advanced_physics: {e}")
 
         # 4. Teleological Analysis (Narrative & Motivation)
-        self._apply_teleology(context, prediction, match_id)
+        try:
+            self._apply_teleology(context, prediction, match_id)
+        except Exception as e:
+            logger.debug(f"Exception caught during self._apply_teleology: {e}")
 
         # 5. Pattern Matching (Similarity Engine)
-        self._apply_pattern_matching(context, prediction)
+        try:
+            self._apply_pattern_matching(context, prediction)
+        except Exception as e:
+            logger.debug(f"Exception caught during self._apply_pattern_matching: {e}")
 
         # 6. Meta-Labeling (Quality Check)
-        self._apply_meta_labeling(context, prediction, probs, entropy)
+        try:
+            self._apply_meta_labeling(context, prediction, probs, entropy)
+        except Exception as e:
+            logger.debug(f"Exception caught during self._apply_meta_labeling: {e}")
 
         # 7. Conformal Prediction (Certainty Set)
-        self._apply_conformal_prediction(prediction)
+        try:
+            self._apply_conformal_prediction(prediction)
+        except Exception as e:
+            logger.debug(f"Exception caught during self._apply_conformal_prediction: {e}")
 
         # 8. Game Theory Check (Strategic Defense)
-        self._apply_game_theory(context, prediction)
+        try:
+            self._apply_game_theory(context, prediction)
+        except Exception as e:
+            logger.debug(f"Exception caught during self._apply_game_theory: {e}")
 
         # 9. Market God Consultation
-        self._apply_market_god(context, prediction, match_id)
+        try:
+            self._apply_market_god(context, prediction, match_id)
+        except Exception as e:
+            logger.debug(f"Exception caught during self._apply_market_god: {e}")
 
         # 9.5 Behavioral Arbitrage (Sentiment / Bias Fade)
-        self._apply_behavioral_arbitrage(context, prediction, match_id)
+        try:
+            self._apply_behavioral_arbitrage(context, prediction, match_id)
+        except Exception as e:
+            logger.debug(f"Exception caught during self._apply_behavioral_arbitrage: {e}")
 
         # 9.5.5 Smart Money
-        self._apply_smart_money(context, prediction, match_id)
+        try:
+            self._apply_smart_money(context, prediction, match_id)
+        except Exception as e:
+            logger.debug(f"Exception caught during self._apply_smart_money: {e}")
 
         # 9.6 Sentiment Alpha (Macro Social Momentum Edge)
-        self._apply_sentiment_alpha(context, prediction, match_id)
+        try:
+            self._apply_sentiment_alpha(context, prediction, match_id)
+        except Exception as e:
+            logger.debug(f"Exception caught during self._apply_sentiment_alpha: {e}")
 
         # 9.7 Philosophical Risk (Stoic Edge Modulation)
-        self._apply_philosophical_risk(context, prediction, match_id)
+        try:
+            self._apply_philosophical_risk(context, prediction, match_id)
+        except Exception as e:
+            logger.debug(f"Exception caught during self._apply_philosophical_risk: {e}")
 
         # 9.8 AutoTuner Parameters
-        self._apply_auto_tuner(context, prediction, match_id)
+        try:
+            self._apply_auto_tuner(context, prediction, match_id)
+        except Exception as e:
+            logger.debug(f"Exception caught during self._apply_auto_tuner: {e}")
 
         # 9.9 Bayesian Live Adjustment
-        self._apply_bayesian_update(context, prediction, match_id)
+        try:
+            self._apply_bayesian_update(context, prediction, match_id)
+        except Exception as e:
+            logger.debug(f"Exception caught during self._apply_bayesian_update: {e}")
 
 
         # Inject Alpha Opportunities
