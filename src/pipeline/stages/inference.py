@@ -328,6 +328,24 @@ class InferenceStage(PipelineStage):
             logger.error(f"TransportMetric check failed: {e}")
 
 
+    def _apply_quantum_pricing(self, context: Dict[str, Any], prediction: Dict[str, Any], match_id: str) -> None:
+        if hasattr(self, "quantum_pricing") and self.quantum_pricing:
+            try:
+                q_res = self.quantum_pricing.predict(context)
+
+                # Blend with existing probability
+                old_home = prediction.get("prob_home", 0.33)
+                q_home = q_res.get("prob_home", 0.33)
+                prediction["prob_home"] = (old_home + q_home) / 2.0
+
+                # Adjust confidence
+                q_conf = q_res.get("confidence", 0.5)
+                prediction["confidence"] = prediction.get("confidence", 0.5) * (1.0 + (q_conf - 0.5) * 0.2)
+
+                prediction["god_narrative"] = prediction.get("god_narrative", "") + f" | Quantum Edge: {q_home:.2f}"
+            except Exception as e:
+                logger.warning(f"Quantum Pricing silent for {match_id}: {e}")
+
     def _apply_market_sentiment(self, context: Dict[str, Any], prediction: Dict[str, Any], match_id: str) -> None:
         try:
             sentiment = self.market_sentiment.analyze_sentiment(match_id)
@@ -653,8 +671,13 @@ class InferenceStage(PipelineStage):
         prediction["entropy"] = entropy
 
 
+
         # 3. Market Sentiment & Smart Money
         self._apply_market_sentiment(context, prediction, match_id)
+
+        # 3.1 Quantum Pricing Model
+        self._apply_quantum_pricing(context, prediction, match_id)
+
 
         # 3.5, 3.6, 3.7. Advanced Physics & Microstructure
         self._apply_advanced_physics(context, prediction, match_id)
