@@ -1,0 +1,11 @@
+🎯 **What:** The code health issue addressed
+Removed the unused `faust as _faust` import in `src/core/stream_processor.py` that was triggering linting issues.
+
+💡 **Why:** How this improves maintainability
+The `_faust` import was not being used anywhere else in the code except for a simple availability check flag `FAUST_OK`. We replaced the `import faust` try/except block with `importlib.util.find_spec('faust') is not None`. This is the recommended Python approach to check if a module is installed without actually importing it into the namespace. This reduces code clutter, avoids unused import linter warnings, and explicitly communicates the intent of merely checking module existence.
+
+✅ **Verification:** How you confirmed the change is safe
+Ran the `py_compile` on the file to ensure the syntax remains valid. Executed the entire test suite via `PYTHONPATH=. python3 -m pytest tests/` and verified that all 224 tests pass successfully. The functionally of checking if `faust` is loaded remains precisely the same.
+
+✨ **Result:** The improvement achieved
+A cleaner code file structure with fewer linter warnings.
