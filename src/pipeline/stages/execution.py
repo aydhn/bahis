@@ -2,6 +2,7 @@ from typing import Dict, Any
 from loguru import logger
 import json
 import asyncio
+import aiofiles
 from src.pipeline.core import PipelineStage
 from src.system.container import container
 from src.system.config import settings
@@ -13,6 +14,9 @@ class ExecutionStage(PipelineStage):
         super().__init__("execution")
         self.notifier = container.get("notifier")
         self.db = container.get("db")
+
+        # Ensure data directory exists for paper trades
+        settings.DATA_DIR.mkdir(parents=True, exist_ok=True)
 
         # Subscribe to hedge events if bus is available
         # But stages don't usually subscribe. Sentinel subscribes and calls methods?
@@ -68,11 +72,8 @@ class ExecutionStage(PipelineStage):
                 try:
                     # Append to paper trades log (Legacy/Backup)
                     log_file = settings.DATA_DIR / "paper_trades.jsonl"
-                    def write_log():
-                        log_file.parent.mkdir(parents=True, exist_ok=True)
-                        with open(log_file, "a") as f:
-                            f.write(json.dumps(bet) + "\n")
-                    await asyncio.to_thread(write_log)
+                    async with aiofiles.open(log_file, mode="a") as f:
+                        await f.write(json.dumps(bet) + "\n")
                 except Exception as e:
                     logger.error(f"Failed to save paper trade: {e}")
 
