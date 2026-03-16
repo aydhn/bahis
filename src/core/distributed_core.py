@@ -232,7 +232,6 @@ class DistributedCore:
         self._started = False
         self._start_time = 0.0
         self._pool: ProcessPoolExecutor | None = None
-        self._thread_pool = None
         self._stats = defaultdict(lambda: WorkerStats())
         self._tasks_completed = 0
         self._tasks_in_flight = 0
@@ -273,7 +272,6 @@ class DistributedCore:
         import os
         workers = self._num_cpus or min(os.cpu_count() or 4, self._max_workers)
         self._pool = ProcessPoolExecutor(max_workers=workers)
-        self._thread_pool = None # O(N*M) thrashing fix via asyncio.to_thread
         self._started = True
         logger.info(
             f"[Dist] ProcessPool başlatıldı: {workers} worker "
@@ -290,8 +288,6 @@ class DistributedCore:
                 logger.debug(f"Exception caught: {e}")
         if self._pool:
             self._pool.shutdown(wait=False)
-        if self._thread_pool:
-            self._thread_pool.shutdown(wait=False)
         self._started = False
         logger.info("[Dist] Runtime kapatıldı.")
 
@@ -420,10 +416,7 @@ class DistributedCore:
     async def gather_async(self, refs: list[Any],
                             timeout: float = 60.0) -> list[TaskResult]:
         """Asenkron gather (event loop'u bloklamaz)."""
-        loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(
-            None, lambda: self.gather(refs, timeout),
-        )
+        return await asyncio.to_thread(self.gather, refs, timeout)
 
     # ═══════════════════════════════════════════
     #  TOPLU PARALEL ANALİZ

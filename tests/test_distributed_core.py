@@ -281,13 +281,11 @@ class TestDistributedCore(unittest.TestCase):
 
             # mock pools
             dist._pool = MagicMock()
-            dist._thread_pool = MagicMock()
 
             dist.shutdown()
 
             mock_ray.shutdown.assert_called_once()
             dist._pool.shutdown.assert_called_once_with(wait=False)
-            dist._thread_pool.shutdown.assert_called_once_with(wait=False)
 
     def test_shutdown_ray_exception(self):
         """Verify shutdown handles exceptions from ray.shutdown gracefully."""
@@ -301,14 +299,12 @@ class TestDistributedCore(unittest.TestCase):
 
             # mock pools
             dist._pool = MagicMock()
-            dist._thread_pool = MagicMock()
 
             # Should not raise exception
             dist.shutdown()
 
             mock_ray.shutdown.assert_called_once()
             dist._pool.shutdown.assert_called_once_with(wait=False)
-            dist._thread_pool.shutdown.assert_called_once_with(wait=False)
 
     def test_shutdown_pools(self):
         """Verify shutdown calls pool shutdown when Ray is not used."""
@@ -318,12 +314,10 @@ class TestDistributedCore(unittest.TestCase):
 
             # mock pools
             dist._pool = MagicMock()
-            dist._thread_pool = MagicMock()
 
             dist.shutdown()
 
             dist._pool.shutdown.assert_called_once_with(wait=False)
-            dist._thread_pool.shutdown.assert_called_once_with(wait=False)
 
 
     def test_submit_monte_carlo_fallback(self):
