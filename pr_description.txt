@@ -1,11 +1,16 @@
-🎯 **What:** The code health issue addressed
-Removed the unused `faust as _faust` import in `src/core/stream_processor.py` that was triggering linting issues.
+🧪 [testing improvement] Add comprehensive tests for LogRotator utility
 
-💡 **Why:** How this improves maintainability
-The `_faust` import was not being used anywhere else in the code except for a simple availability check flag `FAUST_OK`. We replaced the `import faust` try/except block with `importlib.util.find_spec('faust') is not None`. This is the recommended Python approach to check if a module is installed without actually importing it into the namespace. This reduces code clutter, avoids unused import linter warnings, and explicitly communicates the intent of merely checking module existence.
+🎯 **What:** The testing gap addressed
+The `LogRotator` class located in `src/utils/log_rotator.py` was missing tests, creating a risk for log loss and unnecessary disk space usage if the logic broke. A full pytest suite has been added in `tests/utils/test_log_rotator.py`.
 
-✅ **Verification:** How you confirmed the change is safe
-Ran the `py_compile` on the file to ensure the syntax remains valid. Executed the entire test suite via `PYTHONPATH=. python3 -m pytest tests/` and verified that all 224 tests pass successfully. The functionally of checking if `faust` is loaded remains precisely the same.
+📊 **Coverage:** What scenarios are now tested
+- Successful setup of active and archive log directories
+- Archiving of uncompressed standard log files based on file age threshold (`archive_days`)
+- Compression behavior (moving active `.log` to `archive/.log.gz`)
+- Deletion of very old archived log files based on `max_archive_days`
+- File name date pattern logic (`bot_YYYY-MM-DD.log`) override of standard file mtime threshold
+- Edge case handling when `shutil.move` fails, validating error is captured properly in returned dictionary
+- Log active stats reporting using `get_stats()` functionality
 
-✨ **Result:** The improvement achieved
-A cleaner code file structure with fewer linter warnings.
+✨ **Result:** The improvement in test coverage
+`LogRotator` is now fully covered by test cases mapping out its full operation lifecycle, verifying proper initialization, execution via active/archival flows, and data reporting without introducing any regressions in the codebase.
