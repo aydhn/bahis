@@ -163,14 +163,9 @@ class PhysicsStage(PipelineStage):
         self.path_signature = self._safe_init(PathSignatureEngine, depth=2)
         self.rg_flow = self._safe_init(RenormalizationGroup)
 
-    async def execute(self, context: Dict[str, Any]) -> Dict[str, Any]:
-        """Run unified physics analysis on the current batch of matches."""
-        matches = context.get("matches", pl.DataFrame())
-        features = context.get("features", pl.DataFrame())
-        cycle = context.get("cycle", 0)
 
-        # Initialize Results Container
-        results = {
+    def _init_results_container(self) -> Dict[str, Any]:
+        return {
             "chaos_reports": {},
             "quantum_predictions": {},
             "ricci_report": None,
@@ -188,12 +183,7 @@ class PhysicsStage(PipelineStage):
             "hawkes_momentum": {}
         }
 
-        # Initialize Simplified Context Map (for ML models)
-        physics_context_map = {}
-
-        # --- 1. Global / Systemic Analysis ---
-
-        # Ricci Flow (Systemic Risk)
+    def _run_systemic_analysis(self, matches: pl.DataFrame, results: Dict[str, Any], cycle: int):
         if self.ricci_analyzer and not matches.is_empty():
             try:
                 match_list = matches.to_dicts()
@@ -206,17 +196,7 @@ class PhysicsStage(PipelineStage):
             except Exception as e:
                 logger.error(f"Ricci Flow analysis failed: {e}")
 
-        if matches.is_empty():
-            return {"physics_reports": results, "physics_context": {}}
-
-        # --- 2. Batch Training (if applicable) ---
-
-        # Pre-compute feature map for quick lookup
-        feat_map = {}
-        if not features.is_empty():
-             feat_map = {row["match_id"]: row for row in features.iter_rows(named=True)}
-
-        # Train Topology Mapper on batch
+    def _run_batch_training(self, features: pl.DataFrame):
         if self.topology_mapper and not features.is_empty():
             try:
                 numeric_cols = [c for c in features.columns if features[c].dtype in (pl.Float64, pl.Float32)]
@@ -228,58 +208,76 @@ class PhysicsStage(PipelineStage):
             except Exception as e:
                 logger.warning(f"Topology Mapper fit failed: {e}")
 
-        # --- 3. Per-Match Parallel Execution ---
+    def _create_match_tasks(self, row: Dict[str, Any], feat_map: Dict[str, Any], cycle: int, results: Dict[str, Any], physics_context_map: Dict[str, Any]) -> List[asyncio.Task]:
+        match_id = row.get("match_id")
+        if not match_id:
+            return []
+
+        # Ensure entry exists
+        physics_context_map[match_id] = {}
 
         tasks = []
+        if self.chaos_filter:
+            tasks.append(asyncio.create_task(self._run_chaos_filter(match_id, results, physics_context_map)))
+        if self.quantum_brain:
+            tasks.append(asyncio.create_task(self._run_quantum_brain(match_id, row, feat_map, results, physics_context_map)))
+        if self.geometric_intel:
+            tasks.append(asyncio.create_task(self._run_geometric_intelligence(match_id, row, feat_map, results, physics_context_map)))
+        if self.particle_tracker:
+            tasks.append(asyncio.create_task(self._run_particle_tracker(match_id, cycle, results, physics_context_map)))
+        if self.fractal_analyzer:
+            tasks.append(asyncio.create_task(self._run_fractal_analyzer(match_id, results, physics_context_map)))
+        if self.topology_mapper:
+            tasks.append(asyncio.create_task(self._run_topology_mapper(match_id, row, feat_map, results, physics_context_map)))
+        if self.path_signature:
+            tasks.append(asyncio.create_task(self._run_path_signature(match_id, row, results, physics_context_map)))
+        if self.homology_scanner:
+            tasks.append(asyncio.create_task(self._run_homology_scanner(match_id, cycle, results, physics_context_map)))
+        if self.gcn_graph:
+            tasks.append(asyncio.create_task(self._run_gcn_graph(match_id, cycle, results, physics_context_map)))
+        if self.rg_flow:
+            tasks.append(asyncio.create_task(self._run_rg_flow(match_id, results, physics_context_map)))
+        if self.hypergraph:
+            tasks.append(asyncio.create_task(self._run_hypergraph_analysis(match_id, cycle, results, physics_context_map)))
+        if self.fisher_geo:
+            tasks.append(asyncio.create_task(self._run_fisher_geometry(match_id, results, physics_context_map)))
+        if self.multifractal:
+            tasks.append(asyncio.create_task(self._run_multifractal(match_id, results, physics_context_map)))
+        if self.hawkes_momentum:
+            tasks.append(asyncio.create_task(self._run_hawkes_momentum(match_id, cycle, results, physics_context_map)))
+
+        return tasks
+
+    async def execute(self, context: Dict[str, Any]) -> Dict[str, Any]:
+        """Run unified physics analysis on the current batch of matches."""
+        matches = context.get("matches", pl.DataFrame())
+        features = context.get("features", pl.DataFrame())
+        cycle = context.get("cycle", 0)
+
+        # Initialize Results Container
+        results = self._init_results_container()
+
+        # Initialize Simplified Context Map (for ML models)
+        physics_context_map = {}
+
+        # --- 1. Global / Systemic Analysis ---
+        self._run_systemic_analysis(matches, results, cycle)
+
+        if matches.is_empty():
+            return {"physics_reports": results, "physics_context": {}}
+
+        # --- 2. Batch Training (if applicable) ---
+        # Pre-compute feature map for quick lookup
+        feat_map = {}
+        if not features.is_empty():
+             feat_map = {row["match_id"]: row for row in features.iter_rows(named=True)}
+
+        self._run_batch_training(features)
+
+        # --- 3. Per-Match Parallel Execution ---
+        tasks = []
         for row in matches.iter_rows(named=True):
-            match_id = row.get("match_id")
-            if not match_id: continue
-
-            # Ensure entry exists
-            physics_context_map[match_id] = {}
-
-            # Append tasks
-            if self.chaos_filter:
-                tasks.append(self._run_chaos_filter(match_id, results, physics_context_map))
-
-            if self.quantum_brain:
-                tasks.append(self._run_quantum_brain(match_id, row, feat_map, results, physics_context_map))
-
-            if self.geometric_intel:
-                tasks.append(self._run_geometric_intelligence(match_id, row, feat_map, results, physics_context_map))
-
-            if self.particle_tracker:
-                tasks.append(self._run_particle_tracker(match_id, cycle, results, physics_context_map))
-
-            if self.fractal_analyzer:
-                tasks.append(self._run_fractal_analyzer(match_id, results, physics_context_map))
-
-            if self.topology_mapper:
-                tasks.append(self._run_topology_mapper(match_id, row, feat_map, results, physics_context_map))
-
-            if self.path_signature:
-                tasks.append(self._run_path_signature(match_id, row, results, physics_context_map))
-
-            if self.homology_scanner:
-                tasks.append(self._run_homology_scanner(match_id, cycle, results, physics_context_map))
-
-            if self.gcn_graph:
-                tasks.append(self._run_gcn_graph(match_id, cycle, results, physics_context_map))
-
-            if self.rg_flow:
-                tasks.append(self._run_rg_flow(match_id, results, physics_context_map))
-
-            if self.hypergraph:
-                tasks.append(self._run_hypergraph_analysis(match_id, cycle, results, physics_context_map))
-
-            if self.fisher_geo:
-                tasks.append(self._run_fisher_geometry(match_id, results, physics_context_map))
-
-            if self.multifractal:
-                tasks.append(self._run_multifractal(match_id, results, physics_context_map))
-
-            if self.hawkes_momentum:
-                tasks.append(self._run_hawkes_momentum(match_id, cycle, results, physics_context_map))
+            tasks.extend(self._create_match_tasks(row, feat_map, cycle, results, physics_context_map))
 
         # Run all tasks concurrently
         if tasks:
