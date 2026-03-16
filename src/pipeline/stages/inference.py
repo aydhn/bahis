@@ -88,6 +88,7 @@ class InferenceStage(PipelineStage):
         # Market God (The Omniscient Strategist)
         self.market_god = container.get('market_god')
         self.bayesian_updater = container.get('bayesian_updater')
+        self.fractal_volatility = container.get('fractal_volatility')
         self.smart_money = container.get('smart_money')
         self.philosophical_risk = container.get('philosophical_risk')
         self.auto_tuner = container.get('auto_tuner')
@@ -635,40 +636,32 @@ class InferenceStage(PipelineStage):
                 live_home_goals = context.get("live_home_goals")
                 live_away_goals = context.get("live_away_goals")
 
-                if live_home_goals is not None or live_away_goals is not None:
+                if live_home_goals is not None and live_away_goals is not None:
                     prior_home = prediction.get("prob_home", 0.33)
-                    # Simple heuristic for likelihoods based on goals
-                    lh = 0.5 + (live_home_goals or 0) * 0.1 - (live_away_goals or 0) * 0.1
-                    la = 0.5 + (live_away_goals or 0) * 0.1 - (live_home_goals or 0) * 0.1
-
-                    lh = min(max(lh, 0.1), 0.9)
-                    la = min(max(la, 0.1), 0.9)
-
+                    lh = 0.6 if live_home_goals > live_away_goals else 0.4
+                    la = 0.4 if live_home_goals > live_away_goals else 0.6
                     post_home = self.bayesian_updater.update_probability(prior_home, lh, la)
                     prediction["prob_home"] = post_home
-                    prediction["bayesian_adjusted"] = True
-                    prediction["god_narrative"] = prediction.get("god_narrative", "") + f" | Bayes Live Adjusted: {prior_home:.2f}->{post_home:.2f}"
+                    logger.info(f"Bayesian live update for {match_id}: prior {prior_home:.2f} -> post {post_home:.2f}")
+
             except Exception as e:
                 logger.warning(f"Bayesian Updater silent for {match_id}: {e}")
 
-    async def _analyze_single_match(self, context: Dict[str, Any]) -> Dict[str, Any]:
+    def _apply_fractal_volatility(self, context: Dict[str, Any], prediction: Dict[str, Any], match_id: str) -> None:
+        if hasattr(self, 'fractal_volatility') and self.fractal_volatility:
+            try:
+                historical_odds = context.get("historical_odds", [])
+                if historical_odds:
+                    fv_res = self.fractal_volatility.analyze(match_id, historical_odds)
+                    prediction["hurst_exponent"] = fv_res.get("hurst_exponent", 0.5)
+                    prediction["fractal_regime"] = fv_res.get("fractal_regime", "unknown")
 
-        """Analyze a single match using Ensemble, RAG, Similarity, Meta-Labeling, and Teleology."""
-        match_id = context.get("match_id", "Unknown")
-
-        # 1. Ensemble Prediction (CPU Bound -> Thread)
-        prediction = await asyncio.to_thread(self.ensemble.predict, context)
-
-        # 2. Entropy Calculation
-        probs = [
-            prediction.get("prob_home", 0.0),
-            prediction.get("prob_draw", 0.0),
-            prediction.get("prob_away", 0.0)
-        ]
-        entropy = self.entropy_calc.calculate_entropy(probs)
-        prediction["entropy"] = entropy
-
-
+                    # Scale confidence based on fractal nature
+                    if "confidence" in prediction:
+                        prediction["confidence"] *= fv_res.get("volatility_multiplier", 1.0)
+                        prediction["confidence"] = min(1.0, max(0.01, prediction["confidence"]))
+            except Exception as e:
+                logger.warning(f"Fractal Volatility silent for {match_id}: {e}")
 
         # 3. Market Sentiment & Smart Money
         try:
@@ -760,6 +753,12 @@ class InferenceStage(PipelineStage):
             self._apply_bayesian_update(context, prediction, match_id)
         except Exception as e:
             logger.debug(f"Exception caught during self._apply_bayesian_update: {e}")
+
+        # 9.10 Fractal Volatility Adjustment
+        try:
+            self._apply_fractal_volatility(context, prediction, match_id)
+        except Exception as e:
+            logger.debug(f"Exception caught during self._apply_fractal_volatility: {e}")
 
 
         # Inject Alpha Opportunities
