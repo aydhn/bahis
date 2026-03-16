@@ -31,14 +31,21 @@ class TestNewPipeline(unittest.TestCase):
 
     def test_pipeline_creation(self):
         """Test that default pipeline includes all new stages."""
-
         import sys
-        sys.modules['numba'] = MagicMock()
         import torch.nn.init
         torch.nn.init.uniform_ = MagicMock()
         torch.nn.init.kaiming_uniform_ = MagicMock()
+# Avoid prometheus duplicate timeseries error
+        import prometheus_client
+prometheus_client.REGISTRY = prometheus_client.CollectorRegistry(auto_describe=True)
+        import sys
+# Avoid prometheus duplicate timeseries error
+        import prometheus_client
+prometheus_client.REGISTRY = prometheus_client.CollectorRegistry(auto_describe=True)
 
         mock_bot = MagicMock()
+
+
 
         mock_bot.enabled = False
         engine = create_default_pipeline(bot_instance=mock_bot)

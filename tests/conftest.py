@@ -23,12 +23,6 @@ dummy_numba.__spec__ = importlib.util.spec_from_loader("numba", loader=None)
 
 sys.modules['numba'] = dummy_numba
 
-
-# Fix for `TypeError: isinstance() arg 2 must be a type...` in torch.nn.init
-import torch.nn.init
-def _mock_uniform_(*args, **kwargs):
-    pass
-torch.nn.init.uniform_ = _mock_uniform_
 import torch.nn.init
 def _mock_uniform_(*args, **kwargs):
     pass

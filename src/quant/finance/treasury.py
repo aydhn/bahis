@@ -76,11 +76,19 @@ class TreasuryEngine:
             return auto_tuner.get_current_params()
         return {"kelly_fraction": 0.25}
 
+
     def request_capital(self, amount: float, strategy_type: str = "safe") -> float:
         """
         Request capital for a bet.
         Returns the approved amount (may be less than requested or 0).
         """
+        # 0. Apply AutoTuner dynamic limits
+        tuner_params = self.get_auto_tuner_params()
+        if tuner_params.get("kelly_fraction", 0.25) > 0.35:
+            self.state.max_daily_drawdown_pct = 0.10
+        else:
+            self.state.max_daily_drawdown_pct = 0.05
+
         # 1. Circuit Breaker Check
         if self.state.daily_pnl < -(self.state.total_capital * self.state.max_daily_drawdown_pct):
             logger.warning("Treasury: Daily Drawdown Limit Hit. Capital request denied.")
