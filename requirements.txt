@@ -4,8 +4,8 @@
 # ============================================================
 
 # --- Matematik & Bilimsel Hesaplama ---
-numpy
-scipy
+numpy<2.0.0
+scipy==1.13.1
 sympy
 clifford
 geoopt
@@ -24,7 +24,7 @@ pydantic-settings
 torch
 xgboost
 lightgbm
-scikit-learn
+scikit-learn==1.5.0
 mapie
 shap
 faiss-cpu

@@ -398,10 +398,19 @@ class TelegramApp:
 
     def set_sentinel(self, sentinel):
         self.sentinel = sentinel
-        self.ceo_dashboard = getattr(self, "ceo_dashboard", None) or container.get("ceo_dashboard")
+        self.ceo_dashboard = getattr(self, "ceo_dashboard", None)
+        if not self.ceo_dashboard:
+            self.ceo_dashboard = container.get("ceo_dashboard")
         if self.ceo_dashboard:
-            self.ceo_dashboard.smart_money = container.get("smart_money")
-            self.ceo_dashboard.market_god = container.get("market_god")
+            self.smart_money = getattr(self, "smart_money", None)
+            if not self.smart_money:
+                self.smart_money = container.get("smart_money")
+            self.market_god = getattr(self, "market_god", None)
+            if not self.market_god:
+                self.market_god = container.get("market_god")
+
+            self.ceo_dashboard.smart_money = self.smart_money
+            self.ceo_dashboard.market_god = self.market_god
 
     @property
     def notifier(self) -> TelegramNotifier:
@@ -500,15 +509,15 @@ class TelegramApp:
 
             # Ensure market_god and smart_money are attached
             if ceo_dash:
-                if not getattr(self, "market_god", None):
+                self.market_god = getattr(self, "market_god", None)
+                if not self.market_god:
                     self.market_god = container.get("market_god")
-                if not getattr(self, "smart_money", None):
+                self.smart_money = getattr(self, "smart_money", None)
+                if not self.smart_money:
                     self.smart_money = container.get("smart_money")
+
                 ceo_dash.market_god = self.market_god
-                ceo_dash.smart_money = self.smart_money
-                ceo_dash.market_god = getattr(self, "market_god", None) or container.get("market_god")
-                ceo_dash.smart_money = getattr(self, "smart_money", None) or container.get("smart_money")
-                report = ceo_dash.generate_report(None)
+                ceo_dash.smart_money = self.smart_moneyceo_dash.generate_report(None)
             else:
                 report = '⚠️ CEO Dashboard Not Found'
         except Exception as e:
@@ -525,15 +534,15 @@ class TelegramApp:
 
             # Ensure market_god and smart_money are attached
             if ceo_dash:
-                if not getattr(self, "market_god", None):
+                self.market_god = getattr(self, "market_god", None)
+                if not self.market_god:
                     self.market_god = container.get("market_god")
-                if not getattr(self, "smart_money", None):
+                self.smart_money = getattr(self, "smart_money", None)
+                if not self.smart_money:
                     self.smart_money = container.get("smart_money")
+
                 ceo_dash.market_god = self.market_god
-                ceo_dash.smart_money = self.smart_money
-                ceo_dash.market_god = getattr(self, "market_god", None) or container.get("market_god")
-                ceo_dash.smart_money = getattr(self, "smart_money", None) or container.get("smart_money")
-                greeks = ceo_dash.calculate_greeks()
+                ceo_dash.smart_money = self.smart_moneyceo_dash.calculate_greeks()
                 msg = (
                     "⚡ **GOD MODE (Portfolio Greeks)** ⚡\n"
                     f"Δ (Delta - Directional Bias): `{greeks.get('delta', 0.0):.2f}`\n"
@@ -802,13 +811,15 @@ class TelegramApp:
 
             # Ensure market_god and smart_money are attached
             if ceo_dash:
-                if not getattr(self, "market_god", None):
+                self.market_god = getattr(self, "market_god", None)
+                if not self.market_god:
                     self.market_god = container.get("market_god")
-                if not getattr(self, "smart_money", None):
+                self.smart_money = getattr(self, "smart_money", None)
+                if not self.smart_money:
                     self.smart_money = container.get("smart_money")
+
                 ceo_dash.market_god = self.market_god
-                ceo_dash.smart_money = self.smart_money
-                greeks = ceo_dash.calculate_greeks()
+                ceo_dash.smart_money = self.smart_moneyceo_dash.calculate_greeks()
                 text = (
                     "📈 <b>PORTFÖY VOLATİLİTE ENDEKSİ (VIX)</b>\n"
                     "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"

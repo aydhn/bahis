@@ -211,6 +211,13 @@ class DependencyContainer:
                 except ImportError:
                     self._services["fast_math"] = None  # type: ignore
 
+            elif name == "fractal_volatility":
+                try:
+                    from src.extensions.fractal_volatility import FractalVolatilityEngine
+                    self._services["fractal_volatility"] = FractalVolatilityEngine()
+                except ImportError:
+                    self._services["fractal_volatility"] = None
+
             elif name == "causal_reasoner":
                 try:
                     from src.quant.analysis.causal_reasoner import CausalReasoner
