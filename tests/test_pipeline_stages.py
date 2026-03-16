@@ -31,7 +31,15 @@ class TestNewPipeline(unittest.TestCase):
 
     def test_pipeline_creation(self):
         """Test that default pipeline includes all new stages."""
+
+        import sys
+        sys.modules['numba'] = MagicMock()
+        import torch.nn.init
+        torch.nn.init.uniform_ = MagicMock()
+        torch.nn.init.kaiming_uniform_ = MagicMock()
+
         mock_bot = MagicMock()
+
         mock_bot.enabled = False
         engine = create_default_pipeline(bot_instance=mock_bot)
         stage_names = [s.name for s in engine.stages]
