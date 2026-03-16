@@ -542,7 +542,8 @@ class TelegramApp:
                     self.smart_money = container.get("smart_money")
 
                 ceo_dash.market_god = self.market_god
-                ceo_dash.smart_money = self.smart_moneyceo_dash.calculate_greeks()
+                ceo_dash.smart_money = self.smart_money
+                greeks = ceo_dash.calculate_greeks()
                 msg = (
                     "⚡ **GOD MODE (Portfolio Greeks)** ⚡\n"
                     f"Δ (Delta - Directional Bias): `{greeks.get('delta', 0.0):.2f}`\n"
@@ -819,7 +820,8 @@ class TelegramApp:
                     self.smart_money = container.get("smart_money")
 
                 ceo_dash.market_god = self.market_god
-                ceo_dash.smart_money = self.smart_moneyceo_dash.calculate_greeks()
+                ceo_dash.smart_money = self.smart_money
+                greeks = ceo_dash.calculate_greeks()
                 text = (
                     "📈 <b>PORTFÖY VOLATİLİTE ENDEKSİ (VIX)</b>\n"
                     "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
