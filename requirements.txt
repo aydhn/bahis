@@ -71,7 +71,6 @@ selenium-stealth
 # --- Sürü Zekası & Kuantum Optimizasyon ---
 flwr
 simanneal
-dhg
 
 # --- Otopoyetik & Diferansiyel Geometri ---
 GraphRicciCurvature
