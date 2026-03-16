@@ -1,4 +1,4 @@
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Tuple
 import polars as pl
 from loguru import logger
 
@@ -41,28 +41,7 @@ class RiskStage(PipelineStage):
         except ImportError:
             self.copula = None
 
-    async def execute(self, context: Dict[str, Any]) -> Dict[str, Any]:
-        """Execute risk analysis pipeline."""
-
-        # 1. Retrieve Context
-        ctx: Optional[BettingContext] = context.get("ctx")
-        if not ctx and BettingContext:
-             ctx = BettingContext.from_dict(context)
-
-        ensemble_decisions = context.get("ensemble_results", [])
-        matches = context.get("matches", pl.DataFrame())
-
-        if not ensemble_decisions or matches.is_empty():
-            logger.info("No decisions to process in RiskStage.")
-            return {"final_bets": []}
-
-        # Match ID -> Odds Map
-        odds_map = {}
-        for row in matches.iter_rows(named=True):
-            mid = row["match_id"]
-            odds_map[mid] = row.get("home_odds", 0.0)
-
-        # Candidate Bets for Portfolio Optimization
+    def _prepare_candidates(self, ensemble_decisions: List[Dict[str, Any]], odds_map: Dict[str, float], context: Dict[str, Any]) -> Tuple[List[PortfolioBet], Dict[str, Any]]:
         candidates: List[PortfolioBet] = []
         bet_metadata = {}
 
@@ -145,7 +124,9 @@ class RiskStage(PipelineStage):
             else:
                 logger.info(f"Bet Rejected ({match_id}): {risk_decision.rejection_reason}")
 
-        # --- Portfolio Optimization ---
+        return candidates, bet_metadata
+
+    def _run_portfolio_optimization(self, candidates: List[PortfolioBet], bet_metadata: Dict[str, Any]) -> List[Dict[str, Any]]:
         # Markowitz over the approved candidates
         # Determine global regime from the first approved bet (assuming regime is global)
         global_regime = "STABLE"
@@ -210,13 +191,10 @@ class RiskStage(PipelineStage):
         # Filter out rejected bets before sending to portfolio optimizer
         approved_candidates = [c for c in candidates if bet_metadata[c.match_id]["risk_decision"].approved]
 
-        optimized_results = self.portfolio_opt.optimize(approved_candidates, regime=global_regime)
+        return self.portfolio_opt.optimize(approved_candidates, regime=global_regime)
 
-
-        final_bets = []
-
-        # --- 1. Process Arbitrage Opportunities First ---
-        # If there's an arb scanner signal in the context, evaluate it
+    def _process_arbitrage(self, context: Dict[str, Any]) -> List[Dict[str, Any]]:
+        arb_bets = []
         arb_signal = context.get("arbitrage_signal")
         if arb_signal and hasattr(self, 'arb_executor') and self.arb_executor:
             match_id = arb_signal.get("match_id", "Unknown")
@@ -224,7 +202,7 @@ class RiskStage(PipelineStage):
             if plan.approved:
                 logger.success(f"RiskStage: Approving Arbitrage for {match_id} (ROI: {plan.roi:.2%})")
                 for leg in plan.legs:
-                    final_bets.append({
+                    arb_bets.append({
                         "match_id": match_id,
                         "selection": leg.selection,
                         "stake": leg.stake,
@@ -237,7 +215,9 @@ class RiskStage(PipelineStage):
                         "is_paper": False,
                         "is_arb": True
                     })
-        # --- 1.1 Process Alpha Signals (Stat-Arb/Anomalies) ---
+        return arb_bets
+
+    def _process_alpha_signals(self, context: Dict[str, Any]) -> None:
         alpha_signals = context.get("alpha_opportunities", [])
         if alpha_signals:
             for alpha in alpha_signals:
@@ -254,6 +234,17 @@ class RiskStage(PipelineStage):
                 else:
                     # Match specific alpha - boost its stake or approve it directly
                     logger.info(f"RiskStage: Found Match-Specific Alpha for {match_id}")
+
+    def _apply_macro_correlation(self, final_bets: List[Dict[str, Any]]) -> None:
+        if hasattr(self, 'macro_correlation') and self.macro_correlation:
+            sys_modifier = self.macro_correlation.calculate_systemic_modifier(final_bets)
+            if sys_modifier < 1.0:
+                for bet in final_bets:
+                    bet["stake"] *= sys_modifier
+                    bet["reason"] += f" [MacroCorrelation Penalty: {sys_modifier:.2f}x]"
+
+    def _finalize_bets(self, optimized_results: List[Dict[str, Any]], bet_metadata: Dict[str, Any], ensemble_decisions: List[Dict[str, Any]], context: Dict[str, Any], ctx: Optional[BettingContext]) -> List[Dict[str, Any]]:
+        final_bets = []
 
         # Check global God Signal from context if available
         god_signal = context.get("god_signal")
@@ -327,16 +318,52 @@ class RiskStage(PipelineStage):
             if ctx:
                 ctx.narratives[match_id] = narrative
 
-        # Update Context
-        # Apply Macro Correlation Systemic Penalty (Weekend Favorite Collapse Protection)
-        if hasattr(self, 'macro_correlation') and self.macro_correlation:
-            sys_modifier = self.macro_correlation.calculate_systemic_modifier(final_bets)
-            if sys_modifier < 1.0:
-                for bet in final_bets:
-                    bet["stake"] *= sys_modifier
-                    bet["reason"] += f" [MacroCorrelation Penalty: {sys_modifier:.2f}x]"
+        return final_bets
+
+    async def execute(self, context: Dict[str, Any]) -> Dict[str, Any]:
+        """Execute risk analysis pipeline."""
+
+        # 1. Retrieve Context
+        ctx: Optional[BettingContext] = context.get("ctx")
+        if not ctx and BettingContext:
+             ctx = BettingContext.from_dict(context)
+
+        ensemble_decisions = context.get("ensemble_results", [])
+        matches = context.get("matches", pl.DataFrame())
+
+        if not ensemble_decisions or matches.is_empty():
+            logger.info("No decisions to process in RiskStage.")
+            return {"final_bets": []}
+
+        # Match ID -> Odds Map
+        odds_map = {}
+        for row in matches.iter_rows(named=True):
+            mid = row["match_id"]
+            odds_map[mid] = row.get("home_odds", 0.0)
+
+        # 2. Extract Candidates and Meta using Tower
+        candidates, bet_metadata = self._prepare_candidates(ensemble_decisions, odds_map, context)
+
+        # 3. Portfolio Optimization (Black-Litterman & Markowitz)
+        optimized_results = self._run_portfolio_optimization(candidates, bet_metadata)
+
+        # 4. Process Signals and Construct Bets
+        final_bets = []
+
+        # 4.1 Arbitrage
+        final_bets.extend(self._process_arbitrage(context))
+
+        # 4.2 Alpha Signals
+        self._process_alpha_signals(context)
+
+        # 4.3 Finalize general bets (God Signals, Black Swan overrides)
+        final_bets.extend(self._finalize_bets(optimized_results, bet_metadata, ensemble_decisions, context, ctx))
+
+        # 5. Apply Macro Correlation Penalty
+        self._apply_macro_correlation(final_bets)
 
         if ctx:
             ctx.final_bets = final_bets
+            context["ctx"] = ctx
 
         return {"final_bets": final_bets, "ctx": ctx}
