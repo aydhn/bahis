@@ -116,7 +116,6 @@ bytewax
 causal-learn
 
 # --- Zaman Serisi & Sinyal ---
-iisignature
 prophet
 giotto-tda
 
