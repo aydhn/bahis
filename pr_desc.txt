@@ -1,15 +1,16 @@
-🎯 **What:** Fully integrated missing extension code usages into the primary pipeline to satisfy the architectural requirements (`TÜM UZANTI KODLAR KULLANILACAK`).
+🧪 [testing improvement] Add comprehensive tests for LogRotator utility
 
-💡 **Why:** Several high-end algorithmic extensions like `AlphaGenerator`, `PhilosophicalRiskEngine`, `AutoTuner`, and `fast_math` were initialized inside the dependency container but were only partially executing or completely ignored inside the main orchestration flow.
-- `AlphaGenerator` emitted events that no module subscribed to.
-- `PhilosophicalRiskEngine` was injected into the `RiskStage` but its `assess_state` was never called to alter the final stake penalty limits.
-- `AutoTuner` was correctly parsing recent results inside `Sentinel` but missing updates for `PortfolioManager`.
-- `fast_math` contained heavily optimized `njit` math operations like `fast_entropy` which were not leveraged by the `PortfolioManager` to process large batch optimizations quickly.
+🎯 **What:** The testing gap addressed
+The `LogRotator` class located in `src/utils/log_rotator.py` was missing tests, creating a risk for log loss and unnecessary disk space usage if the logic broke. A full pytest suite has been added in `tests/utils/test_log_rotator.py`.
 
-✅ **Verification:**
-- Verified `fast_entropy` calculation operates perfectly inside `PortfolioManager` logging the portfolio aggregate entropy.
-- Assured `AlphaGenerator`'s `alpha_signal` properly creates synthetic opportunities for optimization.
-- Assured `PhilosophicalRisk` properly applies penalties using `insight.suggested_kelly_penalty`.
-- Executed the full unit test suite `PYTHONPATH=. python3 -m pytest tests/` returning `187 passed in 14.08s` and no pipeline regressions.
+📊 **Coverage:** What scenarios are now tested
+- Successful setup of active and archive log directories
+- Archiving of uncompressed standard log files based on file age threshold (`archive_days`)
+- Compression behavior (moving active `.log` to `archive/.log.gz`)
+- Deletion of very old archived log files based on `max_archive_days`
+- File name date pattern logic (`bot_YYYY-MM-DD.log`) override of standard file mtime threshold
+- Edge case handling when `shutil.move` fails, validating error is captured properly in returned dictionary
+- Log active stats reporting using `get_stats()` functionality
 
-✨ **Result:** Maximum utilization of quantitative analysis and code efficiency across the entire codebase.
+✨ **Result:** The improvement in test coverage
+`LogRotator` is now fully covered by test cases mapping out its full operation lifecycle, verifying proper initialization, execution via active/archival flows, and data reporting without introducing any regressions in the codebase.
