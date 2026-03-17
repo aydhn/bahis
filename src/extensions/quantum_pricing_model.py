@@ -2,7 +2,13 @@ from loguru import logger
 import math
 from src.core.interfaces import QuantModel
 from typing import Dict, Any
-from src.extensions.fast_math import njit
+try:
+    from numba import njit
+    # if njit is mocked by MagicMock, it causes issues. Make sure it's real or dummy.
+    if type(njit).__name__ == 'MagicMock': raise ImportError
+except ImportError:
+    def njit(*args, **kwargs):
+        return lambda f: f
 
 @njit(fastmath=True, nogil=True)
 def _fast_poisson_heuristic(h_xg: float, a_xg: float) -> float:

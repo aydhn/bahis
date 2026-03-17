@@ -26,7 +26,6 @@ from dataclasses import dataclass
 
 import numpy as np
 from loguru import logger
-from src.extensions.fast_math import fast_entropy
 
 
 try:
@@ -77,7 +76,14 @@ def shannon_entropy(probs: np.ndarray, base: int = 2) -> float:
 
     # Maksimum Hız - Zero Errors: Always use Numba JIT fast_entropy for log2
     if base == 2:
-        return float(fast_entropy(probs))
+        from src.system.container import container
+        fast_math = container.get("fast_math")
+        if fast_math:
+            return float(fast_math.fast_entropy(probs))
+        else:
+            if SCIPY_OK:
+                return float(scipy_entropy(probs, base=base))
+            return float(-np.sum(probs * np.log(probs)) / np.log(base))
     else:
         # Fallback to standard for other bases
         if SCIPY_OK:
@@ -211,12 +217,16 @@ class EntropyMeter:
         # ── Maç entropi ──
         if model_probs:
             # Optimization: avoiding Numba array overhead
-            from src.extensions.fast_math import fast_entropy_scalar
-            report.match_entropy = round(fast_entropy_scalar(
-                model_probs.get("prob_home", 0.33),
-                model_probs.get("prob_draw", 0.33),
-                model_probs.get("prob_away", 0.34)
-            ), 4)
+            from src.system.container import container
+            fast_math = container.get("fast_math")
+            p_h = model_probs.get("prob_home", 0.33)
+            p_d = model_probs.get("prob_draw", 0.33)
+            p_a = model_probs.get("prob_away", 0.34)
+            if fast_math:
+                report.match_entropy = round(fast_math.fast_entropy_scalar(p_h, p_d, p_a), 4)
+            else:
+                p_arr = np.array([p_h, p_d, p_a])
+                report.match_entropy = round(float(-np.sum(p_arr * np.log2(p_arr))), 4)
 
         # ── Takım geçmiş entropileri ──
         if home_history:

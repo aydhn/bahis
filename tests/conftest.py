@@ -10,13 +10,17 @@ class DummySpec:
 class DummyNumba:
     __version__ = "0.60.0"
     def jit(self, *args, **kwargs):
-        def wrapper(func):
+        def decorator(func):
             return func
-        return wrapper
+        if len(args) == 1 and callable(args[0]):
+            return args[0]
+        return decorator
     def njit(self, *args, **kwargs):
-        def wrapper(func):
+        def decorator(func):
             return func
-        return wrapper
+        if len(args) == 1 and callable(args[0]):
+            return args[0]
+        return decorator
 
 dummy_numba = DummyNumba()
 dummy_numba.__spec__ = importlib.util.spec_from_loader("numba", loader=None)
