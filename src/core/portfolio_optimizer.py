@@ -121,7 +121,7 @@ class PortfolioOptimizer:
         kelly_benter = container.get('kelly_benter')
         raw_stakes_list = []
         for c in candidates:
-            if False:
+            if kelly_benter:
                 # KellyBenterOptimizer incorporates dynamic exposure caps
                 conf = getattr(c, 'confidence', 0.5)
                 # To preserve Kelly Criterion math properly when applying Benter's confidence bounds, the fractions should be linearly multiplied with confidence weights

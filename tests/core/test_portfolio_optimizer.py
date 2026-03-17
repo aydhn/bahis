@@ -131,6 +131,9 @@ def test_optimize_crash_regime():
 
     if kelly_benter is not None:
         with patch.object(kelly_benter, 'calculate_fraction', return_value=0.05):
+            for c in bets:
+                c.confidence = 1.0
+
             results = optimizer.optimize(bets, regime="CRASH")
     else:
         results = optimizer.optimize(bets, regime="CRASH")
