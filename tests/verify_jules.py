@@ -1,6 +1,9 @@
 import pytest
 import numpy as np
-from src.extensions.fast_math import fast_kelly, fast_entropy
+from src.system.container import container
+fast_math = container.get('fast_math')
+fast_kelly = fast_math.fast_kelly if fast_math else None
+fast_entropy = fast_math.fast_entropy if fast_math else None
 from src.quant.risk.kelly import AdaptiveKelly
 from src.quant.physics.entropy_meter import EntropyMeter, shannon_entropy
 from src.pipeline.stages.features import FeatureStage

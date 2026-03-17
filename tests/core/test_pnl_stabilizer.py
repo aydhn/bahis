@@ -220,23 +220,15 @@ def test_init_without_pid():
 
 def test_import_error_handling():
     """Test import error handling gracefully."""
-    # Temporarily remove simple_pid from sys.modules to simulate missing library
-    original_simple_pid = sys.modules.get('simple_pid')
-    sys.modules['simple_pid'] = None
-
-    try:
+    with patch.dict('sys.modules', {'simple_pid': None}):
         import src.core.pnl_stabilizer
         importlib.reload(src.core.pnl_stabilizer)
         assert src.core.pnl_stabilizer.PID_AVAILABLE is False
-    finally:
-        # Restore original module
-        if original_simple_pid is not None:
-            sys.modules['simple_pid'] = original_simple_pid
-        else:
-            del sys.modules['simple_pid']
-        # Reload to restore original state for other tests
-        importlib.reload(src.core.pnl_stabilizer)
-        assert src.core.pnl_stabilizer.PID_AVAILABLE is True
+
+    # Reload after patch to restore original state
+    import src.core.pnl_stabilizer
+    importlib.reload(src.core.pnl_stabilizer)
+    assert src.core.pnl_stabilizer.PID_AVAILABLE is True
 
 def test_current_drawdown_peak_update():
     """Test _current_drawdown updates peak when current > peak."""

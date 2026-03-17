@@ -5,7 +5,6 @@ This module implements a dynamic version of the Kelly Criterion that adjusts
 the betting fraction based on realized performance and market regime.
 """
 from typing import List, Dict
-from src.extensions.fast_math import fast_kelly
 
 
 class AdaptiveKelly:
@@ -54,7 +53,15 @@ class AdaptiveKelly:
             return 0.0
 
         # 1. Basic Kelly via fast_math (Scalar for max speed)
-        raw_kelly = fast_kelly(probability, odds, fraction=1.0)
+        from src.system.container import container
+        fast_math = container.get("fast_math")
+        if fast_math:
+            raw_kelly = float(fast_math.fast_kelly(probability, odds, fraction=1.0))
+        else:
+            q = 1.0 - probability
+            b = odds - 1.0
+            raw_kelly = (probability * b - q) / b if b > 0 else 0.0
+            raw_kelly = max(0.0, float(raw_kelly))
 
         if raw_kelly <= 0:
             return 0.0

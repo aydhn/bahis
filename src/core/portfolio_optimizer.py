@@ -26,7 +26,6 @@ from enum import Enum
 import numpy as np
 from loguru import logger
 from src.system.container import container
-from src.extensions.fast_math import fast_entropy
 
 from src.quant.finance.liquidity_engine import LiquidityEngine
 
@@ -142,10 +141,15 @@ class PortfolioOptimizer:
         try:
             probs_array = np.array([c.prob_model for c in candidates], dtype=np.float64)
             if len(probs_array) > 0:
-                p_entropy = fast_entropy(probs_array)
+                fast_math = container.get("fast_math")
+                if fast_math:
+                    p_entropy = fast_math.fast_entropy(probs_array)
+                else:
+                    from scipy.stats import entropy
+                    p_entropy = entropy(probs_array, base=2)
                 logger.info(f"Portfolio Optimization running. Candidates: {len(candidates)}, Entropy: {p_entropy:.4f}")
         except Exception as e:
-            logger.debug(f"Exception caught during fast_entropy calculation: {e}")
+            logger.debug(f"Exception caught during entropy calculation: {e}")
 
         # 3. Korelasyon düzeltmesi (Rejime duyarlı)
         risk_aversion = self._get_risk_aversion(regime)
