@@ -16,24 +16,9 @@ from loguru import logger
 import numpy as np
 
 try:
-    from src.extensions.regime_hmm import MarketRegimeHMM
-except ImportError:
-    MarketRegimeHMM = None
-
-try:
-    from src.extensions.smart_money import SmartMoneyDetector
-except ImportError:
-    SmartMoneyDetector = None
-
-try:
     from src.quant.analysis.game_theory_engine import GameTheoryEngine
 except ImportError:
     GameTheoryEngine = None
-
-try:
-    from src.extensions.behavioral_arbitrage import BehavioralArbitrage
-except ImportError:
-    BehavioralArbitrage = None
 
 @dataclass
 class GodSignal:
@@ -50,7 +35,7 @@ class MarketGod:
     """
 
     def __init__(self):
-        self.hmm = MarketRegimeHMM() if MarketRegimeHMM else None
+        self.hmm = container.get('regime_hmm')
         self.smart_money = container.get('smart_money')
         self.game_theory = GameTheoryEngine() if GameTheoryEngine else None
         self.behavioral_arb = container.get('behavioral_arb')
