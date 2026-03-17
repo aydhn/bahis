@@ -126,7 +126,8 @@ class RiskStage(PipelineStage):
 
         return candidates, bet_metadata
 
-    def _run_portfolio_optimization(self, candidates: List[PortfolioBet], bet_metadata: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def _run_portfolio_optimization(self, candidates: List[PortfolioBet], bet_metadata: Dict[str, Any], context: Dict[str, Any] = None) -> List[Dict[str, Any]]:
+        context = context or {}
         # Markowitz over the approved candidates
         # Determine global regime from the first approved bet (assuming regime is global)
         global_regime = "STABLE"
@@ -146,7 +147,7 @@ class RiskStage(PipelineStage):
             # A real implementation would query the `db.get_settled_bets()`
             # We'll fetch insight safely with defaults
             try:
-                insight = self.philosophical_risk.assess_state([], 0.5, 0.0)
+                insight = self.philosophical_risk.assess_state(context.get("recent_results", []), context.get("win_rate", 0.5), context.get("roi", 0.0))
                 # Convert to float to avoid MagicMock comparison issues in tests
                 stoic_penalty = float(insight.suggested_kelly_penalty)
                 if stoic_penalty > 0:
@@ -345,7 +346,7 @@ class RiskStage(PipelineStage):
         candidates, bet_metadata = self._prepare_candidates(ensemble_decisions, odds_map, context)
 
         # 3. Portfolio Optimization (Black-Litterman & Markowitz)
-        optimized_results = self._run_portfolio_optimization(candidates, bet_metadata)
+        optimized_results = self._run_portfolio_optimization(candidates, bet_metadata, context)
 
         # 4. Process Signals and Construct Bets
         final_bets = []
