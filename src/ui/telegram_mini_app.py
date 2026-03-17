@@ -1010,6 +1010,25 @@ class TelegramApp:
     # ═══════════════════════════════════════════
     #  /shutdown - Kapatma
     # ═══════════════════════════════════════════
+
+    async def stop(self):
+        """Stop the bot safely."""
+        if getattr(self, '_app', None):
+            try:
+                await self._app.updater.stop()
+            except Exception:
+                pass
+            try:
+                await self._app.stop()
+            except Exception:
+                pass
+            try:
+                await self._app.shutdown()
+            except Exception:
+                pass
+        self._ready = False
+        logger.info("TelegramApp stopped safely.")
+
     async def _cmd_shutdown(self, update, context):
         from src.system.config import settings
         user_id = str(update.effective_user.id)
