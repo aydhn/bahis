@@ -25,7 +25,7 @@ jobs:
         pip install wheel setuptools "numpy<2.0.0" pytest
         pip install --no-build-isolation iisignature
         export SKLEARN_ALLOW_DEPRECATED_SKLEARN_PACKAGE_INSTALL=True
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        if [ -f requirements.txt ]; then pip install -r requirements.txt --use-deprecated=legacy-resolver; fi
         
     - name: Pytest ile Testleri Çalıştır
       run: |
