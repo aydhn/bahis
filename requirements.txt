@@ -84,7 +84,6 @@ opentelemetry-sdk
 # --- Tekillik & Piyasa Mikroyapısı ---
 tenseal
 pennylane
-tick
 
 # --- Kaos Teorisi & Topoloji ---
 nolds
@@ -167,7 +166,7 @@ prometheus-client
 psutil
 
 # --- Dashboard (Web UI) ---
-streamlit
+streamlit>=1.39.0
 plotly
 fastapi
 uvicorn

@@ -517,7 +517,8 @@ class TelegramApp:
                     self.smart_money = container.get("smart_money")
 
                 ceo_dash.market_god = self.market_god
-                ceo_dash.smart_money = self.smart_moneyceo_dash.generate_report(None)
+                ceo_dash.smart_money = self.smart_money
+                report = ceo_dash.generate_report(None)
             else:
                 report = '⚠️ CEO Dashboard Not Found'
         except Exception as e:

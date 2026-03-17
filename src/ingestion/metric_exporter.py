@@ -30,17 +30,28 @@ class MetricExporter:
         self._port = port
 
         if PROM_AVAILABLE:
-            self.cycles_total = Counter("bot_cycles_total", "Toplam analiz döngüsü")
-            self.signals_total = Counter("bot_signals_total", "Üretilen toplam sinyal")
-            self.errors_total = Counter("bot_errors_total", "Toplam hata sayısı")
-            self.model_latency = Histogram(
-                "bot_model_latency_seconds", "Model tahmin süresi",
-                buckets=(0.01, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0),
-            )
-            self.cpu_percent = Gauge("bot_cpu_percent", "CPU kullanımı %")
-            self.memory_mb = Gauge("bot_memory_mb", "RAM kullanımı MB")
-            self.active_tasks = Gauge("bot_active_tasks", "Aktif asyncio görevleri")
-            self.data_freshness = Gauge("bot_data_freshness_sec", "Verinin yaşı (saniye)")
+            try:
+                self.cycles_total = Counter("bot_cycles_total", "Toplam analiz döngüsü")
+                self.signals_total = Counter("bot_signals_total", "Üretilen toplam sinyal")
+                self.errors_total = Counter("bot_errors_total", "Toplam hata sayısı")
+                self.model_latency = Histogram(
+                    "bot_model_latency_seconds", "Model tahmin süresi",
+                    buckets=(0.01, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0),
+                )
+                self.cpu_percent = Gauge("bot_cpu_percent", "CPU kullanımı %")
+                self.memory_mb = Gauge("bot_memory_mb", "RAM kullanımı MB")
+                self.active_tasks = Gauge("bot_active_tasks", "Aktif asyncio görevleri")
+                self.data_freshness = Gauge("bot_data_freshness_sec", "Verinin yaşı (saniye)")
+            except ValueError:
+                from prometheus_client import REGISTRY
+                self.cycles_total = REGISTRY._names_to_collectors.get("bot_cycles_total")
+                self.signals_total = REGISTRY._names_to_collectors.get("bot_signals_total")
+                self.errors_total = REGISTRY._names_to_collectors.get("bot_errors_total")
+                self.model_latency = REGISTRY._names_to_collectors.get("bot_model_latency_seconds")
+                self.cpu_percent = REGISTRY._names_to_collectors.get("bot_cpu_percent")
+                self.memory_mb = REGISTRY._names_to_collectors.get("bot_memory_mb")
+                self.active_tasks = REGISTRY._names_to_collectors.get("bot_active_tasks")
+                self.data_freshness = REGISTRY._names_to_collectors.get("bot_data_freshness_sec")
         else:
             self.cycles_total = _NoopMetric()
             self.signals_total = _NoopMetric()
