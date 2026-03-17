@@ -696,6 +696,8 @@ class InferenceStage(PipelineStage):
 
         # 6. Meta-Labeling (Quality Check)
         try:
+            probs = [prediction.get("prob_home", 0.33), prediction.get("prob_draw", 0.33), prediction.get("prob_away", 0.33)]
+            entropy = self.entropy_calc.calculate_entropy(probs)
             self._apply_meta_labeling(context, prediction, probs, entropy)
         except Exception as e:
             logger.debug(f"Exception caught during self._apply_meta_labeling: {e}")
