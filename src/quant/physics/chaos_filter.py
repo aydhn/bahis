@@ -33,7 +33,7 @@ from loguru import logger
 try:
     import nolds
     NOLDS_OK = True
-except ImportError:
+except (ImportError, TypeError):
     NOLDS_OK = False
     logger.debug("nolds yüklü değil – manuel Lyapunov fallback.")
 
