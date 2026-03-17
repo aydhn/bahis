@@ -84,7 +84,6 @@ opentelemetry-sdk
 # --- Tekillik & Piyasa Mikroyapısı ---
 tenseal
 pennylane
-tick
 
 # --- Kaos Teorisi & Topoloji ---
 nolds
