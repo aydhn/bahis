@@ -28,7 +28,9 @@ Fallback: Manuel üçgen üyelik fonksiyonları + centroid
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
+from typing import Any
+from dataclasses import field
 
 import numpy as np
 from loguru import logger

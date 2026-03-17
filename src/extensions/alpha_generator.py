@@ -48,7 +48,7 @@ class AlphaGenerator:
                 home_odds, away_odds
             FROM matches
             WHERE status = 'FINISHED'
-            ORDER BY date DESC LIMIT 500
+            ORDER BY created_at DESC LIMIT 500
             """
             recent_matches = db.query(query)
             if recent_matches is None or (hasattr(recent_matches, 'is_empty') and recent_matches.is_empty()) or len(recent_matches) == 0:
